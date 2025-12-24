@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby in Car Without Tears - Business Plan</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f472b6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--light);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        header .tagline {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Navigation */
+        nav {
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            list-style: none;
+            padding: 15px 0;
+            gap: 5px;
+        }
+
+        nav a {
+            color: var(--dark);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Sections */
+        section {
+            padding: 60px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        section:nth-child(even) {
+            background: white;
+        }
+
+        section h2 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--secondary);
+            display: inline-block;
+        }
+
+        section h3 {
+            color: var(--dark);
+            font-size: 1.5rem;
+            margin: 30px 0 15px;
+        }
+
+        section h4 {
+            color: var(--gray);
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+
+        .card h4 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .card.highlight {
+            border-left: 4px solid var(--primary);
+        }
+
+        .card.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .card.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f1f5f9;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .metric .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric .label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .metric.success .value { color: var(--success); }
+        .metric.warning .value { color: var(--warning); }
+        .metric.secondary .value { color: var(--secondary); }
+
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        /* Quote Box */
+        .quote-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            font-size: 1.2rem;
+            font-style: italic;
+            text-align: center;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-primary { background: #e0e7ff; color: #3730a3; }
+
+        /* Progress Bar */
+        .progress-bar {
+            background: var(--border);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+
+        .progress-fill.primary { background: var(--primary); }
+        .progress-fill.success { background: var(--success); }
+        .progress-fill.secondary { background: var(--secondary); }
+
+        /* Flowchart */
+        .flowchart {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .flow-item {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 150px;
+            position: relative;
+        }
+
+        .flow-item::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .flow-item:last-child::after {
+            display: none;
+        }
+
+        /* Architecture Diagram */
+        .architecture {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .architecture pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 30px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -36px;
+            top: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px var(--primary);
+        }
+
+        .timeline-item h4 {
+            margin: 0 0 10px;
+            color: var(--primary);
+        }
+
+        /* Two Column */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Comparison Check */
+        .check { color: var(--success); }
+        .cross { color: var(--danger); }
+        .partial { color: var(--warning); }
+
+        /* Section Icon */
+        .section-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--secondary);
+        }
+
+        /* Print Styles */
+        @media print {
+            nav { display: none; }
+            section { page-break-inside: avoid; }
+            .card { break-inside: avoid; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 { font-size: 2rem; }
+            header .subtitle { font-size: 1.1rem; }
+            section h2 { font-size: 1.8rem; }
+            nav ul { flex-direction: column; align-items: center; }
+            .flowchart { flex-direction: column; align-items: center; }
+            .flow-item::after { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+    <div class="container">
+        <div class="section-icon">👶🚗</div>
+        <h1>Baby in Car Without Tears</h1>
+        <p class="subtitle">Complete Business Plan & Investment Memorandum</p>
+        <p class="tagline">AI-powered mobile application designed to instantly calm crying babies during car travel through age-personalized audio content</p>
+    </div>
+</header>
+
+<!-- Navigation -->
+<nav>
+    <ul>
+        <li><a href="#executive">Executive Summary</a></li>
+        <li><a href="#market">Market Analysis</a></li>
+        <li><a href="#competitors">Competitors</a></li>
+        <li><a href="#uvp">Value Proposition</a></li>
+        <li><a href="#product">Product</a></li>
+        <li><a href="#ai">AI Architecture</a></li>
+        <li><a href="#monetization">Monetization</a></li>
+        <li><a href="#gtm">Go-to-Market</a></li>
+        <li><a href="#financials">Financials</a></li>
+        <li><a href="#team">Team & Budget</a></li>
+        <li><a href="#ethics">Ethics & Safety</a></li>
+        <li><a href="#competitor-table">Competitor Table</a></li>
+    </ul>
+</nav>
+
+<!-- Executive Summary -->
+<section id="executive">
+    <div class="container">
+        <h2>1. Executive Summary</h2>
+
+        <div class="card-grid">
+            <div class="card highlight">
+                <h4>🎯 The Problem</h4>
+                <ul>
+                    <li><strong>71% of parents</strong> report car crying as a top-3 stressor</li>
+                    <li>Car crying leads to distracted driving, increasing accident risk by <strong>400%</strong></li>
+                    <li>Existing solutions lack age-appropriate personalization</li>
+                    <li>No dedicated solution exists for the in-car calming context</li>
+                </ul>
+            </div>
+            <div class="card success">
+                <h4>💡 The Solution</h4>
+                <ul>
+                    <li><strong>Voice-activated</strong> age input (hands-free for driving)</li>
+                    <li><strong>7 content categories:</strong> Classical music, fairy tales, white noise, nature sounds, instrumental, children's songs, podcasts</li>
+                    <li><strong>Offline mode</strong> - critical for driving</li>
+                    <li><strong>Emergency "Cry-Stop"</strong> AI algorithm</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="quote-box">
+            "The only app that knows your baby's age and instantly delivers science-backed, age-appropriate calming audio—hands-free, offline-ready, and designed specifically for car travel."
+        </div>
+
+        <h3>Key Metrics</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">$850K</div>
+                <div class="label">Seed Round Ask</div>
+            </div>
+            <div class="metric success">
+                <div class="value">$1.2M</div>
+                <div class="label">Year 1 ARR Target</div>
+            </div>
+            <div class="metric secondary">
+                <div class="value">$4.8M</div>
+                <div class="label">Year 2 ARR Target</div>
+            </div>
+            <div class="metric warning">
+                <div class="value">$12.5M</div>
+                <div class="label">Year 3 ARR Target</div>
+            </div>
+        </div>
+
+        <h3>Business Model</h3>
+        <div class="card">
+            <ul>
+                <li><strong>Freemium + Subscription:</strong> Free tier with limited content; Premium at $6.99/month or $49.99/year</li>
+                <li><strong>Target Markets:</strong> USA, EU, UK, Australia, Canada</li>
+                <li><strong>18-month runway</strong> to achieve 250,000 downloads and 25,000 paying subscribers</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Market Analysis -->
+<section id="market">
+    <div class="container">
+        <h2>2. Market & Audience Analysis</h2>
+
+        <h3>Target Audience Segments</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Segment</th>
+                        <th>Demographics</th>
+                        <th>Characteristics</th>
+                        <th>Pain Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Primary: New Parents</strong></td>
+                        <td>Age 25-40, first-time parents</td>
+                        <td>Tech-savvy, willing to pay for solutions</td>
+                        <td>Overwhelmed, sleep-deprived, anxious about car crying</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Secondary: Experienced Parents</strong></td>
+                        <td>Age 30-45, 2+ children</td>
+                        <td>Know what works, seek efficiency</td>
+                        <td>Need hands-free solutions, value offline capability</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tertiary: Grandparents/Caregivers</strong></td>
+                        <td>Age 50-70</td>
+                        <td>Less tech-savvy, need simplicity</td>
+                        <td>Unfamiliar with baby's preferences, need guidance</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Market Size Analysis (TAM, SAM, SOM)</h3>
+
+        <h4>USA Market</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Calculation Basis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>TAM (Total Addressable Market)</strong></td>
+                        <td><span class="badge badge-primary">$2.8 Billion</span></td>
+                        <td>All parents with children 0-4 years × potential app spend</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SAM (Serviceable Addressable Market)</strong></td>
+                        <td><span class="badge badge-primary">$420 Million</span></td>
+                        <td>Parents actively using parenting/baby apps</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SOM (Year 3)</strong></td>
+                        <td><span class="badge badge-success">$12.5 Million</span></td>
+                        <td>Realistic capture with focused execution (3% penetration)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>European Union Market</h4>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">$2.1B</div>
+                <div class="label">TAM (19M children 0-4)</div>
+            </div>
+            <div class="metric">
+                <div class="value">$315M</div>
+                <div class="label">SAM (Active users)</div>
+            </div>
+            <div class="metric success">
+                <div class="value">$8.2M</div>
+                <div class="label">SOM Year 3</div>
+            </div>
+        </div>
+
+        <h4>Worldwide Market</h4>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">$8.5B</div>
+                <div class="label">Global TAM</div>
+            </div>
+            <div class="metric">
+                <div class="value">$1.3B</div>
+                <div class="label">Global SAM</div>
+            </div>
+            <div class="metric success">
+                <div class="value">$24.7M</div>
+                <div class="label">SOM Year 3</div>
+            </div>
+        </div>
+
+        <h3>User Pain Points</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pain Point</th>
+                        <th>Severity</th>
+                        <th>Frequency</th>
+                        <th>Current Solutions</th>
+                        <th>Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Car crying episodes</td>
+                        <td><span class="badge badge-danger">9/10</span></td>
+                        <td>3-5x/week</td>
+                        <td>Random YouTube, stopping car</td>
+                        <td>No age-appropriate, offline solution</td>
+                    </tr>
+                    <tr>
+                        <td>Colic during travel</td>
+                        <td><span class="badge badge-danger">10/10</span></td>
+                        <td>Daily for affected</td>
+                        <td>White noise machines</td>
+                        <td>Not portable, not optimized for car</td>
+                    </tr>
+                    <tr>
+                        <td>Overstimulation</td>
+                        <td><span class="badge badge-warning">7/10</span></td>
+                        <td>Every ride >20 min</td>
+                        <td>Silence, parent singing</td>
+                        <td>No curated content</td>
+                    </tr>
+                    <tr>
+                        <td>Travel stress (long trips)</td>
+                        <td><span class="badge badge-danger">8/10</span></td>
+                        <td>Monthly</td>
+                        <td>DVD players, tablets</td>
+                        <td>Screen time concerns</td>
+                    </tr>
+                    <tr>
+                        <td>Distracted driving</td>
+                        <td><span class="badge badge-danger">10/10</span></td>
+                        <td>Every crying episode</td>
+                        <td>Pull over</td>
+                        <td>Dangerous, time-consuming</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Behavioral Trends (2024-2025)</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>📈 AI Parenting Tools</h4>
+                <p><strong>48% increase</strong> in AI parenting app adoption</p>
+                <div class="progress-bar"><div class="progress-fill primary" style="width: 48%"></div></div>
+            </div>
+            <div class="card">
+                <h4>📱 Working Parent Usage</h4>
+                <p><strong>65%</strong> of working parents use parenting apps regularly</p>
+                <div class="progress-bar"><div class="progress-fill success" style="width: 65%"></div></div>
+            </div>
+            <div class="card">
+                <h4>🎧 User Engagement</h4>
+                <p><strong>50% increase</strong> in engagement with AI-powered guidance</p>
+                <div class="progress-bar"><div class="progress-fill secondary" style="width: 50%"></div></div>
+            </div>
+            <div class="card">
+                <h4>💰 Market Growth</h4>
+                <p><strong>$1.69B</strong> market in 2024, growing <strong>12%+ CAGR</strong></p>
+                <div class="progress-bar"><div class="progress-fill primary" style="width: 70%"></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Competitive Landscape -->
+<section id="competitors">
+    <div class="container">
+        <h2>3. Competitive Landscape</h2>
+
+        <h3>Category A: Baby Sleep & White Noise Apps</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Competitor</th>
+                        <th>Platform</th>
+                        <th>Age Personalization</th>
+                        <th>Offline</th>
+                        <th>Pricing</th>
+                        <th>Weakness</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Huckleberry</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Basic</span></td>
+                        <td><span class="partial">⚠️ Limited</span></td>
+                        <td>$9.99/mo</td>
+                        <td>Expensive, not car-focused</td>
+                    </tr>
+                    <tr>
+                        <td><strong>White Noise Baby</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>$4.99 pro</td>
+                        <td>No personalization, no stories</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Baby Sleep Sounds</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>Free w/ ads</td>
+                        <td>Heavy ads, limited content</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Napper</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Partial</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>$59.99/yr</td>
+                        <td>English only, limited content</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Category B: Music & Story Apps</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Competitor</th>
+                        <th>Platform</th>
+                        <th>Age Personalization</th>
+                        <th>Offline</th>
+                        <th>Pricing</th>
+                        <th>Weakness</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Spotify Baby Playlists</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="partial">⚠️ Premium only</span></td>
+                        <td>$10.99/mo</td>
+                        <td>No age optimization, premium needed</td>
+                    </tr>
+                    <tr>
+                        <td><strong>YouTube Kids</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Age groups</span></td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td>Free w/ ads</td>
+                        <td>Screen-based, ads, needs internet</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Calm Kids</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="check">✅ Ages 3+</span></td>
+                        <td><span class="partial">⚠️ Premium</span></td>
+                        <td>$69.99/yr</td>
+                        <td>Too old for babies, expensive</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Moshi</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Broad</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>$59.99/yr</td>
+                        <td>Limited languages, older kid content</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Feature Gap Analysis</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Huckleberry</th>
+                        <th>White Noise Baby</th>
+                        <th>Spotify</th>
+                        <th>YouTube Kids</th>
+                        <th>Baby in Car ⭐</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI Age Personalization</td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="check">✅ By months</span></td>
+                    </tr>
+                    <tr>
+                        <td>Voice Input</td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅ Hands-free</span></td>
+                    </tr>
+                    <tr>
+                        <td>Offline Mode</td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="check">✅</span></td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅ Full library</span></td>
+                    </tr>
+                    <tr>
+                        <td>Car-Optimized UX</td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅ Built for car</span></td>
+                    </tr>
+                    <tr>
+                        <td>Multilingual Stories</td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="partial">⚠️</span></td>
+                        <td><span class="check">✅</span></td>
+                        <td><span class="check">✅ 10+ languages</span></td>
+                    </tr>
+                    <tr>
+                        <td>Emergency Cry-Stop</td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅ AI-powered</span></td>
+                    </tr>
+                    <tr>
+                        <td>No Ads (Free tier)</td>
+                        <td><span class="check">✅</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅ Safe for babies</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Strategic Insights</h3>
+        <div class="card-grid">
+            <div class="card highlight">
+                <h4>🎯 Market Gaps Identified</h4>
+                <ol>
+                    <li>No "In-Car" Specialist exists</li>
+                    <li>No true AI age personalization (month-by-month)</li>
+                    <li>Voice input is absent everywhere</li>
+                    <li>Multilingual fairy tales gap</li>
+                    <li>Offline + Content Rich combination missing</li>
+                    <li>No emergency "cry-stop" feature</li>
+                </ol>
+            </div>
+            <div class="card success">
+                <h4>🏆 Our Winning Position</h4>
+                <ul>
+                    <li><strong>Car-First Design:</strong> Only app built for car context</li>
+                    <li><strong>AI Age Engine:</strong> Proprietary algorithm, data moat</li>
+                    <li><strong>Voice-First:</strong> Patent potential, UX differentiation</li>
+                    <li><strong>Offline Excellence:</strong> Works in tunnels, rural areas</li>
+                    <li><strong>First-mover advantage</strong> in unoccupied niche</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Unique Value Proposition -->
+<section id="uvp">
+    <div class="container">
+        <h2>4. Unique Value Proposition (UVP)</h2>
+
+        <div class="quote-box">
+            "The only app that knows exactly what your 4-month-old needs to stop crying in the car—instantly, hands-free, and offline."
+        </div>
+
+        <h3>Detailed Unique Advantages</h3>
+
+        <div class="card-grid">
+            <div class="card highlight">
+                <h4>🧒 1. AI Age-Personalization Engine</h4>
+                <p>Precise month-by-month optimization based on developmental science:</p>
+                <ul>
+                    <li><strong>0-3 months:</strong> Womb sounds, heartbeat, deep white noise</li>
+                    <li><strong>3-6 months:</strong> Pink noise, gentle lullabies, shushing</li>
+                    <li><strong>6-9 months:</strong> Simple melodies, vowel-rich stories</li>
+                    <li><strong>9-12 months:</strong> Rhythmic music, interactive sounds</li>
+                    <li><strong>12-24 months:</strong> Narrative stories, vocabulary building</li>
+                    <li><strong>24-36 months:</strong> Complex stories, music variety</li>
+                </ul>
+            </div>
+            <div class="card highlight">
+                <h4>🎤 2. Voice Input (Hands-Free Safety)</h4>
+                <ul>
+                    <li>"Hey Baby App, my baby is 5 months old" → instant playlist</li>
+                    <li>"Play something calming" → context-aware recommendations</li>
+                    <li>"Emergency mode" → instant cry-stop sequence</li>
+                    <li>No-look operation while driving</li>
+                </ul>
+            </div>
+            <div class="card highlight">
+                <h4>🌍 3. Multilingual Fairy Tales</h4>
+                <ul>
+                    <li>English: 200+ stories (British & American)</li>
+                    <li>Spanish: 150+ stories</li>
+                    <li>French, German, Italian: 80-100+ stories each</li>
+                    <li>Mandarin, Japanese, Russian, Arabic: 40-60+ stories</li>
+                    <li>All with native speaker narration</li>
+                </ul>
+            </div>
+            <div class="card highlight">
+                <h4>📴 4. Offline Mode Excellence</h4>
+                <ul>
+                    <li>Full content library available offline</li>
+                    <li>Smart auto-download of age-appropriate content</li>
+                    <li>Zero-latency playback in tunnels, rural areas</li>
+                    <li>Perfect for road trips and flights</li>
+                </ul>
+            </div>
+            <div class="card highlight">
+                <h4>🆘 5. Emergency "Cry-Stop" Algorithm</h4>
+                <ul>
+                    <li>AI-analyzed crying patterns trigger optimal response</li>
+                    <li><strong>Phase 1 (0-30s):</strong> Sudden attention-grabber</li>
+                    <li><strong>Phase 2 (30-90s):</strong> Gradual calming transition</li>
+                    <li><strong>Phase 3 (90s+):</strong> Sustained soothing</li>
+                    <li>Learns what works for your specific baby</li>
+                </ul>
+            </div>
+            <div class="card highlight">
+                <h4>🚗 6. Car-Optimized UX</h4>
+                <ul>
+                    <li>Large touch targets for quick glances</li>
+                    <li>High contrast interface for daylight visibility</li>
+                    <li>One-tap playlists for common scenarios</li>
+                    <li>CarPlay & Android Auto integration</li>
+                    <li>Auto-play continuation after phone calls</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Product Structure -->
+<section id="product">
+    <div class="container">
+        <h2>5. Product Structure</h2>
+
+        <h3>Module Architecture</h3>
+        <div class="architecture">
+            <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    BABY IN CAR WITHOUT TEARS                     │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │  ONBOARDING  │  │  AGE INPUT   │  │   PLAYLIST   │           │
+│  │   MODULE     │──│   MODULE     │──│   GENERATOR  │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
+│         │                 │                 │                    │
+│         ▼                 ▼                 ▼                    │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │              AI RECOMMENDATION ENGINE             │           │
+│  │    (Age Analysis + Context + Learning Loop)       │           │
+│  └──────────────────────────────────────────────────┘           │
+│         │                 │                 │                    │
+│         ▼                 ▼                 ▼                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │    AUDIO     │  │   OFFLINE    │  │  FAVORITES   │           │
+│  │   ENGINE     │  │   LIBRARY    │  │   & HISTORY  │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
+│         │                 │                 │                    │
+│         ▼                 ▼                 ▼                    │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │              SUBSCRIPTION & PAYMENT               │           │
+│  └──────────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+            </pre>
+        </div>
+
+        <h3>Screen Flow</h3>
+        <div class="flowchart">
+            <div class="flow-item">
+                <strong>Onboarding</strong><br>
+                <small>4 screens</small>
+            </div>
+            <div class="flow-item">
+                <strong>Age Input</strong><br>
+                <small>Voice/Text</small>
+            </div>
+            <div class="flow-item">
+                <strong>Home Dashboard</strong><br>
+                <small>Quick picks</small>
+            </div>
+            <div class="flow-item">
+                <strong>Player</strong><br>
+                <small>Now playing</small>
+            </div>
+            <div class="flow-item">
+                <strong>Library</strong><br>
+                <small>All content</small>
+            </div>
+        </div>
+
+        <h3>Home Dashboard Mockup</h3>
+        <div class="architecture">
+            <pre>
+┌─────────────────────────────────────────┐
+│  [Baby Name] • 5 months old    [⚙️]    │
+├─────────────────────────────────────────┤
+│  ┌─────────────────────────────────────┐│
+│  │     🎵 NOW PLAYING                  ││
+│  │  "Mozart Lullaby Suite"             ││
+│  │  Classical Music • Age-optimized    ││
+│  │     [⏮️]  [⏸️]  [⏭️]               ││
+│  └─────────────────────────────────────┘│
+├─────────────────────────────────────────┤
+│  🆘 EMERGENCY CRY-STOP                  │
+│  [====== Tap for Instant Calming ======]│
+├─────────────────────────────────────────┤
+│  QUICK PICKS FOR 5-MONTH-OLD            │
+│  ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │Classical│ │ White  │ │ Nature │      │
+│  │ Music  │ │ Noise  │ │ Sounds │      │
+│  └────────┘ └────────┘ └────────┘      │
+├─────────────────────────────────────────┤
+│  [🏠 Home] [📚 Library] [❤️ Favs] [👤] │
+└─────────────────────────────────────────┘
+            </pre>
+        </div>
+
+        <h3>Subscription Tiers</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Free Tier</th>
+                        <th>Premium ($6.99/mo)</th>
+                        <th>Premium Family ($9.99/mo)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Content Access</td>
+                        <td>15% library</td>
+                        <td>100% library</td>
+                        <td>100% library</td>
+                    </tr>
+                    <tr>
+                        <td>Offline Downloads</td>
+                        <td>5 tracks</td>
+                        <td>Unlimited</td>
+                        <td>Unlimited</td>
+                    </tr>
+                    <tr>
+                        <td>Languages</td>
+                        <td>1</td>
+                        <td>All 10+</td>
+                        <td>All 10+</td>
+                    </tr>
+                    <tr>
+                        <td>Emergency Cry-Stop</td>
+                        <td>3/day</td>
+                        <td>Unlimited</td>
+                        <td>Unlimited</td>
+                    </tr>
+                    <tr>
+                        <td>AI Personalization</td>
+                        <td>Basic</td>
+                        <td>Advanced</td>
+                        <td>Advanced</td>
+                    </tr>
+                    <tr>
+                        <td>Profiles</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>Up to 4</td>
+                    </tr>
+                    <tr>
+                        <td>CarPlay/Android Auto</td>
+                        <td><span class="cross">❌</span></td>
+                        <td><span class="check">✅</span></td>
+                        <td><span class="check">✅</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Annual Price</strong></td>
+                        <td>$0</td>
+                        <td>$49.99</td>
+                        <td>$79.99</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lifetime Price</strong></td>
+                        <td>-</td>
+                        <td>$149.99</td>
+                        <td>$199.99</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- AI Architecture -->
+<section id="ai">
+    <div class="container">
+        <h2>6. AI Architecture</h2>
+
+        <h3>System Overview</h3>
+        <div class="architecture">
+            <pre>
+┌─────────────────────────────────────────────────────────────────────┐
+│                        AI RECOMMENDATION SYSTEM                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  INPUT LAYER                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
+│  │  Voice Input │  │  Age Data    │  │   Context    │               │
+│  │  Processor   │  │  (months)    │  │   Signals    │               │
+│  └──────────────┘  └──────────────┘  └──────────────┘               │
+│         │                 │                 │                        │
+│         ▼                 ▼                 ▼                        │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │           NATURAL LANGUAGE UNDERSTANDING              │           │
+│  │        (Age extraction, intent classification)        │           │
+│  └──────────────────────────────────────────────────────┘           │
+│                            │                                         │
+│                            ▼                                         │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │              DEVELOPMENTAL STAGE MAPPER               │           │
+│  │     (Maps age → developmental characteristics)        │           │
+│  └──────────────────────────────────────────────────────┘           │
+│                            │                                         │
+│                            ▼                                         │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │              RECOMMENDATION ENGINE                    │           │
+│  │  ┌──────────────────────────────────────────────┐    │           │
+│  │  │  Rule-Based Layer (developmental science)    │    │           │
+│  │  ├──────────────────────────────────────────────┤    │           │
+│  │  │  ML Personalization (user behavior)          │    │           │
+│  │  ├──────────────────────────────────────────────┤    │           │
+│  │  │  Content Scoring (quality + effectiveness)   │    │           │
+│  │  └──────────────────────────────────────────────┘    │           │
+│  └──────────────────────────────────────────────────────┘           │
+│                            │                                         │
+│                            ▼                                         │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │                   SAFETY FILTERS                      │           │
+│  │    (Content moderation, volume limits, age gates)     │           │
+│  └──────────────────────────────────────────────────────┘           │
+│                            │                                         │
+│                            ▼                                         │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │              PLAYLIST GENERATOR OUTPUT                │           │
+│  └──────────────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────────────┘
+            </pre>
+        </div>
+
+        <h3>AI Components</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>🎤 Voice Input Processor</h4>
+                <ul>
+                    <li>Speech-to-Text: Apple Speech / Google Speech API</li>
+                    <li>Age Extraction NLU: Custom trained model (98%+ accuracy)</li>
+                    <li>Multi-language Support: 10+ languages (93%+ accuracy)</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>📊 Developmental Stage Mapper</h4>
+                <ul>
+                    <li>Maps baby age to developmental characteristics</li>
+                    <li>Based on pediatric research and sleep science</li>
+                    <li>Adjusts for individual variation over time</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🤖 ML Personalization Layer</h4>
+                <ul>
+                    <li>Collaborative filtering for cross-user patterns</li>
+                    <li>Content-based filtering for new content</li>
+                    <li>Reinforcement learning for optimization</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🛡️ Safety Filter System</h4>
+                <ul>
+                    <li>Volume Limiter: Max 50dB (AAP guidelines)</li>
+                    <li>Content Moderation: Human + AI review</li>
+                    <li>Frequency Filter: Remove harsh frequencies</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Content Metadata Schema</h3>
+        <div class="architecture">
+            <pre>
+{
+  "track_id": "cls_001_mozart_lullaby",
+  "title": "Mozart Lullaby in D Major",
+  "category": "classical_music",
+  "age_range": {
+    "min_months": 0,
+    "max_months": 36,
+    "optimal_months": [3, 4, 5, 6]
+  },
+  "audio_properties": {
+    "tempo_bpm": 68,
+    "frequency_range": "low_mid",
+    "dynamic_range": "narrow",
+    "calming_score": 0.92
+  },
+  "effectiveness_data": {
+    "calm_rate": 0.87,
+    "avg_calm_time_seconds": 45,
+    "sleep_transition_rate": 0.62
+  },
+  "safety": {
+    "max_volume_db": 50,
+    "content_rating": "infant_safe",
+    "moderated": true
+  }
+}
+            </pre>
+        </div>
+
+        <h3>ML Learning Signals</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Signal</th>
+                        <th>Weight</th>
+                        <th>Collection Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Track completion rate</td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>Automatic</td>
+                    </tr>
+                    <tr>
+                        <td>Favorite actions</td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>User action</td>
+                    </tr>
+                    <tr>
+                        <td>Skip rate</td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td>Automatic</td>
+                    </tr>
+                    <tr>
+                        <td>Time of day patterns</td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td>Automatic</td>
+                    </tr>
+                    <tr>
+                        <td>Effectiveness feedback</td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>Optional user input</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Monetization -->
+<section id="monetization">
+    <div class="container">
+        <h2>7. Monetization Models</h2>
+
+        <h3>Revenue Streams</h3>
+        <div class="two-col">
+            <div class="card highlight">
+                <h4>💰 Primary Revenue (85%)</h4>
+                <ul>
+                    <li><strong>Subscriptions:</strong> Monthly ($6.99), Annual ($49.99), Lifetime ($149.99)</li>
+                    <li><strong>Premium Add-ons:</strong> Offline Plus, Family Plan upgrades</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🤝 Secondary Revenue (15%)</h4>
+                <ul>
+                    <li><strong>Partnerships:</strong> Car brands, baby brands, insurance</li>
+                    <li><strong>Content Packs:</strong> Language packs, special series</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Price Comparison</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Comparable App</th>
+                        <th>Monthly Price</th>
+                        <th>Our Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Huckleberry Premium</td>
+                        <td>$9.99/mo</td>
+                        <td><span class="badge badge-success">30% cheaper</span></td>
+                    </tr>
+                    <tr>
+                        <td>Napper</td>
+                        <td>$5.00/mo (annual)</td>
+                        <td><span class="badge badge-primary">Comparable</span></td>
+                    </tr>
+                    <tr>
+                        <td>Calm</td>
+                        <td>$5.83/mo (annual)</td>
+                        <td><span class="badge badge-primary">Comparable</span></td>
+                    </tr>
+                    <tr>
+                        <td>Spotify Premium</td>
+                        <td>$10.99/mo</td>
+                        <td><span class="badge badge-success">36% cheaper</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Conversion Funnel</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Our Target Rate</th>
+                        <th>Industry Benchmark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Download → Active User</td>
+                        <td><strong>45%</strong></td>
+                        <td>35-50%</td>
+                    </tr>
+                    <tr>
+                        <td>Active → Free Trial Start</td>
+                        <td><strong>25%</strong></td>
+                        <td>15-30%</td>
+                    </tr>
+                    <tr>
+                        <td>Free Trial → Paid</td>
+                        <td><strong>35%</strong></td>
+                        <td>25-40%</td>
+                    </tr>
+                    <tr>
+                        <td>Monthly → Annual</td>
+                        <td><strong>45%</strong></td>
+                        <td>40-50%</td>
+                    </tr>
+                    <tr>
+                        <td>Annual Renewal</td>
+                        <td><strong>70%</strong></td>
+                        <td>60-75%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Unit Economics</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">$8.50</div>
+                <div class="label">CAC (Blended)</div>
+            </div>
+            <div class="metric success">
+                <div class="value">$68.50</div>
+                <div class="label">LTV (Lifetime Value)</div>
+            </div>
+            <div class="metric secondary">
+                <div class="value">8.1:1</div>
+                <div class="label">LTV:CAC Ratio</div>
+            </div>
+            <div class="metric warning">
+                <div class="value">1.3 mo</div>
+                <div class="label">Payback Period</div>
+            </div>
+            <div class="metric">
+                <div class="value">78%</div>
+                <div class="label">Gross Margin</div>
+            </div>
+            <div class="metric success">
+                <div class="value">35%</div>
+                <div class="label">Net Margin (Y3)</div>
+            </div>
+        </div>
+
+        <h3>Partnership Opportunities</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Partner Type</th>
+                        <th>Partnership Model</th>
+                        <th>Revenue Potential</th>
+                        <th>Timeline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Car Manufacturers</td>
+                        <td>Pre-installed app, co-branding</td>
+                        <td>$200K-500K/year per partner</td>
+                        <td>Year 2+</td>
+                    </tr>
+                    <tr>
+                        <td>Baby Product Brands</td>
+                        <td>Sponsored content, bundles</td>
+                        <td>$50K-150K/year</td>
+                        <td>Year 1+</td>
+                    </tr>
+                    <tr>
+                        <td>Car Seat Companies</td>
+                        <td>Co-marketing, QR code bundles</td>
+                        <td>$30K-100K/year</td>
+                        <td>Year 1+</td>
+                    </tr>
+                    <tr>
+                        <td>Insurance Companies</td>
+                        <td>Safe driving program integration</td>
+                        <td>$100K-300K/year</td>
+                        <td>Year 2+</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Go-to-Market -->
+<section id="gtm">
+    <div class="container">
+        <h2>8. Go-to-Market Strategy</h2>
+
+        <h3>Launch Phases</h3>
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Phase 1: Soft Launch (Months 1-2)</h4>
+                <ul>
+                    <li>TestFlight beta with 500 parents</li>
+                    <li>Feedback collection & iteration</li>
+                    <li>Core metrics validation</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Phase 2: Limited Launch (Months 3-4)</h4>
+                <ul>
+                    <li>US App Store only</li>
+                    <li>ASO optimization</li>
+                    <li>Initial influencer seeding</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Phase 3: Full US Launch (Months 5-6)</h4>
+                <ul>
+                    <li>PR push to major outlets</li>
+                    <li>Paid advertising activation</li>
+                    <li>Referral program launch</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Phase 4: International (Months 7-12)</h4>
+                <ul>
+                    <li>UK & Canada launch</li>
+                    <li>EU expansion (Germany, France, Spain)</li>
+                    <li>Australia launch</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Marketing Channel Budget (Year 1: $600K)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Channel</th>
+                        <th>Budget</th>
+                        <th>% of Total</th>
+                        <th>Expected CAC</th>
+                        <th>Expected ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>TikTok Ads</strong></td>
+                        <td>$150,000</td>
+                        <td>25%</td>
+                        <td>$6.50</td>
+                        <td>4.2x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Instagram/Facebook</strong></td>
+                        <td>$120,000</td>
+                        <td>20%</td>
+                        <td>$9.00</td>
+                        <td>3.1x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Influencer Marketing</strong></td>
+                        <td>$100,000</td>
+                        <td>17%</td>
+                        <td>$7.00</td>
+                        <td>3.8x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Content Marketing</strong></td>
+                        <td>$60,000</td>
+                        <td>10%</td>
+                        <td>$12.00</td>
+                        <td>2.5x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PR & Media</strong></td>
+                        <td>$50,000</td>
+                        <td>8%</td>
+                        <td>$15.00</td>
+                        <td>2.0x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referral Program</strong></td>
+                        <td>$40,000</td>
+                        <td>7%</td>
+                        <td>$4.00</td>
+                        <td>6.8x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ASO</strong></td>
+                        <td>$30,000</td>
+                        <td>5%</td>
+                        <td>$3.00</td>
+                        <td>8.5x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pediatric Partnerships</strong></td>
+                        <td>$30,000</td>
+                        <td>5%</td>
+                        <td>$8.00</td>
+                        <td>3.5x</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Other/Testing</strong></td>
+                        <td>$20,000</td>
+                        <td>3%</td>
+                        <td>Variable</td>
+                        <td>Testing</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Influencer Strategy</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Followers</th>
+                        <th>Number</th>
+                        <th>Cost/Post</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Nano</td>
+                        <td>1K-10K</td>
+                        <td>100</td>
+                        <td>$100</td>
+                        <td>$10,000</td>
+                    </tr>
+                    <tr>
+                        <td>Micro</td>
+                        <td>10K-50K</td>
+                        <td>50</td>
+                        <td>$500</td>
+                        <td>$25,000</td>
+                    </tr>
+                    <tr>
+                        <td>Mid</td>
+                        <td>50K-200K</td>
+                        <td>20</td>
+                        <td>$2,000</td>
+                        <td>$40,000</td>
+                    </tr>
+                    <tr>
+                        <td>Macro</td>
+                        <td>200K-1M</td>
+                        <td>5</td>
+                        <td>$5,000</td>
+                        <td>$25,000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>ASO Keyword Strategy</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Primary Keywords</th>
+                        <th>Search Volume</th>
+                        <th>Difficulty</th>
+                        <th>Target Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>baby sleep app</td>
+                        <td>High</td>
+                        <td>High</td>
+                        <td>Top 10</td>
+                    </tr>
+                    <tr>
+                        <td>white noise baby</td>
+                        <td>High</td>
+                        <td>Medium</td>
+                        <td>Top 5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>baby car crying</strong></td>
+                        <td>Low</td>
+                        <td>Low</td>
+                        <td><span class="badge badge-success">#1</span></td>
+                    </tr>
+                    <tr>
+                        <td>calm baby app</td>
+                        <td>Medium</td>
+                        <td>Medium</td>
+                        <td>Top 5</td>
+                    </tr>
+                    <tr>
+                        <td>baby fairy tales</td>
+                        <td>Medium</td>
+                        <td>Low</td>
+                        <td>Top 3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Referral Program</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>🎁 Referrer Rewards</h4>
+                <ul>
+                    <li>1 month free premium per successful referral</li>
+                    <li>$5 App Store credit after 3 referrals</li>
+                    <li>Lifetime premium after 10 referrals</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🎉 Referee Rewards</h4>
+                <ul>
+                    <li>1 month free premium on subscription</li>
+                    <li>Unique referral code per user</li>
+                    <li>Real-time tracking in app</li>
+                </ul>
+            </div>
+        </div>
+        <p><strong>Target:</strong> 15% of new users from referrals by Month 12 | Referral CAC: $4.00 | Viral coefficient: 0.3</p>
+    </div>
+</section>
+
+<!-- Financial Model -->
+<section id="financials">
+    <div class="container">
+        <h2>9. Financial Model</h2>
+
+        <h3>Revenue Forecast Summary</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Year 1</th>
+                        <th>Year 2</th>
+                        <th>Year 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total Downloads</td>
+                        <td>200,000</td>
+                        <td>650,000</td>
+                        <td>1,300,000</td>
+                    </tr>
+                    <tr>
+                        <td>Cumulative Downloads</td>
+                        <td>200,000</td>
+                        <td>850,000</td>
+                        <td>2,150,000</td>
+                    </tr>
+                    <tr>
+                        <td>Paid Subscribers (EoY)</td>
+                        <td>14,766</td>
+                        <td>38,000</td>
+                        <td>115,000</td>
+                    </tr>
+                    <tr>
+                        <td>Subscription Revenue</td>
+                        <td>$445,797</td>
+                        <td>$2,887,500</td>
+                        <td>$10,020,000</td>
+                    </tr>
+                    <tr>
+                        <td>Partnership Revenue</td>
+                        <td>$0</td>
+                        <td>$150,000</td>
+                        <td>$450,000</td>
+                    </tr>
+                    <tr>
+                        <td>Content Pack Revenue</td>
+                        <td>$25,000</td>
+                        <td>$100,000</td>
+                        <td>$250,000</td>
+                    </tr>
+                    <tr style="background: #e0e7ff;">
+                        <td><strong>Total Revenue</strong></td>
+                        <td><strong>$470,797</strong></td>
+                        <td><strong>$3,137,500</strong></td>
+                        <td><strong>$10,720,000</strong></td>
+                    </tr>
+                    <tr>
+                        <td>MRR (EoY)</td>
+                        <td>$79,253</td>
+                        <td>$380,000</td>
+                        <td>$1,150,000</td>
+                    </tr>
+                    <tr style="background: #d1fae5;">
+                        <td><strong>ARR (EoY)</strong></td>
+                        <td><strong>$951,036</strong></td>
+                        <td><strong>$4,560,000</strong></td>
+                        <td><strong>$13,800,000</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Year 1 Quarterly Projections</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Q1</th>
+                        <th>Q2</th>
+                        <th>Q3</th>
+                        <th>Q4</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Downloads</td>
+                        <td>15,000</td>
+                        <td>35,000</td>
+                        <td>60,000</td>
+                        <td>90,000</td>
+                        <td>200,000</td>
+                    </tr>
+                    <tr>
+                        <td>Active Users</td>
+                        <td>6,750</td>
+                        <td>22,500</td>
+                        <td>49,500</td>
+                        <td>90,000</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Paid Conversions</td>
+                        <td>591</td>
+                        <td>1,969</td>
+                        <td>4,331</td>
+                        <td>7,875</td>
+                        <td>14,766</td>
+                    </tr>
+                    <tr>
+                        <td>MRR</td>
+                        <td>$5,944</td>
+                        <td>$19,813</td>
+                        <td>$43,589</td>
+                        <td>$79,253</td>
+                        <td>-</td>
+                    </tr>
+                    <tr style="background: #d1fae5;">
+                        <td><strong>Revenue</strong></td>
+                        <td><strong>$17,832</strong></td>
+                        <td><strong>$59,439</strong></td>
+                        <td><strong>$130,767</strong></td>
+                        <td><strong>$237,759</strong></td>
+                        <td><strong>$445,797</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Expense Forecast</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Year 1</th>
+                        <th>Year 2</th>
+                        <th>Year 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Team Salaries</td>
+                        <td>$600,000</td>
+                        <td>$1,200,000</td>
+                        <td>$2,000,000</td>
+                    </tr>
+                    <tr>
+                        <td>Marketing</td>
+                        <td>$600,000</td>
+                        <td>$1,000,000</td>
+                        <td>$1,500,000</td>
+                    </tr>
+                    <tr>
+                        <td>Content & Licensing</td>
+                        <td>$160,000</td>
+                        <td>$300,000</td>
+                        <td>$450,000</td>
+                    </tr>
+                    <tr>
+                        <td>Infrastructure</td>
+                        <td>$63,000</td>
+                        <td>$180,000</td>
+                        <td>$350,000</td>
+                    </tr>
+                    <tr>
+                        <td>Legal & Compliance</td>
+                        <td>$30,000</td>
+                        <td>$50,000</td>
+                        <td>$75,000</td>
+                    </tr>
+                    <tr>
+                        <td>Operations</td>
+                        <td>$55,000</td>
+                        <td>$120,000</td>
+                        <td>$200,000</td>
+                    </tr>
+                    <tr>
+                        <td>Contingency</td>
+                        <td>$75,000</td>
+                        <td>$150,000</td>
+                        <td>$250,000</td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td><strong>Total Expenses</strong></td>
+                        <td><strong>$1,583,000</strong></td>
+                        <td><strong>$3,000,000</strong></td>
+                        <td><strong>$4,825,000</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Profitability Analysis</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Year 1</th>
+                        <th>Year 2</th>
+                        <th>Year 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total Revenue</td>
+                        <td>$470,797</td>
+                        <td>$3,137,500</td>
+                        <td>$10,720,000</td>
+                    </tr>
+                    <tr>
+                        <td>Total Expenses</td>
+                        <td>$1,583,000</td>
+                        <td>$3,000,000</td>
+                        <td>$4,825,000</td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td><strong>EBITDA</strong></td>
+                        <td style="color: #991b1b;"><strong>-$1,112,203</strong></td>
+                        <td style="color: #065f46;"><strong>$137,500</strong></td>
+                        <td style="color: #065f46;"><strong>$5,895,000</strong></td>
+                    </tr>
+                    <tr>
+                        <td>EBITDA Margin</td>
+                        <td>-236%</td>
+                        <td>4.4%</td>
+                        <td>55%</td>
+                    </tr>
+                    <tr>
+                        <td>Break-even Month</td>
+                        <td>-</td>
+                        <td colspan="2"><strong>Month 22</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>LTV:CAC Analysis</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>LTV</th>
+                        <th>CAC</th>
+                        <th>LTV:CAC</th>
+                        <th>Health</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Year 1</td>
+                        <td>$53.33</td>
+                        <td>$8.50</td>
+                        <td>6.3:1</td>
+                        <td><span class="badge badge-success">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Year 2</td>
+                        <td>$58.50</td>
+                        <td>$7.20</td>
+                        <td>8.1:1</td>
+                        <td><span class="badge badge-success">Excellent</span></td>
+                    </tr>
+                    <tr>
+                        <td>Year 3</td>
+                        <td>$65.00</td>
+                        <td>$6.00</td>
+                        <td>10.8:1</td>
+                        <td><span class="badge badge-success">Excellent</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Exit Scenarios</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Timing</th>
+                        <th>Valuation Multiple</th>
+                        <th>Exit Value</th>
+                        <th>Investor Return</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Early Acquisition</td>
+                        <td>Year 2</td>
+                        <td>6x ARR</td>
+                        <td>$27M</td>
+                        <td><span class="badge badge-success">6.4x</span></td>
+                    </tr>
+                    <tr>
+                        <td>Growth Acquisition</td>
+                        <td>Year 3</td>
+                        <td>5x ARR</td>
+                        <td>$69M</td>
+                        <td><span class="badge badge-success">16.2x</span></td>
+                    </tr>
+                    <tr>
+                        <td>Series A + Growth</td>
+                        <td>Year 4</td>
+                        <td>8x ARR</td>
+                        <td>$150M+</td>
+                        <td><span class="badge badge-success">20x+</span></td>
+                    </tr>
+                    <tr>
+                        <td>IPO Path</td>
+                        <td>Year 5+</td>
+                        <td>10x+ ARR</td>
+                        <td>$300M+</td>
+                        <td><span class="badge badge-success">40x+</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Team & Budget -->
+<section id="team">
+    <div class="container">
+        <h2>10. Team & Budget</h2>
+
+        <h3>Core Team (Year 1)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Timing</th>
+                        <th>Salary Range</th>
+                        <th>Responsibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CEO/Founder</strong></td>
+                        <td>Day 1</td>
+                        <td>$80-120K (+ equity)</td>
+                        <td>Vision, fundraising, strategy</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CTO/Technical Co-founder</strong></td>
+                        <td>Day 1</td>
+                        <td>$100-140K (+ equity)</td>
+                        <td>Architecture, development</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lead iOS Developer</strong></td>
+                        <td>Month 1</td>
+                        <td>$120-160K</td>
+                        <td>iOS app development</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend Developer</strong></td>
+                        <td>Month 2</td>
+                        <td>$100-140K</td>
+                        <td>API, infrastructure</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI/ML Engineer</strong></td>
+                        <td>Month 3</td>
+                        <td>$130-170K</td>
+                        <td>Recommendation engine</td>
+                    </tr>
+                    <tr>
+                        <td><strong>UI/UX Designer</strong></td>
+                        <td>Month 2</td>
+                        <td>$80-120K</td>
+                        <td>Product design</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Content Manager</strong></td>
+                        <td>Month 4</td>
+                        <td>$60-80K</td>
+                        <td>Audio curation, licensing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Growth Marketer</strong></td>
+                        <td>Month 4</td>
+                        <td>$80-120K</td>
+                        <td>User acquisition</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Team Growth</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">8</div>
+                <div class="label">Year 1 Headcount</div>
+            </div>
+            <div class="metric">
+                <div class="value">15</div>
+                <div class="label">Year 2 Headcount</div>
+            </div>
+            <div class="metric">
+                <div class="value">25-30</div>
+                <div class="label">Year 3 Headcount</div>
+            </div>
+        </div>
+
+        <h3>Development Timeline</h3>
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Months 1-2: Foundation</h4>
+                <ul>
+                    <li>Technical architecture design</li>
+                    <li>Core UI/UX design</li>
+                    <li>Audio engine prototype</li>
+                    <li>Database & API structure</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Months 3-4: Core Development</h4>
+                <ul>
+                    <li>iOS app development (v0.5)</li>
+                    <li>AI recommendation engine v1</li>
+                    <li>Content pipeline setup</li>
+                    <li>Initial content licensing</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Months 5-6: MVP Completion</h4>
+                <ul>
+                    <li>iOS app development (v1.0)</li>
+                    <li>Beta testing (TestFlight)</li>
+                    <li>Content library build-out</li>
+                    <li>App Store preparation</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Months 7-8: Launch & Iterate</h4>
+                <ul>
+                    <li>US App Store launch</li>
+                    <li>Marketing activation</li>
+                    <li>User feedback integration</li>
+                    <li>Performance optimization</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <h4>Months 9-12: Expansion</h4>
+                <ul>
+                    <li>Android development & launch</li>
+                    <li>UK/Canada launch</li>
+                    <li>Advanced AI features</li>
+                    <li>Partnership activations</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Technology Stack</h3>
+        <div class="two-col">
+            <div class="card">
+                <h4>📱 Mobile Development</h4>
+                <ul>
+                    <li><strong>iOS:</strong> Swift, SwiftUI</li>
+                    <li><strong>Android:</strong> Kotlin, Jetpack Compose</li>
+                    <li><strong>Future:</strong> React Native for cost efficiency</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>☁️ Backend Infrastructure</h4>
+                <ul>
+                    <li><strong>API:</strong> Node.js / FastAPI</li>
+                    <li><strong>Database:</strong> PostgreSQL</li>
+                    <li><strong>Cache:</strong> Redis</li>
+                    <li><strong>Cloud:</strong> AWS / Google Cloud</li>
+                    <li><strong>CDN:</strong> CloudFront / Cloudflare</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🤖 AI/ML Stack</h4>
+                <ul>
+                    <li><strong>Speech-to-Text:</strong> Apple Speech / Google Speech</li>
+                    <li><strong>NLU:</strong> spaCy / Hugging Face</li>
+                    <li><strong>Recommendations:</strong> TensorFlow / PyTorch</li>
+                    <li><strong>Analytics:</strong> Mixpanel / Amplitude</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>🔌 Integrations</h4>
+                <ul>
+                    <li><strong>Payments:</strong> Stripe / RevenueCat</li>
+                    <li><strong>Analytics:</strong> Firebase</li>
+                    <li><strong>Data:</strong> Segment</li>
+                    <li><strong>Email:</strong> Customer.io</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Budget Allocation</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Development & Product</td>
+                        <td>$848,000</td>
+                        <td>57%</td>
+                    </tr>
+                    <tr>
+                        <td>Marketing & Growth</td>
+                        <td>$600,000</td>
+                        <td>40%</td>
+                    </tr>
+                    <tr>
+                        <td>Legal & Compliance</td>
+                        <td>$30,000</td>
+                        <td>2%</td>
+                    </tr>
+                    <tr>
+                        <td>Reserve</td>
+                        <td>$22,000</td>
+                        <td>1%</td>
+                    </tr>
+                    <tr style="background: #e0e7ff;">
+                        <td><strong>Total Seed Round</strong></td>
+                        <td><strong>$1,500,000</strong></td>
+                        <td><strong>100%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Risks & Mitigation</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Risk</th>
+                        <th>Probability</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AI accuracy issues</td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>Extensive testing, fallback to rule-based</td>
+                    </tr>
+                    <tr>
+                        <td>Slow user adoption</td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>Aggressive marketing, pivot capability</td>
+                    </tr>
+                    <tr>
+                        <td>Competitor response</td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td>First-mover advantage, feature moat</td>
+                    </tr>
+                    <tr>
+                        <td>Platform rejection</td>
+                        <td><span class="badge badge-success">Low</span></td>
+                        <td><span class="badge badge-danger">Critical</span></td>
+                        <td>Pre-submission consultation, guidelines compliance</td>
+                    </tr>
+                    <tr>
+                        <td>Key person departure</td>
+                        <td><span class="badge badge-warning">Medium</span></td>
+                        <td><span class="badge badge-danger">High</span></td>
+                        <td>Equity vesting, competitive compensation</td>
+                    </tr>
+                    <tr>
+                        <td>Data breach</td>
+                        <td><span class="badge badge-success">Low</span></td>
+                        <td><span class="badge badge-danger">Critical</span></td>
+                        <td>Security audits, encryption, compliance</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Ethics & Safety -->
+<section id="ethics">
+    <div class="container">
+        <h2>11. Ethical & Safety Considerations</h2>
+
+        <h3>COPPA Compliance (USA)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Requirement</th>
+                        <th>Implementation</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Verifiable Parental Consent</td>
+                        <td>Parent account creation with verification</td>
+                        <td><span class="badge badge-success">✅ Planned</span></td>
+                    </tr>
+                    <tr>
+                        <td>Privacy Policy Disclosure</td>
+                        <td>Child-specific privacy policy, plain language</td>
+                        <td><span class="badge badge-success">✅ Planned</span></td>
+                    </tr>
+                    <tr>
+                        <td>Data Minimization</td>
+                        <td>Collect only essential data (age, preferences)</td>
+                        <td><span class="badge badge-success">✅ Designed</span></td>
+                    </tr>
+                    <tr>
+                        <td>No Behavioral Advertising</td>
+                        <td>Zero third-party ad targeting</td>
+                        <td><span class="badge badge-success">✅ Policy</span></td>
+                    </tr>
+                    <tr>
+                        <td>Parental Access Rights</td>
+                        <td>Parent dashboard for data viewing/deletion</td>
+                        <td><span class="badge badge-success">✅ Planned</span></td>
+                    </tr>
+                    <tr>
+                        <td>Data Deletion ("Eraser button")</td>
+                        <td>One-tap data deletion in settings</td>
+                        <td><span class="badge badge-success">✅ Designed</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>GDPR-K Compliance (EU)</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>🔒 Requirements</h4>
+                <ul>
+                    <li>Parental consent for under-16</li>
+                    <li>Date of birth + parent email verification</li>
+                    <li>Right to be forgotten (30-day deletion)</li>
+                    <li>Data portability (JSON export)</li>
+                    <li>Privacy by design architecture</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>⚠️ Penalties</h4>
+                <ul>
+                    <li><strong>COPPA:</strong> Up to $42,530 per violation</li>
+                    <li><strong>GDPR:</strong> Up to €20M or 4% global turnover</li>
+                    <li>Regular compliance audits planned</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Age-Based Consent Matrix</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Age Threshold</th>
+                        <th>Consent Required</th>
+                        <th>Verification Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>USA</td>
+                        <td>Under 13</td>
+                        <td>Parental</td>
+                        <td>Email + payment verification</td>
+                    </tr>
+                    <tr>
+                        <td>USA (COPPA 2.0)</td>
+                        <td>Under 17</td>
+                        <td>Parental/Teen</td>
+                        <td>Enhanced verification</td>
+                    </tr>
+                    <tr>
+                        <td>EU (GDPR default)</td>
+                        <td>Under 16</td>
+                        <td>Parental</td>
+                        <td>Email verification</td>
+                    </tr>
+                    <tr>
+                        <td>UK</td>
+                        <td>Under 13</td>
+                        <td>Parental</td>
+                        <td>Email verification</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Safe Content Guidelines</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>✅ Allowed</th>
+                        <th>❌ Prohibited</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Music</strong></td>
+                        <td>Lullabies, classical, instrumental, gentle children's songs</td>
+                        <td>Loud music, adult themes, violent lyrics</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stories</strong></td>
+                        <td>Age-appropriate fairy tales, educational content</td>
+                        <td>Scary content, violence, inappropriate themes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>White Noise</strong></td>
+                        <td>Nature sounds, womb sounds, gentle static</td>
+                        <td>Harsh frequencies, startling sounds</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Volume</strong></td>
+                        <td>Max 50dB (AAP guidelines)</td>
+                        <td>Exceeding safety thresholds</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Audio Safety Standards</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="value">50 dB</div>
+                <div class="label">Maximum Volume (AAP)</div>
+            </div>
+            <div class="metric">
+                <div class="value">&lt;4kHz</div>
+                <div class="label">Dominant Frequency</div>
+            </div>
+            <div class="metric">
+                <div class="value">2+ hr</div>
+                <div class="label">Duration Warning</div>
+            </div>
+        </div>
+
+        <h3>App Store Compliance</h3>
+        <div class="two-col">
+            <div class="card success">
+                <h4>🍎 Apple Kids Category</h4>
+                <ul>
+                    <li><span class="check">✅</span> No third-party advertising</li>
+                    <li><span class="check">✅</span> No third-party analytics with child data</li>
+                    <li><span class="check">✅</span> Parental gate for external links</li>
+                    <li><span class="check">✅</span> Parental gate for purchases</li>
+                    <li><span class="check">✅</span> 4+ age rating</li>
+                </ul>
+            </div>
+            <div class="card success">
+                <h4>🤖 Google Play Families</h4>
+                <ul>
+                    <li><span class="check">✅</span> Designed for Families participation</li>
+                    <li><span class="check">✅</span> No ads compliance</li>
+                    <li><span class="check">✅</span> Verified SDKs only</li>
+                    <li><span class="check">✅</span> Teacher Approved potential</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>Planned Certifications</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Certification</th>
+                        <th>Timeline</th>
+                        <th>Cost</th>
+                        <th>Benefit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>kidSAFE Seal</td>
+                        <td>Year 1 Q3</td>
+                        <td>$3,000/year</td>
+                        <td>Trust badge, compliance validation</td>
+                    </tr>
+                    <tr>
+                        <td>PRIVO Certification</td>
+                        <td>Year 1 Q4</td>
+                        <td>$5,000/year</td>
+                        <td>COPPA compliance proof</td>
+                    </tr>
+                    <tr>
+                        <td>SOC 2 Type II</td>
+                        <td>Year 2</td>
+                        <td>$25,000+</td>
+                        <td>Enterprise partnerships</td>
+                    </tr>
+                    <tr>
+                        <td>ISO 27001</td>
+                        <td>Year 3</td>
+                        <td>$30,000+</td>
+                        <td>International compliance</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Ethical AI Principles</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>⚖️ Algorithmic Fairness</h4>
+                <ul>
+                    <li>Regular audits for cultural/language bias</li>
+                    <li>Developmental science validation</li>
+                    <li>No engagement optimization over well-being</li>
+                    <li>Explainable recommendations to parents</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h4>💚 Well-being Over Engagement</h4>
+                <ul>
+                    <li>Encourage healthy limits (not maximize time)</li>
+                    <li>Minimal, helpful notifications</li>
+                    <li>Clear, honest UX (no dark patterns)</li>
+                    <li>Natural stopping points</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Full Competitor Table -->
+<section id="competitor-table">
+    <div class="container">
+        <h2>12. Complete Competitor Analysis Table</h2>
+
+        <p>Comprehensive analysis of 22 competitors across baby sleep apps, audio story apps, streaming platforms, hardware solutions, and regional apps.</p>
+
+        <h3>Baby Sleep Apps</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Competitor</th>
+                        <th>Platform</th>
+                        <th>Age Personalization</th>
+                        <th>Offline</th>
+                        <th>Languages</th>
+                        <th>Price</th>
+                        <th>Weaknesses</th>
+                        <th>Why We Win</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><strong>Huckleberry</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Basic</span></td>
+                        <td><span class="partial">⚠️ Limited</span></td>
+                        <td>English</td>
+                        <td>$9.99/mo</td>
+                        <td>Expensive, no fairy tales, not car-focused</td>
+                        <td>Age-precise AI, car-optimized, 70% cheaper</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td><strong>White Noise Baby</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>5</td>
+                        <td>$4.99 pro</td>
+                        <td>No age optimization, no stories</td>
+                        <td>AI personalization, fairy tales, cry-stop</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td><strong>Baby Sleep Sounds</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>3</td>
+                        <td>Free w/ ads</td>
+                        <td>Heavy ads, limited content</td>
+                        <td>No ads, AI personalization, 7 categories</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td><strong>Napper</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Partial</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>English</td>
+                        <td>$59.99/yr</td>
+                        <td>English only, limited content</td>
+                        <td>Multilingual, 10+ languages</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td><strong>Sound Sleeper</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>English</td>
+                        <td>$4-6/mo</td>
+                        <td>Very basic, no stories</td>
+                        <td>Full content library, AI recommendations</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Audio Story Apps</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Competitor</th>
+                        <th>Platform</th>
+                        <th>Age Personalization</th>
+                        <th>Offline</th>
+                        <th>Languages</th>
+                        <th>Price</th>
+                        <th>Weaknesses</th>
+                        <th>Why We Win</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>6</td>
+                        <td><strong>Calm Kids</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="check">✅ Ages 3+</span></td>
+                        <td><span class="partial">⚠️ Premium</span></td>
+                        <td>8</td>
+                        <td>$69.99/yr</td>
+                        <td>Targets 3+, too old for babies</td>
+                        <td>0-36 months focus, car-optimized</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td><strong>Moshi</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Broad</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>English</td>
+                        <td>$59.99/yr</td>
+                        <td>Limited languages, older kid content</td>
+                        <td>True infant focus, multilingual stories</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td><strong>Headspace Kids</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Ages 4+</span></td>
+                        <td><span class="partial">⚠️ Premium</span></td>
+                        <td>12</td>
+                        <td>$69.99/yr</td>
+                        <td>Not for babies, meditation-focused</td>
+                        <td>Purpose-built for infants</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Streaming Platforms</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Competitor</th>
+                        <th>Platform</th>
+                        <th>Age Personalization</th>
+                        <th>Offline</th>
+                        <th>Price</th>
+                        <th>Weaknesses</th>
+                        <th>Why We Win</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>9</td>
+                        <td><strong>Spotify Baby</strong></td>
+                        <td>iOS, Android, Web</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="partial">⚠️ Premium only</span></td>
+                        <td>$10.99/mo</td>
+                        <td>Requires premium for offline, no age optimization</td>
+                        <td>Dedicated curation, free offline, voice input</td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td><strong>Apple Music</strong></td>
+                        <td>iOS</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td><span class="check">✅ Yes</span></td>
+                        <td>$10.99/mo</td>
+                        <td>No age personalization, generic playlists</td>
+                        <td>AI age-matching, baby-focused UX</td>
+                    </tr>
+                    <tr>
+                        <td>11</td>
+                        <td><strong>YouTube Kids</strong></td>
+                        <td>iOS, Android</td>
+                        <td><span class="partial">⚠️ Age groups</span></td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td>Free w/ ads</td>
+                        <td>Screen-based, ads, requires internet</td>
+                        <td>Audio-only, no screens, offline</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Hardware Solutions</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Competitor</th>
+                        <th>Type</th>
+                        <th>Age Personalization</th>
+                        <th>Price</th>
+                        <th>Weaknesses</th>
+                        <th>Why We Win</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>12</td>
+                        <td><strong>Hatch Rest+</strong></td>
+                        <td>Device + App</td>
+                        <td><span class="partial">⚠️ Routines</span></td>
+                        <td>$89.99</td>
+                        <td>Requires device purchase, not portable for car</td>
+                        <td>Mobile-only, no hardware needed</td>
+                    </tr>
+                    <tr>
+                        <td>13</td>
+                        <td><strong>Yogasleep Hushh</strong></td>
+                        <td>Portable device</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td>$34.99</td>
+                        <td>Only 3 sounds, no content variety</td>
+                        <td>1000s of tracks, stories, music</td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td><strong>Baby Shusher</strong></td>
+                        <td>Portable device</td>
+                        <td><span class="cross">❌ No</span></td>
+                        <td>$34.99</td>
+                        <td>One sound only, battery needed</td>
+                        <td>Full content library, always with you</td>
+                    </tr>
+                    <tr>
+                        <td>15</td>
+                        <td><strong>SNOO Bassinet</strong></td>
+                        <td>Smart bassinet</td>
+                        <td><span class="check">✅ Auto-adjusting</span></td>
+                        <td>$1,695</td>
+                        <td>Extremely expensive, home-only</td>
+                        <td>$7/month, anywhere, car-focused</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Strategic Positioning</h3>
+        <div class="architecture">
+            <pre>
+                    HIGH AGE PERSONALIZATION
+                            │
+           Huckleberry ●    │    ★ Baby in Car Without Tears
+                            │         (Our Position)
+        ────────────────────┼────────────────────────────────
+        HOME-FOCUSED        │                 CAR-FOCUSED
+                            │
+             Calm ●         │
+         Spotify ●          │    (EMPTY QUADRANT)
+       White Noise ●        │
+                            │
+                    LOW AGE PERSONALIZATION
+            </pre>
+        </div>
+
+        <h3>Key Differentiators Summary</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Differentiator</th>
+                        <th>Uniqueness</th>
+                        <th>Defensibility</th>
+                        <th>Value to User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>AI Age Engine</strong></td>
+                        <td>Month-by-month optimization</td>
+                        <td>Algorithm IP, data moat</td>
+                        <td>Best content for exact baby age</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Voice-First UX</strong></td>
+                        <td>Only baby app with driving-safe voice</td>
+                        <td>Patent potential</td>
+                        <td>Safety while driving</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Car-Optimized</strong></td>
+                        <td>Only app built for in-car context</td>
+                        <td>Brand positioning</td>
+                        <td>Perfect fit for car use case</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Emergency Cry-Stop</strong></td>
+                        <td>Proprietary calming algorithm</td>
+                        <td>Algorithm IP</td>
+                        <td>Instant relief when baby cries</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multilingual Stories</strong></td>
+                        <td>10+ languages, native speakers</td>
+                        <td>Content library investment</td>
+                        <td>Cultural relevance, bilingual families</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Offline Excellence</strong></td>
+                        <td>Full library offline</td>
+                        <td>Technical architecture</td>
+                        <td>Works everywhere, no dead zones</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Investment Summary -->
+<section style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white;">
+    <div class="container">
+        <h2 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">Investment Summary</h2>
+
+        <div class="card-grid">
+            <div class="card" style="background: rgba(255,255,255,0.1); border: none;">
+                <h4 style="color: white;">💰 Funding Requirements</h4>
+                <ul>
+                    <li><strong>Seed:</strong> $850,000 (0-18 months)</li>
+                    <li><strong>Series A:</strong> $5-8M (18-36 months)</li>
+                    <li><strong>Series B:</strong> $15-25M (36+ months)</li>
+                </ul>
+            </div>
+            <div class="card" style="background: rgba(255,255,255,0.1); border: none;">
+                <h4 style="color: white;">📊 Key Metrics (36 Months)</h4>
+                <ul>
+                    <li><strong>Downloads:</strong> 2,150,000</li>
+                    <li><strong>Paid Subscribers:</strong> 115,000</li>
+                    <li><strong>ARR:</strong> $13.8M</li>
+                    <li><strong>LTV:CAC:</strong> 10.8:1</li>
+                </ul>
+            </div>
+            <div class="card" style="background: rgba(255,255,255,0.1); border: none;">
+                <h4 style="color: white;">🎯 Why Invest Now</h4>
+                <ul>
+                    <li>$1.69B market growing 12%+ CAGR</li>
+                    <li>71% of parents cite car crying as top stressor</li>
+                    <li>No direct competitor in "car calming" niche</li>
+                    <li>Strong unit economics (LTV:CAC 8-10x)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <p style="font-size: 1.2rem; opacity: 0.9;">Ready to transform stressful car rides into peaceful journeys?</p>
+            <p style="font-size: 1.5rem; font-weight: bold;">Let's build the future of baby travel together.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p><strong>Baby in Car Without Tears</strong></p>
+        <p>Complete Business Plan & Investment Memorandum</p>
+        <p style="margin-top: 20px; opacity: 0.7;">
+            This business plan was prepared for investor and strategic planning purposes.<br>
+            All projections are based on market research and industry benchmarks as of December 2024.
+        </p>
+        <p style="margin-top: 20px; opacity: 0.5; font-size: 0.85rem;">
+            Sources: <a href="https://www.businessresearchinsights.com/market-reports/parenting-apps-market-113806">Business Research Insights</a> |
+            <a href="https://sensortower.com/blog/2024-q3-unified-top-5-parenting-revenue-us-60770e78241bc16eb81e8fcf">Sensor Tower</a> |
+            <a href="https://www.businessofapps.com/marketplace/user-acquisition/research/user-acquisition-costs/">Business of Apps</a> |
+            <a href="https://gdprlocal.com/coppa-complete-guide/">GDPR Local</a>
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>

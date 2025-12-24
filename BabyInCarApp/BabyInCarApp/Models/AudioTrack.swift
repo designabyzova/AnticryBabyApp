@@ -1,0 +1,424 @@
+//
+//  AudioTrack.swift
+//  BabyInCarApp
+//
+//  Data model for audio tracks - uses royalty-free audio sources
+//
+
+import Foundation
+import AVFoundation
+
+// MARK: - Audio Category
+enum AudioCategory: String, Codable, CaseIterable, Identifiable {
+    case classicalMusic = "Classical Music"
+    case fairyTales = "Fairy Tales"
+    case whiteNoise = "White Noise"
+    case natureSounds = "Nature Sounds"
+    case instrumental = "Instrumental"
+    case childrenSongs = "Children's Songs"
+    case podcasts = "Podcasts"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .classicalMusic: return "music.note.list"
+        case .fairyTales: return "book.fill"
+        case .whiteNoise: return "waveform"
+        case .natureSounds: return "leaf.fill"
+        case .instrumental: return "pianokeys"
+        case .childrenSongs: return "music.mic"
+        case .podcasts: return "mic.fill"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .classicalMusic: return "ClassicalColor"
+        case .fairyTales: return "FairyTaleColor"
+        case .whiteNoise: return "WhiteNoiseColor"
+        case .natureSounds: return "NatureColor"
+        case .instrumental: return "InstrumentalColor"
+        case .childrenSongs: return "ChildrenSongsColor"
+        case .podcasts: return "PodcastColor"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .classicalMusic:
+            return "Soothing classical compositions for relaxation"
+        case .fairyTales:
+            return "Gentle stories in multiple languages"
+        case .whiteNoise:
+            return "Calming background sounds for sleep"
+        case .natureSounds:
+            return "Peaceful sounds from nature"
+        case .instrumental:
+            return "Soft instrumental melodies"
+        case .childrenSongs:
+            return "Gentle lullabies and children's songs"
+        case .podcasts:
+            return "Calming content for parents and babies"
+        }
+    }
+}
+
+// MARK: - Language
+enum Language: String, Codable, CaseIterable, Identifiable {
+    case english = "English"
+    case spanish = "Spanish"
+    case french = "French"
+    case german = "German"
+    case italian = "Italian"
+    case portuguese = "Portuguese"
+    case mandarin = "Mandarin"
+    case japanese = "Japanese"
+    case russian = "Russian"
+    case arabic = "Arabic"
+
+    var id: String { rawValue }
+
+    var flag: String {
+        switch self {
+        case .english: return "🇺🇸"
+        case .spanish: return "🇪🇸"
+        case .french: return "🇫🇷"
+        case .german: return "🇩🇪"
+        case .italian: return "🇮🇹"
+        case .portuguese: return "🇧🇷"
+        case .mandarin: return "🇨🇳"
+        case .japanese: return "🇯🇵"
+        case .russian: return "🇷🇺"
+        case .arabic: return "🇸🇦"
+        }
+    }
+
+    var code: String {
+        switch self {
+        case .english: return "en"
+        case .spanish: return "es"
+        case .french: return "fr"
+        case .german: return "de"
+        case .italian: return "it"
+        case .portuguese: return "pt"
+        case .mandarin: return "zh"
+        case .japanese: return "ja"
+        case .russian: return "ru"
+        case .arabic: return "ar"
+        }
+    }
+}
+
+// MARK: - Audio Track
+struct AudioTrack: Codable, Identifiable, Equatable {
+    let id: UUID
+    let title: String
+    let artist: String
+    let category: AudioCategory
+    let language: Language?
+    let duration: TimeInterval
+    let ageRangeMin: Int  // months
+    let ageRangeMax: Int  // months
+    let optimalAgeMonths: [Int]
+    let tempoBPM: Int?
+    let calmingScore: Double // 0.0 - 1.0
+    let isPremium: Bool
+    let isDownloaded: Bool
+    let audioSourceType: AudioSourceType
+
+    // For generated/synthesized audio
+    var generatorType: GeneratorType?
+
+    // For file-based audio (royalty-free)
+    var fileName: String?
+    var fileExtension: String?
+
+    // URL for streaming (royalty-free sources)
+    var streamURL: String?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        artist: String = "Baby in Car",
+        category: AudioCategory,
+        language: Language? = nil,
+        duration: TimeInterval,
+        ageRangeMin: Int = 0,
+        ageRangeMax: Int = 36,
+        optimalAgeMonths: [Int] = [],
+        tempoBPM: Int? = nil,
+        calmingScore: Double = 0.8,
+        isPremium: Bool = false,
+        isDownloaded: Bool = false,
+        audioSourceType: AudioSourceType,
+        generatorType: GeneratorType? = nil,
+        fileName: String? = nil,
+        fileExtension: String? = nil,
+        streamURL: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.artist = artist
+        self.category = category
+        self.language = language
+        self.duration = duration
+        self.ageRangeMin = ageRangeMin
+        self.ageRangeMax = ageRangeMax
+        self.optimalAgeMonths = optimalAgeMonths
+        self.tempoBPM = tempoBPM
+        self.calmingScore = calmingScore
+        self.isPremium = isPremium
+        self.isDownloaded = isDownloaded
+        self.audioSourceType = audioSourceType
+        self.generatorType = generatorType
+        self.fileName = fileName
+        self.fileExtension = fileExtension
+        self.streamURL = streamURL
+    }
+
+    var formattedDuration: String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    var isAgeAppropriate: Bool {
+        return true // Will be calculated based on current baby
+    }
+
+    func isOptimalFor(ageMonths: Int) -> Bool {
+        if optimalAgeMonths.isEmpty {
+            return ageMonths >= ageRangeMin && ageMonths <= ageRangeMax
+        }
+        return optimalAgeMonths.contains(ageMonths)
+    }
+}
+
+// MARK: - Audio Source Type
+enum AudioSourceType: String, Codable {
+    case generated      // Synthesized audio (white noise, pink noise, etc.)
+    case bundled        // Bundled royalty-free audio files
+    case streamed       // Streamed from royalty-free sources
+    case textToSpeech   // Generated using text-to-speech for stories
+}
+
+// MARK: - Generator Type (for synthesized audio)
+enum GeneratorType: String, Codable, CaseIterable {
+    // White Noise variants
+    case whiteNoise = "White Noise"
+    case pinkNoise = "Pink Noise"
+    case brownNoise = "Brown Noise"
+
+    // Nature-like sounds
+    case rain = "Rain"
+    case ocean = "Ocean Waves"
+    case river = "River Stream"
+    case wind = "Gentle Wind"
+    case thunderstorm = "Distant Thunder"
+    case birds = "Birds Chirping"
+    case crickets = "Crickets"
+    case fireplace = "Fireplace"
+
+    // Baby-specific sounds
+    case heartbeat = "Heartbeat"
+    case womb = "Womb Sounds"
+    case shushing = "Shushing"
+    case vacuum = "Vacuum Cleaner"
+    case hairDryer = "Hair Dryer"
+    case fan = "Fan"
+    case carEngine = "Car Engine"
+    case washingMachine = "Washing Machine"
+
+    // Musical tones
+    case lullaby = "Lullaby Melody"
+    case musicBox = "Music Box"
+    case chimes = "Wind Chimes"
+    case bells = "Soft Bells"
+
+    var category: AudioCategory {
+        switch self {
+        case .whiteNoise, .pinkNoise, .brownNoise, .vacuum, .hairDryer, .fan, .washingMachine:
+            return .whiteNoise
+        case .rain, .ocean, .river, .wind, .thunderstorm, .birds, .crickets, .fireplace:
+            return .natureSounds
+        case .heartbeat, .womb, .shushing, .carEngine:
+            return .whiteNoise
+        case .lullaby, .musicBox, .chimes, .bells:
+            return .instrumental
+        }
+    }
+
+    var defaultDuration: TimeInterval {
+        return 3600 // 1 hour default for generated sounds
+    }
+
+    var optimalAgeRange: ClosedRange<Int> {
+        switch self {
+        case .womb, .heartbeat, .shushing, .whiteNoise:
+            return 0...6
+        case .pinkNoise, .brownNoise, .vacuum, .hairDryer, .fan:
+            return 0...12
+        case .rain, .ocean, .river:
+            return 3...36
+        case .wind, .birds, .crickets:
+            return 6...36
+        case .lullaby, .musicBox:
+            return 0...24
+        case .chimes, .bells:
+            return 3...36
+        case .thunderstorm, .fireplace:
+            return 6...36
+        case .carEngine, .washingMachine:
+            return 0...12
+        }
+    }
+
+    var calmingScore: Double {
+        switch self {
+        case .womb, .heartbeat: return 0.95
+        case .shushing, .pinkNoise: return 0.92
+        case .whiteNoise, .brownNoise: return 0.88
+        case .rain, .ocean: return 0.90
+        case .lullaby, .musicBox: return 0.85
+        case .fan, .vacuum, .hairDryer: return 0.80
+        case .river, .wind: return 0.85
+        case .carEngine, .washingMachine: return 0.78
+        case .birds, .crickets: return 0.75
+        case .chimes, .bells: return 0.82
+        case .thunderstorm, .fireplace: return 0.78
+        }
+    }
+}
+
+// MARK: - Playlist
+struct Playlist: Codable, Identifiable {
+    let id: UUID
+    var name: String
+    var description: String
+    var tracks: [AudioTrack]
+    var category: AudioCategory?
+    var targetAgeMonths: Int?
+    var isSystemGenerated: Bool
+    var createdAt: Date
+    var artworkName: String?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        description: String = "",
+        tracks: [AudioTrack] = [],
+        category: AudioCategory? = nil,
+        targetAgeMonths: Int? = nil,
+        isSystemGenerated: Bool = false,
+        createdAt: Date = Date(),
+        artworkName: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.tracks = tracks
+        self.category = category
+        self.targetAgeMonths = targetAgeMonths
+        self.isSystemGenerated = isSystemGenerated
+        self.createdAt = createdAt
+        self.artworkName = artworkName
+    }
+
+    var totalDuration: TimeInterval {
+        tracks.reduce(0) { $0 + $1.duration }
+    }
+
+    var formattedTotalDuration: String {
+        let hours = Int(totalDuration) / 3600
+        let minutes = (Int(totalDuration) % 3600) / 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes) min"
+        }
+    }
+}
+
+// MARK: - Playback State
+enum PlaybackState: Equatable {
+    case stopped
+    case playing
+    case paused
+    case loading
+    case error(String)
+
+    var isPlaying: Bool {
+        if case .playing = self { return true }
+        return false
+    }
+}
+
+// MARK: - Sleep Timer
+enum SleepTimer: Int, CaseIterable, Identifiable {
+    case off = 0
+    case fifteenMinutes = 15
+    case thirtyMinutes = 30
+    case fortyFiveMinutes = 45
+    case oneHour = 60
+    case twoHours = 120
+
+    var id: Int { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .off: return "Off"
+        case .fifteenMinutes: return "15 min"
+        case .thirtyMinutes: return "30 min"
+        case .fortyFiveMinutes: return "45 min"
+        case .oneHour: return "1 hour"
+        case .twoHours: return "2 hours"
+        }
+    }
+
+    var seconds: TimeInterval {
+        TimeInterval(rawValue * 60)
+    }
+}
+
+// MARK: - User Preferences
+struct UserPreferences: Codable {
+    var defaultVolume: Float = 0.5
+    var maxVolume: Float = 0.7 // Safety limit (50dB equivalent)
+    var autoPlayOnLaunch: Bool = false
+    var fadeOutDuration: TimeInterval = 10.0
+    var preferredSleepTimer: SleepTimer = .off
+    var enableCryDetection: Bool = true
+    var enableVoiceControl: Bool = true
+    var downloadOnWiFiOnly: Bool = true
+    var autoDownloadAgeContent: Bool = true
+    var hapticFeedback: Bool = true
+    var carPlayEnabled: Bool = true
+}
+
+// MARK: - Listening History
+struct ListeningSession: Codable, Identifiable {
+    let id: UUID
+    let trackId: UUID
+    let startTime: Date
+    var endTime: Date?
+    var duration: TimeInterval
+    var completedSuccessfully: Bool
+    var babyCalmedDown: Bool?
+
+    init(trackId: UUID) {
+        self.id = UUID()
+        self.trackId = trackId
+        self.startTime = Date()
+        self.duration = 0
+        self.completedSuccessfully = false
+    }
+
+    mutating func complete(calmedDown: Bool? = nil) {
+        endTime = Date()
+        duration = endTime?.timeIntervalSince(startTime) ?? 0
+        completedSuccessfully = true
+        babyCalmedDown = calmedDown
+    }
+}

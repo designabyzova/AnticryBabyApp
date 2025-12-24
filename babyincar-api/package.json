@@ -1,0 +1,28 @@
+{
+  "name": "babyincar-api",
+  "version": "1.0.0",
+  "description": "Baby in Car - Backend API on Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "db:migrate": "wrangler d1 execute babyincar-db --file=./migrations/001_initial.sql",
+    "db:migrate:prod": "wrangler d1 execute babyincar-db --file=./migrations/001_initial.sql --remote",
+    "db:seed": "wrangler d1 execute babyincar-db --file=./migrations/002_seed_content.sql",
+    "db:seed:prod": "wrangler d1 execute babyincar-db --file=./migrations/002_seed_content.sql --remote",
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "jose": "^5.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240117.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0",
+    "wrangler": "^3.24.0"
+  }
+}
