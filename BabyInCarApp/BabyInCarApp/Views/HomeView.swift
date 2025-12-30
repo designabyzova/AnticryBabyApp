@@ -12,6 +12,7 @@ struct HomeView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var aiEngine = AIRecommendationEngine.shared
     @StateObject private var emergencyService = EmergencyCryStopService.shared
+    @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     @State private var quickPickPlaylists: [Playlist] = []
     @State private var isLoading = true
@@ -19,8 +20,8 @@ struct HomeView: View {
     @State private var showingVoiceInput = false
 
     var body: some View {
-        NavigationView {
-            ScrollView {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 24) {
                     // Header with baby info
                     headerSection
@@ -42,8 +43,9 @@ struct HomeView: View {
                     // Categories
                     categoriesSection
                 }
-                .padding(.bottom, 120) // Space for mini player and tab bar
+                .padding(.bottom, bottomPadding + 20) // Dynamic space for mini player and tab bar
             }
+            .scrollIndicators(.visible)
             .background(Color.appBackground)
             .navigationBarHidden(true)
         }

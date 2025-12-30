@@ -209,6 +209,10 @@ enum GeneratorType: String, Codable, CaseIterable {
     case whiteNoise = "White Noise"
     case pinkNoise = "Pink Noise"
     case brownNoise = "Brown Noise"
+    case blueNoise = "Blue Noise"
+    case violetNoise = "Violet Noise"
+    case greyNoise = "Grey Noise"
+    case velvetNoise = "Velvet Noise"
 
     // Nature-like sounds
     case rain = "Rain"
@@ -219,6 +223,9 @@ enum GeneratorType: String, Codable, CaseIterable {
     case birds = "Birds Chirping"
     case crickets = "Crickets"
     case fireplace = "Fireplace"
+    case forest = "Forest Ambience"
+    case waterfall = "Waterfall"
+    case campfire = "Campfire Night"
 
     // Baby-specific sounds
     case heartbeat = "Heartbeat"
@@ -230,21 +237,35 @@ enum GeneratorType: String, Codable, CaseIterable {
     case carEngine = "Car Engine"
     case washingMachine = "Washing Machine"
 
+    // Toddler-focused sounds (12-36 months)
+    case trainRide = "Train Ride"
+    case airplaneCabin = "Airplane Cabin"
+    case rainOnRoof = "Rain on Roof"
+    case thunderRumble = "Thunder Rumble"
+    case cityAmbience = "City Night"
+    case aquarium = "Aquarium Bubbles"
+
     // Musical tones
     case lullaby = "Lullaby Melody"
     case musicBox = "Music Box"
     case chimes = "Wind Chimes"
     case bells = "Soft Bells"
+    case softPiano = "Soft Piano"
+    case gentleGuitar = "Gentle Guitar"
 
     var category: AudioCategory {
         switch self {
-        case .whiteNoise, .pinkNoise, .brownNoise, .vacuum, .hairDryer, .fan, .washingMachine:
+        case .whiteNoise, .pinkNoise, .brownNoise, .blueNoise, .violetNoise, .greyNoise, .velvetNoise,
+             .vacuum, .hairDryer, .fan, .washingMachine:
             return .whiteNoise
-        case .rain, .ocean, .river, .wind, .thunderstorm, .birds, .crickets, .fireplace:
+        case .rain, .ocean, .river, .wind, .thunderstorm, .birds, .crickets, .fireplace,
+             .forest, .waterfall, .campfire, .rainOnRoof:
             return .natureSounds
         case .heartbeat, .womb, .shushing, .carEngine:
             return .whiteNoise
-        case .lullaby, .musicBox, .chimes, .bells:
+        case .trainRide, .airplaneCabin, .thunderRumble, .cityAmbience, .aquarium:
+            return .whiteNoise
+        case .lullaby, .musicBox, .chimes, .bells, .softPiano, .gentleGuitar:
             return .instrumental
         }
     }
@@ -259,18 +280,34 @@ enum GeneratorType: String, Codable, CaseIterable {
             return 0...6
         case .pinkNoise, .brownNoise, .vacuum, .hairDryer, .fan:
             return 0...12
+        case .blueNoise, .violetNoise:
+            return 12...36 // Better for toddlers - higher frequencies
+        case .greyNoise, .velvetNoise:
+            return 6...36 // Perceptually balanced - works for wide age range
         case .rain, .ocean, .river:
             return 3...36
         case .wind, .birds, .crickets:
             return 6...36
+        case .forest, .waterfall, .campfire:
+            return 12...36 // More complex sounds for older babies
         case .lullaby, .musicBox:
             return 0...24
         case .chimes, .bells:
             return 3...36
+        case .softPiano, .gentleGuitar:
+            return 9...36 // Musical instruments for older babies
         case .thunderstorm, .fireplace:
             return 6...36
         case .carEngine, .washingMachine:
             return 0...12
+        case .trainRide, .airplaneCabin:
+            return 12...36 // Travel sounds appealing to toddlers
+        case .rainOnRoof, .thunderRumble:
+            return 9...36 // Weather variations
+        case .cityAmbience:
+            return 18...36 // Complex ambient for older toddlers
+        case .aquarium:
+            return 6...36 // Gentle bubbling works for many ages
         }
     }
 
@@ -279,14 +316,29 @@ enum GeneratorType: String, Codable, CaseIterable {
         case .womb, .heartbeat: return 0.95
         case .shushing, .pinkNoise: return 0.92
         case .whiteNoise, .brownNoise: return 0.88
+        case .blueNoise: return 0.82 // Slightly energizing, good for focus
+        case .violetNoise: return 0.78 // Higher frequencies, alerting
+        case .greyNoise: return 0.90 // Perceptually balanced, very calming
+        case .velvetNoise: return 0.91 // Smooth, highly soothing
         case .rain, .ocean: return 0.90
         case .lullaby, .musicBox: return 0.85
+        case .softPiano: return 0.88
+        case .gentleGuitar: return 0.86
         case .fan, .vacuum, .hairDryer: return 0.80
         case .river, .wind: return 0.85
+        case .forest: return 0.87 // Rich nature soundscape
+        case .waterfall: return 0.86 // Consistent flowing water
+        case .campfire: return 0.84 // Crackling with night ambience
         case .carEngine, .washingMachine: return 0.78
         case .birds, .crickets: return 0.75
         case .chimes, .bells: return 0.82
         case .thunderstorm, .fireplace: return 0.78
+        case .trainRide: return 0.83 // Rhythmic, soothing motion
+        case .airplaneCabin: return 0.81 // Consistent drone
+        case .rainOnRoof: return 0.89 // Cozy rain variant
+        case .thunderRumble: return 0.76 // Low rumble, less calming
+        case .cityAmbience: return 0.72 // Complex, less calming
+        case .aquarium: return 0.85 // Gentle bubbles
         }
     }
 }
@@ -388,13 +440,24 @@ struct UserPreferences: Codable {
     var maxVolume: Float = 0.7 // Safety limit (50dB equivalent)
     var autoPlayOnLaunch: Bool = false
     var fadeOutDuration: TimeInterval = 10.0
-    var preferredSleepTimer: SleepTimer = .off
+    var preferredSleepTimerMinutes: Int = 0  // Store as Int for Codable
     var enableCryDetection: Bool = true
     var enableVoiceControl: Bool = true
     var downloadOnWiFiOnly: Bool = true
     var autoDownloadAgeContent: Bool = true
     var hapticFeedback: Bool = true
     var carPlayEnabled: Bool = true
+
+    var preferredSleepTimer: SleepTimer {
+        get { SleepTimer(rawValue: preferredSleepTimerMinutes) ?? .off }
+        set { preferredSleepTimerMinutes = newValue.rawValue }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case defaultVolume, maxVolume, autoPlayOnLaunch, fadeOutDuration
+        case preferredSleepTimerMinutes, enableCryDetection, enableVoiceControl
+        case downloadOnWiFiOnly, autoDownloadAgeContent, hapticFeedback, carPlayEnabled
+    }
 }
 
 // MARK: - Listening History

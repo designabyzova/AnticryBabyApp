@@ -65,6 +65,11 @@ class SpeechRecognitionService: ObservableObject {
         stopListening()
 
         do {
+            // Configure audio session for recording
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
             audioEngine = AVAudioEngine()
             guard let audioEngine = audioEngine else { return }
 
@@ -74,7 +79,15 @@ class SpeechRecognitionService: ObservableObject {
             recognitionRequest.shouldReportPartialResults = true
 
             let inputNode = audioEngine.inputNode
+
+            // Get the native format and validate it
             let recordingFormat = inputNode.outputFormat(forBus: 0)
+
+            // Check if format is valid (sample rate > 0 and channels > 0)
+            guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+                errorMessage = "Invalid audio format - microphone may not be available"
+                return
+            }
 
             inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
                 self?.recognitionRequest?.append(buffer)
@@ -118,6 +131,10 @@ class SpeechRecognitionService: ObservableObject {
         recognitionRequest = nil
         recognitionTask = nil
         isListening = false
+
+        // Restore audio session for playback
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
 
     // MARK: - Voice Command Processing

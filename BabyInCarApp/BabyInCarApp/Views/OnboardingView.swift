@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AVFoundation
+import UserNotifications
 
 struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
@@ -684,21 +686,6 @@ struct PermissionRow: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 4)
         )
-    }
-}
-
-// MARK: - Notification Service
-class NotificationService {
-    static let shared = NotificationService()
-
-    func requestAuthorization() async -> Bool {
-        do {
-            let center = UNUserNotificationCenter.current()
-            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-            return granted
-        } catch {
-            return false
-        }
     }
 }
 

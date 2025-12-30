@@ -7,6 +7,7 @@
 
 import Foundation
 import StoreKit
+import SwiftUI
 
 @MainActor
 class SubscriptionManager: ObservableObject {
@@ -182,10 +183,13 @@ class SubscriptionManager: ObservableObject {
 
     // MARK: - Transaction Listener
     private func listenForTransactions() -> Task<Void, Error> {
-        return Task.detached {
+        return Task.detached { [weak self] in
             for await result in Transaction.updates {
                 do {
-                    let transaction = try self.checkVerified(result)
+                    guard let self = self else { return }
+                    let transaction = try await MainActor.run {
+                        try self.checkVerified(result)
+                    }
                     await self.updatePurchasedProducts()
                     await transaction.finish()
                 } catch {

@@ -3,9 +3,17 @@
 //  BabyInCarApp
 //
 //  CarPlay integration for hands-free audio control while driving
+//  NOTE: CarPlay requires special Apple entitlements. This file is conditionally compiled.
+//  To enable CarPlay:
+//  1. Request CarPlay Audio entitlement from Apple at https://developer.apple.com/contact/carplay/
+//  2. Add the entitlements to your provisioning profile
+//  3. Define CARPLAY_ENABLED in Build Settings > Other Swift Flags: -DCARPLAY_ENABLED
 //
 
 import Foundation
+import UIKit
+
+#if CARPLAY_ENABLED
 import CarPlay
 
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
@@ -107,8 +115,8 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         let categories = AudioCategory.allCases.map { category in
             createListItem(
                 title: category.rawValue,
-                subtitle: category.description,
-                image: UIImage(systemName: category.iconName)
+                subtitle: category.carPlayDescription,
+                image: UIImage(systemName: category.carPlayIconName)
             ) { [weak self] in
                 self?.showCategoryTracks(category)
             }
@@ -126,7 +134,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func createEmergencyTab() -> CPListTemplate {
         let emergencyItems = [
             createListItem(
-                title: "🚨 EMERGENCY CRY-STOP",
+                title: "EMERGENCY CRY-STOP",
                 subtitle: "Activate calming sequence now",
                 image: UIImage(systemName: "exclamationmark.triangle.fill")
             ) { [weak self] in
@@ -352,7 +360,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 // MARK: - AudioCategory CarPlay Extensions
 
 extension AudioCategory {
-    var iconName: String {
+    var carPlayIconName: String {
         switch self {
         case .classicalMusic: return "music.quarternote.3"
         case .fairyTales: return "book.fill"
@@ -364,7 +372,7 @@ extension AudioCategory {
         }
     }
 
-    var description: String {
+    var carPlayDescription: String {
         switch self {
         case .classicalMusic: return "Soothing classical pieces"
         case .fairyTales: return "Stories in 10+ languages"
@@ -376,3 +384,8 @@ extension AudioCategory {
         }
     }
 }
+
+#else
+// CarPlay not enabled - provide empty placeholder
+// To enable CarPlay, request entitlements from Apple and add -DCARPLAY_ENABLED to Swift flags
+#endif

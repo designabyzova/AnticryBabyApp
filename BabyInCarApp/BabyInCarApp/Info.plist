@@ -44,14 +44,13 @@
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 
-    <!-- Scene Configuration for CarPlay -->
+    <!-- Scene Configuration (Standard - No CarPlay) -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
-        <true/>
+        <false/>
         <key>UISceneConfigurations</key>
         <dict>
-            <!-- Main App Scene -->
             <key>UIWindowSceneSessionRoleApplication</key>
             <array>
                 <dict>
@@ -59,16 +58,6 @@
                     <string>Default Configuration</string>
                     <key>UISceneDelegateClassName</key>
                     <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-                </dict>
-            </array>
-            <!-- CarPlay Scene -->
-            <key>CPTemplateApplicationSceneSessionRoleApplication</key>
-            <array>
-                <dict>
-                    <key>UISceneConfigurationName</key>
-                    <string>CarPlay Configuration</string>
-                    <key>UISceneDelegateClassName</key>
-                    <string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
                 </dict>
             </array>
         </dict>
@@ -100,16 +89,6 @@
         <key>NSAllowsArbitraryLoadsForMedia</key>
         <true/>
     </dict>
-
-    <!-- CarPlay Entitlement -->
-    <key>com.apple.developer.carplay-audio</key>
-    <true/>
-
-    <!-- Supported Audio Codecs -->
-    <key>UTExportedTypeDeclarations</key>
-    <array/>
-    <key>UTImportedTypeDeclarations</key>
-    <array/>
 
     <!-- Status Bar -->
     <key>UIStatusBarStyle</key>

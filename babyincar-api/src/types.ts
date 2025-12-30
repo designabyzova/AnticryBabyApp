@@ -5,12 +5,16 @@ export interface Env {
   CACHE: KVNamespace;
   AUDIO_BUCKET: R2Bucket;
   IMAGES_BUCKET: R2Bucket;
+  AI: Ai;  // Workers AI binding for Llama 3.1
   ENVIRONMENT: string;
   JWT_SECRET: string;
   APPLE_TEAM_ID: string;
   APPLE_KEY_ID: string;
   APPLE_PRIVATE_KEY: string;
   APP_STORE_SHARED_SECRET: string;
+  // Audio curation API keys (optional - for automated collection)
+  FREESOUND_API_KEY?: string;
+  PIXABAY_API_KEY?: string;
 }
 
 // User types

@@ -9,12 +9,14 @@ import SwiftUI
 
 struct LibraryView: View {
     @StateObject private var contentLibrary = ContentLibraryService.shared
+    @EnvironmentObject var audioEngine: AudioEngine
+    @Environment(\.bottomSafeAreaPadding) private var bottomPadding
     @State private var searchText = ""
     @State private var selectedCategory: AudioCategory?
 
     var body: some View {
-        NavigationView {
-            ScrollView {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 24) {
                     // Search bar
                     searchBar
@@ -34,8 +36,9 @@ struct LibraryView: View {
                         searchResults
                     }
                 }
-                .padding(.bottom, 120)
+                .padding(.bottom, bottomPadding + 20)
             }
+            .scrollIndicators(.visible)
             .background(Color.appBackground)
             .navigationTitle("Library")
         }
@@ -457,9 +460,10 @@ struct CategoryDetailView: View {
     let category: AudioCategory
     @StateObject private var contentLibrary = ContentLibraryService.shared
     @EnvironmentObject var audioEngine: AudioEngine
+    @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     var body: some View {
-        ScrollView {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 16) {
                 // Header
                 VStack(spacing: 12) {
@@ -517,8 +521,9 @@ struct CategoryDetailView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            .padding(.bottom, 120)
+            .padding(.bottom, bottomPadding + 20)
         }
+        .scrollIndicators(.visible)
         .background(Color.appBackground)
         .navigationBarTitleDisplayMode(.inline)
     }

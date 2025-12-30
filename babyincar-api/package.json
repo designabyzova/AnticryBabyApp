@@ -9,8 +9,16 @@
     "deploy:production": "wrangler deploy --env production",
     "db:migrate": "wrangler d1 execute babyincar-db --file=./migrations/001_initial.sql",
     "db:migrate:prod": "wrangler d1 execute babyincar-db --file=./migrations/001_initial.sql --remote",
+    "db:migrate:audio": "wrangler d1 execute babyincar-db --file=./migrations/003_audio_enhancements.sql",
+    "db:migrate:audio:prod": "wrangler d1 execute babyincar-db --file=./migrations/003_audio_enhancements.sql --remote",
     "db:seed": "wrangler d1 execute babyincar-db --file=./migrations/002_seed_content.sql",
     "db:seed:prod": "wrangler d1 execute babyincar-db --file=./migrations/002_seed_content.sql --remote",
+    "db:seed:audio": "wrangler d1 execute babyincar-db --file=./migrations/004_audio_library_seed.sql",
+    "db:seed:audio:prod": "wrangler d1 execute babyincar-db --file=./migrations/004_audio_library_seed.sql --remote",
+    "audio:collect": "npx ts-node scripts/audio-collector.ts --collect",
+    "audio:download": "npx ts-node scripts/audio-collector.ts --download",
+    "audio:upload": "npx ts-node scripts/upload-to-r2.ts",
+    "audio:generate-sql": "npx ts-node scripts/audio-collector.ts --generate-sql",
     "tail": "wrangler tail",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
@@ -21,6 +29,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0",
     "wrangler": "^3.24.0"

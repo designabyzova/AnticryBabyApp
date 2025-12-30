@@ -7,58 +7,39 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		/* App Entry */
-		A1000001 /* BabyInCarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001; };
-		A1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002; };
-
-		/* Models */
-		A1000010 /* Baby.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010; };
-		A1000011 /* AudioTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
-
-		/* Services */
-		A1000020 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000020; };
-		A1000021 /* AIRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021; };
-		A1000022 /* ContentLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022; };
-		A1000023 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000023; };
-		A1000024 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000024; };
-
-		/* Views */
-		A1000030 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030; };
-		A1000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031; };
-		A1000032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032; };
-		A1000033 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033; };
-		A1000034 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000034; };
-		A1000035 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000035; };
-		A1000036 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000036; };
-
-		/* Extensions */
-		A1000040 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000040; };
-
-		/* CarPlay */
-		A1000050 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000050; };
-
-		/* Resources */
-		A1000060 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000060; };
-		A1000061 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2000061; };
+		A1000001 /* BabyInCarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* BabyInCarApp.swift */; };
+		A1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* SceneDelegate.swift */; };
+		A1000010 /* Baby.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010 /* Baby.swift */; };
+		A1000011 /* AudioTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011 /* AudioTrack.swift */; };
+		A1000020 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000020 /* AudioEngine.swift */; };
+		A1000021 /* AIRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021 /* AIRecommendationEngine.swift */; };
+		A1000022 /* ContentLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022 /* ContentLibraryService.swift */; };
+		A1000023 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000023 /* SpeechRecognitionService.swift */; };
+		A1000024 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000024 /* SubscriptionManager.swift */; };
+		A1000030 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* ContentView.swift */; };
+		A1000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* OnboardingView.swift */; };
+		A1000032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* HomeView.swift */; };
+		A1000033 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033 /* LibraryView.swift */; };
+		A1000034 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000034 /* PlayerView.swift */; };
+		A1000035 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000035 /* FavoritesView.swift */; };
+		A1000036 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000036 /* ProfileView.swift */; };
+		A1000040 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000040 /* Colors.swift */; };
+		A1000050 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000050 /* CarPlaySceneDelegate.swift */; };
+		A1000060 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000060 /* Assets.xcassets */; };
+		A1000061 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2000061 /* LaunchScreen.storyboard */; };
+		A1000080 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Audio */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		/* App Entry */
 		A2000001 /* BabyInCarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyInCarApp.swift; sourceTree = "<group>"; };
 		A2000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-
-		/* Models */
 		A2000010 /* Baby.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Baby.swift; sourceTree = "<group>"; };
 		A2000011 /* AudioTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrack.swift; sourceTree = "<group>"; };
-
-		/* Services */
 		A2000020 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		A2000021 /* AIRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRecommendationEngine.swift; sourceTree = "<group>"; };
 		A2000022 /* ContentLibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentLibraryService.swift; sourceTree = "<group>"; };
 		A2000023 /* SpeechRecognitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionService.swift; sourceTree = "<group>"; };
 		A2000024 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
-
-		/* Views */
 		A2000030 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A2000031 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A2000032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -66,22 +47,13 @@
 		A2000034 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A2000035 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		A2000036 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
-
-		/* Extensions */
 		A2000040 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
-
-		/* CarPlay */
 		A2000050 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
-
-		/* Resources */
 		A2000060 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000061 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-
-		/* Config */
 		A2000070 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000071 /* BabyInCarApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BabyInCarApp.entitlements; sourceTree = "<group>"; };
-
-		/* Product */
+		A2000080 /* Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
 		A3000000 /* BabyInCarApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -185,6 +157,7 @@
 				A2000061 /* LaunchScreen.storyboard */,
 				A2000070 /* Info.plist */,
 				A2000071 /* BabyInCarApp.entitlements */,
+				A2000080 /* Audio */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -249,6 +222,7 @@
 			files = (
 				A1000060 /* Assets.xcassets in Resources */,
 				A1000061 /* LaunchScreen.storyboard in Resources */,
+				A1000080 /* Audio in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,7 +384,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;
@@ -444,7 +418,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;

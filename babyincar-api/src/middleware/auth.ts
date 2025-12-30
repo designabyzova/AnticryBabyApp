@@ -144,6 +144,27 @@ export async function rateLimitMiddleware(
   };
 }
 
+// Admin check middleware - requires admin role
+export async function adminMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+  const user = c.get('user');
+
+  if (!user) {
+    return c.json({ success: false, error: 'Authentication required' }, 401);
+  }
+
+  // Check if user has admin role (stored in database or check by email domain)
+  // For now, we'll use a simple email-based check or database field
+  const isAdmin = await c.env.DB.prepare(`
+    SELECT is_admin FROM users WHERE id = ?
+  `).bind(user.id).first<{ is_admin: boolean }>();
+
+  if (!isAdmin?.is_admin) {
+    return c.json({ success: false, error: 'Admin access required' }, 403);
+  }
+
+  await next();
+}
+
 // CORS middleware
 export function corsMiddleware() {
   return async function(c: Context, next: Next) {

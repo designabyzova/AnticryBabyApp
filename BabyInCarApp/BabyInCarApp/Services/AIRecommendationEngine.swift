@@ -133,6 +133,8 @@ class AIRecommendationEngine: ObservableObject {
         case playful = "Playful"
         case calm = "Calm"
         case fussy = "Fussy"
+        case restless = "Restless"
+        case overtired = "Overtired"
 
         var preferredCategories: [AudioCategory] {
             switch self {
@@ -146,22 +148,57 @@ class AIRecommendationEngine: ObservableObject {
                 return [.classicalMusic, .natureSounds, .podcasts]
             case .fussy:
                 return [.whiteNoise, .natureSounds, .classicalMusic]
+            case .restless:
+                return [.whiteNoise, .natureSounds, .instrumental]
+            case .overtired:
+                return [.whiteNoise, .instrumental, .classicalMusic]
             }
         }
 
         var preferredGenerators: [GeneratorType] {
             switch self {
             case .sleepy:
-                return [.pinkNoise, .rain, .ocean, .lullaby]
+                return [.pinkNoise, .rain, .ocean, .lullaby, .velvetNoise, .rainOnRoof]
             case .crying:
                 return [.shushing, .womb, .heartbeat, .vacuum]
             case .playful:
-                return [.musicBox, .birds, .chimes]
+                return [.musicBox, .birds, .chimes, .aquarium, .forest]
             case .calm:
-                return [.rain, .ocean, .river, .wind]
+                return [.rain, .ocean, .river, .wind, .greyNoise, .softPiano]
             case .fussy:
-                return [.pinkNoise, .brownNoise, .fan, .shushing]
+                return [.pinkNoise, .brownNoise, .fan, .shushing, .velvetNoise]
+            case .restless:
+                return [.trainRide, .airplaneCabin, .greyNoise, .carEngine, .waterfall]
+            case .overtired:
+                return [.velvetNoise, .greyNoise, .rainOnRoof, .gentleGuitar, .campfire]
             }
+        }
+
+        /// Get age-appropriate generators for this mood
+        func preferredGeneratorsForAge(_ ageMonths: Int) -> [GeneratorType] {
+            var generators = preferredGenerators
+
+            // Adjust for toddlers (12+ months)
+            if ageMonths >= 12 {
+                switch self {
+                case .sleepy:
+                    generators = [.greyNoise, .velvetNoise, .rainOnRoof, .softPiano, .gentleGuitar, .campfire]
+                case .crying:
+                    generators = [.pinkNoise, .greyNoise, .trainRide, .airplaneCabin, .waterfall]
+                case .playful:
+                    generators = [.forest, .birds, .aquarium, .chimes, .musicBox]
+                case .calm:
+                    generators = [.forest, .campfire, .greyNoise, .softPiano, .gentleGuitar, .waterfall]
+                case .fussy:
+                    generators = [.velvetNoise, .greyNoise, .trainRide, .rainOnRoof, .thunderRumble]
+                case .restless:
+                    generators = [.trainRide, .airplaneCabin, .cityAmbience, .greyNoise, .blueNoise]
+                case .overtired:
+                    generators = [.velvetNoise, .greyNoise, .rainOnRoof, .campfire, .softPiano]
+                }
+            }
+
+            return generators
         }
     }
 
@@ -169,8 +206,11 @@ class AIRecommendationEngine: ObservableObject {
         let ageMonths = baby.ageInMonths
         var tracks: [AudioTrack] = []
 
+        // Get age-appropriate generators for this mood
+        let ageAppropriateGenerators = mood.preferredGeneratorsForAge(ageMonths)
+
         // Add generated tracks for preferred sound types
-        for generator in mood.preferredGenerators.prefix(3) {
+        for generator in ageAppropriateGenerators.prefix(4) {
             let track = AudioTrack(
                 title: generator.rawValue,
                 category: generator.category,
@@ -188,14 +228,17 @@ class AIRecommendationEngine: ObservableObject {
         for category in mood.preferredCategories {
             let categoryTracks = contentLibrary.getTracks(for: category)
                 .filter { $0.ageRangeMin <= ageMonths && $0.ageRangeMax >= ageMonths }
+                .sorted { $0.calmingScore > $1.calmingScore }
                 .prefix(2)
             tracks.append(contentsOf: categoryTracks)
         }
 
+        let ageDescription = ageMonths >= 12 ? "toddler" : "baby"
         return Playlist(
             name: "\(mood.rawValue) Mode",
-            description: "Perfect sounds for when baby is \(mood.rawValue.lowercased())",
+            description: "Age-optimized sounds for when \(ageDescription) is \(mood.rawValue.lowercased())",
             tracks: tracks,
+            targetAgeMonths: ageMonths,
             isSystemGenerated: true
         )
     }
@@ -237,8 +280,22 @@ class AIRecommendationEngine: ObservableObject {
         let calmingCount = Int(Double(duration.trackCount) * calmingRatio)
         let engagingCount = duration.trackCount - calmingCount
 
-        // Add calming tracks
-        let calmingGenerators: [GeneratorType] = [.pinkNoise, .rain, .ocean, .shushing, .womb]
+        // Age-appropriate calming generators
+        let calmingGenerators: [GeneratorType]
+        if ageMonths >= 18 {
+            // Toddlers prefer more complex, engaging sounds
+            calmingGenerators = [.greyNoise, .velvetNoise, .trainRide, .rainOnRoof, .campfire, .forest, .softPiano]
+        } else if ageMonths >= 12 {
+            // Older babies - transitioning to more varied sounds
+            calmingGenerators = [.greyNoise, .pinkNoise, .rainOnRoof, .ocean, .velvetNoise, .airplaneCabin]
+        } else if ageMonths >= 6 {
+            // 6-12 months
+            calmingGenerators = [.pinkNoise, .rain, .ocean, .greyNoise, .fan]
+        } else {
+            // Newborns - stick to womb-like sounds
+            calmingGenerators = [.pinkNoise, .shushing, .womb, .heartbeat, .rain]
+        }
+
         for i in 0..<calmingCount {
             let generator = calmingGenerators[i % calmingGenerators.count]
             let track = AudioTrack(
@@ -264,10 +321,12 @@ class AIRecommendationEngine: ObservableObject {
         // Shuffle for variety
         tracks.shuffle()
 
+        let ageDescription = ageMonths >= 12 ? "toddler" : "baby"
         return Playlist(
             name: duration.rawValue,
-            description: "Optimized for \(duration.rawValue.lowercased())s with \(baby.displayName)",
+            description: "Age-optimized sounds for \(duration.rawValue.lowercased())s with your \(ageDescription)",
             tracks: Array(tracks.prefix(duration.trackCount)),
+            targetAgeMonths: ageMonths,
             isSystemGenerated: true
         )
     }
@@ -412,7 +471,18 @@ class EmergencyCryStopService: ObservableObject {
         switch phase {
         case .attention:
             // Sudden attention-grabber with specific frequencies
-            let generator: GeneratorType = ageMonths < 6 ? .shushing : .musicBox
+            let generator: GeneratorType
+            if ageMonths < 6 {
+                generator = .shushing
+            } else if ageMonths < 12 {
+                generator = .musicBox
+            } else if ageMonths < 24 {
+                // Toddlers respond well to rhythmic travel sounds
+                generator = .trainRide
+            } else {
+                // Older toddlers - more complex sounds
+                generator = .aquarium
+            }
             return AudioTrack(
                 title: "Attention Grabber",
                 category: .whiteNoise,
@@ -424,7 +494,18 @@ class EmergencyCryStopService: ObservableObject {
 
         case .transition:
             // Gradual calming transition
-            let generator: GeneratorType = ageMonths < 6 ? .womb : .pinkNoise
+            let generator: GeneratorType
+            if ageMonths < 6 {
+                generator = .womb
+            } else if ageMonths < 12 {
+                generator = .pinkNoise
+            } else if ageMonths < 24 {
+                // Toddlers - smooth velvet noise
+                generator = .velvetNoise
+            } else {
+                // Older toddlers - perceptually balanced grey noise
+                generator = .greyNoise
+            }
             return AudioTrack(
                 title: "Calming Transition",
                 category: .whiteNoise,
@@ -436,7 +517,18 @@ class EmergencyCryStopService: ObservableObject {
 
         case .sustained:
             // Sustained soothing for sleep transition
-            let generator: GeneratorType = ageMonths < 6 ? .heartbeat : .ocean
+            let generator: GeneratorType
+            if ageMonths < 6 {
+                generator = .heartbeat
+            } else if ageMonths < 12 {
+                generator = .ocean
+            } else if ageMonths < 24 {
+                // Toddlers - cozy rain on roof
+                generator = .rainOnRoof
+            } else {
+                // Older toddlers - campfire or forest ambience
+                generator = .campfire
+            }
             return AudioTrack(
                 title: "Sustained Soothing",
                 category: .natureSounds,
@@ -447,13 +539,15 @@ class EmergencyCryStopService: ObservableObject {
             )
 
         default:
+            // Default based on age
+            let generator: GeneratorType = ageMonths >= 12 ? .greyNoise : .pinkNoise
             return AudioTrack(
-                title: "Pink Noise",
+                title: generator.rawValue,
                 category: .whiteNoise,
                 duration: 600,
                 calmingScore: 0.9,
                 audioSourceType: .generated,
-                generatorType: .pinkNoise
+                generatorType: generator
             )
         }
     }

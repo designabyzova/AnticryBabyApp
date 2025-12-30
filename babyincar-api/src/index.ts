@@ -11,6 +11,12 @@ import content from './routes/content';
 import analytics from './routes/analytics';
 import subscriptions from './routes/subscriptions';
 import users from './routes/users';
+import ai from './routes/ai';
+import audio from './routes/audio';
+import curation from './routes/curation';
+
+// Import services
+import { handleScheduledCuration } from './services/audio-curator';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -47,6 +53,9 @@ app.route('/content', content);
 app.route('/analytics', analytics);
 app.route('/subscriptions', subscriptions);
 app.route('/users', users);
+app.route('/ai', ai);
+app.route('/audio', audio);
+app.route('/curation', curation);
 
 // 404 handler
 app.notFound((c) => {
@@ -71,4 +80,31 @@ app.onError((err, c) => {
   }, 500);
 });
 
-export default app;
+// Export for Cloudflare Workers
+export default {
+  // HTTP request handler
+  fetch: app.fetch,
+
+  // Scheduled cron handler for automated audio curation
+  // Runs daily to discover and download new content
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
+    console.log('[Scheduled] Cron trigger fired:', controller.cron);
+
+    switch (controller.cron) {
+      case '0 3 * * *': // Daily at 3 AM UTC - Full curation
+        ctx.waitUntil(handleScheduledCuration(env));
+        break;
+
+      case '0 */6 * * *': // Every 6 hours - Quick check for new content
+        ctx.waitUntil(handleScheduledCuration(env));
+        break;
+
+      default:
+        console.log('[Scheduled] Unknown cron pattern:', controller.cron);
+    }
+  },
+};

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 @main
 struct BabyInCarApp: App {
@@ -54,7 +55,7 @@ struct BabyInCarApp: App {
         // Request necessary permissions
         Task {
             await SpeechRecognitionService.shared.requestAuthorization()
-            await NotificationService.shared.requestAuthorization()
+            _ = await NotificationService.shared.requestAuthorization()
         }
 
         // Load cached data
@@ -119,5 +120,44 @@ class AppState: ObservableObject {
     func updateBaby(_ baby: Baby) {
         currentBaby = baby
         saveUserData()
+    }
+}
+
+// MARK: - Notification Service
+@MainActor
+class NotificationService: ObservableObject {
+    static let shared = NotificationService()
+
+    @Published var isAuthorized: Bool = false
+
+    private init() {}
+
+    func requestAuthorization() async -> Bool {
+        do {
+            let options: UNAuthorizationOptions = [.alert, .sound, .badge]
+            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: options)
+            isAuthorized = granted
+            return granted
+        } catch {
+            print("Notification authorization failed: \(error)")
+            isAuthorized = false
+            return false
+        }
+    }
+
+    func scheduleSleepTimerNotification(afterSeconds: TimeInterval) {
+        let content = UNMutableNotificationContent()
+        content.title = "Sleep Timer"
+        content.body = "Audio will stop soon"
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, afterSeconds - 60), repeats: false)
+        let request = UNNotificationRequest(identifier: "sleepTimer", content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func cancelAllNotifications() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 }

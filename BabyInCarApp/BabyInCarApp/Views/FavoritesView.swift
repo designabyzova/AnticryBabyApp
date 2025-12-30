@@ -10,10 +10,11 @@ import SwiftUI
 struct FavoritesView: View {
     @StateObject private var favoritesManager = FavoritesManager.shared
     @EnvironmentObject var audioEngine: AudioEngine
+    @Environment(\.bottomSafeAreaPadding) private var bottomPadding
     @State private var selectedTab = 0
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Tab selector
                 HStack(spacing: 0) {
@@ -29,13 +30,14 @@ struct FavoritesView: View {
                 .padding(.top, 12)
 
                 // Content
-                ScrollView {
+                ScrollView(.vertical, showsIndicators: true) {
                     if selectedTab == 0 {
                         favoritesContent
                     } else {
                         recentlyPlayedContent
                     }
                 }
+                .scrollIndicators(.visible)
             }
             .background(Color.appBackground)
             .navigationTitle("Favorites")
@@ -124,7 +126,7 @@ struct FavoritesView: View {
             }
         }
         .padding(.vertical, 20)
-        .padding(.bottom, 100)
+        .padding(.bottom, bottomPadding + 20)
     }
 
     // MARK: - Recently Played Content
@@ -134,7 +136,7 @@ struct FavoritesView: View {
             emptyRecentlyPlayedView
         }
         .padding(.vertical, 20)
-        .padding(.bottom, 100)
+        .padding(.bottom, bottomPadding + 20)
     }
 
     // MARK: - Empty Views

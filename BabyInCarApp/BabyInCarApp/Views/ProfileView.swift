@@ -11,14 +11,15 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     @State private var showingEditBaby = false
     @State private var showingLanguageSelection = false
     @State private var showingSubscription = false
 
     var body: some View {
-        NavigationView {
-            ScrollView {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 24) {
                     // Baby profile card
                     babyProfileCard
@@ -31,8 +32,9 @@ struct ProfileView: View {
                     // Settings sections
                     settingsSections
                 }
-                .padding(.bottom, 120)
+                .padding(.bottom, bottomPadding + 20)
             }
+            .scrollIndicators(.visible)
             .background(Color.appBackground)
             .navigationTitle("Profile")
         }

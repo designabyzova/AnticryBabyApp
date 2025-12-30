@@ -32,32 +32,64 @@ struct MainTabView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var selectedTab = 0
 
+    // Calculate bottom padding based on what's visible
+    private var bottomPadding: CGFloat {
+        let tabBarHeight: CGFloat = 85
+        let miniPlayerHeight: CGFloat = audioEngine.currentTrack != nil ? 74 : 0
+        return tabBarHeight + miniPlayerHeight
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                HomeView()
-                    .tag(0)
-
-                LibraryView()
-                    .tag(1)
-
-                FavoritesView()
-                    .tag(2)
-
-                ProfileView()
-                    .tag(3)
+            // Main content - each view handles its own scrolling
+            Group {
+                switch selectedTab {
+                case 0:
+                    HomeView()
+                case 1:
+                    LibraryView()
+                case 2:
+                    FavoritesView()
+                case 3:
+                    ProfileView()
+                default:
+                    HomeView()
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Custom Tab Bar
-            CustomTabBar(selectedTab: $selectedTab)
+            // Bottom overlay stack (mini player + tab bar)
+            VStack(spacing: 0) {
+                // Mini Player
+                if audioEngine.currentTrack != nil {
+                    MiniPlayerView()
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: audioEngine.currentTrack != nil)
+                }
 
-            // Mini Player
-            if audioEngine.currentTrack != nil {
-                MiniPlayerView()
-                    .padding(.bottom, 90)
+                // Custom Tab Bar
+                CustomTabBar(selectedTab: $selectedTab)
             }
         }
         .ignoresSafeArea(.keyboard)
+        .onAppear {
+            // Configure audio session on app launch
+            audioEngine.configureAudioSession()
+        }
+        // Pass bottom padding to child views via environment
+        .environment(\.bottomSafeAreaPadding, bottomPadding)
+    }
+}
+
+// Environment key for bottom padding
+private struct BottomSafeAreaPaddingKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 120
+}
+
+extension EnvironmentValues {
+    var bottomSafeAreaPadding: CGFloat {
+        get { self[BottomSafeAreaPaddingKey.self] }
+        set { self[BottomSafeAreaPaddingKey.self] = newValue }
     }
 }
 
