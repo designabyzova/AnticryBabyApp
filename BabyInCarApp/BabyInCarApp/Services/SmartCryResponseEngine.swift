@@ -264,7 +264,7 @@ class SmartCryResponseEngine: ObservableObject {
         if let effectiveTracks = profile?.effectiveTracksForCryType[cryType] {
             // Get generator types from effective track IDs
             for trackId in effectiveTracks.prefix(3) {
-                if let track = contentLibrary.getTrack(byId: trackId),
+                if let track = contentLibrary.getTrack(by: trackId),
                    let generator = track.generatorType,
                    !sequence.contains(generator) {
                     sequence.append(generator)

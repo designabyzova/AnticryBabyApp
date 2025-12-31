@@ -456,7 +456,7 @@ struct DownloadsManagerView: View {
                     }
                 }
             }
-            .onChange(of: downloadOnWiFiOnly) { _, newValue in
+            .onChange(of: downloadOnWiFiOnly) { newValue in
                 UserDefaults.standard.set(newValue, forKey: "downloadOnWiFiOnly")
             }
         } header: {

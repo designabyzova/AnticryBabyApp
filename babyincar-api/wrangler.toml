@@ -34,7 +34,11 @@ id = "YOUR_CACHE_KV_ID"  # Replace after running: wrangler kv:namespace create c
 # R2 Bucket for audio files and images
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
-bucket_name = "babyincar-audio"
+bucket_name = "anticrybaby"
+
+[[r2_buckets]]
+binding = "PODCAST_BUCKET"
+bucket_name = "anticrybaby"
 
 [[r2_buckets]]
 binding = "IMAGES_BUCKET"

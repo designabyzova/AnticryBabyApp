@@ -8,6 +8,7 @@
 
 import Foundation
 import AVFoundation
+import Accelerate
 import Combine
 
 // MARK: - Baby Audio Analyzer
@@ -193,7 +194,7 @@ class BabyAudioAnalyzer: ObservableObject {
 
     /// Get session summary for completed analysis
     func getSessionSummary() -> CrySessionSummary? {
-        guard let startTime = analysisStartTime, let babyId = currentBabyId else {
+        guard let startTime = analysisStartTime, currentBabyId != nil else {
             return nil
         }
 
@@ -257,8 +258,8 @@ class BabyAudioAnalyzer: ObservableObject {
 
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
 
-        // Process on background queue
-        analysisQueue.async { [weak self] in
+        // Process on main actor to access MainActor-isolated properties
+        Task { @MainActor [weak self] in
             self?.analyzeAudioSamples(samples, timestamp: Date())
         }
     }

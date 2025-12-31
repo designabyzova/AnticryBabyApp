@@ -2,7 +2,7 @@
 //  PlayerView.swift
 //  BabyInCarApp
 //
-//  Full screen audio player
+//  Premium full-screen audio player with breathing animations
 //
 
 import SwiftUI
@@ -25,11 +25,16 @@ struct PlayerView: View {
     // Track playback state for feedback prompt
     @State private var lastPlayedTrack: AudioTrack?
     @State private var playbackStartTime: Date?
+    @State private var previousPlaybackState: PlaybackState = .stopped
 
     // Animation states for controls
     @State private var shuffleScale: CGFloat = 1.0
     @State private var repeatScale: CGFloat = 1.0
     @State private var playPauseScale: CGFloat = 1.0
+
+    // Breathing animation state
+    @State private var breathingScale: CGFloat = 1.0
+    @State private var artworkRotation: Double = 0
 
     // Haptic feedback generators
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -39,36 +44,29 @@ struct PlayerView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background gradient based on category
-                LinearGradient(
-                    colors: [
-                        Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
-                        Color.appBackground
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                // Premium animated background
+                PlayerBackground(category: audioEngine.currentTrack?.category ?? .whiteNoise)
+                    .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Header - with proper safe area padding
-                    header
+                    // Premium header with frosted glass
+                    premiumHeader
                         .padding(.top, geometry.safeAreaInsets.top > 0 ? 0 : 20)
 
                     Spacer()
 
-                    // Artwork
-                    artwork
+                    // Breathing artwork animation
+                    breathingArtwork
 
                     Spacer()
 
-                    // Track info
-                    trackInfo
+                    // Track info with premium styling
+                    premiumTrackInfo
 
-                    // Progress bar
-                    progressBar
+                    // Progress bar with haptics
+                    premiumProgressBar
 
-                    // Controls
+                    // Controls with enhanced animations
                     controls
 
                     // Additional controls
@@ -106,7 +104,10 @@ struct PlayerView: View {
             impactMedium.prepare()
             selectionFeedback.prepare()
         }
-        .onChange(of: audioEngine.playbackState) { oldState, newState in
+        .onChange(of: audioEngine.playbackState) { newState in
+            let oldState = previousPlaybackState
+            previousPlaybackState = newState
+
             // Track when playback starts
             if newState == .playing && oldState != .playing {
                 playbackStartTime = Date()
@@ -127,7 +128,412 @@ struct PlayerView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - Premium Header with Frosted Glass
+    private var premiumHeader: some View {
+        HStack {
+            // Dismiss button with frosted background
+            Button {
+                impactLight.impactOccurred()
+                dismiss()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.appText)
+                }
+            }
+
+            Spacer()
+
+            // Now playing info with glass effect
+            VStack(spacing: 2) {
+                Text("NOW PLAYING")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(.appTextSecondary)
+                    .tracking(1.5)
+
+                if let playlist = audioEngine.currentPlaylist {
+                    Text(playlist.name)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(.appText)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+            )
+
+            Spacer()
+
+            // Actions with frosted background
+            HStack(spacing: 8) {
+                // Favorite button
+                if let track = audioEngine.currentTrack {
+                    Button {
+                        impactLight.impactOccurred()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            favoritesManager.toggleFavorite(track: track)
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 40, height: 40)
+
+                            Image(systemName: favoritesManager.isFavorite(track: track) ? "heart.fill" : "heart")
+                                .font(.system(size: 18))
+                                .foregroundColor(favoritesManager.isFavorite(track: track) ? .appAccentCoral : .appText)
+                                .scaleEffect(favoritesManager.isFavorite(track: track) ? 1.1 : 1.0)
+                        }
+                    }
+                }
+
+                // More options menu
+                Menu {
+                    Button {
+                        showingPlaylist = true
+                    } label: {
+                        Label("View Playlist", systemImage: "list.bullet")
+                    }
+
+                    Button {
+                        showingQueue = true
+                    } label: {
+                        Label("Up Next Queue", systemImage: "text.line.first.and.arrowtriangle.forward")
+                    }
+
+                    Divider()
+
+                    Button {
+                        showingTimerPicker = true
+                    } label: {
+                        Label("Sleep Timer", systemImage: "moon.zzz")
+                    }
+
+                    if let track = audioEngine.currentTrack, track.audioSourceType == .streamed {
+                        let downloadState = downloadManager.getDownloadState(for: track.id.uuidString)
+                        if downloadState.isDownloaded {
+                            Button(role: .destructive) {
+                                downloadManager.deleteCachedTrack(trackId: track.id.uuidString)
+                            } label: {
+                                Label("Remove Download", systemImage: "trash")
+                            }
+                        } else if !downloadState.isDownloading {
+                            Button {
+                                Task {
+                                    try? await downloadManager.downloadTrack(track)
+                                }
+                            } label: {
+                                Label("Download for Offline", systemImage: "arrow.down.circle")
+                            }
+                        }
+                    }
+
+                    Button {
+                        showingDownloads = true
+                    } label: {
+                        Label("Manage Downloads", systemImage: "arrow.down.circle.fill")
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 40, height: 40)
+
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.appText)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+    }
+
+    // MARK: - Breathing Artwork Animation
+    private var breathingArtwork: some View {
+        ZStack {
+            // Outer glow pulse
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.4),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 100,
+                        endRadius: 180
+                    )
+                )
+                .frame(width: 320, height: 320)
+                .scaleEffect(breathingScale * 1.1)
+                .opacity(audioEngine.playbackState.isPlaying ? 0.8 : 0.3)
+
+            // Shadow layer
+            Circle()
+                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.2))
+                .frame(width: 280, height: 280)
+                .blur(radius: 40)
+                .offset(y: 20)
+                .scaleEffect(breathingScale)
+
+            // Main artwork circle with gradient
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 260, height: 260)
+                .scaleEffect(breathingScale)
+
+            // Inner circle with frosted glass
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 200, height: 200)
+                .shadow(color: .black.opacity(0.15), radius: 30, y: 15)
+                .scaleEffect(breathingScale)
+
+            // Buffering or icon
+            if audioEngine.isBuffering {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(1.8)
+                        .tint(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+
+                    Text("Loading...")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(.appTextSecondary)
+                }
+            } else {
+                // Custom category icon or waveform
+                ZStack {
+                    if audioEngine.playbackState.isPlaying {
+                        // Animated waveform bars
+                        WaveformVisualization(category: audioEngine.currentTrack?.category ?? .whiteNoise)
+                    } else {
+                        Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
+                            .font(.system(size: 60, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
+                                        Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.6)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                }
+                .scaleEffect(breathingScale)
+            }
+
+            // Rotating ring animation when playing
+            if audioEngine.playbackState.isPlaying {
+                Circle()
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.1),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise)
+                            ],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    )
+                    .frame(width: 270, height: 270)
+                    .rotationEffect(.degrees(artworkRotation))
+            }
+
+            // Buffer progress ring
+            if audioEngine.bufferProgress > 0 && audioEngine.bufferProgress < 1 {
+                Circle()
+                    .trim(from: 0, to: CGFloat(audioEngine.bufferProgress))
+                    .stroke(
+                        Color.appTextSecondary.opacity(0.3),
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                    )
+                    .frame(width: 275, height: 275)
+                    .rotationEffect(.degrees(-90))
+            }
+        }
+        .padding(.horizontal, 40)
+        .onAppear {
+            startBreathingAnimation()
+            startRotationAnimation()
+        }
+        .onChange(of: audioEngine.playbackState) { newState in
+            if newState.isPlaying {
+                startBreathingAnimation()
+                startRotationAnimation()
+            }
+        }
+    }
+
+    private func startBreathingAnimation() {
+        withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+            breathingScale = 1.03
+        }
+    }
+
+    private func startRotationAnimation() {
+        withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+            artworkRotation = 360
+        }
+    }
+
+    // MARK: - Premium Track Info
+    private var premiumTrackInfo: some View {
+        VStack(spacing: 12) {
+            // Track title with gradient
+            Text(audioEngine.currentTrack?.title ?? "Unknown Track")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.appText, .appText.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+
+            // Artist and language
+            HStack(spacing: 8) {
+                Text(audioEngine.currentTrack?.artist ?? "")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(.appTextSecondary)
+
+                if let language = audioEngine.currentTrack?.language {
+                    Text(language.flag)
+                        .font(.system(size: 16))
+                }
+            }
+
+            // Premium badges
+            if let track = audioEngine.currentTrack {
+                HStack(spacing: 10) {
+                    // Age badge with gradient border
+                    PremiumBadge(
+                        icon: "person.crop.circle",
+                        text: "\(track.ageRangeMin)-\(track.ageRangeMax)m",
+                        color: .appPrimary
+                    )
+
+                    // Source badge
+                    let downloadState = downloadManager.getDownloadState(for: track.id.uuidString)
+                    if downloadState.isDownloaded {
+                        PremiumBadge(
+                            icon: "checkmark.circle.fill",
+                            text: "Offline",
+                            color: .appAccentMint
+                        )
+                    } else if case .downloading(let progress) = downloadState {
+                        PremiumBadge(
+                            icon: "arrow.down.circle",
+                            text: "\(Int(progress * 100))%",
+                            color: .appSecondary
+                        )
+                    } else {
+                        PremiumBadge(
+                            icon: track.audioSourceType == .generated ? "waveform" : "wifi",
+                            text: track.sourceDescription,
+                            color: .appTextSecondary
+                        )
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 24)
+    }
+
+    // MARK: - Premium Progress Bar with Haptics
+    private var premiumProgressBar: some View {
+        VStack(spacing: 8) {
+            // Custom progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background track
+                    Capsule()
+                        .fill(Color.appTextSecondary.opacity(0.2))
+                        .frame(height: 6)
+
+                    // Progress fill with gradient
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
+                                    Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.7)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: progressWidth(in: geometry), height: 6)
+
+                    // Scrubber knob
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 16, height: 16)
+                        .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                        .offset(x: progressWidth(in: geometry) - 8)
+                }
+                .frame(height: 16)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                            let time = progress * audioEngine.duration
+                            audioEngine.seek(to: time)
+                            selectionFeedback.selectionChanged()
+                        }
+                )
+            }
+            .frame(height: 16)
+
+            // Time labels with premium styling
+            HStack {
+                Text(formatTime(audioEngine.currentTime))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.appTextSecondary)
+
+                Spacer()
+
+                Text("-\(formatTime(audioEngine.duration - audioEngine.currentTime))")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.appTextSecondary)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 24)
+    }
+
+    private func progressWidth(in geometry: GeometryProxy) -> CGFloat {
+        let progress = audioEngine.duration > 0 ? audioEngine.currentTime / audioEngine.duration : 0
+        return geometry.size.width * CGFloat(progress)
+    }
+
+    // MARK: - Legacy Header (keeping for reference)
     private var header: some View {
         HStack {
             Button {
@@ -967,14 +1373,7 @@ struct EqualizerView: View {
     }
 }
 
-// MARK: - Scale Button Style
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed)
-    }
-}
+// ScaleButtonStyle moved to ButtonStyles.swift to avoid redeclaration
 
 // MARK: - Effectiveness Feedback Sheet
 /// Prompts user to rate how effective the track was at soothing their baby
@@ -1217,7 +1616,182 @@ struct EffectivenessFeedbackSheet: View {
     }
 }
 
-#Preview {
+// MARK: - Player Background
+
+/// Animated background for the player with category-specific colors
+struct PlayerBackground: View {
+    let category: AudioCategory
+
+    @State private var animateGradient = false
+    @State private var floatingParticles: [FloatingParticle] = []
+
+    var body: some View {
+        ZStack {
+            // Base gradient
+            LinearGradient(
+                colors: backgroundColors,
+                startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                endPoint: animateGradient ? .bottomTrailing : .topLeading
+            )
+
+            // Floating particles
+            ForEach(floatingParticles) { particle in
+                Circle()
+                    .fill(Color.white.opacity(particle.opacity))
+                    .frame(width: particle.size, height: particle.size)
+                    .position(particle.position)
+                    .blur(radius: particle.blur)
+            }
+
+            // Soft overlay
+            RadialGradient(
+                colors: [Color.clear, Color.black.opacity(0.1)],
+                center: .center,
+                startRadius: 100,
+                endRadius: 400
+            )
+        }
+        .onAppear {
+            generateParticles()
+            withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
+                animateGradient.toggle()
+            }
+        }
+    }
+
+    private var backgroundColors: [Color] {
+        let baseColor = Color.forCategory(category)
+        return [
+            Color.appBackground,
+            baseColor.opacity(0.15),
+            Color.appBackground,
+            baseColor.opacity(0.1)
+        ]
+    }
+
+    private func generateParticles() {
+        floatingParticles = (0..<12).map { _ in
+            FloatingParticle(
+                position: CGPoint(
+                    x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
+                    y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
+                ),
+                size: CGFloat.random(in: 20...80),
+                opacity: Double.random(in: 0.02...0.08),
+                blur: CGFloat.random(in: 10...30)
+            )
+        }
+    }
+}
+
+struct FloatingParticle: Identifiable {
+    let id = UUID()
+    var position: CGPoint
+    var size: CGFloat
+    var opacity: Double
+    var blur: CGFloat
+}
+
+// MARK: - Waveform Visualization
+
+/// Animated waveform bars for playing state
+struct WaveformVisualization: View {
+    let category: AudioCategory
+
+    @State private var heights: [CGFloat] = Array(repeating: 0.3, count: 7)
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<7, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.forCategory(category),
+                                Color.forCategory(category).opacity(0.6)
+                            ],
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    )
+                    .frame(width: 6, height: 50 * heights[index])
+            }
+        }
+        .frame(height: 50)
+        .onAppear {
+            animateBars()
+        }
+    }
+
+    private func animateBars() {
+        // Staggered animation for each bar
+        for index in 0..<7 {
+            let delay = Double(index) * 0.1
+            withAnimation(
+                .easeInOut(duration: Double.random(in: 0.4...0.8))
+                .repeatForever(autoreverses: true)
+                .delay(delay)
+            ) {
+                heights[index] = CGFloat.random(in: 0.3...1.0)
+            }
+        }
+    }
+}
+
+// MARK: - Premium Badge
+
+/// Reusable premium styled badge component
+struct PremiumBadge: View {
+    let icon: String
+    let text: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .medium))
+
+            Text(text)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            Capsule()
+                .fill(color.opacity(0.12))
+        )
+        .overlay(
+            Capsule()
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Player View") {
     PlayerView()
         .environmentObject(AudioEngine.shared)
+}
+
+#Preview("Player Background") {
+    PlayerBackground(category: .classicalMusic)
+}
+
+#Preview("Waveform Visualization") {
+    ZStack {
+        Color.appBackground
+        WaveformVisualization(category: .instrumental)
+    }
+}
+
+#Preview("Premium Badge") {
+    VStack(spacing: 16) {
+        PremiumBadge(icon: "person.crop.circle", text: "0-12m", color: .appPrimary)
+        PremiumBadge(icon: "checkmark.circle.fill", text: "Offline", color: .appAccentMint)
+        PremiumBadge(icon: "wifi", text: "Streaming", color: .appTextSecondary)
+    }
+    .padding()
+    .background(Color.appBackground)
 }

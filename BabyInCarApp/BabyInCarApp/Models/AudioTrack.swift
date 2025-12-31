@@ -439,11 +439,14 @@ struct Playlist: Codable, Identifiable, Equatable, Hashable {
     var formattedTotalDuration: String {
         let hours = Int(totalDuration) / 3600
         let minutes = (Int(totalDuration) % 3600) / 60
+        let seconds = Int(totalDuration) % 60
 
         if hours > 0 {
-            return "\(hours)h \(minutes)m"
+            return String(format: "%dh %dm %02ds", hours, minutes, seconds)
+        } else if minutes > 0 {
+            return String(format: "%d:%02d", minutes, seconds)
         } else {
-            return "\(minutes) min"
+            return String(format: "0:%02d", seconds)
         }
     }
 

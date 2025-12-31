@@ -22,6 +22,15 @@
 		A1000028 /* CryDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000028 /* CryDetectionService.swift */; };
 		A1000029 /* CryClassificationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000029 /* CryClassificationModel.swift */; };
 		A100002A /* SmartCryResponseEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002A /* SmartCryResponseEngine.swift */; };
+		A100002B /* AdvancedFeatureExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002B /* AdvancedFeatureExtractor.swift */; };
+		A100002C /* VoiceCharacteristicsAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002C /* VoiceCharacteristicsAnalyzer.swift */; };
+		A100002D /* CryPatternTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002D /* CryPatternTracker.swift */; };
+		A100002E /* BabyAudioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002E /* BabyAudioAnalyzer.swift */; };
+		A100002F /* BabyProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002F /* BabyProfileManager.swift */; };
+		A1000043 /* AnalyticsCloudService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000043 /* AnalyticsCloudService.swift */; };
+		A1000044 /* MLRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000044 /* MLRecommendationEngine.swift */; };
+		A1000045 /* CryDetectorMLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000045 /* CryDetectorMLModel.swift */; };
+		A1000046 /* CryClassifierMLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000046 /* CryClassifierMLModel.swift */; };
 		A1000030 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* ContentView.swift */; };
 		A1000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* OnboardingView.swift */; };
 		A1000032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* HomeView.swift */; };
@@ -32,10 +41,19 @@
 		A1000037 /* TrackDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000037 /* TrackDownloadView.swift */; };
 		A1000038 /* CryDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000038 /* CryDetectionView.swift */; };
 		A1000039 /* PlaylistViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000039 /* PlaylistViews.swift */; };
+		A100003A /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003A /* SplashScreenView.swift */; };
 		A1000040 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000040 /* Colors.swift */; };
+		A1000047 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000047 /* Typography.swift */; };
 		A1000041 /* KeyboardHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000041 /* KeyboardHelper.swift */; };
+		A1000048 /* AppIconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000048 /* AppIconGenerator.swift */; };
+		A1000049 /* IconExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000049 /* IconExporter.swift */; };
 		A1000042 /* PlaylistManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000042 /* PlaylistManager.swift */; };
 		A1000050 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000050 /* CarPlaySceneDelegate.swift */; };
+		A1000051 /* ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000051 /* ButtonStyles.swift */; };
+		A1000052 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000052 /* Cards.swift */; };
+		A1000053 /* SkeletonLoading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000053 /* SkeletonLoading.swift */; };
+		A1000054 /* EmptyStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000054 /* EmptyStateViews.swift */; };
+		A1000055 /* CategoryIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000055 /* CategoryIcons.swift */; };
 		A1000060 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000060 /* Assets.xcassets */; };
 		A1000061 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2000061 /* LaunchScreen.storyboard */; };
 		A1000080 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Audio */; };
@@ -57,6 +75,15 @@
 		A2000028 /* CryDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryDetectionService.swift; sourceTree = "<group>"; };
 		A2000029 /* CryClassificationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryClassificationModel.swift; sourceTree = "<group>"; };
 		A200002A /* SmartCryResponseEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartCryResponseEngine.swift; sourceTree = "<group>"; };
+		A200002B /* AdvancedFeatureExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedFeatureExtractor.swift; sourceTree = "<group>"; };
+		A200002C /* VoiceCharacteristicsAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCharacteristicsAnalyzer.swift; sourceTree = "<group>"; };
+		A200002D /* CryPatternTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryPatternTracker.swift; sourceTree = "<group>"; };
+		A200002E /* BabyAudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyAudioAnalyzer.swift; sourceTree = "<group>"; };
+		A200002F /* BabyProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyProfileManager.swift; sourceTree = "<group>"; };
+		A2000043 /* AnalyticsCloudService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCloudService.swift; sourceTree = "<group>"; };
+		A2000044 /* MLRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLRecommendationEngine.swift; sourceTree = "<group>"; };
+		A2000045 /* CryDetectorMLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryDetectorMLModel.swift; sourceTree = "<group>"; };
+		A2000046 /* CryClassifierMLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryClassifierMLModel.swift; sourceTree = "<group>"; };
 		A2000030 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A2000031 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A2000032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -70,7 +97,16 @@
 		A2000040 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		A2000041 /* KeyboardHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHelper.swift; sourceTree = "<group>"; };
 		A2000042 /* PlaylistManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistManager.swift; sourceTree = "<group>"; };
+		A2000047 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		A2000048 /* AppIconGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconGenerator.swift; sourceTree = "<group>"; };
+		A2000049 /* IconExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconExporter.swift; sourceTree = "<group>"; };
 		A2000050 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		A2000051 /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
+		A2000052 /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
+		A2000053 /* SkeletonLoading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonLoading.swift; sourceTree = "<group>"; };
+		A2000054 /* EmptyStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateViews.swift; sourceTree = "<group>"; };
+		A2000055 /* CategoryIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryIcons.swift; sourceTree = "<group>"; };
+		A200003A /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		A2000060 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000061 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A2000070 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -106,12 +142,25 @@
 				A5000010 /* Models */,
 				A5000020 /* Services */,
 				A5000030 /* Views */,
+				A5000035 /* Components */,
 				A5000040 /* Extensions */,
 				A5000045 /* Utilities */,
 				A5000050 /* CarPlay */,
 				A5000060 /* Resources */,
 			);
 			path = BabyInCarApp;
+			sourceTree = "<group>";
+		};
+		A5000035 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A2000051 /* ButtonStyles.swift */,
+				A2000052 /* Cards.swift */,
+				A2000053 /* SkeletonLoading.swift */,
+				A2000054 /* EmptyStateViews.swift */,
+				A2000055 /* CategoryIcons.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		A5000002 /* Products */ = {
@@ -134,6 +183,7 @@
 		A5000020 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A5000021 /* ML */,
 				A2000020 /* AudioEngine.swift */,
 				A2000021 /* AIRecommendationEngine.swift */,
 				A2000022 /* ContentLibraryService.swift */,
@@ -145,9 +195,25 @@
 				A2000028 /* CryDetectionService.swift */,
 				A2000029 /* CryClassificationModel.swift */,
 				A200002A /* SmartCryResponseEngine.swift */,
+				A200002B /* AdvancedFeatureExtractor.swift */,
+				A200002C /* VoiceCharacteristicsAnalyzer.swift */,
+				A200002D /* CryPatternTracker.swift */,
+				A200002E /* BabyAudioAnalyzer.swift */,
+				A200002F /* BabyProfileManager.swift */,
+				A2000043 /* AnalyticsCloudService.swift */,
+				A2000044 /* MLRecommendationEngine.swift */,
 				A2000042 /* PlaylistManager.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		A5000021 /* ML */ = {
+			isa = PBXGroup;
+			children = (
+				A2000045 /* CryDetectorMLModel.swift */,
+				A2000046 /* CryClassifierMLModel.swift */,
+			);
+			path = ML;
 			sourceTree = "<group>";
 		};
 		A5000030 /* Views */ = {
@@ -163,6 +229,7 @@
 				A2000037 /* TrackDownloadView.swift */,
 				A2000038 /* CryDetectionView.swift */,
 				A2000039 /* PlaylistViews.swift */,
+				A200003A /* SplashScreenView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -171,6 +238,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000040 /* Colors.swift */,
+				A2000047 /* Typography.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -179,6 +247,8 @@
 			isa = PBXGroup;
 			children = (
 				A2000041 /* KeyboardHelper.swift */,
+				A2000048 /* AppIconGenerator.swift */,
+				A2000049 /* IconExporter.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -289,6 +359,15 @@
 				A1000028 /* CryDetectionService.swift in Sources */,
 				A1000029 /* CryClassificationModel.swift in Sources */,
 				A100002A /* SmartCryResponseEngine.swift in Sources */,
+				A100002B /* AdvancedFeatureExtractor.swift in Sources */,
+				A100002C /* VoiceCharacteristicsAnalyzer.swift in Sources */,
+				A100002D /* CryPatternTracker.swift in Sources */,
+				A100002E /* BabyAudioAnalyzer.swift in Sources */,
+				A100002F /* BabyProfileManager.swift in Sources */,
+				A1000043 /* AnalyticsCloudService.swift in Sources */,
+				A1000044 /* MLRecommendationEngine.swift in Sources */,
+				A1000045 /* CryDetectorMLModel.swift in Sources */,
+				A1000046 /* CryClassifierMLModel.swift in Sources */,
 				A1000030 /* ContentView.swift in Sources */,
 				A1000031 /* OnboardingView.swift in Sources */,
 				A1000032 /* HomeView.swift in Sources */,
@@ -299,10 +378,19 @@
 				A1000037 /* TrackDownloadView.swift in Sources */,
 				A1000038 /* CryDetectionView.swift in Sources */,
 				A1000039 /* PlaylistViews.swift in Sources */,
+				A100003A /* SplashScreenView.swift in Sources */,
 				A1000040 /* Colors.swift in Sources */,
+				A1000047 /* Typography.swift in Sources */,
 				A1000041 /* KeyboardHelper.swift in Sources */,
+				A1000048 /* AppIconGenerator.swift in Sources */,
+				A1000049 /* IconExporter.swift in Sources */,
 				A1000042 /* PlaylistManager.swift in Sources */,
 				A1000050 /* CarPlaySceneDelegate.swift in Sources */,
+				A1000051 /* ButtonStyles.swift in Sources */,
+				A1000052 /* Cards.swift in Sources */,
+				A1000053 /* SkeletonLoading.swift in Sources */,
+				A1000054 /* EmptyStateViews.swift in Sources */,
+				A1000055 /* CategoryIcons.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

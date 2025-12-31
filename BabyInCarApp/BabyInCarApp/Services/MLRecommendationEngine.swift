@@ -451,7 +451,7 @@ class MLRecommendationEngine: ObservableObject {
         if result.count < limit {
             let highCalming = contentLibrary.getAllTracks()
                 .filter { $0.ageRangeMin <= babyAge && $0.ageRangeMax >= babyAge }
-                .filter { !result.contains(where: { $0.id == $0.id }) }
+                .filter { track in !result.contains(where: { $0.id == track.id }) }
                 .sorted { $0.calmingScore > $1.calmingScore }
 
             for track in highCalming {

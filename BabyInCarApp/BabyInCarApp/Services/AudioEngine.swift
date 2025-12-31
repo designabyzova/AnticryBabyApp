@@ -626,6 +626,16 @@ class AudioEngine: ObservableObject {
                 subdirectories = ["Audio/nature"]
             case .whiteNoise:
                 subdirectories = ["Audio/whitenoise"]
+            case .instrumental:
+                // Instrumental tracks are stored in lullabies folder (bells, harp, soft_guitar, dreamy_arp)
+                subdirectories = ["Audio/lullabies", "Audio/ambient"]
+            case .fairyTales:
+                // Support both English and Russian fairytales
+                if track.language == .russian {
+                    subdirectories = ["Audio/fairytales/ru", "Audio/fairytales"]
+                } else {
+                    subdirectories = ["Audio/fairytales/en", "Audio/fairytales"]
+                }
             default:
                 subdirectories = ["Audio"]
             }
@@ -642,7 +652,7 @@ class AudioEngine: ObservableObject {
 
         // Try all known audio subdirectories as a last resort
         if url == nil {
-            let allSubdirectories = ["Audio/children", "Audio/lullabies", "Audio/classical", "Audio/nature", "Audio/whitenoise", "Audio/ambient", "Audio/podcasts", "Audio/meditation"]
+            let allSubdirectories = ["Audio/children", "Audio/lullabies", "Audio/classical", "Audio/nature", "Audio/whitenoise", "Audio/ambient", "Audio/podcasts", "Audio/meditation", "Audio/fairytales/en", "Audio/fairytales/ru", "Audio/acoustic"]
             for subdirectory in allSubdirectories {
                 url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory)
                 if url != nil {

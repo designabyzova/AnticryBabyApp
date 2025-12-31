@@ -207,11 +207,295 @@ class CryDetectionService: ObservableObject {
         // Convert to array for processing
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameLength))
 
+        // Capture values needed for analysis
+        let fftSizeLocal = fftSize
+        let windowLocal = window
+        let ambientNoiseLevelLocal = ambientNoiseLevel
+        let adaptiveThresholdLocal = adaptiveThreshold
+        let useMLEnhancementLocal = useMLEnhancement
+        let mlBlendRatioLocal = mlBlendRatio
+        let sampleRateLocal = sampleRate
+
         analysisQueue.async { [weak self] in
-            self?.analyzeAudio(samples: samples)
+            self?.analyzeAudioNonIsolated(
+                samples: samples,
+                fftSize: fftSizeLocal,
+                window: windowLocal,
+                ambientNoiseLevel: ambientNoiseLevelLocal,
+                adaptiveThreshold: adaptiveThresholdLocal,
+                useMLEnhancement: useMLEnhancementLocal,
+                mlBlendRatio: mlBlendRatioLocal,
+                sampleRate: sampleRateLocal
+            )
         }
     }
 
+    /// Non-isolated audio analysis that can run on background queue
+    private nonisolated func analyzeAudioNonIsolated(
+        samples: [Float],
+        fftSize: Int,
+        window: [Float],
+        ambientNoiseLevel: Float,
+        adaptiveThreshold: Float,
+        useMLEnhancement: Bool,
+        mlBlendRatio: Double,
+        sampleRate: Float
+    ) {
+        guard samples.count >= fftSize else { return }
+
+        // 1. Calculate RMS level
+        var rms: Float = 0
+        vDSP_rmsqv(samples, 1, &rms, vDSP_Length(samples.count))
+
+        // Update audio level on main thread
+        Task { @MainActor [weak self] in
+            self?.currentAudioLevel = rms
+        }
+
+        // Skip analysis if too quiet (likely just ambient noise)
+        guard rms > ambientNoiseLevel * 1.5 else {
+            Task { @MainActor [weak self] in
+                self?.handleQuietFrame()
+            }
+            return
+        }
+
+        // 2. Apply window function
+        var windowedSamples = [Float](repeating: 0, count: fftSize)
+        var windowCopy = window
+        vDSP_vmul(samples, 1, &windowCopy, 1, &windowedSamples, 1, vDSP_Length(fftSize))
+
+        // 3. Perform FFT
+        var magnitudes = [Float](repeating: 0, count: fftSize / 2)
+        performFFTNonIsolated(on: windowedSamples, fftSize: fftSize, magnitudes: &magnitudes)
+
+        // 4. Analyze frequency spectrum for cry characteristics (rule-based)
+        let cryAnalysis = analyzeCryCharacteristicsNonIsolated(
+            magnitudes: magnitudes,
+            sampleRate: sampleRate,
+            fftSize: fftSize,
+            adaptiveThreshold: adaptiveThreshold
+        )
+
+        // 5. Classify cry type (rule-based)
+        var cryType = classifyCryTypeNonIsolated(analysis: cryAnalysis, adaptiveThreshold: adaptiveThreshold)
+
+        // 6. Calculate confidence (rule-based)
+        var confidence = calculateConfidenceNonIsolated(
+            analysis: cryAnalysis,
+            type: cryType,
+            adaptiveThreshold: adaptiveThreshold
+        )
+
+        // Variables for ML enhancement
+        var extendedFeatures: ExtendedAudioFeatures?
+        var voiceChars: VoiceCharacteristics?
+        var mlCryDetected = false
+        var patterns: CryPatternMetrics?
+
+        if useMLEnhancement {
+            // Create feature extractor locally for thread safety
+            let featureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
+            let features = featureExtractor.extractFeatures(from: samples, sampleRate: sampleRate)
+            extendedFeatures = features
+
+            // Create detector/classifier locally
+            let detector = CryDetectorMLModel()
+            let mlDetection = detector.detect(features: features)
+            mlCryDetected = mlDetection.isCryDetected
+            let mlConfidence = mlDetection.confidence
+
+            // If cry detected, classify type with ML
+            if mlDetection.isCryDetected || mlDetection.confidence > 0.4 {
+                let classifier = CryClassifierMLModel()
+                let classification = classifier.classify(features: features)
+
+                // Blend ML classification with rule-based
+                if classification.confidence > confidence {
+                    cryType = classification.type
+                }
+            }
+
+            // Analyze voice characteristics
+            let voiceAnalyzer = VoiceCharacteristicsAnalyzer()
+            voiceChars = voiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
+
+            // Blend confidences
+            let blendedConfidence = (mlConfidence * mlBlendRatio) + (confidence * (1.0 - mlBlendRatio))
+            confidence = blendedConfidence
+
+            // If ML detects cry but rule-based doesn't, use higher confidence
+            if mlCryDetected && !cryAnalysis.isCryLike && mlConfidence > 0.7 {
+                confidence = max(confidence, mlConfidence)
+            }
+        }
+
+        // Determine if cry-like
+        let isCryLike = useMLEnhancement ? (cryAnalysis.isCryLike || mlCryDetected) : cryAnalysis.isCryLike
+
+        // Create frame
+        let frame = CryFrame(
+            timestamp: Date(),
+            fundamentalPower: cryAnalysis.fundamentalPower,
+            harmonicPower: cryAnalysis.harmonicPower,
+            overallLevel: rms,
+            spectralCentroid: cryAnalysis.spectralCentroid,
+            isCryLike: isCryLike,
+            cryType: cryType,
+            confidence: confidence
+        )
+
+        // Update state on main thread
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+
+            // Update ML state if applicable
+            if useMLEnhancement {
+                self.latestExtendedFeatures = extendedFeatures
+                self.latestVoiceCharacteristics = voiceChars
+
+                // Update pattern tracker on main thread
+                let timestamp = Date()
+                let updatedPatterns = self.patternTracker.update(
+                    isCrying: isCryLike,
+                    intensity: Double(rms),
+                    type: cryType,
+                    timestamp: timestamp
+                )
+                self.latestPatternMetrics = updatedPatterns
+            }
+
+            self.updatePatternBuffer(with: frame)
+            self.evaluateDetection()
+        }
+    }
+
+    /// Non-isolated FFT computation
+    private nonisolated func performFFTNonIsolated(on samples: [Float], fftSize: Int, magnitudes: inout [Float]) {
+        guard let fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(fftSize), .FORWARD) else { return }
+        defer { vDSP_DFT_DestroySetup(fftSetup) }
+
+        var realInput = samples
+        var imagInput = [Float](repeating: 0, count: fftSize)
+        var realOutput = [Float](repeating: 0, count: fftSize)
+        var imagOutput = [Float](repeating: 0, count: fftSize)
+
+        vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
+
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
+
+        var scaleFactor: Float = 2.0 / Float(fftSize)
+        vDSP_vsmul(magnitudes, 1, &scaleFactor, &magnitudes, 1, vDSP_Length(fftSize / 2))
+    }
+
+    /// Non-isolated cry characteristics analysis
+    private nonisolated func analyzeCryCharacteristicsNonIsolated(
+        magnitudes: [Float],
+        sampleRate: Float,
+        fftSize: Int,
+        adaptiveThreshold: Float
+    ) -> CryAnalysis {
+        let frequencyResolution = sampleRate / Float(fftSize)
+        let cryFrequencyRange: ClosedRange<Float> = 300...600
+        let cryHarmonicsRange: ClosedRange<Float> = 600...2000
+
+        let fundamentalPower = calculateBandPowerNonIsolated(magnitudes: magnitudes, range: cryFrequencyRange, resolution: frequencyResolution)
+        let harmonicPower = calculateBandPowerNonIsolated(magnitudes: magnitudes, range: cryHarmonicsRange, resolution: frequencyResolution)
+        let spectralCentroid = calculateSpectralCentroidNonIsolated(magnitudes: magnitudes, resolution: frequencyResolution)
+        let spectralFlatness = calculateSpectralFlatnessNonIsolated(magnitudes: magnitudes)
+
+        let isCryLike = fundamentalPower > adaptiveThreshold &&
+                        harmonicPower > fundamentalPower * 0.3 &&
+                        spectralCentroid > 500 && spectralCentroid < 2000 &&
+                        spectralFlatness < 0.5
+
+        return CryAnalysis(
+            fundamentalPower: fundamentalPower,
+            harmonicPower: harmonicPower,
+            spectralCentroid: spectralCentroid,
+            spectralFlatness: spectralFlatness,
+            zeroCrossingRate: 0,
+            isCryLike: isCryLike
+        )
+    }
+
+    private nonisolated func calculateBandPowerNonIsolated(magnitudes: [Float], range: ClosedRange<Float>, resolution: Float) -> Float {
+        let startBin = Int(range.lowerBound / resolution)
+        let endBin = min(Int(range.upperBound / resolution), magnitudes.count - 1)
+        guard startBin < endBin && startBin >= 0 else { return 0 }
+
+        var power: Float = 0
+        let bandMagnitudes = Array(magnitudes[startBin...endBin])
+        vDSP_sve(bandMagnitudes, 1, &power, vDSP_Length(endBin - startBin + 1))
+        return power / Float(endBin - startBin + 1)
+    }
+
+    private nonisolated func calculateSpectralCentroidNonIsolated(magnitudes: [Float], resolution: Float) -> Float {
+        var weightedSum: Float = 0
+        var totalMagnitude: Float = 0
+        for i in 0..<magnitudes.count {
+            let frequency = Float(i) * resolution
+            weightedSum += frequency * magnitudes[i]
+            totalMagnitude += magnitudes[i]
+        }
+        return totalMagnitude > 0 ? weightedSum / totalMagnitude : 0
+    }
+
+    private nonisolated func calculateSpectralFlatnessNonIsolated(magnitudes: [Float]) -> Float {
+        let epsilon: Float = 1e-10
+        var logSum: Float = 0
+        var sum: Float = 0
+        for mag in magnitudes where mag > epsilon {
+            logSum += log(mag + epsilon)
+            sum += mag
+        }
+        let n = Float(magnitudes.count)
+        let geometricMean = exp(logSum / n)
+        let arithmeticMean = sum / n
+        return arithmeticMean > epsilon ? geometricMean / arithmeticMean : 0
+    }
+
+    private nonisolated func classifyCryTypeNonIsolated(analysis: CryAnalysis, adaptiveThreshold: Float) -> CryType {
+        guard analysis.isCryLike else { return .unknown }
+
+        let fundamentalRatio = analysis.fundamentalPower / (analysis.harmonicPower + 0.001)
+        let centroid = analysis.spectralCentroid
+
+        if centroid < 700 && fundamentalRatio > 1.5 { return .hunger }
+        if centroid > 1200 && analysis.fundamentalPower > adaptiveThreshold * 2 { return .pain }
+        if analysis.fundamentalPower < adaptiveThreshold * 1.5 && centroid < 900 { return .tired }
+        if centroid > 800 && centroid < 1200 { return .attention }
+        if analysis.harmonicPower > analysis.fundamentalPower * 0.8 { return .discomfort }
+
+        return .general
+    }
+
+    private nonisolated func calculateConfidenceNonIsolated(analysis: CryAnalysis, type: CryType, adaptiveThreshold: Float) -> Double {
+        guard analysis.isCryLike else { return 0 }
+
+        var confidence: Double = 0
+        let powerScore = Double(min(analysis.fundamentalPower / (adaptiveThreshold * 3), 1.0))
+        confidence += powerScore * 0.3
+
+        let tonalScore = Double(1.0 - analysis.spectralFlatness)
+        confidence += tonalScore * 0.25
+
+        let harmonicScore = Double(min(analysis.harmonicPower / analysis.fundamentalPower, 1.0))
+        confidence += harmonicScore * 0.2
+
+        let centroidScore = analysis.spectralCentroid > 400 && analysis.spectralCentroid < 2000 ? 0.15 : 0.05
+        confidence += centroidScore
+
+        return min(confidence, 1.0)
+    }
+
+    // Keep the original method for compatibility but mark as deprecated
+    @available(*, deprecated, message: "Use analyzeAudioNonIsolated instead")
     private func analyzeAudio(samples: [Float]) {
         guard samples.count >= fftSize else { return }
 
@@ -248,16 +532,12 @@ class CryDetectionService: ObservableObject {
 
         // ========== ML Enhancement ==========
         // Blend ML-based detection with rule-based for improved accuracy
-        var extendedFeatures: ExtendedAudioFeatures?
-        var voiceChars: VoiceCharacteristics?
         var mlCryDetected = false
-        var mlCryType: CryType = .unknown
         var mlConfidence: Double = 0
 
         if useMLEnhancement {
             // Extract comprehensive audio features for ML
             let features = advancedFeatureExtractor.extractFeatures(from: samples, sampleRate: sampleRate)
-            extendedFeatures = features
 
             // Run ML cry detection
             let mlDetection = mlCryDetector.detect(features: features)
@@ -267,7 +547,6 @@ class CryDetectionService: ObservableObject {
             // If cry detected, classify type with ML
             if mlDetection.isCryDetected || mlDetection.confidence > 0.4 {
                 let classification = mlCryClassifier.classify(features: features)
-                mlCryType = classification.type
 
                 // Blend ML classification with rule-based
                 if classification.confidence > confidence {
@@ -276,7 +555,7 @@ class CryDetectionService: ObservableObject {
             }
 
             // Analyze voice characteristics (tremolo, vibrato, distress)
-            voiceChars = voiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
+            let voiceChars = voiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
 
             // Update pattern tracker for temporal analysis
             let timestamp = Date()
@@ -339,9 +618,13 @@ class CryDetectionService: ObservableObject {
         // Perform DFT
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
-        // Calculate magnitudes
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        // Calculate magnitudes using withUnsafeMutableBufferPointer to ensure pointer lifetime
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Normalize
         var scaleFactor: Float = 2.0 / Float(fftSize)
@@ -364,7 +647,8 @@ class CryDetectionService: ObservableObject {
         // Calculate power in cry frequency ranges
         let fundamentalPower = calculateBandPower(range: cryFrequencyRange, resolution: frequencyResolution)
         let harmonicPower = calculateBandPower(range: cryHarmonicsRange, resolution: frequencyResolution)
-        let highHarmonicPower = calculateBandPower(range: attentionFrequencyRange, resolution: frequencyResolution)
+        // High harmonic power calculated but not currently used - reserved for future enhancement
+        _ = calculateBandPower(range: attentionFrequencyRange, resolution: frequencyResolution)
 
         // Calculate spectral centroid (brightness indicator)
         let spectralCentroid = calculateSpectralCentroid(resolution: frequencyResolution)

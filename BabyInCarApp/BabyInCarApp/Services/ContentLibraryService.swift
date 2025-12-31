@@ -366,7 +366,154 @@ class ContentLibraryService: ObservableObject {
         case "ambient": return .instrumental
         case "children": return .childrenSongs
         case "acoustic": return .instrumental
+        case "podcasts", "podcast": return .podcasts
+        case "children_stories", "childrenstories": return .podcasts
+        case "russian_fairy_tales", "russianfairytales": return .fairyTales
+        case "russian_fairy_tales_english": return .fairyTales
+        case "fairytales", "fairy_tales": return .fairyTales
         default: return .instrumental
+        }
+    }
+
+    // MARK: - Load Podcasts from Metadata Files
+
+    /// Load all podcast tracks from the podcast metadata JSON files
+    private func loadPodcastsFromMetadata() -> [AudioTrack] {
+        var tracks: [AudioTrack] = []
+
+        // List of podcast metadata files to load
+        let podcastFiles = [
+            "podcast_metadata",
+            "russian_podcast_metadata",
+            "english_podcast_metadata"
+        ]
+
+        for fileName in podcastFiles {
+            let loadedTracks = loadPodcastMetadataFile(fileName)
+            tracks.append(contentsOf: loadedTracks)
+        }
+
+        print("Loaded \(tracks.count) podcast tracks from metadata files")
+        return tracks
+    }
+
+    /// Load podcasts from a specific metadata file
+    private func loadPodcastMetadataFile(_ fileName: String) -> [AudioTrack] {
+        var tracks: [AudioTrack] = []
+
+        guard let url = Bundle.main.url(forResource: fileName, withExtension: "json", subdirectory: "Audio"),
+              let data = try? Data(contentsOf: url),
+              let podcastArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            print("Could not load \(fileName).json metadata")
+            return tracks
+        }
+
+        for podcastData in podcastArray {
+            guard let id = podcastData["id"] as? String,
+                  let title = podcastData["title"] as? String,
+                  let filename = podcastData["filename"] as? String else {
+                continue
+            }
+
+            let artist = podcastData["artist"] as? String ?? "Podcast"
+            let categoryStr = podcastData["category"] as? String ?? "podcasts"
+            let languageStr = podcastData["language"] as? String ?? "en"
+            let durationStr = podcastData["duration"] as? String
+            let sizeBytes = podcastData["size_bytes"] as? Int ?? 0
+
+            // Parse duration from string format "HH:MM:SS" or "MM:SS"
+            let duration = parseDuration(durationStr) ?? estimateDurationFromSize(sizeBytes)
+
+            // Map language code to Language enum
+            let language = mapLanguageCode(languageStr)
+
+            // Map category string to AudioCategory
+            let category = mapStringToAudioCategory(categoryStr)
+
+            // Extract file info from filename path
+            let pathComponents = filename.split(separator: "/")
+            let fileNameWithExt = String(pathComponents.last ?? "")
+            let fileNameParts = fileNameWithExt.split(separator: ".")
+            let fileNameOnly = String(fileNameParts.first ?? "")
+            let fileExtension = fileNameParts.count > 1 ? String(fileNameParts.last!) : "mp3"
+
+            // Build the subdirectory path for bundle lookup
+            let subdirectory = "Audio/" + pathComponents.dropLast().joined(separator: "/")
+
+            // Check if the file exists in the bundle or should be streamed
+            let isBundled = Bundle.main.url(forResource: fileNameOnly, withExtension: fileExtension, subdirectory: subdirectory) != nil
+
+            // Construct full stream URL from R2 storage for non-bundled podcasts
+            let fullStreamURL: String?
+            if isBundled {
+                fullStreamURL = nil
+            } else {
+                // URL encode the filename path for special characters
+                let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? filename
+                fullStreamURL = "\(APIClient.r2PublicURL)/\(encodedFilename)"
+            }
+
+            // Create the track - podcasts are typically streamed but may be bundled
+            let track = AudioTrack(
+                id: UUID(uuidString: id) ?? UUID(),
+                title: title,
+                artist: artist,
+                category: category,
+                language: language,
+                duration: duration > 0 ? duration : 300, // Default 5 min if unknown
+                ageRangeMin: category == .fairyTales ? 12 : 0,
+                ageRangeMax: 36,
+                calmingScore: 0.75, // Default calming score for podcasts
+                audioSourceType: isBundled ? .bundled : .streamed,
+                fileName: isBundled ? fileNameOnly : nil,
+                fileExtension: isBundled ? fileExtension : nil,
+                streamURL: fullStreamURL
+            )
+            tracks.append(track)
+        }
+
+        return tracks
+    }
+
+    /// Parse duration from string format "HH:MM:SS" or "MM:SS"
+    private func parseDuration(_ durationStr: String?) -> TimeInterval? {
+        guard let str = durationStr else { return nil }
+
+        let components = str.split(separator: ":").compactMap { Int($0) }
+
+        switch components.count {
+        case 3: // HH:MM:SS
+            return TimeInterval(components[0] * 3600 + components[1] * 60 + components[2])
+        case 2: // MM:SS
+            return TimeInterval(components[0] * 60 + components[1])
+        case 1: // Just seconds
+            return TimeInterval(components[0])
+        default:
+            return nil
+        }
+    }
+
+    /// Estimate duration from file size (assuming ~128kbps MP3)
+    private func estimateDurationFromSize(_ sizeBytes: Int) -> TimeInterval {
+        // 128 kbps = 16 KB/s
+        let bytesPerSecond = 16 * 1024
+        return TimeInterval(sizeBytes) / TimeInterval(bytesPerSecond)
+    }
+
+    /// Map language code to Language enum
+    private func mapLanguageCode(_ code: String) -> Language? {
+        switch code.lowercased() {
+        case "en", "english": return .english
+        case "ru", "russian": return .russian
+        case "es", "spanish": return .spanish
+        case "fr", "french": return .french
+        case "de", "german": return .german
+        case "it", "italian": return .italian
+        case "pt", "portuguese": return .portuguese
+        case "zh", "mandarin", "chinese": return .mandarin
+        case "ja", "japanese": return .japanese
+        case "ar", "arabic": return .arabic
+        default: return nil
         }
     }
 
@@ -378,6 +525,10 @@ class ContentLibraryService: ObservableObject {
         // First, load all bundled tracks from metadata JSON
         let bundledTracks = loadBundledTracksFromMetadata()
         tracks.append(contentsOf: bundledTracks)
+
+        // MARK: Load Podcasts from metadata files
+        let podcastTracks = loadPodcastsFromMetadata()
+        tracks.append(contentsOf: podcastTracks)
 
         // MARK: White Noise & Calming Sounds
         let whiteNoiseGenerators: [(GeneratorType, String)] = [
@@ -527,29 +678,53 @@ class ContentLibraryService: ObservableObject {
             ))
         }
 
-        // MARK: Instrumental / Music Box
-        let musicalSounds: [(GeneratorType, String)] = [
-            (.lullaby, "Music Box Lullaby"),
-            (.musicBox, "Gentle Music Box"),
-            (.chimes, "Wind Chimes"),
-            (.bells, "Soft Bells"),
-            (.softPiano, "Dreamy Piano"),
-            (.gentleGuitar, "Acoustic Lullaby")
+        // MARK: Instrumental / Music Box - Use REAL bundled audio, not synthetic generators
+        // Bundled instrumental files from Audio/lullabies folder
+        let bundledInstrumental: [(String, String, String, Int, Double)] = [
+            // Bells collection (15 WAV files)
+            ("Soft Bells 1", "bells_001", "wav", 120, 0.88),
+            ("Soft Bells 2", "bells_002", "wav", 120, 0.88),
+            ("Soft Bells 3", "bells_003", "wav", 120, 0.87),
+            ("Soft Bells 4", "bells_004", "wav", 120, 0.86),
+            ("Soft Bells 5", "bells_005", "wav", 120, 0.85),
+            // Harp collection (15 WAV files)
+            ("Gentle Harp 1", "harp_001", "wav", 120, 0.92),
+            ("Gentle Harp 2", "harp_002", "wav", 120, 0.91),
+            ("Gentle Harp 3", "harp_003", "wav", 120, 0.90),
+            ("Gentle Harp 4", "harp_004", "wav", 120, 0.89),
+            ("Gentle Harp 5", "harp_005", "wav", 120, 0.88),
+            // Soft Guitar collection (15 WAV files)
+            ("Acoustic Lullaby 1", "soft_guitar_001", "wav", 120, 0.85),
+            ("Acoustic Lullaby 2", "soft_guitar_002", "wav", 120, 0.84),
+            ("Acoustic Lullaby 3", "soft_guitar_003", "wav", 120, 0.83),
+            ("Acoustic Lullaby 4", "soft_guitar_004", "wav", 120, 0.82),
+            ("Acoustic Lullaby 5", "soft_guitar_005", "wav", 120, 0.81),
+            // Dreamy Arp collection (15 WAV files)
+            ("Dreamy Arp 1", "dreamy_arp_001", "wav", 120, 0.87),
+            ("Dreamy Arp 2", "dreamy_arp_002", "wav", 120, 0.86),
+            ("Dreamy Arp 3", "dreamy_arp_003", "wav", 120, 0.85),
+            ("Dreamy Arp 4", "dreamy_arp_004", "wav", 120, 0.84),
+            ("Dreamy Arp 5", "dreamy_arp_005", "wav", 120, 0.83)
         ]
 
-        for (generator, title) in musicalSounds {
-            tracks.append(AudioTrack(
-                title: title,
-                artist: "Instrumental",
-                category: .instrumental,
-                duration: 1800,
-                ageRangeMin: generator.optimalAgeRange.lowerBound,
-                ageRangeMax: generator.optimalAgeRange.upperBound,
-                calmingScore: generator.calmingScore,
-                audioSourceType: .generated,
-                generatorType: generator
-            ))
+        for (title, fileName, ext, duration, calmingScore) in bundledInstrumental {
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/lullabies") != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: "Instrumental Collection",
+                    category: .instrumental,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: 0,
+                    ageRangeMax: 36,
+                    calmingScore: calmingScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
         }
+        // NOTE: Do NOT use synthetic generators (.lullaby, .musicBox, etc.) for instrumental.
+        // They produce simple sine wave beeps, not real music.
 
         // MARK: Classical Music (Using public domain compositions)
         let classicalTracks = generateClassicalMusicTracks()
@@ -575,196 +750,75 @@ class ContentLibraryService: ObservableObject {
     private func generateRussianContentTracks() -> [AudioTrack] {
         var tracks: [AudioTrack] = []
 
-        // Russian Lullabies (AI-generated or bundled)
-        let russianLullabies: [(String, String, String, String, Int, Double)] = [
-            // (title, titleEn/artist, fileName, extension, duration, calmingScore)
-            ("Спи, малыш", "Sleep Little One", "ru_lullaby_01", "mp3", 120, 0.92),
-            ("Баю-баюшки-баю", "Hush-a-bye", "ru_lullaby_02", "mp3", 150, 0.95),
-            ("Колыбельная звёзд", "Star Lullaby", "ru_lullaby_03", "mp3", 180, 0.90),
-            ("Сладких снов", "Sweet Dreams", "ru_lullaby_04", "mp3", 120, 0.88)
+        // MARK: Load Russian Fairytales from bundled files (fairytales/ru/)
+        // These are REAL audio files that exist in the bundle - Russian folk tales
+        let russianFairytales: [(String, String, String, Int, ClosedRange<Int>)] = [
+            // (title, fileName, extension, duration_estimate, ageRange)
+            ("Алёнушка", "ru_afanasyev_alyonushka", "mp3", 130, 12...36),
+            ("Баба Яга", "ru_afanasyev_baba_yaga", "mp3", 68, 18...36),
+            ("Баба Яга (часть 1)", "ru_afanasyev_baba_yaga_1", "mp3", 280, 18...36),
+            ("Баба Яга (часть 2)", "ru_afanasyev_baba_yaga_2", "mp3", 280, 18...36),
+            ("Демьянова уха", "ru_afanasyev_demyan", "mp3", 220, 18...36),
+            ("Финист - Ясный Сокол", "ru_afanasyev_finist", "mp3", 310, 18...36),
+            ("Фролка-сидень", "ru_afanasyev_frolka", "mp3", 350, 18...36),
+            ("Головиха", "ru_afanasyev_goloviha", "mp3", 68, 12...36),
+            ("Хаврошечка", "ru_afanasyev_havroshechka", "mp3", 320, 12...36),
+            ("Иван-дурак", "ru_afanasyev_ivan_durak", "mp3", 360, 18...36),
+            ("Иван и Марфа", "ru_afanasyev_ivan_marfa", "mp3", 760, 18...36),
+            ("Иван Попялов", "ru_afanasyev_ivan_popyalov", "mp3", 480, 18...36),
+            ("Кочет и Курица", "ru_afanasyev_kochet_kuritsa", "mp3", 88, 6...24),
+            ("Кощей Бессмертный", "ru_afanasyev_koschei", "mp3", 88, 18...36),
+            ("Кот, Петух и Лиса", "ru_afanasyev_kot_petuh_lisa", "mp3", 160, 12...36),
+            ("Коза-дереза", "ru_afanasyev_koza", "mp3", 270, 12...36),
+            ("Сестрица Алёнушка и братец Иванушка", "ru_afanasyev_kozlenochek", "mp3", 420, 12...36),
+            ("Летучий корабль", "ru_afanasyev_letuchiy_korabl", "mp3", 360, 18...36),
+            ("Лутонюшка", "ru_afanasyev_lutonyushka", "mp3", 180, 12...36),
+            ("Марко Богатый", "ru_afanasyev_marko_bogatiy", "mp3", 230, 18...36),
+            ("Марья Моревна", "ru_afanasyev_marya_morevna", "mp3", 147, 18...36),
+            ("Мена", "ru_afanasyev_mena", "mp3", 340, 12...36),
+            ("Мизгирь", "ru_afanasyev_mizgir", "mp3", 147, 18...36),
+            ("Молодец и река", "ru_afanasyev_molodets", "mp3", 1450, 18...36),
+            ("Мужик и медведь", "ru_afanasyev_muzhik_medved", "mp3", 205, 12...36),
+            ("Набитый дурак", "ru_afanasyev_nabitiy_durak", "mp3", 130, 12...36),
+            ("Не любо - не слушай", "ru_afanasyev_ne_lyubo", "mp3", 320, 18...36),
+            ("Петушок - золотой гребешок", "ru_afanasyev_petushok", "mp3", 340, 6...24),
+            ("Семь Симеонов", "ru_afanasyev_sem_simeonov", "mp3", 345, 18...36),
+            ("Сивка-Бурка", "ru_afanasyev_sivka_burka", "mp3", 860, 18...36),
+            ("Свинка", "ru_afanasyev_svinka", "mp3", 810, 12...36),
+            ("Царевна-лягушка", "ru_afanasyev_tsarevna_lyagushka", "mp3", 440, 12...36),
+            ("Царевна-лягушка (версия 2)", "ru_afanasyev_tsarevna_lyagushka_v2", "mp3", 320, 12...36),
+            ("Подземное царство", "ru_afanasyev_tsarevna_underground", "mp3", 280, 18...36),
+            ("Василиса Прекрасная", "ru_afanasyev_vasilisa", "mp3", 158, 18...36),
+            ("Волк и семеро козлят", "ru_afanasyev_volk", "mp3", 68, 6...24),
+            ("Волк и Коза", "ru_afanasyev_volk_koza", "mp3", 310, 6...24),
+            ("Жар-птица", "ru_afanasyev_zhar_ptitsa", "mp3", 180, 12...36)
         ]
 
-        for (title, artist, fileName, ext, duration, calmingScore) in russianLullabies {
-            // Check if bundled file exists
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/russian") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
+        for (title, fileName, ext, duration, ageRange) in russianFairytales {
+            // Check if file exists in bundle - these are REAL audio files
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/fairytales/ru") != nil {
                 tracks.append(AudioTrack(
                     title: title,
-                    artist: artist,
-                    category: .childrenSongs,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 60,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            } else {
-                // Fallback to generated placeholder
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .childrenSongs,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 60,
-                    calmingScore: calmingScore,
-                    audioSourceType: .generated,
-                    generatorType: .lullaby
-                ))
-            }
-        }
-
-        // Russian Children's Songs
-        let russianSongs: [(String, String, String, String, Int, ClosedRange<Int>)] = [
-            ("Солнышко", "Little Sun", "ru_song_01", "mp3", 90, 3...36),
-            ("Весёлый дождик", "Happy Rain", "ru_song_02", "mp3", 100, 3...36),
-            ("Маленькая звёздочка", "Little Star", "ru_song_03", "mp3", 120, 0...36)
-        ]
-
-        for (title, artist, fileName, ext, duration, ageRange) in russianSongs {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/russian") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .childrenSongs,
+                    artist: "Русские народные сказки",
+                    category: .fairyTales,
                     language: .russian,
                     duration: TimeInterval(duration),
                     ageRangeMin: ageRange.lowerBound,
                     ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 75,
-                    calmingScore: 0.80,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            } else {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .childrenSongs,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 75,
-                    calmingScore: 0.80,
-                    audioSourceType: .generated,
-                    generatorType: .musicBox
-                ))
-            }
-        }
-
-        // Russian Calming Melodies (Instrumental)
-        let russianInstrumental: [(String, String, String, String, Int)] = [
-            ("Тихий вечер", "Quiet Evening", "ru_calm_01", "mp3", 180),
-            ("Зимняя сказка", "Winter Fairytale", "ru_calm_02", "mp3", 200),
-            ("Берёзовая роща", "Birch Grove", "ru_calm_03", "mp3", 180)
-        ]
-
-        for (title, artist, fileName, ext, duration) in russianInstrumental {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/russian") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .instrumental,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 55,
-                    calmingScore: 0.88,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            } else {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .instrumental,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 55,
-                    calmingScore: 0.88,
-                    audioSourceType: .generated,
-                    generatorType: .softPiano
-                ))
-            }
-        }
-
-        // Russian Educational Songs (Logorhythmic)
-        let russianEducational: [(String, String, String, String, Int, ClosedRange<Int>)] = [
-            ("Ручки-ножки", "Hands and Feet", "ru_edu_01", "mp3", 90, 12...36),
-            ("Пальчики", "Little Fingers", "ru_edu_02", "mp3", 80, 6...24)
-        ]
-
-        for (title, artist, fileName, ext, duration, ageRange) in russianEducational {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/russian") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .childrenSongs,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 65,
                     calmingScore: 0.75,
                     audioSourceType: .bundled,
                     fileName: fileName,
                     fileExtension: ext
                 ))
-            } else {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .childrenSongs,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 65,
-                    calmingScore: 0.75,
-                    audioSourceType: .generated,
-                    generatorType: .musicBox
-                ))
             }
         }
 
-        // Russian Fairy Tales
-        let russianStories: [(String, Int, ClosedRange<Int>)] = [
-            ("Колобок", 300, 12...36),
-            ("Репка", 240, 12...36),
-            ("Теремок", 360, 12...36),
-            ("Курочка Ряба", 180, 6...24),
-            ("Три медведя", 420, 18...36),
-            ("Маша и медведь", 480, 18...36)
-        ]
-
-        for (title, duration, ageRange) in russianStories {
-            tracks.append(AudioTrack(
-                title: title,
-                artist: "Русские сказки",
-                category: .fairyTales,
-                language: .russian,
-                duration: TimeInterval(duration),
-                ageRangeMin: ageRange.lowerBound,
-                ageRangeMax: ageRange.upperBound,
-                calmingScore: 0.72,
-                audioSourceType: .textToSpeech
-            ))
-        }
+        // NOTE: Russian lullabies and children's songs (like "Спи, малыш", "Баю-баюшки-баю")
+        // are NOT bundled locally - the Audio/russian folder does not exist.
+        // These should be fetched from the API via fetchServerContent().
+        //
+        // DO NOT create synthetic fallbacks that produce beeps instead of real music.
+        // The generated lullaby/musicBox sounds are just simple sine waves, not real songs.
 
         return tracks
     }
@@ -888,89 +942,92 @@ class ContentLibraryService: ObservableObject {
             }
         }
 
-        // Fallback to generated if no bundled files available
-        if tracks.isEmpty {
-            let classicalPieces: [(String, String, Int)] = [
-                ("Brahms' Lullaby", "Johannes Brahms", 180),
-                ("Clair de Lune", "Claude Debussy", 300),
-                ("Canon in D", "Johann Pachelbel", 240),
-                ("Gymnopédie No. 1", "Erik Satie", 180)
-            ]
-
-            tracks = classicalPieces.map { (title, artist, duration) in
-                AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .classicalMusic,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 60,
-                    calmingScore: 0.85,
-                    audioSourceType: .generated,
-                    generatorType: .lullaby
-                )
-            }
-        }
+        // NOTE: Do NOT use synthetic generator fallbacks for classical music.
+        // If bundled files are missing, the app should fetch from API via fetchServerContent().
+        // Synthetic lullaby generators produce beeps, not real classical music.
 
         return tracks
     }
 
     private func generateFairyTaleTracks() -> [AudioTrack] {
-        let stories: [(String, Language, Int, ClosedRange<Int>)] = [
-            // English Stories
-            ("Goodnight Moon", .english, 300, 0...12),
-            ("The Very Hungry Caterpillar", .english, 420, 6...24),
-            ("Where the Wild Things Are", .english, 480, 12...36),
-            ("Guess How Much I Love You", .english, 360, 3...24),
-            ("The Runaway Bunny", .english, 420, 6...24),
-            ("Pat the Bunny", .english, 240, 0...12),
-            ("Brown Bear, Brown Bear", .english, 180, 3...18),
-            ("Chicka Chicka Boom Boom", .english, 240, 6...24),
-            ("The Snowy Day", .english, 360, 12...36),
-            ("Corduroy", .english, 480, 18...36),
+        var tracks: [AudioTrack] = []
 
-            // Spanish Stories
-            ("Buenas Noches Luna", .spanish, 300, 0...12),
-            ("La Oruga Muy Hambrienta", .spanish, 420, 6...24),
-            ("Donde Viven los Monstruos", .spanish, 480, 12...36),
-            ("Adivina Cuánto Te Quiero", .spanish, 360, 3...24),
-
-            // French Stories
-            ("Bonne Nuit Lune", .french, 300, 0...12),
-            ("La Chenille Qui Fait des Trous", .french, 420, 6...24),
-            ("Max et les Maximonstres", .french, 480, 12...36),
-
-            // German Stories
-            ("Gute Nacht Mond", .german, 300, 0...12),
-            ("Die kleine Raupe Nimmersatt", .german, 420, 6...24),
-
-            // Italian Stories
-            ("Buonanotte Luna", .italian, 300, 0...12),
-            ("Il Piccolo Bruco Maisazio", .italian, 420, 6...24),
-
-            // Mandarin Stories
-            ("晚安月亮", .mandarin, 300, 0...12),
-            ("好饿的毛毛虫", .mandarin, 420, 6...24),
-
-            // Japanese Stories
-            ("おやすみなさいおつきさま", .japanese, 300, 0...12),
-            ("はらぺこあおむし", .japanese, 420, 6...24)
+        // MARK: English Fairy Tales from bundled files (fairytales/en/)
+        // These are REAL Grimm fairy tale audio files
+        let englishFairytales: [(String, String, String, Int, ClosedRange<Int>)] = [
+            // Grimm fairy tales
+            ("Briar Rose (Sleeping Beauty)", "en_grimm_briar_rose", "mp3", 580, 12...36),
+            ("Cat and Mouse", "en_grimm_cat_mouse", "mp3", 420, 12...36),
+            ("Chanticleer and Partlet", "en_grimm_chanticleer", "mp3", 740, 12...36),
+            ("Cinderella", "en_grimm_cinderella", "mp3", 950, 12...36),
+            ("Clever Elsie", "en_grimm_clever_elsie", "mp3", 530, 12...36),
+            ("Clever Gretel", "en_grimm_clever_gretel", "mp3", 380, 12...36),
+            ("The Dog and the Sparrow", "en_grimm_dog_sparrow", "mp3", 530, 12...36),
+            ("The Fisherman and His Wife", "en_grimm_fisherman_wife", "mp3", 900, 12...36),
+            ("Frederick and Catherine", "en_grimm_frederick_catherine", "mp3", 745, 18...36),
+            ("The Frog Prince", "en_grimm_frog_prince", "mp3", 485, 6...24),
+            ("Fundevogel", "en_grimm_fundevogel", "mp3", 400, 12...36),
+            ("The Golden Bird", "en_grimm_golden_bird", "mp3", 980, 18...36),
+            ("The Goose Girl", "en_grimm_goose_girl", "mp3", 880, 18...36),
+            ("Hans in Luck", "en_grimm_hans_luck", "mp3", 950, 18...36),
+            ("Hansel and Gretel", "en_grimm_hansel_gretel", "mp3", 1150, 12...36),
+            ("Jorinda and Jorindel", "en_grimm_jorinda_jorindel", "mp3", 480, 12...36),
+            ("The Little Peasant", "en_grimm_little_peasant", "mp3", 805, 18...36),
+            ("The Miser in the Bush", "en_grimm_miser_bush", "mp3", 475, 18...36),
+            ("Mother Holle", "en_grimm_mother_holle", "mp3", 490, 12...36),
+            ("Mouse, Bird, and Sausage", "en_grimm_mouse_bird_sausage", "mp3", 260, 6...24),
+            ("The Old Man and His Grandson", "en_grimm_old_man_grandson", "mp3", 120, 6...24),
+            ("Old Sultan", "en_grimm_old_sultan", "mp3", 350, 12...36),
+            ("Rapunzel", "en_grimm_rapunzel", "mp3", 585, 12...36),
+            ("Little Red Riding Hood", "en_grimm_red_riding_hood", "mp3", 585, 6...24),
+            ("The Robber Bridegroom", "en_grimm_robber_bridegroom", "mp3", 560, 18...36),
+            ("Rumpelstiltskin", "en_grimm_rumpelstiltskin", "mp3", 490, 12...36),
+            ("Snow White", "en_grimm_snow_white", "mp3", 950, 12...36),
+            ("Straw, Coal, and Bean", "en_grimm_straw_coal_bean", "mp3", 220, 6...24),
+            ("Sweetheart Roland", "en_grimm_sweetheart_roland", "mp3", 580, 18...36),
+            ("The Pink", "en_grimm_the_pink", "mp3", 665, 12...36),
+            ("Tom Thumb", "en_grimm_tom_thumb", "mp3", 965, 12...36),
+            ("The Travelling Musicians", "en_grimm_travelling_musicians", "mp3", 555, 6...24),
+            ("The Twelve Dancing Princesses", "en_grimm_twelve_princesses", "mp3", 610, 12...36),
+            ("The Valiant Little Tailor", "en_grimm_valiant_tailor", "mp3", 1320, 18...36),
+            ("The Willow-Wren", "en_grimm_willow_wren", "mp3", 385, 12...36),
+            // Additional English fairy tales (en_ht_ series)
+            ("Cat and Mouse (HT)", "en_ht_cat_mouse", "mp3", 400, 12...36),
+            ("Faithful John", "en_ht_faithful_john", "mp3", 990, 18...36),
+            ("The Frog King", "en_ht_frog_king", "mp3", 460, 6...24),
+            ("A Good Bargain", "en_ht_good_bargain", "mp3", 580, 18...36),
+            ("Our Lady's Child", "en_ht_our_lady_child", "mp3", 695, 12...36),
+            ("Pack of Ragamuffins", "en_ht_pack_ragamuffins", "mp3", 290, 12...36),
+            ("The Strange Musician", "en_ht_strange_musician", "mp3", 340, 12...36),
+            ("The Twelve Brothers", "en_ht_twelve_brothers", "mp3", 850, 18...36),
+            ("Wolf and Seven Kids", "en_ht_wolf_seven_kids", "mp3", 380, 6...24),
+            ("The Youth Who Went to Learn Fear", "en_ht_youth_fear", "mp3", 1240, 18...36)
         ]
 
-        return stories.map { (title, language, duration, ageRange) in
-            AudioTrack(
-                title: title,
-                artist: "Story Time",
-                category: .fairyTales,
-                language: language,
-                duration: TimeInterval(duration),
-                ageRangeMin: ageRange.lowerBound,
-                ageRangeMax: ageRange.upperBound,
-                calmingScore: 0.75,
-                audioSourceType: .textToSpeech
-            )
+        for (title, fileName, ext, duration, ageRange) in englishFairytales {
+            // Check if file exists in bundle - these are REAL audio files
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/fairytales/en") != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: "Classic Fairy Tales",
+                    category: .fairyTales,
+                    language: .english,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: ageRange.lowerBound,
+                    ageRangeMax: ageRange.upperBound,
+                    calmingScore: 0.75,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
         }
+
+        // NOTE: Other language fairy tales (Spanish, French, German, etc.)
+        // are NOT bundled locally. They should be fetched from the API via fetchServerContent().
+        // DO NOT create textToSpeech fallbacks - use API streaming instead.
+
+        return tracks
     }
 
     private func generateChildrenSongTracks() -> [AudioTrack] {
@@ -1038,29 +1095,9 @@ class ContentLibraryService: ObservableObject {
             }
         }
 
-        // Add generated fallbacks
-        let songs: [(String, Int, ClosedRange<Int>)] = [
-            ("Twinkle Twinkle Little Star", 120, 0...36),
-            ("Rock-a-Bye Baby", 150, 0...24),
-            ("Hush Little Baby", 180, 0...24),
-            ("You Are My Sunshine", 150, 3...36)
-        ]
-
-        for (title, duration, ageRange) in songs {
-            tracks.append(AudioTrack(
-                title: title,
-                artist: "Children's Songs",
-                category: .childrenSongs,
-                language: .english,
-                duration: TimeInterval(duration),
-                ageRangeMin: ageRange.lowerBound,
-                ageRangeMax: ageRange.upperBound,
-                tempoBPM: 80,
-                calmingScore: 0.7,
-                audioSourceType: .generated,
-                generatorType: .musicBox
-            ))
-        }
+        // NOTE: Do NOT add synthetic fallbacks that produce beeps (.generated with .musicBox)
+        // Real bundled lullabies and Bensound files are sufficient.
+        // Additional content should come from API streaming, not synthetic generation.
 
         return tracks
     }
@@ -1247,6 +1284,49 @@ class ContentLibraryService: ObservableObject {
                 category: .fairyTales,
                 isSystemGenerated: true,
                 artworkName: "russian_stories"
+            ))
+        }
+
+        // MARK: Podcasts Collection
+        let podcastTracks = allTracks.filter { $0.category == .podcasts }
+        if !podcastTracks.isEmpty {
+            playlists.append(Playlist(
+                name: "Story Podcasts",
+                description: "Bedtime stories and children's podcasts",
+                tracks: podcastTracks,
+                category: .podcasts,
+                isSystemGenerated: true,
+                artworkName: "podcast_playlist"
+            ))
+        }
+
+        // English Podcasts
+        let englishPodcasts = allTracks.filter {
+            $0.category == .podcasts && $0.language == .english
+        }
+        if !englishPodcasts.isEmpty {
+            playlists.append(Playlist(
+                name: "English Story Podcasts",
+                description: "Bedtime stories in English",
+                tracks: englishPodcasts,
+                category: .podcasts,
+                isSystemGenerated: true,
+                artworkName: "english_podcasts"
+            ))
+        }
+
+        // Russian Podcasts (from podcast metadata - fairy tales)
+        let russianPodcasts = allTracks.filter {
+            ($0.category == .podcasts || $0.category == .fairyTales) && $0.language == .russian
+        }
+        if !russianPodcasts.isEmpty {
+            playlists.append(Playlist(
+                name: "Русские подкасты",
+                description: "Сказки и истории на русском языке",
+                tracks: russianPodcasts,
+                category: .podcasts,
+                isSystemGenerated: true,
+                artworkName: "russian_podcasts"
             ))
         }
 

@@ -5,6 +5,7 @@
 //  Main app scene delegate
 //
 
+#if canImport(UIKit)
 import UIKit
 import SwiftUI
 
@@ -56,3 +57,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Save any data and release shared resources
     }
 }
+#endif

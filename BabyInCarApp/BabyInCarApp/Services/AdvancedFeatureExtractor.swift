@@ -63,6 +63,78 @@ struct ExtendedAudioFeatures: Codable {
     let deltaCoeffs: [Double]             // Delta MFCCs (velocity)
     let deltaDeltaCoeffs: [Double]        // Delta-delta MFCCs (acceleration)
 
+    // MARK: - Memberwise Initializer
+
+    init(
+        fundamentalFrequency: Double,
+        intensity: Double,
+        harmonicToNoiseRatio: Double,
+        spectralCentroid: Double,
+        spectralFlatness: Double,
+        rhythmicity: Double,
+        pitchVariability: Double,
+        onsetSharpness: Double,
+        cryDuration: Double,
+        pauseDuration: Double,
+        formantF1: Double,
+        formantF2: Double,
+        melFrequencyCoeffs: [Double],
+        spectralRolloff: Double,
+        spectralBandwidth: Double,
+        spectralContrast: [Double],
+        spectralFlux: Double,
+        spectralSlope: Double,
+        zeroCrossingRate: Double,
+        rmsEnergy: Double,
+        loudnessDBFS: Double,
+        peakAmplitude: Double,
+        harmonicsStrength: [Double],
+        harmonicDeviation: Double,
+        inharmonicity: Double,
+        jitter: Double,
+        shimmer: Double,
+        temporalModulation: Double,
+        formantF3: Double,
+        formantBandwidths: [Double],
+        chromaFeatures: [Double],
+        deltaCoeffs: [Double],
+        deltaDeltaCoeffs: [Double]
+    ) {
+        self.fundamentalFrequency = fundamentalFrequency
+        self.intensity = intensity
+        self.harmonicToNoiseRatio = harmonicToNoiseRatio
+        self.spectralCentroid = spectralCentroid
+        self.spectralFlatness = spectralFlatness
+        self.rhythmicity = rhythmicity
+        self.pitchVariability = pitchVariability
+        self.onsetSharpness = onsetSharpness
+        self.cryDuration = cryDuration
+        self.pauseDuration = pauseDuration
+        self.formantF1 = formantF1
+        self.formantF2 = formantF2
+        self.melFrequencyCoeffs = melFrequencyCoeffs
+        self.spectralRolloff = spectralRolloff
+        self.spectralBandwidth = spectralBandwidth
+        self.spectralContrast = spectralContrast
+        self.spectralFlux = spectralFlux
+        self.spectralSlope = spectralSlope
+        self.zeroCrossingRate = zeroCrossingRate
+        self.rmsEnergy = rmsEnergy
+        self.loudnessDBFS = loudnessDBFS
+        self.peakAmplitude = peakAmplitude
+        self.harmonicsStrength = harmonicsStrength
+        self.harmonicDeviation = harmonicDeviation
+        self.inharmonicity = inharmonicity
+        self.jitter = jitter
+        self.shimmer = shimmer
+        self.temporalModulation = temporalModulation
+        self.formantF3 = formantF3
+        self.formantBandwidths = formantBandwidths
+        self.chromaFeatures = chromaFeatures
+        self.deltaCoeffs = deltaCoeffs
+        self.deltaDeltaCoeffs = deltaDeltaCoeffs
+    }
+
     // MARK: - ML Feature Vector
 
     /// Returns a normalized feature vector for ML inference (50 features)
@@ -389,9 +461,13 @@ class AdvancedFeatureExtractor {
         // Execute DFT
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
-        // Calculate magnitudes
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        // Calculate magnitudes using withUnsafeMutableBufferPointer to ensure pointer lifetime
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Calculate phases
         for i in 0..<fftSize/2 {

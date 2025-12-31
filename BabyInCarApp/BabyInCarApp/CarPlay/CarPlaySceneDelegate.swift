@@ -11,7 +11,10 @@
 //
 
 import Foundation
+
+#if canImport(UIKit)
 import UIKit
+#endif
 
 #if CARPLAY_ENABLED
 import CarPlay

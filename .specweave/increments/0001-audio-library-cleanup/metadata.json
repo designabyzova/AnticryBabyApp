@@ -1,0 +1,15 @@
+{
+  "id": "0001-audio-library-cleanup",
+  "title": "Audio Library Cleanup - Fix Placeholders and Enable Real Content",
+  "status": "ready_for_review",
+  "priority": "high",
+  "created": "2025-12-31T00:00:00Z",
+  "feature": "FS-001",
+  "tags": [
+    "audio",
+    "content",
+    "api",
+    "cleanup"
+  ],
+  "updated": "2025-12-31T07:28:16.000Z"
+}

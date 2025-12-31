@@ -2,7 +2,7 @@
 //  OnboardingView.swift
 //  BabyInCarApp
 //
-//  Onboarding flow for new users
+//  Premium onboarding flow with delightful animations
 //
 
 import SwiftUI
@@ -17,33 +17,24 @@ struct OnboardingView: View {
     @State private var selectedLanguages: Set<Language> = [.english]
     @State private var showingDatePicker = false
     @State private var showingVoiceInput = false
+    @State private var parallaxOffset: CGFloat = 0
 
     let totalPages = 4
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [Color.appPrimary.opacity(0.1), Color.appSecondary.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Animated parallax background
+                OnboardingBackground(currentPage: currentPage, parallaxOffset: parallaxOffset)
+                    .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Progress indicator - respects safe area
-                    HStack(spacing: 8) {
-                        ForEach(0..<totalPages, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(index <= currentPage ? Color.appPrimary : Color.appPrimary.opacity(0.3))
-                                .frame(height: 4)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, geometry.safeAreaInsets.top > 0 ? 16 : 50) // Extra padding for status bar
+                    // Playful progress indicator
+                    OnboardingProgressIndicator(currentPage: currentPage, totalPages: totalPages)
+                        .padding(.horizontal, 24)
+                        .padding(.top, geometry.safeAreaInsets.top > 0 ? 16 : 50)
 
-                    // Content
+                    // Content with parallax
                     TabView(selection: $currentPage) {
                         WelcomePage()
                             .tag(0)
@@ -63,57 +54,21 @@ struct OnboardingView: View {
                             .tag(3)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.easeInOut, value: currentPage)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: currentPage)
 
-                    // Navigation buttons
-                    HStack(spacing: 16) {
-                        if currentPage > 0 {
-                            Button {
-                                hideKeyboard()
-                                withAnimation {
-                                    currentPage -= 1
-                                }
-                            } label: {
-                                Text("Back")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.appTextSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.appTextSecondary.opacity(0.3), lineWidth: 1)
-                                    )
-                            }
-                        }
-
-                        Button {
-                            hideKeyboard()
-                            if currentPage < totalPages - 1 {
-                                withAnimation {
-                                    currentPage += 1
-                                }
-                            } else {
-                                completeOnboarding()
-                            }
-                        } label: {
-                            Text(currentPage == totalPages - 1 ? "Get Started" : "Continue")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(isNextEnabled ? Color.appPrimary : Color.appPrimary.opacity(0.5))
-                                )
-                        }
-                        .disabled(!isNextEnabled)
-                    }
+                    // Premium navigation buttons
+                    OnboardingNavigationButtons(
+                        currentPage: $currentPage,
+                        totalPages: totalPages,
+                        isNextEnabled: isNextEnabled,
+                        onComplete: completeOnboarding
+                    )
                     .padding(.horizontal, 24)
                     .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 20)
                 }
             }
         }
-        .ignoresSafeArea(.keyboard) // Allow keyboard to overlap content naturally
+        .ignoresSafeArea(.keyboard)
     }
 
     private func hideKeyboard() {
@@ -139,55 +94,210 @@ struct OnboardingView: View {
 
 // MARK: - Welcome Page
 struct WelcomePage: View {
+    @State private var logoScale: CGFloat = 0.8
+    @State private var logoOpacity: Double = 0
+    @State private var titleOffset: CGFloat = 20
+    @State private var titleOpacity: Double = 0
+    @State private var featuresOpacity: Double = 0
+    @State private var floatingOffset: CGFloat = 0
+
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignTokens.spacingL) {
             Spacer()
 
-            // App icon
+            // Animated logo illustration
             ZStack {
+                // Outer glow
                 Circle()
-                    .fill(Color.appPrimary.opacity(0.1))
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "car.fill")
-                    .font(.system(size: 50))
-                    .foregroundColor(.appPrimary)
-                    .overlay(
-                        Image(systemName: "face.smiling.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.appSecondary)
-                            .offset(x: 30, y: -30)
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.appPrimary.opacity(0.2), Color.clear],
+                            center: .center,
+                            startRadius: 50,
+                            endRadius: 100
+                        )
                     )
-            }
+                    .frame(width: 180, height: 180)
+                    .scaleEffect(1.0 + floatingOffset * 0.01)
 
-            VStack(spacing: 12) {
-                Text("Baby in Car")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.appText)
+                // Main circle with gradient
+                Circle()
+                    .fill(Color.dreamyGradient)
+                    .frame(width: 140, height: 140)
+                    .shadow(color: Color.appPrimary.opacity(0.3), radius: 20, x: 0, y: 10)
 
-                Text("Without Tears")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(.appSecondary)
+                // Inner illustration
+                WelcomeIllustration()
+                    .offset(y: floatingOffset)
             }
+            .scaleEffect(logoScale)
+            .opacity(logoOpacity)
+
+            // App name with gradient text
+            VStack(spacing: DesignTokens.spacingS) {
+                Text("AnticryBaby")
+                    .font(.appDisplay)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.appPrimary, .appSecondary],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+
+                Text("Sweet Dreams on Every Ride")
+                    .font(.appTitle3)
+                    .foregroundColor(.appTextSecondary)
+            }
+            .offset(y: titleOffset)
+            .opacity(titleOpacity)
 
             Text("AI-powered calming audio for peaceful car rides with your little one")
-                .font(.system(size: 16))
+                .font(.appBody)
                 .foregroundColor(.appTextSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
+                .offset(y: titleOffset)
+                .opacity(titleOpacity)
 
             Spacer()
 
-            // Feature highlights
-            VStack(spacing: 16) {
-                FeatureRow(icon: "waveform", text: "Age-personalized audio content")
-                FeatureRow(icon: "mic.fill", text: "Hands-free voice control")
-                FeatureRow(icon: "exclamationmark.triangle.fill", text: "Emergency cry-stop feature")
-                FeatureRow(icon: "globe", text: "10+ language fairy tales")
+            // Animated feature highlights
+            VStack(spacing: DesignTokens.spacingM) {
+                AnimatedFeatureRow(icon: "waveform", text: "Age-personalized audio content", delay: 0)
+                AnimatedFeatureRow(icon: "mic.fill", text: "Hands-free voice control", delay: 0.1)
+                AnimatedFeatureRow(icon: "exclamationmark.triangle.fill", text: "Emergency cry-stop feature", delay: 0.2)
+                AnimatedFeatureRow(icon: "globe", text: "10+ language fairy tales", delay: 0.3)
             }
             .padding(.horizontal, 24)
+            .opacity(featuresOpacity)
 
             Spacer()
+        }
+        .onAppear {
+            // Staggered entrance animations
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
+            }
+
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5)) {
+                titleOffset = 0
+                titleOpacity = 1.0
+            }
+
+            withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
+                featuresOpacity = 1.0
+            }
+
+            // Floating animation
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                floatingOffset = -8
+            }
+        }
+    }
+}
+
+// MARK: - Welcome Illustration
+struct WelcomeIllustration: View {
+    @State private var noteOffsets: [CGFloat] = [0, 0, 0]
+
+    var body: some View {
+        ZStack {
+            // Sleeping baby face
+            VStack(spacing: 4) {
+                // Closed eyes
+                HStack(spacing: 18) {
+                    ClosedEyeShape()
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        .frame(width: 16, height: 8)
+                    ClosedEyeShape()
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                        .frame(width: 16, height: 8)
+                }
+
+                // Cheeks
+                HStack(spacing: 30) {
+                    Circle()
+                        .fill(Color.appAccentCoral.opacity(0.6))
+                        .frame(width: 12, height: 12)
+                    Circle()
+                        .fill(Color.appAccentCoral.opacity(0.6))
+                        .frame(width: 12, height: 12)
+                }
+                .offset(y: -2)
+
+                // Smile
+                SmileShape()
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .frame(width: 18, height: 8)
+            }
+
+            // Floating music notes
+            ForEach(0..<3, id: \.self) { index in
+                Image(systemName: "music.note")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+                    .offset(
+                        x: CGFloat([35, -35, 0][index]),
+                        y: CGFloat([-40, -35, -50][index]) + noteOffsets[index]
+                    )
+            }
+        }
+        .onAppear {
+            for i in 0..<3 {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(Double(i) * 0.3)) {
+                    noteOffsets[i] = -8
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Animated Feature Row
+struct AnimatedFeatureRow: View {
+    let icon: String
+    let text: String
+    let delay: Double
+
+    @State private var isVisible = false
+
+    var body: some View {
+        HStack(spacing: DesignTokens.spacingM) {
+            ZStack {
+                Circle()
+                    .fill(Color.appPrimary.opacity(0.15))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.appPrimary)
+            }
+
+            Text(text)
+                .font(.appBody)
+                .foregroundColor(.appText)
+
+            Spacer()
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 18))
+                .foregroundColor(.appAccentMint)
+                .opacity(isVisible ? 1 : 0)
+                .scaleEffect(isVisible ? 1 : 0.5)
+        }
+        .padding(DesignTokens.spacingM)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.radiusM)
+                .fill(Color.appCardBackground)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+        )
+        .offset(x: isVisible ? 0 : -20)
+        .opacity(isVisible ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(delay + 0.8)) {
+                isVisible = true
+            }
         }
     }
 }
@@ -719,6 +829,174 @@ struct PermissionRow: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 4)
         )
+    }
+}
+
+// MARK: - Onboarding Background
+struct OnboardingBackground: View {
+    var currentPage: Int
+    var parallaxOffset: CGFloat
+
+    @State private var animateGradient = false
+
+    var body: some View {
+        ZStack {
+            // Base gradient
+            LinearGradient(
+                colors: backgroundColors,
+                startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                endPoint: animateGradient ? .bottomTrailing : .topLeading
+            )
+
+            // Floating decorations
+            GeometryReader { geometry in
+                ForEach(0..<8, id: \.self) { index in
+                    Circle()
+                        .fill(Color.appPrimary.opacity(0.05))
+                        .frame(width: CGFloat.random(in: 40...120))
+                        .offset(
+                            x: CGFloat.random(in: 0...geometry.size.width),
+                            y: CGFloat.random(in: 0...geometry.size.height) + parallaxOffset * CGFloat(index + 1) * 0.1
+                        )
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
+                animateGradient.toggle()
+            }
+        }
+    }
+
+    private var backgroundColors: [Color] {
+        switch currentPage {
+        case 0:
+            return [Color.appWarmCream, Color.appPrimary.opacity(0.1), Color.appSecondary.opacity(0.05)]
+        case 1:
+            return [Color.appSecondary.opacity(0.1), Color.appWarmCream, Color.appPrimary.opacity(0.05)]
+        case 2:
+            return [Color.appPrimary.opacity(0.1), Color.appWarmCream, Color.appAccentMint.opacity(0.1)]
+        case 3:
+            return [Color.appAccentMint.opacity(0.1), Color.appWarmCream, Color.appPrimary.opacity(0.1)]
+        default:
+            return [Color.appWarmCream, Color.appPrimary.opacity(0.1)]
+        }
+    }
+}
+
+// MARK: - Onboarding Progress Indicator
+struct OnboardingProgressIndicator: View {
+    var currentPage: Int
+    var totalPages: Int
+
+    var body: some View {
+        HStack(spacing: DesignTokens.spacingS) {
+            ForEach(0..<totalPages, id: \.self) { index in
+                Capsule()
+                    .fill(index <= currentPage ? Color.appPrimary : Color.appPrimary.opacity(0.2))
+                    .frame(width: index == currentPage ? 24 : 8, height: 8)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentPage)
+            }
+        }
+    }
+}
+
+// MARK: - Onboarding Navigation Buttons
+struct OnboardingNavigationButtons: View {
+    @Binding var currentPage: Int
+    var totalPages: Int
+    var isNextEnabled: Bool
+    var onComplete: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        HStack(spacing: DesignTokens.spacingM) {
+            // Back button
+            if currentPage > 0 {
+                Button {
+                    hideKeyboard()
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        currentPage -= 1
+                    }
+                } label: {
+                    HStack(spacing: DesignTokens.spacingS) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Back")
+                            .font(.appBodyMedium)
+                    }
+                    .foregroundColor(.appTextSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignTokens.spacingM)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.radiusL)
+                            .stroke(Color.appTextTertiary, lineWidth: 1.5)
+                    )
+                }
+                .buttonStyle(BounceButtonStyle())
+            }
+
+            // Continue / Get Started button
+            Button {
+                hideKeyboard()
+                if currentPage < totalPages - 1 {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        currentPage += 1
+                    }
+                } else {
+                    onComplete()
+                }
+            } label: {
+                HStack(spacing: DesignTokens.spacingS) {
+                    Text(currentPage == totalPages - 1 ? "Get Started" : "Continue")
+                        .font(.appBodyMedium)
+
+                    if currentPage < totalPages - 1 {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignTokens.spacingM)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignTokens.radiusL)
+                        .fill(
+                            isNextEnabled ?
+                                LinearGradient(
+                                    colors: [Color.appPrimary, Color.appPrimary.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [Color.appPrimary.opacity(0.4), Color.appPrimary.opacity(0.3)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                        )
+                )
+                .shadow(color: isNextEnabled ? Color.appPrimary.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+            }
+            .buttonStyle(BounceButtonStyle())
+            .disabled(!isNextEnabled)
+        }
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+// MARK: - Bounce Button Style
+struct BounceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 

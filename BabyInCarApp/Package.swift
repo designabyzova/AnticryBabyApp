@@ -15,7 +15,8 @@ let package = Package(
             targets: ["BabyInCarApp"]),
     ],
     dependencies: [
-        // No external dependencies - using only Apple frameworks
+        // Testing Dependencies
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.15.0"),
     ],
     targets: [
         .target(
@@ -29,6 +30,13 @@ let package = Package(
         ),
         .testTarget(
             name: "BabyInCarAppTests",
-            dependencies: ["BabyInCarApp"]),
+            dependencies: [
+                "BabyInCarApp",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ],
+            resources: [
+                .copy("Fixtures")
+            ]
+        ),
     ]
 )

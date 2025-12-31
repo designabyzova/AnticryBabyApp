@@ -293,6 +293,9 @@ extension APIClient {
 // MARK: - Content API
 
 extension APIClient {
+    /// R2 public base URL for podcast content
+    static let r2PublicURL = "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev"
+
     func getTracks(category: String? = nil, language: String? = nil, ageMonths: Int? = nil) async throws -> [APITrack] {
         var queryItems: [String] = []
 
@@ -312,6 +315,34 @@ extension APIClient {
         let response = try decoder.decode(TracksResponse.self, from: data)
 
         return response.tracks
+    }
+
+    /// Get podcasts only (fairy tales, stories for bedtime)
+    func getPodcasts(language: String? = nil, search: String? = nil) async throws -> [APITrack] {
+        var queryItems: [String] = ["category=fairy_tales"]
+
+        if let language = language {
+            queryItems.append("language=\(language)")
+        }
+        if let search = search {
+            queryItems.append("search=\(search.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? search)")
+        }
+
+        let query = "?\(queryItems.joined(separator: "&"))"
+        let data = try await makeRequest(path: "/content/tracks\(query)")
+        let response = try decoder.decode(TracksResponse.self, from: data)
+
+        return response.tracks
+    }
+
+    /// Get Russian fairy tales specifically
+    func getRussianFairyTales() async throws -> [APITrack] {
+        return try await getPodcasts(language: "ru")
+    }
+
+    /// Get English bedtime stories
+    func getEnglishBedtimeStories() async throws -> [APITrack] {
+        return try await getPodcasts(language: "en")
     }
 
     func getPlaylists(category: String? = nil) async throws -> [APIPlaylist] {

@@ -257,8 +257,12 @@ class VoiceCharacteristicsAnalyzer {
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Find peak in tremolo frequency range
         let freqResolution = (sampleRate / 256) / Float(fftSize)
@@ -377,8 +381,12 @@ class VoiceCharacteristicsAnalyzer {
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Pitch contour sample rate (based on hop size)
         let pitchSampleRate = sampleRate / 256
@@ -464,8 +472,12 @@ class VoiceCharacteristicsAnalyzer {
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Spectral flatness as proxy for breathiness
         // Higher flatness = more noise-like = more breathy
@@ -524,8 +536,12 @@ class VoiceCharacteristicsAnalyzer {
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        realOutput.withUnsafeMutableBufferPointer { realBuffer in
+            imagOutput.withUnsafeMutableBufferPointer { imagBuffer in
+                var complex = DSPSplitComplex(realp: realBuffer.baseAddress!, imagp: imagBuffer.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Calculate ratio of high-frequency energy to low-frequency energy
         let freqResolution = sampleRate / Float(fftSize)

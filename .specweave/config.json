@@ -1,0 +1,105 @@
+{
+  "version": "2.0",
+  "repository": {
+    "provider": "local"
+  },
+  "issueTracker": {
+    "provider": "none"
+  },
+  "sync": {
+    "enabled": true,
+    "direction": "bidirectional",
+    "autoSync": false,
+    "provider": "github",
+    "includeStatus": true,
+    "autoApplyLabels": true,
+    "defaultProfile": "main",
+    "settings": {
+      "canUpsertInternalItems": true,
+      "canUpdateExternalItems": true,
+      "canUpdateStatus": true
+    },
+    "profiles": {
+      "main": {
+        "provider": "github",
+        "displayName": "Mobile App “Baby in Car Without Tears”",
+        "config": {
+          "owner": "designabyzova",
+          "repo": "AnticryBabyApp"
+        },
+        "timeRange": {
+          "default": "1M",
+          "max": "6M"
+        },
+        "rateLimits": {
+          "maxItemsPerSync": 500,
+          "warnThreshold": 100
+        }
+      }
+    }
+  },
+  "statusLine": {
+    "enabled": true,
+    "maxCacheAge": 30000,
+    "progressBarWidth": 8,
+    "maxNameLength": 30
+  },
+  "project": {
+    "name": ".",
+    "version": "0.1.0"
+  },
+  "multiProject": {
+    "enabled": false
+  },
+  "adapters": {
+    "default": "claude"
+  },
+  "hooks": {
+    "post_task_completion": {
+      "sync_living_docs": true,
+      "sync_tasks_md": true,
+      "external_tracker_sync": true
+    },
+    "post_increment_planning": {
+      "auto_create_github_issue": true
+    }
+  },
+  "documentation": {
+    "preview": {
+      "enabled": false,
+      "autoInstall": false,
+      "port": 3015,
+      "openBrowser": true,
+      "theme": "default",
+      "excludeFolders": [
+        "legacy",
+        "node_modules"
+      ]
+    }
+  },
+  "testing": {
+    "defaultTestMode": "test-after",
+    "defaultCoverageTarget": 70,
+    "coverageTargets": {
+      "unit": 75,
+      "integration": 70,
+      "e2e": 80
+    }
+  },
+  "language": "en",
+  "translation": {
+    "enabled": false,
+    "languages": [
+      "en"
+    ],
+    "primary": "en",
+    "method": "manual",
+    "preserveFrameworkTerms": true,
+    "scope": {
+      "livingDocs": false,
+      "externalSync": false,
+      "incrementSpecs": false
+    },
+    "keepEnglishOriginals": false
+  }
+}

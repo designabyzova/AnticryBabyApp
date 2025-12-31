@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2025-12-31T00:58:50.214Z",
+  "summary": {
+    "totalModules": 0,
+    "modulesDocumented": 0,
+    "modulesPartial": 0,
+    "modulesUndocumented": 0,
+    "totalWorkItems": 0,
+    "matchedWorkItems": 0,
+    "coveragePercent": 0
+  },
+  "priorityZones": [],
+  "immediateActions": [],
+  "moduleStatuses": [],
+  "additionalSources": [
+    "docs"
+  ],
+  "notAnalyzed": [],
+  "painPointsAddressed": [],
+  "isUmbrella": false
+}

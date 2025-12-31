@@ -13,6 +13,7 @@ struct BabyInCarApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var audioEngine = AudioEngine.shared
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @State private var showSplash = true
 
     init() {
         // Configure app appearance
@@ -21,13 +22,26 @@ struct BabyInCarApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .environmentObject(audioEngine)
-                .environmentObject(subscriptionManager)
-                .onAppear {
-                    setupApp()
+            ZStack {
+                ContentView()
+                    .environmentObject(appState)
+                    .environmentObject(audioEngine)
+                    .environmentObject(subscriptionManager)
+                    .onAppear {
+                        setupApp()
+                    }
+
+                // Animated splash screen overlay
+                if showSplash {
+                    SplashScreenView {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSplash = false
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
+            }
         }
     }
 
