@@ -111,7 +111,7 @@ enum Language: String, Codable, CaseIterable, Identifiable {
 }
 
 // MARK: - Audio Track
-struct AudioTrack: Codable, Identifiable, Equatable {
+struct AudioTrack: Codable, Identifiable, Equatable, Hashable {
     let id: UUID
     let title: String
     let artist: String
@@ -124,7 +124,7 @@ struct AudioTrack: Codable, Identifiable, Equatable {
     let tempoBPM: Int?
     let calmingScore: Double // 0.0 - 1.0
     let isPremium: Bool
-    let isDownloaded: Bool
+    var isDownloaded: Bool
     let audioSourceType: AudioSourceType
 
     // For generated/synthesized audio
@@ -136,6 +136,11 @@ struct AudioTrack: Codable, Identifiable, Equatable {
 
     // URL for streaming (royalty-free sources)
     var streamURL: String?
+
+    // Server metadata
+    var serverId: String?
+    var artworkURL: String?
+    var isLocked: Bool
 
     init(
         id: UUID = UUID(),
@@ -155,7 +160,10 @@ struct AudioTrack: Codable, Identifiable, Equatable {
         generatorType: GeneratorType? = nil,
         fileName: String? = nil,
         fileExtension: String? = nil,
-        streamURL: String? = nil
+        streamURL: String? = nil,
+        serverId: String? = nil,
+        artworkURL: String? = nil,
+        isLocked: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -175,6 +183,9 @@ struct AudioTrack: Codable, Identifiable, Equatable {
         self.fileName = fileName
         self.fileExtension = fileExtension
         self.streamURL = streamURL
+        self.serverId = serverId
+        self.artworkURL = artworkURL
+        self.isLocked = isLocked
     }
 
     var formattedDuration: String {
@@ -192,6 +203,47 @@ struct AudioTrack: Codable, Identifiable, Equatable {
             return ageMonths >= ageRangeMin && ageMonths <= ageRangeMax
         }
         return optimalAgeMonths.contains(ageMonths)
+    }
+
+    /// Check if track requires network to play
+    var requiresNetwork: Bool {
+        switch audioSourceType {
+        case .generated:
+            return false
+        case .bundled:
+            return false
+        case .streamed:
+            return !isDownloaded
+        case .textToSpeech:
+            return true // Usually needs network for TTS service
+        }
+    }
+
+    /// Check if track can be played offline
+    var canPlayOffline: Bool {
+        return !requiresNetwork
+    }
+
+    /// Get the effective playback source description
+    var sourceDescription: String {
+        if isDownloaded {
+            return "Downloaded"
+        }
+        switch audioSourceType {
+        case .generated:
+            return "Generated"
+        case .bundled:
+            return "Built-in"
+        case .streamed:
+            return "Streaming"
+        case .textToSpeech:
+            return "Text-to-Speech"
+        }
+    }
+
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -344,7 +396,7 @@ enum GeneratorType: String, Codable, CaseIterable {
 }
 
 // MARK: - Playlist
-struct Playlist: Codable, Identifiable {
+struct Playlist: Codable, Identifiable, Equatable, Hashable {
     let id: UUID
     var name: String
     var description: String
@@ -354,6 +406,7 @@ struct Playlist: Codable, Identifiable {
     var isSystemGenerated: Bool
     var createdAt: Date
     var artworkName: String?
+    var updatedAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -364,7 +417,8 @@ struct Playlist: Codable, Identifiable {
         targetAgeMonths: Int? = nil,
         isSystemGenerated: Bool = false,
         createdAt: Date = Date(),
-        artworkName: String? = nil
+        artworkName: String? = nil,
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -375,6 +429,7 @@ struct Playlist: Codable, Identifiable {
         self.isSystemGenerated = isSystemGenerated
         self.createdAt = createdAt
         self.artworkName = artworkName
+        self.updatedAt = updatedAt
     }
 
     var totalDuration: TimeInterval {
@@ -390,6 +445,65 @@ struct Playlist: Codable, Identifiable {
         } else {
             return "\(minutes) min"
         }
+    }
+
+    var trackCount: Int {
+        tracks.count
+    }
+
+    var isEmpty: Bool {
+        tracks.isEmpty
+    }
+
+    /// Get dominant category based on track categories
+    var dominantCategory: AudioCategory? {
+        guard !tracks.isEmpty else { return category }
+
+        // If category is set, use it
+        if let cat = category { return cat }
+
+        // Calculate dominant category from tracks
+        var categoryCount: [AudioCategory: Int] = [:]
+        for track in tracks {
+            categoryCount[track.category, default: 0] += 1
+        }
+
+        return categoryCount.max(by: { $0.value < $1.value })?.key
+    }
+
+    /// Check if playlist contains a specific track
+    func contains(_ track: AudioTrack) -> Bool {
+        tracks.contains { $0.id == track.id }
+    }
+
+    /// Get index of a track in the playlist
+    func index(of track: AudioTrack) -> Int? {
+        tracks.firstIndex { $0.id == track.id }
+    }
+
+    /// Average calming score of all tracks
+    var averageCalmingScore: Double {
+        guard !tracks.isEmpty else { return 0 }
+        return tracks.reduce(0) { $0 + $1.calmingScore } / Double(tracks.count)
+    }
+
+    /// Check if all tracks can play offline
+    var canPlayOffline: Bool {
+        tracks.allSatisfy { $0.canPlayOffline }
+    }
+
+    /// Get tracks that require network
+    var tracksRequiringNetwork: [AudioTrack] {
+        tracks.filter { $0.requiresNetwork }
+    }
+
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: Playlist, rhs: Playlist) -> Bool {
+        lhs.id == rhs.id
     }
 }
 

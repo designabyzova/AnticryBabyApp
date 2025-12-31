@@ -1,0 +1,144 @@
+[
+  {
+    "id": "ia_piano_001",
+    "title": "Moonlight Sonata - 1st Movement",
+    "artist": "Ludwig van Beethoven",
+    "category": "classical",
+    "subcategory": "piano",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/MoonlightSonata_845/Moonlight%20Sonata.mp3",
+    "filename": "moonlight_sonata.mp3",
+    "calmScore": 0.95,
+    "tags": [
+      "beethoven",
+      "piano",
+      "sonata",
+      "calm"
+    ]
+  },
+  {
+    "id": "ia_piano_002",
+    "title": "Nocturne Op.9 No.2",
+    "artist": "Frédéric Chopin",
+    "category": "classical",
+    "subcategory": "piano",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/nocturneineflatmajorop.9no.2/Nocturne%20in%20E%20flat%20major%2C%20Op.%209%20no.%202.mp3",
+    "filename": "chopin_nocturne_op9_no2.mp3",
+    "calmScore": 0.94,
+    "tags": [
+      "chopin",
+      "piano",
+      "nocturne",
+      "romantic"
+    ]
+  },
+  {
+    "id": "ia_piano_003",
+    "title": "Clair de Lune",
+    "artist": "Claude Debussy",
+    "category": "classical",
+    "subcategory": "piano",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/ClairDeLunedebussy/Clair%20de%20Lune.mp3",
+    "filename": "clair_de_lune.mp3",
+    "calmScore": 0.96,
+    "tags": [
+      "debussy",
+      "piano",
+      "impressionist",
+      "dreamy"
+    ]
+  },
+  {
+    "id": "ia_piano_004",
+    "title": "Gymnopédie No.1",
+    "artist": "Erik Satie",
+    "category": "classical",
+    "subcategory": "piano",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/ErikSatieGymnopdieNo.1/Erik%20Satie%20-%20Gymnopedie%20No.%201.mp3",
+    "filename": "gymnopedie_no1.mp3",
+    "calmScore": 0.97,
+    "tags": [
+      "satie",
+      "piano",
+      "minimalist",
+      "peaceful"
+    ]
+  },
+  {
+    "id": "ia_piano_005",
+    "title": "Three Gymnopédies",
+    "artist": "Erik Satie",
+    "category": "classical",
+    "subcategory": "piano",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/SatiesThreeGymnopedies/Satie%27s%20three%20Gymnopedies.mp3",
+    "filename": "satie_three_gymnopedies.mp3",
+    "calmScore": 0.96,
+    "tags": [
+      "satie",
+      "piano",
+      "minimalist"
+    ]
+  },
+  {
+    "id": "ia_orch_002",
+    "title": "Canon in D",
+    "artist": "Johann Pachelbel",
+    "category": "classical",
+    "subcategory": "orchestral",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/Canon_702/Canon.mp3",
+    "filename": "pachelbel_canon.mp3",
+    "calmScore": 0.95,
+    "tags": [
+      "pachelbel",
+      "strings",
+      "baroque",
+      "wedding"
+    ]
+  },
+  {
+    "id": "ia_orch_015",
+    "title": "Orchestral Suite No.3 - Air",
+    "artist": "Johann Sebastian Bach",
+    "category": "classical",
+    "subcategory": "orchestral",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/AirOnTheGStringviolincello/Air%20on%20the%20G%20String%20%28violin_cello%29.mp3",
+    "filename": "bach_air_violin_cello.mp3",
+    "calmScore": 0.95,
+    "tags": [
+      "bach",
+      "violin",
+      "cello",
+      "baroque"
+    ]
+  },
+  {
+    "id": "ia_lull_009",
+    "title": "Suo Gan - Welsh Lullaby",
+    "artist": "Traditional Welsh",
+    "category": "lullabies",
+    "subcategory": "traditional",
+    "source": "internet_archive",
+    "license": "Public Domain",
+    "url": "https://archive.org/download/SuoGan/Suo%20Gan.mp3",
+    "filename": "suo_gan.mp3",
+    "calmScore": 0.96,
+    "tags": [
+      "lullaby",
+      "welsh",
+      "traditional"
+    ]
+  }
+]

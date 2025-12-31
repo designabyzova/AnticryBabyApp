@@ -1,0 +1,72 @@
+[
+  {
+    "id": "dl_ambient_bensound_relaxing",
+    "title": "Relaxing",
+    "artist": "Bensound",
+    "category": "ambient",
+    "filename": "ambient/bensound_relaxing.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_ambient_bensound_slowmotion",
+    "title": "Slow Motion",
+    "artist": "Bensound",
+    "category": "ambient",
+    "filename": "ambient/bensound_slowmotion.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_ambient_bensound_memories",
+    "title": "Memories",
+    "artist": "Bensound",
+    "category": "ambient",
+    "filename": "ambient/bensound_memories.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_ambient_bensound_tenderness",
+    "title": "Tenderness",
+    "artist": "Bensound",
+    "category": "ambient",
+    "filename": "ambient/bensound_tenderness.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_ambient_bensound_allthat",
+    "title": "All That",
+    "artist": "Bensound",
+    "category": "ambient",
+    "filename": "ambient/bensound_allthat.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_nature_wind",
+    "title": "Wind",
+    "artist": "Nature",
+    "category": "nature",
+    "filename": "nature/wind.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  },
+  {
+    "id": "dl_nature_ocean_waves",
+    "title": "Ocean Waves",
+    "artist": "Nature",
+    "category": "nature",
+    "filename": "nature/ocean_waves.mp3",
+    "source": "verified_download",
+    "license": "Royalty Free / Public Domain",
+    "calmScore": 0.9
+  }
+]

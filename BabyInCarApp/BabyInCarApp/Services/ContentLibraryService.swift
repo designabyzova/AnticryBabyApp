@@ -2,7 +2,7 @@
 //  ContentLibraryService.swift
 //  BabyInCarApp
 //
-//  Content library management - online-first with generated audio
+//  Content library management - online-first with server API and local fallbacks
 //
 
 import Foundation
@@ -15,8 +15,23 @@ class ContentLibraryService: ObservableObject {
     @Published var allTracks: [AudioTrack] = []
     @Published var playlists: [Playlist] = []
     @Published var isLoading: Bool = false
+    @Published var loadingError: String?
+    @Published var lastSyncDate: Date?
+
+    // Server-fetched tracks
+    @Published var serverTracks: [AudioTrack] = []
+    @Published var serverPlaylists: [Playlist] = []
+
+    private let apiClient = APIClient.shared
+    private let cacheService = AudioCacheService.shared
+    private let userDefaults = UserDefaults.standard
+
+    private let lastSyncKey = "ContentLibrary.lastSync"
+    private let cachedTracksKey = "ContentLibrary.cachedTracks"
+    private let cachedPlaylistsKey = "ContentLibrary.cachedPlaylists"
 
     private init() {
+        loadCachedContent()
         loadContent()
     }
 
@@ -24,20 +39,345 @@ class ContentLibraryService: ObservableObject {
 
     func loadContent() {
         isLoading = true
+        loadingError = nil
 
-        // Generate all available tracks
-        allTracks = generateAllTracks()
-
-        // Create default playlists
+        // First, load local/generated content for immediate availability
+        let localTracks = generateAllTracks()
+        allTracks = localTracks
         playlists = generateDefaultPlaylists()
 
+        // Then fetch from server in background
+        Task {
+            await fetchServerContent()
+        }
+
         isLoading = false
+    }
+
+    /// Fetch content from server API
+    func fetchServerContent() async {
+        do {
+            // Fetch tracks from API
+            let apiTracks = try await apiClient.getTracks()
+            let convertedTracks = apiTracks.map { convertAPITrack($0) }
+
+            // Fetch playlists from API
+            let apiPlaylists = try await apiClient.getPlaylists()
+            let convertedPlaylists = try await convertAPIPlaylists(apiPlaylists)
+
+            // Merge server content with local content
+            await MainActor.run {
+                self.serverTracks = convertedTracks
+                self.serverPlaylists = convertedPlaylists
+
+                // Add server tracks to allTracks (avoid duplicates by ID)
+                var trackSet = Set(self.allTracks.map { $0.id })
+                for track in convertedTracks {
+                    if !trackSet.contains(track.id) {
+                        self.allTracks.append(track)
+                        trackSet.insert(track.id)
+                    }
+                }
+
+                // Add server playlists
+                var playlistSet = Set(self.playlists.map { $0.id })
+                for playlist in convertedPlaylists {
+                    if !playlistSet.contains(playlist.id) {
+                        self.playlists.append(playlist)
+                        playlistSet.insert(playlist.id)
+                    }
+                }
+
+                self.lastSyncDate = Date()
+                self.cacheContent()
+            }
+
+            print("Fetched \(convertedTracks.count) tracks and \(convertedPlaylists.count) playlists from server")
+
+        } catch {
+            print("Failed to fetch server content: \(error)")
+            await MainActor.run {
+                self.loadingError = error.localizedDescription
+            }
+        }
+    }
+
+    /// Refresh content from server
+    func refresh() async {
+        await MainActor.run {
+            isLoading = true
+            loadingError = nil
+        }
+
+        await fetchServerContent()
+
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+
+    /// Force refresh - clears cache and fetches fresh content
+    func forceRefresh() async {
+        await MainActor.run {
+            serverTracks.removeAll()
+            serverPlaylists.removeAll()
+            clearCachedContent()
+        }
+
+        await refresh()
+    }
+
+    // MARK: - API Conversion
+
+    private func convertAPITrack(_ apiTrack: APITrack) -> AudioTrack {
+        let category = AudioCategory(rawValue: apiTrack.category) ?? .instrumental
+        let language = Language.allCases.first { $0.rawValue.lowercased() == apiTrack.language.lowercased() }
+
+        let audioSourceType: AudioSourceType
+        switch apiTrack.audioSourceType.lowercased() {
+        case "generated": audioSourceType = .generated
+        case "bundled": audioSourceType = .bundled
+        case "streamed": audioSourceType = .streamed
+        case "texttospeech", "tts": audioSourceType = .textToSpeech
+        default: audioSourceType = .streamed
+        }
+
+        let generatorType = apiTrack.generatorType.flatMap { GeneratorType(rawValue: $0) }
+
+        return AudioTrack(
+            id: UUID(uuidString: apiTrack.id) ?? UUID(),
+            title: apiTrack.title,
+            artist: apiTrack.artist,
+            category: category,
+            language: language,
+            duration: TimeInterval(apiTrack.duration),
+            ageRangeMin: apiTrack.ageRangeMin,
+            ageRangeMax: apiTrack.ageRangeMax,
+            calmingScore: apiTrack.calmingScore,
+            isPremium: apiTrack.isPremium,
+            isDownloaded: cacheService.isTrackCached(apiTrack.id),
+            audioSourceType: audioSourceType,
+            generatorType: generatorType,
+            streamURL: apiTrack.streamUrl
+        )
+    }
+
+    private func convertAPIPlaylists(_ apiPlaylists: [APIPlaylist]) async throws -> [Playlist] {
+        var playlists: [Playlist] = []
+
+        for apiPlaylist in apiPlaylists {
+            // Fetch full playlist with tracks if needed
+            let fullPlaylist: APIPlaylist
+            if apiPlaylist.tracks != nil {
+                fullPlaylist = apiPlaylist
+            } else {
+                fullPlaylist = try await apiClient.getPlaylist(id: apiPlaylist.id)
+            }
+
+            let category = fullPlaylist.category.flatMap { AudioCategory(rawValue: $0) }
+            let tracks = (fullPlaylist.tracks ?? []).map { convertAPITrack($0) }
+
+            let playlist = Playlist(
+                id: UUID(uuidString: fullPlaylist.id) ?? UUID(),
+                name: fullPlaylist.name,
+                description: fullPlaylist.description,
+                tracks: tracks,
+                category: category,
+                targetAgeMonths: fullPlaylist.targetAgeMonths,
+                isSystemGenerated: fullPlaylist.isSystem
+            )
+
+            playlists.append(playlist)
+        }
+
+        return playlists
+    }
+
+    // MARK: - Content Caching
+
+    private func loadCachedContent() {
+        // Load last sync date
+        if let date = userDefaults.object(forKey: lastSyncKey) as? Date {
+            lastSyncDate = date
+        }
+
+        // Load cached tracks
+        if let data = userDefaults.data(forKey: cachedTracksKey),
+           let tracks = try? JSONDecoder().decode([AudioTrack].self, from: data) {
+            serverTracks = tracks
+        }
+
+        // Load cached playlists
+        if let data = userDefaults.data(forKey: cachedPlaylistsKey),
+           let playlists = try? JSONDecoder().decode([Playlist].self, from: data) {
+            serverPlaylists = playlists
+        }
+    }
+
+    private func cacheContent() {
+        userDefaults.set(lastSyncDate, forKey: lastSyncKey)
+
+        if let data = try? JSONEncoder().encode(serverTracks) {
+            userDefaults.set(data, forKey: cachedTracksKey)
+        }
+
+        if let data = try? JSONEncoder().encode(serverPlaylists) {
+            userDefaults.set(data, forKey: cachedPlaylistsKey)
+        }
+    }
+
+    private func clearCachedContent() {
+        userDefaults.removeObject(forKey: cachedTracksKey)
+        userDefaults.removeObject(forKey: cachedPlaylistsKey)
+        userDefaults.removeObject(forKey: lastSyncKey)
+    }
+
+    // MARK: - Filtering with Server Support
+
+    /// Get tracks for a category (prefers server content)
+    func getTracksFromServer(category: String? = nil, language: String? = nil, ageMonths: Int? = nil) async -> [AudioTrack] {
+        do {
+            let apiTracks = try await apiClient.getTracks(category: category, language: language, ageMonths: ageMonths)
+            return apiTracks.map { convertAPITrack($0) }
+        } catch {
+            print("Failed to fetch tracks from server: \(error)")
+            // Fallback to local filtering
+            return filterLocalTracks(category: category, language: language, ageMonths: ageMonths)
+        }
+    }
+
+    private func filterLocalTracks(category: String?, language: String?, ageMonths: Int?) -> [AudioTrack] {
+        var filtered = allTracks
+
+        if let category = category, let cat = AudioCategory(rawValue: category) {
+            filtered = filtered.filter { $0.category == cat }
+        }
+
+        if let language = language, let lang = Language.allCases.first(where: { $0.rawValue.lowercased() == language.lowercased() }) {
+            filtered = filtered.filter { $0.language == lang }
+        }
+
+        if let age = ageMonths {
+            filtered = filtered.filter { $0.ageRangeMin <= age && $0.ageRangeMax >= age }
+        }
+
+        return filtered
+    }
+
+    /// Get recommendations from server
+    func getRecommendations(babyId: String, mood: String? = nil) async -> [AudioTrack] {
+        do {
+            let response = try await apiClient.getRecommendations(babyId: babyId, mood: mood)
+            return response.recommendedTracks.map { convertAPITrack($0) }
+        } catch {
+            print("Failed to fetch recommendations: \(error)")
+            // Fallback to local high-calming-score tracks
+            return allTracks
+                .filter { $0.calmingScore >= 0.85 }
+                .sorted { $0.calmingScore > $1.calmingScore }
+                .prefix(10)
+                .map { $0 }
+        }
+    }
+
+    /// Get emergency tracks from server
+    func getEmergencyTracks(babyId: String) async -> [AudioTrack] {
+        do {
+            let response = try await apiClient.getRecommendations(babyId: babyId, mood: "crying")
+            return response.emergencyTracks.map { convertAPITrack($0) }
+        } catch {
+            print("Failed to fetch emergency tracks: \(error)")
+            // Fallback to womb/heartbeat sounds
+            return allTracks.filter {
+                $0.generatorType == .womb || $0.generatorType == .heartbeat || $0.generatorType == .shushing
+            }
+        }
+    }
+
+    // MARK: - Load Bundled Tracks from JSON Metadata
+
+    /// Load all bundled tracks from the tracks.json metadata file
+    private func loadBundledTracksFromMetadata() -> [AudioTrack] {
+        var tracks: [AudioTrack] = []
+
+        guard let url = Bundle.main.url(forResource: "tracks", withExtension: "json", subdirectory: "Audio"),
+              let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let trackArray = json["tracks"] as? [[String: Any]] else {
+            print("Could not load tracks.json metadata")
+            return tracks
+        }
+
+        for trackData in trackArray {
+            guard let id = trackData["id"] as? String,
+                  let title = trackData["title"] as? String,
+                  let categoryStr = trackData["category"] as? String,
+                  let filename = trackData["filename"] as? String else {
+                continue
+            }
+
+            let artist = trackData["artist"] as? String ?? "Various Artists"
+            let subcategory = trackData["subcategory"] as? String ?? "misc"
+            let duration = trackData["duration"] as? Double ?? 180.0
+            let calmScore = trackData["calmScore"] as? Double ?? 0.8
+            let tags = trackData["tags"] as? [String] ?? []
+
+            // Map category string to AudioCategory
+            let category = mapStringToAudioCategory(categoryStr)
+
+            // Extract file info from filename path
+            let pathComponents = filename.split(separator: "/")
+            let fileNameWithExt = String(pathComponents.last ?? "")
+            let fileNameParts = fileNameWithExt.split(separator: ".")
+            let fileName = String(fileNameParts.first ?? "")
+            let fileExtension = fileNameParts.count > 1 ? String(fileNameParts.last!) : "mp3"
+            let subdirectory = pathComponents.count > 1 ? "Audio/" + pathComponents.dropLast().joined(separator: "/") : "Audio"
+
+            // Verify file exists in bundle
+            if Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory) != nil {
+                let track = AudioTrack(
+                    id: UUID(uuidString: id) ?? UUID(),
+                    title: title,
+                    artist: artist,
+                    category: category,
+                    duration: duration > 0 ? duration : 180,
+                    ageRangeMin: 0,
+                    ageRangeMax: 36,
+                    calmingScore: calmScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: fileExtension
+                )
+                tracks.append(track)
+            }
+        }
+
+        print("Loaded \(tracks.count) bundled tracks from metadata")
+        return tracks
+    }
+
+    /// Map category string from JSON to AudioCategory enum
+    private func mapStringToAudioCategory(_ str: String) -> AudioCategory {
+        switch str.lowercased() {
+        case "nature": return .natureSounds
+        case "whitenoise": return .whiteNoise
+        case "lullabies": return .childrenSongs
+        case "classical": return .classicalMusic
+        case "ambient": return .instrumental
+        case "children": return .childrenSongs
+        case "acoustic": return .instrumental
+        default: return .instrumental
+        }
     }
 
     // MARK: - Generated Audio Content
 
     private func generateAllTracks() -> [AudioTrack] {
         var tracks: [AudioTrack] = []
+
+        // First, load all bundled tracks from metadata JSON
+        let bundledTracks = loadBundledTracksFromMetadata()
+        tracks.append(contentsOf: bundledTracks)
 
         // MARK: White Noise & Calming Sounds
         let whiteNoiseGenerators: [(GeneratorType, String)] = [
@@ -101,6 +441,68 @@ class ContentLibraryService: ObservableObject {
                 audioSourceType: .generated,
                 generatorType: generator
             ))
+        }
+
+        // MARK: Bundled Real Nature Sounds (downloaded royalty-free)
+        let bundledNature: [(String, String, String, Int, Double)] = [
+            // (title, fileName, extension, duration_seconds, calmingScore)
+            ("Ambient Nature", "ambient_nature", "mp3", 600, 0.90),
+            ("Rain Ambience", "rain_ambient", "mp3", 300, 0.92),
+            ("Wind in Trees", "wind_trees", "mp3", 280, 0.88),
+            ("Ocean Waves (Real)", "ocean_waves", "mp3", 60, 0.91),
+            ("Wind Sounds", "wind", "mp3", 70, 0.85),
+            ("Gentle Rain", "rain_gentle", "mp3", 120, 0.94),
+            ("Rain Sounds", "rain_sounds", "mp3", 120, 0.93),
+            ("SoundBible Ocean Waves", "sb_ocean_waves", "mp3", 60, 0.90),
+            ("SoundBible Rain", "sb_rain2", "mp3", 60, 0.91),
+            ("Forest Stream", "sb_stream", "mp3", 60, 0.89),
+            ("Distant Thunderstorm", "sb_thunderstorm", "mp3", 60, 0.85),
+            ("Gentle Wind", "sb_wind", "mp3", 60, 0.86)
+        ]
+
+        for (title, fileName, ext, duration, calmingScore) in bundledNature {
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/nature") != nil ||
+               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: "Nature Collection",
+                    category: .natureSounds,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: 0,
+                    ageRangeMax: 36,
+                    calmingScore: calmingScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
+        }
+
+        // MARK: Bundled Real White Noise / Household Sounds (from whitenoise folder)
+        let bundledWhiteNoise: [(String, String, String, Int, Double)] = [
+            // (title, fileName, extension, duration_seconds, calmingScore)
+            ("Pure White Noise (Real)", "white_noise", "mp3", 600, 0.95),
+            ("Mother's Heartbeat (Real)", "heartbeat", "mp3", 120, 0.96),
+            ("Hair Dryer Sound", "hair_dryer", "mp3", 60, 0.88),
+            ("Vacuum Cleaner Sound", "vacuum_cleaner", "mp3", 60, 0.85)
+        ]
+
+        for (title, fileName, ext, duration, calmingScore) in bundledWhiteNoise {
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/whitenoise") != nil ||
+               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: "White Noise Collection",
+                    category: .whiteNoise,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: 0,
+                    ageRangeMax: 36,
+                    calmingScore: calmingScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
         }
 
         // MARK: Toddler-Focused Travel & Ambient Sounds (12-36 months)
@@ -458,6 +860,34 @@ class ContentLibraryService: ObservableObject {
             }
         }
 
+        // Bensound ambient tracks (Royalty-free with attribution)
+        let bensoundTracks: [(String, String, String, String, Int, Double)] = [
+            ("Relaxing", "Bensound", "bensound_relaxing", "mp3", 240, 0.90),
+            ("Slow Motion", "Bensound", "bensound_slowmotion", "mp3", 180, 0.88),
+            ("Memories", "Bensound", "bensound_memories", "mp3", 200, 0.87),
+            ("Tenderness", "Bensound", "bensound_tenderness", "mp3", 160, 0.89),
+            ("All That", "Bensound", "bensound_allthat", "mp3", 180, 0.85)
+        ]
+
+        for (title, artist, fileName, ext, duration, calmingScore) in bensoundTracks {
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/ambient") != nil ||
+               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: artist,
+                    category: .classicalMusic,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: 0,
+                    ageRangeMax: 36,
+                    tempoBPM: 70,
+                    calmingScore: calmingScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
+        }
+
         // Fallback to generated if no bundled files available
         if tracks.isEmpty {
             let classicalPieces: [(String, String, Int)] = [
@@ -546,16 +976,50 @@ class ContentLibraryService: ObservableObject {
     private func generateChildrenSongTracks() -> [AudioTrack] {
         var tracks: [AudioTrack] = []
 
-        // Bundled lullaby audio files
+        // Bundled children's songs from Audio/children folder (Bensound royalty-free)
+        let bundledChildrenSongs: [(String, String, String, Int, ClosedRange<Int>, Double)] = [
+            // (title, fileName, extension, duration_seconds, ageRange, calmingScore)
+            ("Cute", "bensound_cute", "mp3", 169, 6...36, 0.82),
+            ("Happy Rock", "bensound_happyrock", "mp3", 105, 12...36, 0.70),
+            ("Little Idea", "bensound_littleidea", "mp3", 147, 6...36, 0.80),
+            ("Sunny", "bensound_sunny", "mp3", 130, 6...36, 0.78)
+        ]
+
+        for (title, fileName, ext, duration, ageRange, calmingScore) in bundledChildrenSongs {
+            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/children") != nil ||
+               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
+                tracks.append(AudioTrack(
+                    title: title,
+                    artist: "Bensound",
+                    category: .childrenSongs,
+                    language: .english,
+                    duration: TimeInterval(duration),
+                    ageRangeMin: ageRange.lowerBound,
+                    ageRangeMax: ageRange.upperBound,
+                    tempoBPM: 100,
+                    calmingScore: calmingScore,
+                    audioSourceType: .bundled,
+                    fileName: fileName,
+                    fileExtension: ext
+                ))
+            }
+        }
+
+        // Bundled lullaby audio files from Audio/lullabies folder
         let bundledLullabies: [(String, String, String, Int, ClosedRange<Int>)] = [
             ("Gentle Melody", "gentle_melody", "mp3", 360, 0...36),
             ("Lullaby Melody", "lullaby_melody", "mp3", 320, 0...36),
             ("Sleep Sounds", "sleep_sounds", "mp3", 260, 0...24),
-            ("Bedtime Tune", "bedtime_tune", "mp3", 340, 0...36)
+            ("Bedtime Tune", "bedtime_tune", "mp3", 340, 0...36),
+            ("Soft Lullaby for Baby", "soft_lullaby_baby", "mp3", 280, 0...36),
+            ("Suo Gan (Welsh Lullaby)", "suo_gan", "mp3", 240, 0...36),
+            ("Twinkle Twinkle Little Star", "twinkle_twinkle", "mp3", 120, 0...36),
+            ("Rock-a-Bye Baby", "rock_a_bye_baby", "mp3", 90, 0...24)
         ]
 
         for (title, fileName, ext, duration, ageRange) in bundledLullabies {
             if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/lullabies") != nil ||
+               Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/children") != nil ||
                Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
                 tracks.append(AudioTrack(
                     title: title,
@@ -836,6 +1300,92 @@ class ContentLibraryService: ObservableObject {
             $0.name.lowercased().contains(lowercasedQuery) ||
             $0.description.lowercased().contains(lowercasedQuery)
         }
+    }
+
+    // MARK: - Advanced Search
+
+    /// Search tracks by multiple criteria
+    func searchTracks(
+        query: String? = nil,
+        category: AudioCategory? = nil,
+        minCalmScore: Double? = nil,
+        maxDuration: TimeInterval? = nil,
+        language: Language? = nil
+    ) -> [AudioTrack] {
+        var results = allTracks
+
+        if let query = query?.lowercased(), !query.isEmpty {
+            results = results.filter {
+                $0.title.lowercased().contains(query) ||
+                $0.artist.lowercased().contains(query) ||
+                $0.category.rawValue.lowercased().contains(query)
+            }
+        }
+
+        if let category = category {
+            results = results.filter { $0.category == category }
+        }
+
+        if let minCalmScore = minCalmScore {
+            results = results.filter { $0.calmingScore >= minCalmScore }
+        }
+
+        if let maxDuration = maxDuration {
+            results = results.filter { $0.duration <= maxDuration }
+        }
+
+        if let language = language {
+            results = results.filter { $0.language == language }
+        }
+
+        return results.sorted { $0.calmingScore > $1.calmingScore }
+    }
+
+    /// Get top calming tracks
+    func getTopCalmingTracks(limit: Int = 20) -> [AudioTrack] {
+        return allTracks
+            .sorted { $0.calmingScore > $1.calmingScore }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    /// Get tracks by subcategory (using fileName pattern matching)
+    func getTracksBySubcategory(_ subcategory: String) -> [AudioTrack] {
+        let lowercased = subcategory.lowercased()
+        return allTracks.filter {
+            $0.fileName?.lowercased().contains(lowercased) == true ||
+            $0.title.lowercased().contains(lowercased)
+        }
+    }
+
+    /// Get random tracks for variety
+    func getRandomTracks(count: Int = 10, category: AudioCategory? = nil) -> [AudioTrack] {
+        var pool = category != nil ? allTracks.filter { $0.category == category } : allTracks
+        pool.shuffle()
+        return Array(pool.prefix(count))
+    }
+
+    /// Get nature subcategory tracks
+    func getNatureTracks(subcategory: String? = nil) -> [AudioTrack] {
+        let natureTracks = allTracks.filter { $0.category == .natureSounds }
+
+        guard let subcategory = subcategory?.lowercased() else {
+            return natureTracks
+        }
+
+        return natureTracks.filter {
+            $0.fileName?.lowercased().contains(subcategory) == true ||
+            $0.title.lowercased().contains(subcategory)
+        }
+    }
+
+    /// Get library statistics
+    func getLibraryStats() -> (total: Int, byCategory: [AudioCategory: Int]) {
+        var stats: [AudioCategory: Int] = [:]
+        for track in allTracks {
+            stats[track.category, default: 0] += 1
+        }
+        return (allTracks.count, stats)
     }
 }
 

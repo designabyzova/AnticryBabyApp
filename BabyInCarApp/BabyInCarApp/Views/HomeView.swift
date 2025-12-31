@@ -12,6 +12,7 @@ struct HomeView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var aiEngine = AIRecommendationEngine.shared
     @StateObject private var emergencyService = EmergencyCryStopService.shared
+    @StateObject private var favoritesManager = FavoritesManager.shared
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     @State private var quickPickPlaylists: [Playlist] = []
@@ -35,6 +36,11 @@ struct HomeView: View {
                     // Now Playing (if something is playing)
                     if audioEngine.currentTrack != nil {
                         nowPlayingSection
+                    }
+
+                    // Favorites Section (if user has favorites)
+                    if !favoritesManager.favoriteTracks.isEmpty {
+                        favoritesSection
                     }
 
                     // Quick Picks
@@ -253,6 +259,38 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Favorites Section
+    private var favoritesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(.appSecondary)
+
+                Text("Your Favorites")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.appText)
+
+                Spacer()
+
+                NavigationLink(destination: FavoritesView()) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.appPrimary)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(favoritesManager.getFavoriteTracks().prefix(6)) { track in
+                        FavoriteTrackCard(track: track)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
     // MARK: - Quick Picks Section
     private var quickPicksSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -317,6 +355,50 @@ struct HomeView: View {
             quickPickPlaylists = await aiEngine.getQuickPicks(for: baby)
         }
         isLoading = false
+    }
+}
+
+// MARK: - Favorite Track Card
+struct FavoriteTrackCard: View {
+    let track: AudioTrack
+    @EnvironmentObject var audioEngine: AudioEngine
+    @StateObject private var favoritesManager = FavoritesManager.shared
+
+    var body: some View {
+        Button {
+            audioEngine.play(track: track)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                ZStack(alignment: .topTrailing) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.forCategory(track.category).opacity(0.15))
+                            .frame(width: 100, height: 100)
+
+                        Image(systemName: track.category.icon)
+                            .font(.system(size: 32))
+                            .foregroundColor(Color.forCategory(track.category))
+                    }
+
+                    // Favorite indicator
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appSecondary)
+                        .padding(6)
+                }
+
+                Text(track.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.appText)
+                    .lineLimit(1)
+
+                Text(track.artist)
+                    .font(.system(size: 10))
+                    .foregroundColor(.appTextSecondary)
+                    .lineLimit(1)
+            }
+            .frame(width: 100)
+        }
     }
 }
 
@@ -489,9 +571,12 @@ struct EmergencyModeView: View {
     private var phaseIcon: String {
         switch emergencyService.currentPhase {
         case .idle: return "play.circle"
+        case .listening: return "ear.badge.waveform"
+        case .detected: return "exclamationmark.triangle"
         case .attention: return "exclamationmark.circle"
         case .transition: return "arrow.down.circle"
         case .sustained: return "heart.circle"
+        case .adapting: return "waveform.path"
         case .complete: return "checkmark.circle"
         }
     }
@@ -500,12 +585,18 @@ struct EmergencyModeView: View {
         switch emergencyService.currentPhase {
         case .idle:
             return "Ready to start calming sequence"
+        case .listening:
+            return "Listening for baby's cry..."
+        case .detected:
+            return "Cry detected! Preparing response..."
         case .attention:
             return "Playing attention-grabbing sounds to interrupt crying"
         case .transition:
             return "Gradually transitioning to calming sounds"
         case .sustained:
             return "Sustained soothing for sleep transition"
+        case .adapting:
+            return "Adapting response to baby's needs"
         case .complete:
             return "Baby should be calm now"
         }
@@ -515,49 +606,65 @@ struct EmergencyModeView: View {
 // MARK: - Voice Control Sheet
 struct VoiceControlSheet: View {
     @StateObject private var speechService = SpeechRecognitionService.shared
+    @StateObject private var voiceHandler = VoiceCommandHandler.shared
     @EnvironmentObject var audioEngine: AudioEngine
     @Environment(\.dismiss) var dismiss
 
+    @State private var commandFeedback: String?
+    @State private var showingSuccess = false
+    @State private var continuousMode = false
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 Spacer()
 
-                // Microphone visualization
+                // Microphone visualization with success/error state
                 ZStack {
+                    // Outer pulse ring
                     Circle()
-                        .fill(speechService.isListening ? Color.appPrimary.opacity(0.2) : Color.clear)
+                        .fill(circleColor.opacity(0.2))
                         .frame(width: 180, height: 180)
                         .scaleEffect(speechService.isListening ? 1.3 : 1.0)
                         .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: speechService.isListening)
 
+                    // Main circle
                     Circle()
-                        .fill(Color.appPrimary)
+                        .fill(circleColor)
                         .frame(width: 120, height: 120)
 
-                    Image(systemName: "mic.fill")
+                    Image(systemName: circleIcon)
                         .font(.system(size: 50))
                         .foregroundColor(.white)
                 }
 
-                Text(speechService.isListening ? "Listening..." : "Tap to speak")
+                // Status text
+                Text(statusText)
                     .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.appText)
+                    .foregroundColor(circleColor)
 
-                // Voice command suggestions
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Try saying:")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
+                // Command feedback banner
+                if let feedback = commandFeedback {
+                    HStack(spacing: 12) {
+                        Image(systemName: showingError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                            .foregroundColor(circleColor)
 
-                    VoiceCommandSuggestion(command: "\"Play white noise\"")
-                    VoiceCommandSuggestion(command: "\"My baby is 5 months old\"")
-                    VoiceCommandSuggestion(command: "\"Emergency mode\"")
-                    VoiceCommandSuggestion(command: "\"Pause\" or \"Stop\"")
+                        Text(feedback)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.appText)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(circleColor.opacity(0.15))
+                    )
+                    .padding(.horizontal, 24)
+                    .transition(.scale.combined(with: .opacity))
                 }
-                .padding(.horizontal, 32)
 
-                if !speechService.recognizedText.isEmpty {
+                // Recognized text
+                if !speechService.recognizedText.isEmpty && !showingSuccess {
                     VStack(spacing: 8) {
                         Text("I heard:")
                             .font(.system(size: 14))
@@ -576,14 +683,43 @@ struct VoiceControlSheet: View {
                     .padding(.horizontal, 32)
                 }
 
+                // Voice command suggestions (hide when listening or showing success)
+                if !speechService.isListening && !showingSuccess {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Try saying:")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.appTextSecondary)
+
+                        VoiceCommandSuggestion(command: "\"Play\" or \"Pause\"")
+                        VoiceCommandSuggestion(command: "\"Next\" or \"Previous\"")
+                        VoiceCommandSuggestion(command: "\"Volume up\" or \"Louder\"")
+                        VoiceCommandSuggestion(command: "\"Play lullabies\"")
+                        VoiceCommandSuggestion(command: "\"Emergency mode\"")
+                    }
+                    .padding(.horizontal, 32)
+                }
+
                 Spacer()
+
+                // Continuous mode toggle
+                Toggle(isOn: $continuousMode) {
+                    HStack {
+                        Image(systemName: "repeat")
+                            .foregroundColor(.appPrimary)
+                        Text("Continuous listening")
+                            .font(.system(size: 14))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
+                .padding(.horizontal, 32)
 
                 // Listen button
                 Button {
                     if speechService.isListening {
                         speechService.stopListening()
                     } else {
-                        speechService.startListening()
+                        startListening()
                     }
                 } label: {
                     HStack {
@@ -610,6 +746,119 @@ struct VoiceControlSheet: View {
                         speechService.stopListening()
                         dismiss()
                     }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .voiceCommandExecuted)) { notification in
+                handleCommandExecuted(notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .voiceCommandNotRecognized)) { notification in
+                handleCommandNotRecognized(notification)
+            }
+            .onAppear {
+                // Auto-start listening when sheet appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    startListening()
+                }
+            }
+        }
+    }
+
+    private var statusText: String {
+        if showingSuccess {
+            return "Done!"
+        } else if showingError {
+            return "Try again"
+        } else if speechService.isListening {
+            return "Listening..."
+        } else {
+            return "Tap to speak"
+        }
+    }
+
+    private var circleColor: Color {
+        if showingSuccess {
+            return .green
+        } else if showingError {
+            return .orange
+        } else {
+            return .appPrimary
+        }
+    }
+
+    private var circleIcon: String {
+        if showingSuccess {
+            return "checkmark"
+        } else if showingError {
+            return "xmark"
+        } else {
+            return "mic.fill"
+        }
+    }
+
+    @State private var showingError = false
+
+    private func startListening() {
+        showingSuccess = false
+        showingError = false
+        commandFeedback = nil
+        speechService.startListening()
+    }
+
+    private func handleCommandExecuted(_ notification: Notification) {
+        guard let message = notification.userInfo?["message"] as? String,
+              let success = notification.userInfo?["success"] as? Bool,
+              success else { return }
+
+        // Show success feedback
+        withAnimation(.spring(response: 0.3)) {
+            showingSuccess = true
+            showingError = false
+            commandFeedback = message
+        }
+
+        // Haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        // Handle next action based on mode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if continuousMode {
+                // Restart listening for next command
+                withAnimation {
+                    showingSuccess = false
+                    commandFeedback = nil
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    startListening()
+                }
+            } else {
+                // Auto-dismiss after successful command
+                dismiss()
+            }
+        }
+    }
+
+    private func handleCommandNotRecognized(_ notification: Notification) {
+        // Show error feedback
+        withAnimation(.spring(response: 0.3)) {
+            showingError = true
+            showingSuccess = false
+            commandFeedback = "Command not recognized"
+        }
+
+        // Haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.warning)
+
+        // Restart listening after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                showingError = false
+                commandFeedback = nil
+            }
+            if continuousMode {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    startListening()
                 }
             }
         }

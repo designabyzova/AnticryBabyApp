@@ -141,6 +141,7 @@ class SpeechRecognitionService: ObservableObject {
 
     private func processVoiceCommand(_ text: String) {
         let lowercased = text.lowercased()
+        var commandRecognized = false
 
         // Age extraction
         if let age = extractAge(from: lowercased) {
@@ -152,26 +153,7 @@ class SpeechRecognitionService: ObservableObject {
             return
         }
 
-        // Playback commands
-        if lowercased.contains("play") || lowercased.contains("start") {
-            NotificationCenter.default.post(name: .voiceCommandPlay, object: nil)
-        } else if lowercased.contains("pause") || lowercased.contains("stop") {
-            NotificationCenter.default.post(name: .voiceCommandPause, object: nil)
-        } else if lowercased.contains("next") || lowercased.contains("skip") {
-            NotificationCenter.default.post(name: .voiceCommandNext, object: nil)
-        } else if lowercased.contains("previous") || lowercased.contains("back") {
-            NotificationCenter.default.post(name: .voiceCommandPrevious, object: nil)
-        } else if lowercased.contains("emergency") || lowercased.contains("cry stop") || lowercased.contains("help") {
-            NotificationCenter.default.post(name: .voiceCommandEmergency, object: nil)
-        } else if lowercased.contains("louder") || lowercased.contains("volume up") {
-            NotificationCenter.default.post(name: .voiceCommandVolumeUp, object: nil)
-        } else if lowercased.contains("quieter") || lowercased.contains("volume down") {
-            NotificationCenter.default.post(name: .voiceCommandVolumeDown, object: nil)
-        } else if lowercased.contains("mute") {
-            NotificationCenter.default.post(name: .voiceCommandMute, object: nil)
-        }
-
-        // Category commands
+        // Category commands (check first for more specific matches)
         for category in AudioCategory.allCases {
             if lowercased.contains(category.rawValue.lowercased()) {
                 NotificationCenter.default.post(
@@ -193,6 +175,42 @@ class SpeechRecognitionService: ObservableObject {
                 )
                 return
             }
+        }
+
+        // Playback commands
+        if lowercased.contains("play") || lowercased.contains("start") {
+            NotificationCenter.default.post(name: .voiceCommandPlay, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("pause") || lowercased.contains("stop") {
+            NotificationCenter.default.post(name: .voiceCommandPause, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("next") || lowercased.contains("skip") {
+            NotificationCenter.default.post(name: .voiceCommandNext, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("previous") || lowercased.contains("back") {
+            NotificationCenter.default.post(name: .voiceCommandPrevious, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("emergency") || lowercased.contains("cry stop") || lowercased.contains("help") {
+            NotificationCenter.default.post(name: .voiceCommandEmergency, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("louder") || lowercased.contains("volume up") || lowercased.contains("turn up") {
+            NotificationCenter.default.post(name: .voiceCommandVolumeUp, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("quieter") || lowercased.contains("volume down") || lowercased.contains("turn down") || lowercased.contains("softer") {
+            NotificationCenter.default.post(name: .voiceCommandVolumeDown, object: nil)
+            commandRecognized = true
+        } else if lowercased.contains("mute") || lowercased.contains("silence") {
+            NotificationCenter.default.post(name: .voiceCommandMute, object: nil)
+            commandRecognized = true
+        }
+
+        // Notify if no command was recognized
+        if !commandRecognized {
+            NotificationCenter.default.post(
+                name: .voiceCommandNotRecognized,
+                object: nil,
+                userInfo: ["text": text]
+            )
         }
     }
 
@@ -320,12 +338,24 @@ extension Notification.Name {
     static let voiceCommandMute = Notification.Name("voiceCommandMute")
     static let voiceCommandCategory = Notification.Name("voiceCommandCategory")
     static let voiceCommandMood = Notification.Name("voiceCommandMood")
+    // Feedback notifications
+    static let voiceCommandExecuted = Notification.Name("voiceCommandExecuted")
+    static let voiceCommandNotRecognized = Notification.Name("voiceCommandNotRecognized")
+}
+
+// MARK: - Voice Command Result
+struct VoiceCommandResult {
+    let command: String
+    let success: Bool
+    let message: String
 }
 
 // MARK: - Voice Command Handler
 @MainActor
 class VoiceCommandHandler: ObservableObject {
     static let shared = VoiceCommandHandler()
+
+    @Published var lastCommandResult: VoiceCommandResult?
 
     private var appState: AppState?
     private let audioEngine = AudioEngine.shared
@@ -340,6 +370,15 @@ class VoiceCommandHandler: ObservableObject {
         self.appState = appState
     }
 
+    private func postCommandExecuted(command: String, success: Bool, message: String) {
+        lastCommandResult = VoiceCommandResult(command: command, success: success, message: message)
+        NotificationCenter.default.post(
+            name: .voiceCommandExecuted,
+            object: nil,
+            userInfo: ["command": command, "success": success, "message": message]
+        )
+    }
+
     private func setupNotificationObservers() {
         NotificationCenter.default.addObserver(
             forName: .voiceCommandPlay,
@@ -348,6 +387,7 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.handlePlay()
+                self?.postCommandExecuted(command: "play", success: true, message: "Playing audio")
             }
         }
 
@@ -358,6 +398,7 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.handlePause()
+                self?.postCommandExecuted(command: "pause", success: true, message: "Audio paused")
             }
         }
 
@@ -368,6 +409,7 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.audioEngine.next()
+                self?.postCommandExecuted(command: "next", success: true, message: "Skipped to next track")
             }
         }
 
@@ -378,6 +420,7 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.audioEngine.previous()
+                self?.postCommandExecuted(command: "previous", success: true, message: "Back to previous track")
             }
         }
 
@@ -388,6 +431,7 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.handleEmergency()
+                self?.postCommandExecuted(command: "emergency", success: true, message: "Emergency mode activated")
             }
         }
 
@@ -397,8 +441,11 @@ class VoiceCommandHandler: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                let newVolume = min(0.7, self?.audioEngine.volume ?? 0.5 + 0.1)
+                let currentVolume = self?.audioEngine.volume ?? 0.5
+                let newVolume = min(1.0, currentVolume + 0.15)
                 self?.audioEngine.setVolume(newVolume)
+                let percent = Int(newVolume * 100)
+                self?.postCommandExecuted(command: "volume up", success: true, message: "Volume: \(percent)%")
             }
         }
 
@@ -408,8 +455,11 @@ class VoiceCommandHandler: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                let newVolume = max(0, self?.audioEngine.volume ?? 0.5 - 0.1)
+                let currentVolume = self?.audioEngine.volume ?? 0.5
+                let newVolume = max(0, currentVolume - 0.15)
                 self?.audioEngine.setVolume(newVolume)
+                let percent = Int(newVolume * 100)
+                self?.postCommandExecuted(command: "volume down", success: true, message: "Volume: \(percent)%")
             }
         }
 
@@ -420,6 +470,8 @@ class VoiceCommandHandler: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.audioEngine.toggleMute()
+                let isMuted = self?.audioEngine.isMuted ?? false
+                self?.postCommandExecuted(command: "mute", success: true, message: isMuted ? "Audio muted" : "Audio unmuted")
             }
         }
 
@@ -431,6 +483,7 @@ class VoiceCommandHandler: ObservableObject {
             Task { @MainActor in
                 if let category = notification.userInfo?["category"] as? AudioCategory {
                     await self?.handleCategoryCommand(category)
+                    self?.postCommandExecuted(command: "category", success: true, message: "Playing \(category.rawValue)")
                 }
             }
         }
@@ -443,6 +496,7 @@ class VoiceCommandHandler: ObservableObject {
             Task { @MainActor in
                 if let mood = notification.userInfo?["mood"] as? AIRecommendationEngine.Mood {
                     await self?.handleMoodCommand(mood)
+                    self?.postCommandExecuted(command: "mood", success: true, message: "Playing \(mood.rawValue) playlist")
                 }
             }
         }
@@ -455,6 +509,7 @@ class VoiceCommandHandler: ObservableObject {
             Task { @MainActor in
                 if let age = notification.userInfo?["age"] as? Int {
                     self?.handleAgeRecognized(age)
+                    self?.postCommandExecuted(command: "age", success: true, message: "Baby age set to \(age) months")
                 }
             }
         }

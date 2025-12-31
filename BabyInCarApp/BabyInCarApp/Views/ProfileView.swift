@@ -189,6 +189,14 @@ struct ProfileView: View {
                     )
                 }
 
+                NavigationLink(destination: DownloadsManagerView()) {
+                    SettingsRowWithBadge(
+                        icon: "arrow.down.circle.fill",
+                        title: "Manage Downloads",
+                        showChevron: true
+                    )
+                }
+
                 SettingsToggleRow(
                     icon: "mic.fill",
                     title: "Voice Control",
@@ -363,6 +371,57 @@ struct SettingsToggleRow: View {
     }
 }
 
+// MARK: - Settings Row with Badge (for Downloads)
+struct SettingsRowWithBadge: View {
+    let icon: String
+    let title: String
+    var showChevron: Bool = false
+    @ObservedObject private var cacheService = AudioCacheService.shared
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(.appPrimary)
+                .frame(width: 28)
+
+            Text(title)
+                .font(.system(size: 15))
+                .foregroundColor(.appText)
+
+            Spacer()
+
+            // Show download count badge if there are downloads
+            if let stats = cacheService.cacheStatistics, stats.totalTracks > 0 {
+                Text("\(stats.totalTracks)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(Color.appPrimary)
+                    )
+            }
+
+            // Show storage size
+            if let stats = cacheService.cacheStatistics, stats.totalSize > 0 {
+                Text(stats.formattedSize)
+                    .font(.system(size: 14))
+                    .foregroundColor(.appTextSecondary)
+            }
+
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.appTextSecondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+}
+
 // MARK: - Edit Baby Sheet
 struct EditBabySheet: View {
     @EnvironmentObject var appState: AppState
@@ -370,12 +429,18 @@ struct EditBabySheet: View {
 
     @State private var name: String = ""
     @State private var birthDate: Date = Date()
+    @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
         NavigationView {
             Form {
                 Section("Baby Information") {
                     TextField("Name", text: $name)
+                        .focused($isNameFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            isNameFieldFocused = false
+                        }
 
                     DatePicker(
                         "Birth Date",
@@ -394,6 +459,7 @@ struct EditBabySheet: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Baby")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -413,6 +479,15 @@ struct EditBabySheet: View {
                         appState.updateBaby(updatedBaby)
                         dismiss()
                     }
+                }
+
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isNameFieldFocused = false
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.appPrimary)
                 }
             }
             .onAppear {

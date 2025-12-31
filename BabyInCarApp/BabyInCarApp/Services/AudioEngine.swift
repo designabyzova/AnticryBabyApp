@@ -2,7 +2,7 @@
 //  AudioEngine.swift
 //  BabyInCarApp
 //
-//  Core audio playback engine with real-time synthesis
+//  Core audio playback engine with streaming support and real-time synthesis
 //
 
 import Foundation
@@ -24,19 +24,61 @@ class AudioEngine: ObservableObject {
     @Published var isMuted: Bool = false
     @Published var sleepTimer: SleepTimer = .off
     @Published var sleepTimerRemaining: TimeInterval = 0
-    @Published var repeatMode: RepeatMode = .off
-    @Published var isShuffleEnabled: Bool = false
+    @Published var repeatMode: RepeatMode = .off {
+        didSet { savePlaybackSettings() }
+    }
+    @Published var isShuffleEnabled: Bool = false {
+        didSet { savePlaybackSettings() }
+    }
+    @Published var isBuffering: Bool = false
+    @Published var bufferProgress: Double = 0
 
-    enum RepeatMode {
-        case off
-        case all
-        case one
+    // MARK: - Queue Management (Spotify-like)
+    /// Original playlist order before shuffle
+    private var originalPlaylistOrder: [AudioTrack] = []
+    /// Queue of tracks to play next (inserted by "Play Next" feature)
+    @Published var upNextQueue: [AudioTrack] = []
+    /// History of played tracks for "previous" navigation
+    private var playbackHistory: [AudioTrack] = []
+    private let maxHistorySize = 50
+
+    // MARK: - Shuffle State
+    /// Tracks already played in shuffle mode (to avoid repeats until all played)
+    private var shufflePlayedIndices: Set<Int> = []
+
+    enum RepeatMode: String, CaseIterable {
+        case off = "off"
+        case all = "all"
+        case one = "one"
+
+        var icon: String {
+            switch self {
+            case .off: return "repeat"
+            case .all: return "repeat"
+            case .one: return "repeat.1"
+            }
+        }
+
+        var isActive: Bool {
+            self != .off
+        }
+
+        var displayName: String {
+            switch self {
+            case .off: return "Repeat Off"
+            case .all: return "Repeat All"
+            case .one: return "Repeat One"
+            }
+        }
     }
 
     // MARK: - Audio Components
     private var audioEngine: AVAudioEngine?
     private var playerNode: AVAudioPlayerNode?
     private var audioPlayer: AVAudioPlayer?
+    private var streamPlayer: AVPlayer?  // For progressive streaming
+    private var playerItemObserver: Any?
+    private var timeObserver: Any?
     private var noiseGenerator: NoiseGenerator?
     private var toneGenerator: ToneGenerator?
 
@@ -48,8 +90,27 @@ class AudioEngine: ObservableObject {
     // MARK: - Settings
     private let maxSafeVolume: Float = 0.7 // ~50dB safety limit
 
+    // MARK: - Services
+    private let downloadManager = AudioDownloadManager.shared
+    private let cacheService = AudioCacheService.shared
+
     private init() {
+        loadPlaybackSettings()
         setupNotifications()
+    }
+
+    // MARK: - Settings Persistence
+    private func savePlaybackSettings() {
+        UserDefaults.standard.set(repeatMode.rawValue, forKey: "audioEngine.repeatMode")
+        UserDefaults.standard.set(isShuffleEnabled, forKey: "audioEngine.shuffleEnabled")
+    }
+
+    private func loadPlaybackSettings() {
+        if let modeString = UserDefaults.standard.string(forKey: "audioEngine.repeatMode"),
+           let mode = RepeatMode(rawValue: modeString) {
+            repeatMode = mode
+        }
+        isShuffleEnabled = UserDefaults.standard.bool(forKey: "audioEngine.shuffleEnabled")
     }
 
     // MARK: - Audio Session Configuration
@@ -93,6 +154,9 @@ class AudioEngine: ObservableObject {
         duration = track.duration
         playbackState = .loading
 
+        // Track recently played
+        PlaylistManager.shared.addToRecentlyPlayed(track)
+
         switch track.audioSourceType {
         case .generated:
             playGeneratedAudio(track: track)
@@ -107,72 +171,228 @@ class AudioEngine: ObservableObject {
 
     func play(playlist: Playlist, startIndex: Int = 0) {
         guard !playlist.tracks.isEmpty else { return }
+
+        // Store original order before any shuffle
+        originalPlaylistOrder = playlist.tracks
+        shufflePlayedIndices.removeAll()
+        playbackHistory.removeAll()
+
         currentPlaylist = playlist
         currentPlaylistIndex = startIndex
 
-        if startIndex < playlist.tracks.count {
-            play(track: playlist.tracks[startIndex])
+        // If shuffle is enabled, shuffle the playlist but keep the selected track first
+        if isShuffleEnabled {
+            applyShuffleToPlaylist(keepingTrackAt: startIndex)
         }
+
+        if currentPlaylistIndex < (currentPlaylist?.tracks.count ?? 0) {
+            play(track: currentPlaylist!.tracks[currentPlaylistIndex])
+        }
+    }
+
+    /// Play a playlist in shuffle mode starting with a random track
+    func playShuffled(playlist: Playlist) {
+        guard !playlist.tracks.isEmpty else { return }
+        let randomIndex = Int.random(in: 0..<playlist.tracks.count)
+        isShuffleEnabled = true
+        play(playlist: playlist, startIndex: randomIndex)
     }
 
     func pause() {
         playerNode?.pause()
         audioPlayer?.pause()
+        streamPlayer?.pause()
         noiseGenerator?.stop()
         playbackState = .paused
         stopProgressTimer()
+
+        // Report pause event
+        if let track = currentTrack {
+            Task {
+                try? await APIClient.shared.reportPlayback(
+                    trackId: track.id.uuidString,
+                    event: .paused(position: currentTime)
+                )
+            }
+        }
     }
 
     func resume() {
         playerNode?.play()
         audioPlayer?.play()
+        streamPlayer?.play()
         if let track = currentTrack, track.audioSourceType == .generated {
             noiseGenerator?.start()
         }
         playbackState = .playing
         startProgressTimer()
+
+        // Report resume event
+        if let track = currentTrack {
+            Task {
+                try? await APIClient.shared.reportPlayback(
+                    trackId: track.id.uuidString,
+                    event: .resumed(position: currentTime)
+                )
+            }
+        }
     }
 
     func stop() {
+        // Report completion if was playing
+        if let track = currentTrack, playbackState == .playing {
+            Task {
+                try? await APIClient.shared.reportPlayback(
+                    trackId: track.id.uuidString,
+                    event: .completed(duration: currentTime)
+                )
+            }
+        }
+
         stopCurrentPlayback()
         currentTrack = nil
         currentPlaylist = nil
         currentTime = 0
         duration = 0
         playbackState = .stopped
+        isBuffering = false
+        bufferProgress = 0
     }
 
     func next() {
+        // Check if there's a track in the "up next" queue first
+        if !upNextQueue.isEmpty {
+            let nextTrack = upNextQueue.removeFirst()
+            addToHistory(currentTrack)
+            play(track: nextTrack)
+            return
+        }
+
         guard let playlist = currentPlaylist else { return }
+
+        // Handle repeat one mode - replay current track
+        if repeatMode == .one {
+            seek(to: 0)
+            if playbackState != .playing {
+                resume()
+            }
+            return
+        }
+
+        // Add current track to history
+        addToHistory(currentTrack)
+
+        // Smart shuffle: pick random unplayed track
+        if isShuffleEnabled {
+            if let nextIndex = getNextShuffleIndex() {
+                currentPlaylistIndex = nextIndex
+                shufflePlayedIndices.insert(nextIndex)
+                play(track: playlist.tracks[nextIndex])
+            } else {
+                // All tracks played in shuffle mode
+                handleEndOfPlaylist()
+            }
+            return
+        }
+
+        // Normal sequential playback
         let nextIndex = currentPlaylistIndex + 1
 
         if nextIndex < playlist.tracks.count {
             currentPlaylistIndex = nextIndex
             play(track: playlist.tracks[nextIndex])
         } else {
-            // Loop back to beginning
-            currentPlaylistIndex = 0
-            play(track: playlist.tracks[0])
+            handleEndOfPlaylist()
         }
     }
 
-    func previous() {
-        guard let playlist = currentPlaylist else { return }
+    private func handleEndOfPlaylist() {
+        guard let playlist = currentPlaylist else {
+            stop()
+            return
+        }
 
+        switch repeatMode {
+        case .off:
+            stop()
+        case .all:
+            // Reset shuffle state and start over
+            shufflePlayedIndices.removeAll()
+            if isShuffleEnabled {
+                // Reshuffle and start fresh
+                let randomIndex = Int.random(in: 0..<playlist.tracks.count)
+                currentPlaylistIndex = randomIndex
+                shufflePlayedIndices.insert(randomIndex)
+                play(track: playlist.tracks[randomIndex])
+            } else {
+                currentPlaylistIndex = 0
+                play(track: playlist.tracks[0])
+            }
+        case .one:
+            // Should be handled before this
+            break
+        }
+    }
+
+    /// Get next random index that hasn't been played yet in shuffle mode
+    private func getNextShuffleIndex() -> Int? {
+        guard let playlist = currentPlaylist else { return nil }
+
+        // Mark current track as played
+        shufflePlayedIndices.insert(currentPlaylistIndex)
+
+        // Get all unplayed indices
+        let allIndices = Set(0..<playlist.tracks.count)
+        let unplayedIndices = allIndices.subtracting(shufflePlayedIndices)
+
+        if unplayedIndices.isEmpty {
+            return nil // All tracks have been played
+        }
+
+        // Pick a random unplayed track
+        return unplayedIndices.randomElement()
+    }
+
+    func previous() {
         // If more than 3 seconds into track, restart current track
         if currentTime > 3 {
             seek(to: 0)
             return
         }
 
+        // In shuffle mode, go back through history
+        if isShuffleEnabled && !playbackHistory.isEmpty {
+            let previousTrack = playbackHistory.removeLast()
+            // Remove from shuffle played so we can play it again naturally
+            if let playlist = currentPlaylist,
+               let index = playlist.tracks.firstIndex(where: { $0.id == previousTrack.id }) {
+                shufflePlayedIndices.remove(index)
+                currentPlaylistIndex = index
+            }
+            play(track: previousTrack)
+            return
+        }
+
+        guard let playlist = currentPlaylist else { return }
+
         let previousIndex = currentPlaylistIndex - 1
         if previousIndex >= 0 {
             currentPlaylistIndex = previousIndex
             play(track: playlist.tracks[previousIndex])
         } else {
-            // Go to last track
+            // Go to last track (wrap around)
             currentPlaylistIndex = playlist.tracks.count - 1
             play(track: playlist.tracks[currentPlaylistIndex])
+        }
+    }
+
+    /// Add track to playback history
+    private func addToHistory(_ track: AudioTrack?) {
+        guard let track = track else { return }
+        playbackHistory.append(track)
+        // Keep history size manageable
+        if playbackHistory.count > maxHistorySize {
+            playbackHistory.removeFirst()
         }
     }
 
@@ -180,6 +400,23 @@ class AudioEngine: ObservableObject {
         currentTime = max(0, min(time, duration))
         // For generated audio, we don't actually seek - just update display
         audioPlayer?.currentTime = currentTime
+
+        // Seek in stream player
+        if let player = streamPlayer {
+            let cmTime = CMTime(seconds: currentTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+            player.seek(to: cmTime) { [weak self] _ in
+                guard let self = self else { return }
+                // Report seek event
+                if let track = self.currentTrack {
+                    Task {
+                        try? await APIClient.shared.reportPlayback(
+                            trackId: track.id.uuidString,
+                            event: .seeked(position: time)
+                        )
+                    }
+                }
+            }
+        }
     }
 
     func setVolume(_ newVolume: Float) {
@@ -187,6 +424,7 @@ class AudioEngine: ObservableObject {
         volume = min(newVolume, maxSafeVolume)
         audioPlayer?.volume = volume
         playerNode?.volume = volume
+        streamPlayer?.volume = volume
         noiseGenerator?.setVolume(volume)
     }
 
@@ -195,6 +433,7 @@ class AudioEngine: ObservableObject {
         let effectiveVolume = isMuted ? 0 : volume
         audioPlayer?.volume = effectiveVolume
         playerNode?.volume = effectiveVolume
+        streamPlayer?.volume = effectiveVolume
         noiseGenerator?.setVolume(effectiveVolume)
     }
 
@@ -204,30 +443,120 @@ class AudioEngine: ObservableObject {
         repeatMode = mode
     }
 
+    func cycleRepeatMode() {
+        switch repeatMode {
+        case .off:
+            repeatMode = .all
+        case .all:
+            repeatMode = .one
+        case .one:
+            repeatMode = .off
+        }
+    }
+
     func toggleShuffle() {
         isShuffleEnabled.toggle()
-        if isShuffleEnabled, var playlist = currentPlaylist {
-            // Shuffle the remaining tracks
-            var shuffledTracks = playlist.tracks
-            shuffledTracks.shuffle()
-            // Keep current track in position
-            if let currentTrack = currentTrack,
-               let currentIndex = shuffledTracks.firstIndex(where: { $0.id == currentTrack.id }) {
-                shuffledTracks.remove(at: currentIndex)
-                shuffledTracks.insert(currentTrack, at: currentPlaylistIndex)
+
+        if isShuffleEnabled {
+            // Turning shuffle ON
+            if currentPlaylist != nil {
+                // Reset shuffle state - current track is already "played"
+                shufflePlayedIndices.removeAll()
+                shufflePlayedIndices.insert(currentPlaylistIndex)
+                playbackHistory.removeAll()
             }
+        } else {
+            // Turning shuffle OFF - restore original order
+            restoreOriginalPlaylistOrder()
+        }
+    }
+
+    /// Apply shuffle to playlist while keeping a specific track at the front
+    private func applyShuffleToPlaylist(keepingTrackAt index: Int) {
+        guard var playlist = currentPlaylist else { return }
+
+        // The selected track becomes index 0
+        shufflePlayedIndices.removeAll()
+        shufflePlayedIndices.insert(index)
+        currentPlaylistIndex = index
+    }
+
+    /// Restore the original playlist order when shuffle is turned off
+    private func restoreOriginalPlaylistOrder() {
+        guard !originalPlaylistOrder.isEmpty,
+              let playlist = currentPlaylist,
+              let currentTrack = currentTrack else { return }
+
+        // Find where current track is in original order
+        if let originalIndex = originalPlaylistOrder.firstIndex(where: { $0.id == currentTrack.id }) {
+            // Restore original order
             currentPlaylist = Playlist(
                 id: playlist.id,
                 name: playlist.name,
                 description: playlist.description,
-                tracks: shuffledTracks,
+                tracks: originalPlaylistOrder,
                 category: playlist.category,
                 targetAgeMonths: playlist.targetAgeMonths,
                 isSystemGenerated: playlist.isSystemGenerated,
                 createdAt: playlist.createdAt,
                 artworkName: playlist.artworkName
             )
+            currentPlaylistIndex = originalIndex
         }
+
+        // Clear shuffle state
+        shufflePlayedIndices.removeAll()
+        playbackHistory.removeAll()
+    }
+
+    // MARK: - Queue Management (Spotify-like features)
+
+    /// Add a track to play immediately after the current track
+    func playNext(_ track: AudioTrack) {
+        upNextQueue.insert(track, at: 0)
+    }
+
+    /// Add a track to the end of the queue
+    func addToQueue(_ track: AudioTrack) {
+        upNextQueue.append(track)
+    }
+
+    /// Add multiple tracks to the queue
+    func addToQueue(_ tracks: [AudioTrack]) {
+        upNextQueue.append(contentsOf: tracks)
+    }
+
+    /// Remove a track from the up next queue
+    func removeFromQueue(at index: Int) {
+        guard index >= 0 && index < upNextQueue.count else { return }
+        upNextQueue.remove(at: index)
+    }
+
+    /// Clear the entire up next queue
+    func clearQueue() {
+        upNextQueue.removeAll()
+    }
+
+    /// Move a track within the queue
+    func moveInQueue(from source: Int, to destination: Int) {
+        guard source >= 0 && source < upNextQueue.count,
+              destination >= 0 && destination < upNextQueue.count else { return }
+        let track = upNextQueue.remove(at: source)
+        upNextQueue.insert(track, at: destination)
+    }
+
+    /// Get remaining tracks count (queue + remaining playlist)
+    var remainingTracksCount: Int {
+        var count = upNextQueue.count
+        if let playlist = currentPlaylist {
+            if isShuffleEnabled {
+                let remaining = playlist.tracks.count - shufflePlayedIndices.count
+                count += max(0, remaining)
+            } else {
+                count += max(0, playlist.tracks.count - currentPlaylistIndex - 1)
+            }
+        }
+        return count
     }
 
     // MARK: - Sleep Timer
@@ -287,25 +616,40 @@ class AudioEngine: ObservableObject {
 
         // Try with subdirectory based on category
         if url == nil {
-            let subdirectory: String
+            let subdirectories: [String]
             switch track.category {
             case .classicalMusic:
-                subdirectory = "Audio/classical"
+                subdirectories = ["Audio/classical"]
             case .childrenSongs:
-                subdirectory = "Audio/lullabies"
+                subdirectories = ["Audio/children", "Audio/lullabies"]
             case .natureSounds:
-                subdirectory = "Audio/nature"
+                subdirectories = ["Audio/nature"]
             case .whiteNoise:
-                subdirectory = "Audio/whitenoise"
+                subdirectories = ["Audio/whitenoise"]
             default:
-                subdirectory = "Audio"
+                subdirectories = ["Audio"]
             }
-            url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory)
+            for subdirectory in subdirectories {
+                url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory)
+                if url != nil { break }
+            }
         }
 
         // Try Resources/Audio path
         if url == nil {
             url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: "Resources/Audio")
+        }
+
+        // Try all known audio subdirectories as a last resort
+        if url == nil {
+            let allSubdirectories = ["Audio/children", "Audio/lullabies", "Audio/classical", "Audio/nature", "Audio/whitenoise", "Audio/ambient", "Audio/podcasts", "Audio/meditation"]
+            for subdirectory in allSubdirectories {
+                url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory)
+                if url != nil {
+                    print("Found audio file in \(subdirectory): \(fileName).\(fileExtension)")
+                    break
+                }
+            }
         }
 
         guard let audioURL = url else {
@@ -339,34 +683,195 @@ class AudioEngine: ObservableObject {
     }
 
     private func playStreamedAudio(track: AudioTrack) {
-        // For online-first model, we use URL streaming
-        guard let urlString = track.streamURL,
-              let url = URL(string: urlString) else {
-            // Fallback to generated if no URL
-            if track.generatorType != nil {
-                playGeneratedAudio(track: track)
-            } else {
-                playbackState = .error("No stream URL available")
-            }
+        let trackId = track.id.uuidString
+
+        // First, check if we have a cached version
+        if let cachedURL = cacheService.getCachedURL(for: trackId) {
+            playCachedAudio(url: cachedURL, track: track)
+            cacheService.updateLastPlayed(trackId: trackId)
             return
         }
 
-        // Use AVPlayer for streaming
+        // Get stream URL from track or fetch from API
         Task {
             do {
-                let data = try await URLSession.shared.data(from: url).0
-                audioPlayer = try AVAudioPlayer(data: data)
-                audioPlayer?.volume = isMuted ? 0 : volume
-                audioPlayer?.prepareToPlay()
-                audioPlayer?.play()
+                let streamURL: URL
 
-                duration = audioPlayer?.duration ?? track.duration
-                playbackState = .playing
-                startProgressTimer()
+                if let urlString = track.streamURL, let url = URL(string: urlString) {
+                    streamURL = url
+                } else {
+                    // Fetch stream URL from API
+                    let response = try await APIClient.shared.getStreamURL(trackId: trackId)
+                    guard let url = URL(string: response.streamUrl) else {
+                        throw DownloadError.invalidURL
+                    }
+                    streamURL = url
+                }
+
+                // Use AVPlayer for progressive streaming
+                playProgressiveStream(url: streamURL, track: track)
+
+                // Start background download for caching
+                startBackgroundDownload(track: track)
+
             } catch {
-                playbackState = .error("Failed to stream audio: \(error.localizedDescription)")
+                // Fallback to generated audio if streaming fails
+                if track.generatorType != nil {
+                    print("Streaming failed, falling back to generated audio: \(error)")
+                    playGeneratedAudio(track: track)
+                } else {
+                    playbackState = .error("Failed to stream: \(error.localizedDescription)")
+                }
             }
         }
+    }
+
+    /// Play audio using AVPlayer for progressive streaming
+    private func playProgressiveStream(url: URL, track: AudioTrack) {
+        // Clean up existing stream player
+        cleanupStreamPlayer()
+
+        isBuffering = true
+        bufferProgress = 0
+
+        let playerItem = AVPlayerItem(url: url)
+        streamPlayer = AVPlayer(playerItem: playerItem)
+        streamPlayer?.volume = isMuted ? 0 : volume
+
+        // Observe buffering status
+        playerItemObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+
+                switch item.status {
+                case .readyToPlay:
+                    self.isBuffering = false
+                    self.duration = item.duration.seconds.isNaN ? track.duration : item.duration.seconds
+                    self.streamPlayer?.play()
+                    self.playbackState = .playing
+                    self.setupStreamTimeObserver()
+
+                    // Report playback started
+                    Task {
+                        try? await APIClient.shared.reportPlayback(trackId: track.id.uuidString, event: .started)
+                    }
+
+                case .failed:
+                    self.isBuffering = false
+                    if let error = item.error {
+                        self.playbackState = .error("Playback failed: \(error.localizedDescription)")
+                    }
+
+                default:
+                    break
+                }
+            }
+        }
+
+        // Observe buffer progress
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemPlaybackStalled,
+            object: playerItem,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.isBuffering = true
+            }
+        }
+
+        // Observe playback finished
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleTrackEnd()
+            }
+        }
+    }
+
+    /// Setup time observer for stream player
+    private func setupStreamTimeObserver() {
+        guard let player = streamPlayer else { return }
+
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            Task { @MainActor in
+                self?.currentTime = time.seconds
+
+                // Update buffer progress
+                if let item = player.currentItem {
+                    let loadedRanges = item.loadedTimeRanges
+                    if let firstRange = loadedRanges.first?.timeRangeValue {
+                        let bufferedEnd = CMTimeGetSeconds(CMTimeAdd(firstRange.start, firstRange.duration))
+                        let duration = CMTimeGetSeconds(item.duration)
+                        if duration > 0 {
+                            self?.bufferProgress = bufferedEnd / duration
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Play cached audio file
+    private func playCachedAudio(url: URL, track: AudioTrack) {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.volume = isMuted ? 0 : volume
+            audioPlayer?.delegate = AudioPlayerDelegate.shared
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.play()
+
+            duration = audioPlayer?.duration ?? track.duration
+            playbackState = .playing
+            startProgressTimer()
+
+            // Report playback started
+            Task {
+                try? await APIClient.shared.reportPlayback(trackId: track.id.uuidString, event: .started)
+            }
+
+            print("Playing cached audio: \(url.lastPathComponent)")
+        } catch {
+            print("Failed to play cached audio: \(error)")
+            // Try streaming instead
+            playProgressiveStream(url: url, track: track)
+        }
+    }
+
+    /// Start background download for caching
+    private func startBackgroundDownload(track: AudioTrack) {
+        guard track.audioSourceType == .streamed else { return }
+
+        Task {
+            do {
+                let localURL = try await downloadManager.downloadTrack(track)
+                // Get file size for metadata
+                let attributes = try? FileManager.default.attributesOfItem(atPath: localURL.path)
+                let fileSize = attributes?[.size] as? Int64 ?? 0
+                cacheService.saveTrackMetadata(track, fileSize: fileSize)
+                print("Track cached for offline: \(track.title)")
+            } catch {
+                print("Background caching failed: \(error)")
+            }
+        }
+    }
+
+    /// Clean up stream player
+    private func cleanupStreamPlayer() {
+        if let observer = timeObserver {
+            streamPlayer?.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+
+        playerItemObserver = nil
+        streamPlayer?.pause()
+        streamPlayer = nil
+
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemPlaybackStalled, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
     }
 
     private func playTextToSpeech(track: AudioTrack) {
@@ -404,6 +909,7 @@ class AudioEngine: ObservableObject {
         audioPlayer?.stop()
         audioPlayer = nil
         playerNode?.stop()
+        cleanupStreamPlayer()
         noiseGenerator?.stop()
         noiseGenerator = nil
         currentTime = 0

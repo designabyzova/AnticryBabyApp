@@ -14,6 +14,7 @@ import users from './routes/users';
 import ai from './routes/ai';
 import audio from './routes/audio';
 import curation from './routes/curation';
+import music from './routes/music';
 
 // Import services
 import { handleScheduledCuration } from './services/audio-curator';
@@ -56,6 +57,7 @@ app.route('/users', users);
 app.route('/ai', ai);
 app.route('/audio', audio);
 app.route('/curation', curation);
+app.route('/music', music);
 
 // 404 handler
 app.notFound((c) => {

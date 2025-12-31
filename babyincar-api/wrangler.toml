@@ -11,6 +11,10 @@ binding = "AI"
 [vars]
 ENVIRONMENT = "development"
 APP_NAME = "Baby in Car API"
+# Note: Set these secrets via: wrangler secret put SUNO_API_KEY
+# Available music generation API keys (configure one):
+# - SUNO_API_KEY: Get from https://sunoapi.org/
+# - AIML_API_KEY: Get from https://aimlapi.com/
 
 # D1 Database
 [[d1_databases]]

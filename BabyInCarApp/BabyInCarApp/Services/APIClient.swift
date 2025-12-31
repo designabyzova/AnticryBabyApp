@@ -380,6 +380,15 @@ extension APIClient {
         _ = try await makeRequest(path: "/analytics/playback", method: "POST", body: body)
     }
 
+    struct EffectivenessRequest: Encodable {
+        let babyId: String
+        let trackId: String
+        let wasEffective: Bool
+        let calmingTimeSeconds: Int
+        let context: String
+        let emergencyMode: Bool
+    }
+
     func recordEffectiveness(
         babyId: String,
         trackId: String,
@@ -388,14 +397,14 @@ extension APIClient {
         context: String,
         emergencyMode: Bool = false
     ) async throws {
-        let body: [String: Any] = [
-            "baby_id": babyId,
-            "track_id": trackId,
-            "was_effective": wasEffective,
-            "calming_time_seconds": calmingTimeSeconds,
-            "context": context,
-            "emergency_mode": emergencyMode
-        ]
+        let body = EffectivenessRequest(
+            babyId: babyId,
+            trackId: trackId,
+            wasEffective: wasEffective,
+            calmingTimeSeconds: calmingTimeSeconds,
+            context: context,
+            emergencyMode: emergencyMode
+        )
 
         _ = try await makeRequest(path: "/analytics/effectiveness", method: "POST", body: body)
     }
@@ -404,6 +413,296 @@ extension APIClient {
         let data = try await makeRequest(path: "/analytics/insights/\(babyId)")
         return try decoder.decode(InsightsResponse.self, from: data)
     }
+}
+
+// MARK: - Audio Streaming API
+
+extension APIClient {
+    /// Get stream URL for a track
+    func getStreamURL(trackId: String) async throws -> AudioStreamResponse {
+        let data = try await makeRequest(path: "/audio/stream/\(trackId)")
+        return try decoder.decode(AudioStreamResponse.self, from: data)
+    }
+
+    /// Get download URL for a track (for offline caching)
+    func getDownloadURL(trackId: String) async throws -> AudioDownloadResponse {
+        let data = try await makeRequest(path: "/audio/download/\(trackId)")
+        return try decoder.decode(AudioDownloadResponse.self, from: data)
+    }
+
+    /// Get multiple stream URLs for batch preloading
+    func getStreamURLs(trackIds: [String]) async throws -> BatchStreamResponse {
+        let body = ["track_ids": trackIds]
+        let data = try await makeRequest(path: "/audio/batch-urls", method: "POST", body: body)
+        return try decoder.decode(BatchStreamResponse.self, from: data)
+    }
+
+    /// Report audio playback for analytics
+    func reportPlayback(trackId: String, event: PlaybackEvent) async throws {
+        let body = PlaybackReportRequest(
+            trackId: trackId,
+            event: event.rawValue,
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            position: event.position,
+            duration: event.duration
+        )
+        _ = try await makeRequest(path: "/audio/playback", method: "POST", body: body)
+    }
+
+    /// Get audio file info (size, format, bitrate)
+    func getAudioFileInfo(trackId: String) async throws -> AudioFileInfo {
+        let data = try await makeRequest(path: "/audio/info/\(trackId)")
+        return try decoder.decode(AudioFileInfo.self, from: data)
+    }
+}
+
+// MARK: - Audio Streaming Response Types
+
+struct AudioStreamResponse: Decodable {
+    let success: Bool
+    let streamUrl: String
+    let expiresAt: String?
+    let format: String?
+    let bitrate: Int?
+    let duration: Int?
+}
+
+struct AudioDownloadResponse: Decodable {
+    let success: Bool
+    let downloadUrl: String
+    let expiresAt: String?
+    let fileSize: Int64?
+    let format: String?
+    let checksum: String?
+}
+
+struct BatchStreamResponse: Decodable {
+    let success: Bool
+    let streams: [String: StreamInfo]
+
+    struct StreamInfo: Decodable {
+        let url: String
+        let expiresAt: String?
+    }
+}
+
+struct AudioFileInfo: Decodable {
+    let success: Bool
+    let trackId: String
+    let format: String
+    let bitrate: Int
+    let sampleRate: Int
+    let channels: Int
+    let fileSize: Int64
+    let duration: Int
+}
+
+struct PlaybackReportRequest: Encodable {
+    let trackId: String
+    let event: String
+    let timestamp: String
+    let position: TimeInterval?
+    let duration: TimeInterval?
+}
+
+enum PlaybackEvent {
+    case started
+    case paused(position: TimeInterval)
+    case resumed(position: TimeInterval)
+    case completed(duration: TimeInterval)
+    case seeked(position: TimeInterval)
+    case error(message: String)
+
+    var rawValue: String {
+        switch self {
+        case .started: return "started"
+        case .paused: return "paused"
+        case .resumed: return "resumed"
+        case .completed: return "completed"
+        case .seeked: return "seeked"
+        case .error: return "error"
+        }
+    }
+
+    var position: TimeInterval? {
+        switch self {
+        case .paused(let pos), .resumed(let pos), .seeked(let pos):
+            return pos
+        default:
+            return nil
+        }
+    }
+
+    var duration: TimeInterval? {
+        switch self {
+        case .completed(let dur):
+            return dur
+        default:
+            return nil
+        }
+    }
+}
+
+// MARK: - Music Generation API
+
+extension APIClient {
+    /// Get available music generation presets
+    func getMusicPresets(category: String? = nil, ageMonths: Int? = nil) async throws -> [MusicPreset] {
+        var queryItems: [String] = []
+
+        if let category = category {
+            queryItems.append("category=\(category)")
+        }
+        if let age = ageMonths {
+            queryItems.append("age=\(age)")
+        }
+
+        let query = queryItems.isEmpty ? "" : "?\(queryItems.joined(separator: "&"))"
+        let data = try await makeRequest(path: "/music/presets\(query)", authenticated: false)
+        let response = try decoder.decode(MusicPresetsResponse.self, from: data)
+
+        return response.presets
+    }
+
+    /// Get details of a specific preset
+    func getMusicPreset(id: String) async throws -> MusicPresetFull {
+        let data = try await makeRequest(path: "/music/presets/\(id)", authenticated: false)
+        let response = try decoder.decode(MusicPresetFullResponse.self, from: data)
+
+        guard let preset = response.preset else {
+            throw APIError.invalidResponse
+        }
+
+        return preset
+    }
+
+    /// Generate music from a custom prompt (admin only)
+    func generateMusic(request: MusicGenerationRequest) async throws -> MusicGenerationResponse {
+        let data = try await makeRequest(path: "/music/generate", method: "POST", body: request)
+        return try decoder.decode(MusicGenerationResponse.self, from: data)
+    }
+
+    /// Generate music from a preset (admin only)
+    func generateFromPreset(presetId: String) async throws -> MusicGenerationResponse {
+        let data = try await makeRequest(path: "/music/generate/preset/\(presetId)", method: "POST", body: [:] as [String: String])
+        return try decoder.decode(MusicGenerationResponse.self, from: data)
+    }
+
+    /// Check the status of a music generation task
+    func getMusicStatus(taskId: String) async throws -> MusicTaskStatus {
+        let data = try await makeRequest(path: "/music/status/\(taskId)")
+        return try decoder.decode(MusicTaskStatus.self, from: data)
+    }
+
+    /// Get credit balance for music generation
+    func getMusicCredits() async throws -> MusicCreditsResponse {
+        let data = try await makeRequest(path: "/music/credits")
+        return try decoder.decode(MusicCreditsResponse.self, from: data)
+    }
+}
+
+// MARK: - Music Generation Response Types
+
+struct MusicPreset: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let category: String
+    let instrumental: Bool
+    let language: String
+    let targetAge: AgeRange
+
+    struct AgeRange: Decodable {
+        let min: Int
+        let max: Int
+    }
+}
+
+struct MusicPresetFull: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let category: String
+    let instrumental: Bool
+    let language: String
+    let targetAge: MusicPreset.AgeRange
+    let prompt: String
+    let style: String
+}
+
+struct MusicPresetsResponse: Decodable {
+    let success: Bool
+    let presets: [MusicPreset]
+}
+
+struct MusicPresetFullResponse: Decodable {
+    let success: Bool
+    let preset: MusicPresetFull?
+}
+
+struct MusicGenerationRequest: Encodable {
+    let prompt: String
+    let lyrics: String?
+    let style: String?
+    let title: String?
+    let instrumental: Bool
+    let duration: Int?
+    let model: String?
+
+    init(
+        prompt: String,
+        lyrics: String? = nil,
+        style: String? = nil,
+        title: String? = nil,
+        instrumental: Bool = true,
+        duration: Int? = nil,
+        model: String? = "v4.5"
+    ) {
+        self.prompt = prompt
+        self.lyrics = lyrics
+        self.style = style
+        self.title = title
+        self.instrumental = instrumental
+        self.duration = duration
+        self.model = model
+    }
+}
+
+struct MusicGenerationResponse: Decodable {
+    let success: Bool
+    let taskId: String?
+    let status: String?
+    let tracks: [GeneratedTrack]?
+    let credits: MusicCredits?
+
+    struct MusicCredits: Decodable {
+        let used: Int?
+        let remaining: Int?
+    }
+}
+
+struct GeneratedTrack: Decodable, Identifiable {
+    let id: String
+    let title: String
+    let audioUrl: String
+    let imageUrl: String?
+    let duration: Double
+    let lyrics: String?
+    let style: String?
+    let createdAt: String
+}
+
+struct MusicTaskStatus: Decodable {
+    let success: Bool
+    let taskId: String
+    let status: String
+    let progress: Int?
+    let tracks: [GeneratedTrack]?
+    let error: String?
+}
+
+struct MusicCreditsResponse: Decodable {
+    let success: Bool
+    let credits: Int?
+    let plan: String?
 }
 
 // MARK: - Subscription API

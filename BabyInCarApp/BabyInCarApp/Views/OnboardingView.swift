@@ -21,94 +21,103 @@ struct OnboardingView: View {
     let totalPages = 4
 
     var body: some View {
-        ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color.appPrimary.opacity(0.1), Color.appSecondary.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: [Color.appPrimary.opacity(0.1), Color.appSecondary.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Progress indicator
-                HStack(spacing: 8) {
-                    ForEach(0..<totalPages, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(index <= currentPage ? Color.appPrimary : Color.appPrimary.opacity(0.3))
-                            .frame(height: 4)
+                VStack(spacing: 0) {
+                    // Progress indicator - respects safe area
+                    HStack(spacing: 8) {
+                        ForEach(0..<totalPages, id: \.self) { index in
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(index <= currentPage ? Color.appPrimary : Color.appPrimary.opacity(0.3))
+                                .frame(height: 4)
+                        }
                     }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
+                    .padding(.horizontal, 24)
+                    .padding(.top, geometry.safeAreaInsets.top > 0 ? 16 : 50) // Extra padding for status bar
 
-                // Content
-                TabView(selection: $currentPage) {
-                    WelcomePage()
-                        .tag(0)
+                    // Content
+                    TabView(selection: $currentPage) {
+                        WelcomePage()
+                            .tag(0)
 
-                    BabyInfoPage(
-                        name: $babyName,
-                        birthDate: $babyBirthDate,
-                        showingDatePicker: $showingDatePicker,
-                        showingVoiceInput: $showingVoiceInput
-                    )
-                    .tag(1)
+                        BabyInfoPage(
+                            name: $babyName,
+                            birthDate: $babyBirthDate,
+                            showingDatePicker: $showingDatePicker,
+                            showingVoiceInput: $showingVoiceInput
+                        )
+                        .tag(1)
 
-                    LanguageSelectionPage(selectedLanguages: $selectedLanguages)
-                        .tag(2)
+                        LanguageSelectionPage(selectedLanguages: $selectedLanguages)
+                            .tag(2)
 
-                    PermissionsPage()
-                        .tag(3)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.easeInOut, value: currentPage)
+                        PermissionsPage()
+                            .tag(3)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.easeInOut, value: currentPage)
 
-                // Navigation buttons
-                HStack(spacing: 16) {
-                    if currentPage > 0 {
+                    // Navigation buttons
+                    HStack(spacing: 16) {
+                        if currentPage > 0 {
+                            Button {
+                                hideKeyboard()
+                                withAnimation {
+                                    currentPage -= 1
+                                }
+                            } label: {
+                                Text("Back")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.appTextSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.appTextSecondary.opacity(0.3), lineWidth: 1)
+                                    )
+                            }
+                        }
+
                         Button {
-                            withAnimation {
-                                currentPage -= 1
+                            hideKeyboard()
+                            if currentPage < totalPages - 1 {
+                                withAnimation {
+                                    currentPage += 1
+                                }
+                            } else {
+                                completeOnboarding()
                             }
                         } label: {
-                            Text("Back")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.appTextSecondary)
+                            Text(currentPage == totalPages - 1 ? "Get Started" : "Continue")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.appTextSecondary.opacity(0.3), lineWidth: 1)
+                                        .fill(isNextEnabled ? Color.appPrimary : Color.appPrimary.opacity(0.5))
                                 )
                         }
+                        .disabled(!isNextEnabled)
                     }
-
-                    Button {
-                        if currentPage < totalPages - 1 {
-                            withAnimation {
-                                currentPage += 1
-                            }
-                        } else {
-                            completeOnboarding()
-                        }
-                    } label: {
-                        Text(currentPage == totalPages - 1 ? "Get Started" : "Continue")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(isNextEnabled ? Color.appPrimary : Color.appPrimary.opacity(0.5))
-                            )
-                    }
-                    .disabled(!isNextEnabled)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 20)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 40)
             }
         }
+        .ignoresSafeArea(.keyboard) // Allow keyboard to overlap content naturally
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private var isNextEnabled: Bool {
@@ -211,103 +220,127 @@ struct BabyInfoPage: View {
     @Binding var showingVoiceInput: Bool
 
     @StateObject private var speechService = SpeechRecognitionService.shared
+    @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 24) {
+                Spacer(minLength: 40)
 
-            Text("Tell us about your baby")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.appText)
+                Text("Tell us about your baby")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.appText)
 
-            Text("We'll personalize content based on your baby's age")
-                .font(.system(size: 16))
-                .foregroundColor(.appTextSecondary)
-                .multilineTextAlignment(.center)
+                Text("We'll personalize content based on your baby's age")
+                    .font(.system(size: 16))
+                    .foregroundColor(.appTextSecondary)
+                    .multilineTextAlignment(.center)
 
-            Spacer()
+                Spacer(minLength: 20)
 
-            VStack(spacing: 20) {
-                // Baby name input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Baby's Name")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
+                VStack(spacing: 20) {
+                    // Baby name input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Baby's Name")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.appTextSecondary)
 
-                    TextField("Enter baby's name", text: $name)
-                        .font(.system(size: 16))
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 4)
-                        )
-                }
+                        TextField("Enter baby's name", text: $name)
+                            .font(.system(size: 16))
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 4)
+                            )
+                            .focused($isNameFieldFocused)
+                            .submitLabel(.done)
+                            .onSubmit {
+                                isNameFieldFocused = false
+                            }
+                    }
 
-                // Birth date input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Birth Date")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.appTextSecondary)
+                    // Birth date input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Birth Date")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.appTextSecondary)
 
-                    Button {
-                        showingDatePicker = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "calendar")
-                                .foregroundColor(.appPrimary)
+                        Button {
+                            isNameFieldFocused = false
+                            showingDatePicker = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .foregroundColor(.appPrimary)
 
-                            Text(birthDate.formatted(date: .long, time: .omitted))
-                                .foregroundColor(.appText)
+                                Text(birthDate.formatted(date: .long, time: .omitted))
+                                    .foregroundColor(.appText)
 
-                            Spacer()
+                                Spacer()
 
-                            Text(calculatedAge)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.appPrimary)
+                                Text(calculatedAge)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.appPrimary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 4)
+                            )
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 4)
-                        )
+                    }
+
+                    // Voice input option
+                    VStack(spacing: 12) {
+                        Text("Or use voice")
+                            .font(.system(size: 14))
+                            .foregroundColor(.appTextSecondary)
+
+                        Button {
+                            isNameFieldFocused = false
+                            showingVoiceInput = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "mic.fill")
+                                Text("Say baby's age")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.appPrimary)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.appPrimary, lineWidth: 2)
+                            )
+                        }
                     }
                 }
+                .padding(.horizontal, 24)
 
-                // Voice input option
-                VStack(spacing: 12) {
-                    Text("Or use voice")
-                        .font(.system(size: 14))
-                        .foregroundColor(.appTextSecondary)
-
-                    Button {
-                        showingVoiceInput = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "mic.fill")
-                            Text("Say baby's age")
-                        }
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.appPrimary)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.appPrimary, lineWidth: 2)
-                        )
-                    }
-                }
+                Spacer(minLength: 100) // Extra space for keyboard
             }
-            .padding(.horizontal, 24)
-
-            Spacer()
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture {
+            isNameFieldFocused = false
         }
         .sheet(isPresented: $showingDatePicker) {
             DatePickerSheet(date: $birthDate)
         }
         .sheet(isPresented: $showingVoiceInput) {
             VoiceInputSheet(birthDate: $birthDate)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    isNameFieldFocused = false
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.appPrimary)
+            }
         }
     }
 

@@ -15,6 +15,9 @@ export interface Env {
   // Audio curation API keys (optional - for automated collection)
   FREESOUND_API_KEY?: string;
   PIXABAY_API_KEY?: string;
+  // AI Music Generation API keys
+  SUNO_API_KEY?: string;
+  AIML_API_KEY?: string;
 }
 
 // User types

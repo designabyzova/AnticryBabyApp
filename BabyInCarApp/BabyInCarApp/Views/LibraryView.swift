@@ -13,6 +13,7 @@ struct LibraryView: View {
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
     @State private var searchText = ""
     @State private var selectedCategory: AudioCategory?
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -39,8 +40,19 @@ struct LibraryView: View {
                 .padding(.bottom, bottomPadding + 20)
             }
             .scrollIndicators(.visible)
+            .scrollDismissesKeyboard(.interactively)
             .background(Color.appBackground)
             .navigationTitle("Library")
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isSearchFocused = false
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.appPrimary)
+                }
+            }
         }
     }
 
@@ -52,10 +64,16 @@ struct LibraryView: View {
 
             TextField("Search sounds, stories, music...", text: $searchText)
                 .font(.system(size: 16))
+                .focused($isSearchFocused)
+                .submitLabel(.search)
+                .onSubmit {
+                    isSearchFocused = false
+                }
 
             if !searchText.isEmpty {
                 Button {
                     searchText = ""
+                    isSearchFocused = false
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.appTextSecondary)
@@ -102,6 +120,10 @@ struct LibraryView: View {
     // MARK: - All Playlists Content
     private var allPlaylistsContent: some View {
         VStack(spacing: 24) {
+            // User Playlists Section
+            UserPlaylistsSection()
+
+            // Category sections
             ForEach(AudioCategory.allCases) { category in
                 VStack(alignment: .leading, spacing: 12) {
                     // Section header
@@ -260,6 +282,7 @@ struct FilterChip: View {
 struct TrackCard: View {
     let track: AudioTrack
     @EnvironmentObject var audioEngine: AudioEngine
+    @StateObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         Button {
@@ -267,32 +290,50 @@ struct TrackCard: View {
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 // Artwork
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.forCategory(track.category).opacity(0.15))
-                        .frame(width: 120, height: 120)
+                ZStack(alignment: .topTrailing) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.forCategory(track.category).opacity(0.15))
+                            .frame(width: 120, height: 120)
 
-                    Image(systemName: track.category.icon)
-                        .font(.system(size: 36))
-                        .foregroundColor(Color.forCategory(track.category))
+                        Image(systemName: track.category.icon)
+                            .font(.system(size: 36))
+                            .foregroundColor(Color.forCategory(track.category))
 
-                    // Duration badge
-                    VStack {
-                        Spacer()
-                        HStack {
+                        // Duration badge
+                        VStack {
                             Spacer()
-                            Text(track.formattedDuration)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.black.opacity(0.5))
-                                )
-                                .padding(8)
+                            HStack {
+                                Spacer()
+                                Text(track.formattedDuration)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.black.opacity(0.5))
+                                    )
+                                    .padding(8)
+                            }
                         }
                     }
+
+                    // Favorite button overlay
+                    Button {
+                        favoritesManager.toggleFavorite(track: track)
+                    } label: {
+                        Image(systemName: favoritesManager.isFavorite(track: track) ? "heart.fill" : "heart")
+                            .font(.system(size: 14))
+                            .foregroundColor(favoritesManager.isFavorite(track: track) ? .appSecondary : .white)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.3))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .offset(x: -6, y: 6)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -317,6 +358,7 @@ struct TrackRow: View {
     let track: AudioTrack
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var favoritesManager = FavoritesManager.shared
+    @State private var showingAddToPlaylist = false
 
     var isPlaying: Bool {
         audioEngine.currentTrack?.id == track.id && audioEngine.playbackState.isPlaying
@@ -403,6 +445,32 @@ struct TrackRow: View {
                     .shadow(color: .black.opacity(0.03), radius: 2)
             )
         }
+        .contextMenu {
+            Button {
+                audioEngine.play(track: track)
+            } label: {
+                Label("Play", systemImage: "play.fill")
+            }
+
+            Button {
+                showingAddToPlaylist = true
+            } label: {
+                Label("Add to Playlist", systemImage: "text.badge.plus")
+            }
+
+            Button {
+                favoritesManager.toggleFavorite(track: track)
+            } label: {
+                if favoritesManager.isFavorite(track: track) {
+                    Label("Remove from Favorites", systemImage: "heart.slash")
+                } else {
+                    Label("Add to Favorites", systemImage: "heart")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddToPlaylist) {
+            AddToPlaylistSheet(track: track)
+        }
     }
 }
 
@@ -410,6 +478,7 @@ struct TrackRow: View {
 struct PlaylistRow: View {
     let playlist: Playlist
     @EnvironmentObject var audioEngine: AudioEngine
+    @StateObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         Button {
@@ -440,6 +509,16 @@ struct PlaylistRow: View {
                 }
 
                 Spacer()
+
+                // Favorite button
+                Button {
+                    favoritesManager.toggleFavorite(playlist: playlist)
+                } label: {
+                    Image(systemName: favoritesManager.isFavorite(playlist: playlist) ? "heart.fill" : "heart")
+                        .font(.system(size: 18))
+                        .foregroundColor(favoritesManager.isFavorite(playlist: playlist) ? .appSecondary : .appTextSecondary)
+                }
+                .buttonStyle(.plain)
 
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 32))
