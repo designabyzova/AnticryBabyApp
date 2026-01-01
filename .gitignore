@@ -88,17 +88,15 @@ tmp/
 .build/
 .swiftpm/
 
-# Large audio files (stored in Cloudflare R2)
-# These files exceed GitHub's 100MB limit
-# Upload to R2 with: cd babyincar-api && ./scripts/upload-audio-wrangler.sh
+# Audio files (stored in Cloudflare R2 bucket: anticrybaby)
+# All audio content is hosted on R2 for streaming
+# Upload script: cd babyincar-api && ./scripts/batch-upload-category.sh <category>
+# R2 path format: audio/<category>/<filename>
+BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.wav
+BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.mp3
+BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.m4a
 BabyInCarApp/BabyInCarApp/Resources/Audio/podcasts/
 BabyInCarApp/BabyInCarApp/Resources/Audio/fairytales/
-
-# Large nature sounds (stored in R2)
-BabyInCarApp/BabyInCarApp/Resources/Audio/nature/ia_*.mp3
-
-# Large classical files
-BabyInCarApp/BabyInCarApp/Resources/Audio/classical/romantic_violin.mp3
 
 # R2 upload tracking
 babyincar-api/r2-uploaded-files.json

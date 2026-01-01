@@ -649,16 +649,22 @@ def download_librivox_children(metadata_list):
             "max_episodes": 5
         },
         {
-            "url": "https://librivox.org/rss/5756",  # Russian Fairy Tales 1
-            "title": "Russian Fairy Tales Vol 1",
+            # CORRECTED: RSS 15230 is actual Russian fairy tales in Russian language
+            # Old RSS 5756 was German "Tom Sawyer" - WRONG!
+            "url": "https://librivox.org/rss/15230",  # Народные русские сказки Vol 1
+            "title": "Народные русские сказки Vol 1",
             "language": "ru",
-            "max_episodes": 15
+            "max_episodes": 21,
+            "category": "russian_fairy_tales"
         },
         {
-            "url": "https://librivox.org/rss/9087",  # Russian Fairy Tales 2
-            "title": "Russian Fairy Tales Vol 2",
+            # CORRECTED: RSS 15307 is actual Russian fairy tales in Russian language
+            # Old RSS 9087 was English "Fourth Dimension" math book - WRONG!
+            "url": "https://librivox.org/rss/15307",  # Народные русские сказки Vol 2
+            "title": "Народные русские сказки Vol 2",
             "language": "ru",
-            "max_episodes": 15
+            "max_episodes": 21,
+            "category": "russian_fairy_tales"
         },
         {
             "url": "https://librivox.org/rss/2015",  # Aesop's Fables
