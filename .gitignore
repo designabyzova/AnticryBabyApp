@@ -3,6 +3,11 @@
 .specweave/increments/*/logs/       # Gitignored, but structure preserved
 .specweave/increments/*/test-results/
 .specweave/state/jobs/              # Contains tokens/secrets
+.specweave/state/.processor.lock.d/
+.specweave/state/.processor.pid
+.specweave/state/.watchdog-diagnostics.json
+.specweave/state/active-session.lock
+.specweave/state/heartbeat.json
 .specweave/docs-site-internal/      # Generated Docusaurus site for internal docs
 .claude-plugin/                     # Plugin marketplace (framework files)
 plugins/                            # Plugin implementations (framework files)
@@ -70,6 +75,7 @@ test-results/          # Playwright
 
 # OS
 .DS_Store
+**/.DS_Store
 Thumbs.db
 desktop.ini
 
@@ -88,6 +94,17 @@ tmp/
 .build/
 .swiftpm/
 
+# Xcode user data
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+project.xcworkspace/xcuserdata/
+DerivedData/
+
+# Xcode backup files
+*.pbxproj.backup*
+*.pbxproj.bak
+
 # Audio files (stored in Cloudflare R2 bucket: anticrybaby)
 # All audio content is hosted on R2 for streaming
 # Upload script: cd babyincar-api && ./scripts/batch-upload-category.sh <category>
@@ -103,6 +120,8 @@ babyincar-api/r2-uploaded-files.json
 
 # Cloudflare Wrangler cache
 .wrangler/
+.mf/
+node_modules/.cache/
 
 # Xcode build directory
 BabyInCarApp/build/
@@ -113,4 +132,38 @@ babyincar-api/audio-library/downloads/
 # Maestro screenshots/artifacts
 screenshots/
 controls_*.png
-build/
+
+# App-specific build artifacts
+**/build/
+BabyInCarApp.xcarchive/
+*.ipa
+*.app
+*.dSYM
+
+# Certificate files (sensitive)
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.pem
+distribution.key
+distribution.pem
+ExportOptions.plist
+
+# Generated icons (can be regenerated)
+icon_*.png
+
+# Markdown reports in root (should be in increment folders)
+/*_COMPLETE.md
+/*_REPORT.md
+/*_GUIDE.md
+/*_SUMMARY.md
+/*_FIX*.md
+/*_INSTRUCTIONS.md
+/*_STATUS.md
+/*_DEBUG.md
+/*_VERIFICATION.md
+/*.md
+!README.md
+!CLAUDE.md
+!AGENTS.md
