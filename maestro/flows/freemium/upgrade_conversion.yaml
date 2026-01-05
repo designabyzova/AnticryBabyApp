@@ -1,0 +1,109 @@
+# Upgrade Conversion E2E Test
+# Verifies upgrade prompts appear at right moments and conversion flow works
+#
+# Test Case: US-006, US-007 - Engagement-Triggered Upgrades & Transparent UI
+# ACs: AC-US6-02, AC-US7-01, AC-US7-02
+
+appId: com.anticry.babyincar
+name: "Upgrade Conversion Flow"
+tags:
+  - freemium
+  - conversion
+  - engagement
+  - critical
+
+---
+# Step 1: Launch app
+- launchApp:
+    clearState: false
+
+# Step 2: Navigate to subscription/upgrade view
+- runFlow:
+    when:
+      visible: "Settings"
+    commands:
+      - tapOn: "Settings"
+
+- runFlow:
+    when:
+      visible: "Profile"
+    commands:
+      - tapOn: "Profile"
+
+# Step 3: Find and tap upgrade/subscription option
+- runFlow:
+    when:
+      visible: "Upgrade|Premium|Subscription"
+      regex: true
+    commands:
+      - tapOn:
+          text: "Upgrade|Premium|Subscription"
+          regex: true
+
+# Step 4: Verify subscription view appears
+- assertVisible:
+    text: "Premium|Subscription|Upgrade"
+    regex: true
+
+# Step 5: Verify free vs premium comparison is shown (AC-US7-01)
+- assertVisible:
+    text: "Free|Premium|Unlimited|.*feature.*"
+    regex: true
+
+# Step 6: Verify current usage stats are shown (AC-US7-02)
+- runFlow:
+    when:
+      visible: ".*tracks.*|.*used.*|.*remaining.*"
+      regex: true
+    commands:
+      - assertVisible:
+          text: ".*tracks.*"
+          regex: true
+
+# Step 7: Verify pricing is visible
+- assertVisible:
+    text: "\\$.*\\/mo|\\$.*\\/year|\\$.*month"
+    regex: true
+
+# Step 8: Verify "Best Value" indicator on yearly plan
+- runFlow:
+    when:
+      visible: "Best.*Value|Recommended|Save"
+      regex: true
+    commands:
+      - assertVisible:
+          text: "Best.*Value|Save.*%"
+          regex: true
+
+# Step 9: Verify restore purchases option exists
+- assertVisible:
+    text: "Restore.*Purchase|Restore"
+    regex: true
+
+# Step 10: Verify close/dismiss option exists (non-aggressive)
+- assertVisible:
+    text: "Close|Cancel|Not Now|Later"
+    regex: true
+
+# Step 11: Take screenshot of subscription view
+- takeScreenshot: "upgrade_subscription_view"
+
+# Step 12: Dismiss and verify we return to app
+- tapOn:
+    text: "Close|Cancel|Not Now"
+    regex: true
+    optional: true
+- back
+- wait: 1000
+
+# Step 13: Verify we're back in the app (not stuck)
+- assertVisible:
+    text: "Settings|Home|Library"
+    regex: true
+
+# Success!
+- runScript:
+    script: |
+      console.log("Upgrade conversion test passed!")
+      console.log("Verified: Comparison view, usage stats, pricing, restore option")
+      console.log("Verified: Dismissable (non-aggressive)")

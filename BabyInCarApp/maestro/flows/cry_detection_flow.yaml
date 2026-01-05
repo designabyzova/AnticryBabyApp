@@ -1,0 +1,64 @@
+appId: com.anticry.babyincar
+---
+# Test: Cry detection monitoring flow
+# Verifies: Toggle monitoring, detect cry states, emergency response
+
+- launchApp
+
+# Navigate to Cry Detection tab
+- tapOn:
+    id: "cryDetectionTab"
+- assertVisible: "Cry Detection"
+
+# Initial state - monitoring should be OFF by default
+- assertVisible: "Start Monitoring"
+
+# Enable AI monitoring
+- tapOn:
+    id: "cryMonitoringToggle"
+- assertVisible: "Listening..."
+- assertVisible: "Active"
+
+# Wait for calibration (2 seconds)
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Verify monitoring UI elements
+- assertVisible: "Ambient Noise"
+- assertVisible: "Detection Threshold"
+
+# Test emergency stop scenario
+- tapOn: "Emergency Stop"
+- assertVisible: "Stop all audio?"
+- tapOn: "Stop All"
+
+# Verify audio stopped
+- assertVisible: "Audio Stopped"
+- assertVisible: "Start Monitoring"
+
+# Re-enable monitoring
+- tapOn:
+    id: "cryMonitoringToggle"
+- assertVisible: "Listening..."
+
+# Test pattern tracking
+- tapOn: "Cry Patterns"
+- assertVisible: "Daily Summary"
+- assertVisible: "Most Active Times"
+
+- back
+
+# Test settings
+- tapOn:
+    id: "crySettingsButton"
+- assertVisible: "Detection Sensitivity"
+- assertVisible: "Response Settings"
+- assertVisible: "Use DeepInfant AI"
+- back
+
+- takeScreenshot: "cry_detection_active"
+
+# Disable monitoring before exit
+- tapOn:
+    id: "cryMonitoringToggle"
+- assertVisible: "Start Monitoring"

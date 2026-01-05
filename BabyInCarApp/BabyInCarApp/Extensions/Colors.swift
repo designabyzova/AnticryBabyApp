@@ -145,8 +145,8 @@ extension Color {
     /// Fairy Tales - Enchanting pink
     static let fairyTaleColor = Color(hex: "E8A4B8")          // Rose Pink
 
-    /// White Noise - Calm blue
-    static let whiteNoiseColor = Color(hex: "89B4D4")         // Ocean Blue
+    /// Ambient - Calm blue
+    static let ambientColor = Color(hex: "89B4D4")            // Ocean Blue
 
     /// Nature Sounds - Fresh sage green
     static let natureColor = Color(hex: "8BC49E")             // Sage Green
@@ -246,11 +246,12 @@ extension Color {
         switch category {
         case .classicalMusic: return classicalColor
         case .fairyTales: return fairyTaleColor
-        case .whiteNoise: return whiteNoiseColor
         case .natureSounds: return natureColor
         case .instrumental: return instrumentalColor
         case .childrenSongs: return childrenSongsColor
         case .podcasts: return podcastColor
+        case .lullabies: return childrenSongsColor  // Use children songs color for lullabies
+        case .ambient: return instrumentalColor     // Use instrumental color for ambient
         }
     }
 
@@ -494,7 +495,7 @@ extension View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 8) {
                     ColorSwatch(color: .classicalColor, name: "Classical")
                     ColorSwatch(color: .fairyTaleColor, name: "Fairy Tale")
-                    ColorSwatch(color: .whiteNoiseColor, name: "White Noise")
+                    ColorSwatch(color: .ambientColor, name: "Ambient")
                     ColorSwatch(color: .natureColor, name: "Nature")
                     ColorSwatch(color: .instrumentalColor, name: "Instrumental")
                     ColorSwatch(color: .childrenSongsColor, name: "Kids Songs")

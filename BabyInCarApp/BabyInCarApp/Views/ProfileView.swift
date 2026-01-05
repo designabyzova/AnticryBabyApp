@@ -11,11 +11,14 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var adaptiveLearning = AdaptiveLearningEngine.shared
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     @State private var showingEditBaby = false
     @State private var showingLanguageSelection = false
     @State private var showingSubscription = false
+    @State private var showingResetConfirmation = false
+    @State private var showingResetSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -32,7 +35,9 @@ struct ProfileView: View {
                     // Settings sections
                     settingsSections
                 }
-                .padding(.bottom, bottomPadding + 20)
+                // Extra content padding at the bottom for comfortable scrolling.
+                // The safeAreaInset in MainTabView handles the tab bar + mini player space.
+                .padding(.bottom, 20)
             }
             .scrollIndicators(.visible)
             .background(Color.appBackground)
@@ -46,6 +51,20 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
+        }
+        .alert("Reset Learning Data?", isPresented: $showingResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                adaptiveLearning.resetAllLearning()
+                showingResetSuccess = true
+            }
+        } message: {
+            Text("This will clear all learned preferences about what sounds work best for your baby. The app will start fresh with no personalized recommendations.")
+        }
+        .alert("Learning Data Reset", isPresented: $showingResetSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("All learning data has been cleared. The app will now learn your baby's preferences from scratch.")
         }
     }
 
@@ -170,10 +189,54 @@ struct ProfileView: View {
                 )
 
                 SettingsToggleRow(
+                    icon: "waveform.path",
+                    title: "Smooth Transitions",
+                    subtitle: "Crossfade between tracks",
+                    isOn: Binding(
+                        get: { appState.smoothTransitionsEnabled },
+                        set: { appState.setSmoothTransitions($0) }
+                    )
+                )
+                .accessibilityIdentifier("smoothTransitionsToggle")
+
+                SettingsToggleRow(
+                    icon: "speaker.wave.2.fill",
+                    title: "Auto-Duck External Audio",
+                    subtitle: "Reduce Spotify/Music volume when baby cries",
+                    isOn: Binding(
+                        get: { AudioEngine.autoDuckExternalAudio },
+                        set: { AudioEngine.autoDuckExternalAudio = $0 }
+                    )
+                )
+                .accessibilityIdentifier("autoDuckExternalAudioToggle")
+
+                SettingsToggleRow(
                     icon: "car.fill",
                     title: "CarPlay",
                     isOn: .constant(true)
                 )
+            }
+
+            // Cry Detection Settings (Auto-enabled by default for safety)
+            SettingsSection(title: "Cry Detection") {
+                SettingsToggleRow(
+                    icon: "waveform.badge.exclamationmark",
+                    title: "Auto-Start on Launch",
+                    isOn: Binding(
+                        get: { appState.autoCryMonitoringEnabled },
+                        set: { appState.setAutoCryMonitoring($0) }
+                    )
+                )
+
+                NavigationLink(destination: CryDetectionView()) {
+                    SettingsRow(
+                        icon: "ear.and.waveform",
+                        title: "Cry Detection Settings",
+                        value: EmergencyCryStopService.shared.isAIMonitoringEnabled ? "Active" : "Ready",
+                        valueColor: EmergencyCryStopService.shared.isAIMonitoringEnabled ? .green : .secondary,
+                        showChevron: true
+                    )
+                }
             }
 
             // Content Settings
@@ -266,9 +329,44 @@ struct ProfileView: View {
                 }
             }
 
+            // Data & Privacy
+            SettingsSection(title: "Data & Privacy") {
+                // Show learning stats
+                SettingsRow(
+                    icon: "brain.head.profile",
+                    title: "Learning Sessions",
+                    value: "\(adaptiveLearning.totalLearningSessions)"
+                )
+
+                SettingsRow(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "Learning Confidence",
+                    value: "\(Int(adaptiveLearning.learningConfidence * 100))%"
+                )
+
+                Button {
+                    showingResetConfirmation = true
+                } label: {
+                    HStack {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.red)
+                            .frame(width: 32)
+
+                        Text("Reset Learning Data")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+            }
+
             // Version info
             VStack(spacing: 4) {
-                Text("Baby in Car Without Tears")
+                Text("Lulla - Sweet Dreams on Every Ride")
                     .font(.system(size: 12))
                     .foregroundColor(.appTextSecondary)
 
@@ -347,6 +445,7 @@ struct SettingsRow: View {
 struct SettingsToggleRow: View {
     let icon: String
     let title: String
+    var subtitle: String? = nil
     @Binding var isOn: Bool
 
     var body: some View {
@@ -356,9 +455,17 @@ struct SettingsToggleRow: View {
                 .foregroundColor(.appPrimary)
                 .frame(width: 28)
 
-            Text(title)
-                .font(.system(size: 15))
-                .foregroundColor(.appText)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15))
+                    .foregroundColor(.appText)
+
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextSecondary)
+                }
+            }
 
             Spacer()
 
@@ -367,7 +474,7 @@ struct SettingsToggleRow: View {
                 .tint(.appPrimary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, subtitle != nil ? 12 : 10)
     }
 }
 
@@ -592,13 +699,23 @@ struct AboutView: View {
                 .padding(.top, 40)
 
                 VStack(spacing: 8) {
-                    Text("Baby in Car Without Tears")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.appText)
+                    Text("Lulla")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.appPrimary, .appSecondary],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+
+                    Text("Sweet Dreams on Every Ride")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.appTextSecondary)
 
                     Text("Version 1.0.0")
                         .font(.system(size: 14))
-                        .foregroundColor(.appTextSecondary)
+                        .foregroundColor(.appTextSecondary.opacity(0.7))
                 }
 
                 Text("AI-powered calming audio for peaceful car rides with your little one. Using age-personalized content, voice control, and our emergency cry-stop feature.")
@@ -651,9 +768,9 @@ struct PrivacyPolicyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("""
-                Privacy Policy for Baby in Car Without Tears
+                Privacy Policy for Lulla
 
-                Last updated: December 2024
+                Last updated: January 2026
 
                 We take your privacy seriously. This app is designed with children's safety in mind and complies with COPPA and GDPR-K requirements.
 
@@ -675,7 +792,7 @@ struct PrivacyPolicyView: View {
                 All user data is stored locally on your device using secure storage methods. No data is transmitted to external servers.
 
                 Contact:
-                For any privacy concerns, please contact us at privacy@babyincar.app
+                For any privacy concerns, please contact us at privacy@lulla.app
                 """)
                 .font(.system(size: 14))
                 .foregroundColor(.appText)
@@ -694,9 +811,9 @@ struct TermsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("""
-                Terms of Service for Baby in Car Without Tears
+                Terms of Service for Lulla
 
-                Last updated: December 2024
+                Last updated: January 2026
 
                 By using this app, you agree to the following terms:
 
@@ -719,7 +836,7 @@ struct TermsView: View {
                 This app is provided "as is" without warranties. We are not responsible for any issues arising from the use of this app.
 
                 Contact:
-                For questions, please contact support@babyincar.app
+                For questions, please contact support@lulla.app
                 """)
                 .font(.system(size: 14))
                 .foregroundColor(.appText)

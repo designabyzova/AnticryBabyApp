@@ -1,0 +1,294 @@
+# Maestro E2E Test: AI Cry Detection & Emergency Response Flow
+# Tests the comprehensive AI-powered cry detection and soothing system
+#
+# Run: maestro test maestro/flows/cry_detection_flow.yaml
+#
+# This test validates:
+# 1. Emergency button on home screen
+# 2. AI Cry Detection view access
+# 3. Monitoring activation/deactivation
+# 4. Quick action buttons
+# 5. Phase progress display
+# 6. Science information display
+#
+# Note: Actual audio processing cannot be tested via E2E UI automation.
+# This tests UI state transitions and navigation.
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load - should see Home view
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Mm]orning.*|.*[Aa]fternoon.*|.*[Ee]vening.*|.*[Dd]reams.*"
+    timeout: 8000
+
+- takeScreenshot: "cry_detection_01_home_initial"
+
+# ============================================
+# TEST 1: Emergency Button on Home Screen
+# ============================================
+
+# Find and verify emergency button is visible
+- assertVisible:
+    text: ".*EMERGENCY.*|.*[Ee]mergency.*"
+
+- takeScreenshot: "cry_detection_02_emergency_button_visible"
+
+# ============================================
+# TEST 2: AI Cry Detection View Access
+# ============================================
+
+# Tap on "AI Cry Detection & Insights" link
+- runFlow:
+    when:
+      visible:
+        text: "AI Cry Detection"
+    commands:
+      - tapOn:
+          text: "AI Cry Detection"
+
+- runFlow:
+    when:
+      visible:
+        text: "Cry Detection"
+    commands:
+      - tapOn:
+          text: "Cry Detection"
+
+# Wait for Cry Detection View to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*[Cc]ry.*[Dd]etection.*|.*[Rr]eady.*|.*[Ss]tart.*[Mm]onitor.*"
+    timeout: 5000
+
+- takeScreenshot: "cry_detection_03_detection_view"
+
+# ============================================
+# TEST 3: Verify View Components
+# ============================================
+
+# Check for status card
+- assertVisible:
+    text: ".*[Rr]eady.*|.*[Ii]dle.*|.*[Ss]tart.*"
+    optional: true
+
+# Check for AI info section
+- assertVisible:
+    text: ".*[Hh]ow AI.*|.*AI Cry Detection Works.*"
+    optional: true
+
+# Check for science section (scroll if needed)
+- scroll:
+    direction: DOWN
+
+- assertVisible:
+    text: ".*[Ss]cience.*|.*[Rr]esearch.*"
+    optional: true
+
+- takeScreenshot: "cry_detection_04_science_section"
+
+# Scroll back up
+- scroll:
+    direction: UP
+
+# ============================================
+# TEST 4: Monitoring Activation
+# ============================================
+
+# Find and tap the monitoring button
+- runFlow:
+    when:
+      visible:
+        text: "Start AI Monitoring"
+    commands:
+      - tapOn: "Start AI Monitoring"
+
+- runFlow:
+    when:
+      visible:
+        text: "Start Monitoring"
+    commands:
+      - tapOn: "Start Monitoring"
+
+# Handle microphone permission dialog (iOS system dialog)
+- runFlow:
+    when:
+      visible: ".*[Mm]icrophone.*|.*access.*"
+    commands:
+      - tapOn:
+          text: ".*[Aa]llow.*|OK|Allow While Using App"
+          optional: true
+
+# Wait for monitoring state
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]istening.*|.*[Mm]onitoring.*|.*[Ss]top.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "cry_detection_05_monitoring_active"
+
+# ============================================
+# TEST 5: Quick Actions Section
+# ============================================
+
+# Scroll to quick actions
+- scroll:
+    direction: DOWN
+
+# Verify quick action buttons are present
+- assertVisible:
+    text: ".*[Qq]uick.*[Aa]ctions.*|Emergency|Not Working|Calmed.*"
+    optional: true
+
+- takeScreenshot: "cry_detection_06_quick_actions"
+
+# ============================================
+# TEST 6: Stop Monitoring
+# ============================================
+
+# Scroll back up
+- scroll:
+    direction: UP
+
+# Stop monitoring
+- runFlow:
+    when:
+      visible:
+        text: "Stop Monitoring"
+    commands:
+      - tapOn: "Stop Monitoring"
+
+- runFlow:
+    when:
+      visible:
+        text: "Stop"
+    commands:
+      - tapOn: "Stop"
+
+- takeScreenshot: "cry_detection_07_stopped"
+
+# ============================================
+# TEST 7: Settings Access
+# ============================================
+
+# Open settings menu
+- runFlow:
+    when:
+      visible:
+        id: "settingsMenuButton"
+    commands:
+      - tapOn:
+          id: "settingsMenuButton"
+
+- runFlow:
+    when:
+      visible:
+        text: ".*\\.\\.\\..*"
+    commands:
+      - tapOn:
+          text: ".*\\.\\.\\..*"
+
+# Tap Settings option if menu appeared
+- runFlow:
+    when:
+      visible:
+        text: "Settings"
+    commands:
+      - tapOn: "Settings"
+
+- takeScreenshot: "cry_detection_08_settings"
+
+# Close settings if opened
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+
+# ============================================
+# TEST 8: Navigate Back to Home
+# ============================================
+
+# Close the cry detection view
+- runFlow:
+    when:
+      visible:
+        id: "closeButton"
+    commands:
+      - tapOn:
+          id: "closeButton"
+
+# Or swipe down to dismiss sheet
+- swipe:
+    direction: DOWN
+    duration: 500
+
+# Verify we're back on home
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "cry_detection_09_back_to_home"
+
+# ============================================
+# TEST 9: Emergency Mode Activation
+# ============================================
+
+# Tap the main emergency button
+- tapOn:
+    text: ".*EMERGENCY.*CRY.*STOP.*"
+    optional: true
+
+- runFlow:
+    when:
+      visible:
+        text: "EMERGENCY"
+    commands:
+      - tapOn:
+          text: "EMERGENCY"
+
+# Wait for emergency mode to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*[Aa]ttention.*|.*[Cc]alm.*|.*[Pp]hase.*|.*Baby is Calm.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "cry_detection_10_emergency_active"
+
+# Verify emergency mode UI elements
+- assertVisible:
+    text: ".*[Pp]rogress.*|.*[Pp]hase.*|.*Cancel.*|.*Baby is Calm.*"
+    optional: true
+
+# ============================================
+# TEST 10: End Emergency Mode
+# ============================================
+
+# Tap "Baby is Calm" or Cancel
+- runFlow:
+    when:
+      visible:
+        text: "Baby is Calm"
+    commands:
+      - tapOn: "Baby is Calm"
+
+- runFlow:
+    when:
+      visible:
+        text: "Cancel"
+    commands:
+      - tapOn: "Cancel"
+
+# Verify return to home
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "cry_detection_11_test_complete"

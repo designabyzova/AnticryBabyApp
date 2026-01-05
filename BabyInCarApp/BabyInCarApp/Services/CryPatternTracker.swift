@@ -130,23 +130,36 @@ struct CryPatternMetrics: Codable {
 // MARK: - Cry Pattern Tracker
 
 /// Tracks crying patterns over time for comprehensive temporal analysis
+/// Thread-safe: Uses serial queue for all state mutations
 class CryPatternTracker {
+
+    // MARK: - Thread Safety
+
+    /// Serial queue for thread-safe access to mutable state
+    private let stateQueue = DispatchQueue(label: "com.babyincar.CryPatternTracker", qos: .userInitiated)
 
     // MARK: - Configuration
 
     /// Minimum gap between bursts to consider them separate (seconds)
     private let minBurstGap: TimeInterval = 0.5
 
-    /// Maximum history of bursts to keep
-    private let maxBurstHistory = 50
+    /// Maximum history of bursts to keep (MEMORY SAFETY: AGGRESSIVELY reduced)
+    /// 10 bursts is enough to detect patterns without memory bloat
+    private let maxBurstHistory = 10  // REDUCED from 20
 
-    /// Maximum intensity history samples
-    private let maxIntensityHistory = 100
+    /// Maximum intensity history samples (MEMORY SAFETY: AGGRESSIVELY reduced)
+    /// 30 samples = ~1 second of trend data at 30fps, still sufficient
+    private let maxIntensityHistory = 30  // REDUCED from 60
 
-    /// Maximum type history samples
-    private let maxTypeHistory = 50
+    /// Maximum type history samples (MEMORY SAFETY: AGGRESSIVELY reduced)
+    private let maxTypeHistory = 15  // REDUCED from 30
 
-    // MARK: - Internal State
+    /// Maximum intensity samples PER BURST (MEMORY SAFETY - CRITICAL!)
+    /// 50 samples = ~1.7 seconds, enough for cry pattern detection
+    /// CRITICAL: Prevents unbounded memory growth during long continuous crying
+    private let maxIntensitySamplesPerBurst = 50  // REDUCED from 100
+
+    // MARK: - Internal State (accessed only via stateQueue)
 
     /// Recorded cry bursts
     private var bursts: [CryBurst] = []
@@ -194,13 +207,16 @@ class CryPatternTracker {
     // MARK: - Public Methods
 
     /// Reset tracker state for new session
+    /// MEMORY SAFETY: Keep array capacities to avoid repeated allocations
     func reset() {
-        bursts.removeAll()
-        currentBurst = nil
-        intensityHistory.removeAll()
-        typeHistory.removeAll()
-        sessionStartTime = Date()
-        lastUpdateTime = nil
+        stateQueue.sync {
+            bursts.removeAll(keepingCapacity: true)
+            currentBurst = nil
+            intensityHistory.removeAll(keepingCapacity: true)
+            typeHistory.removeAll(keepingCapacity: true)
+            sessionStartTime = Date()
+            lastUpdateTime = nil
+        }
     }
 
     /// Update tracker with new analysis frame
@@ -211,46 +227,67 @@ class CryPatternTracker {
     ///   - timestamp: Time of this analysis
     /// - Returns: Updated pattern metrics
     func update(isCrying: Bool, intensity: Double, type: CryType, timestamp: Date) -> CryPatternMetrics {
-        // Initialize session if needed
-        if sessionStartTime == nil {
-            sessionStartTime = timestamp
+        return stateQueue.sync {
+            // Initialize session if needed
+            if sessionStartTime == nil {
+                sessionStartTime = timestamp
+            }
+
+            lastUpdateTime = timestamp
+
+            // Track intensity history
+            intensityHistory.append((timestamp, intensity))
+            if intensityHistory.count > maxIntensityHistory {
+                intensityHistory.removeFirst()
+            }
+
+            // Handle crying state
+            if isCrying {
+                handleCryingFrameUnsafe(intensity: intensity, type: type, timestamp: timestamp)
+            } else {
+                handleQuietFrameUnsafe(timestamp: timestamp)
+            }
+
+            return calculateMetricsUnsafe(currentTime: timestamp)
         }
-
-        lastUpdateTime = timestamp
-
-        // Track intensity history
-        intensityHistory.append((timestamp, intensity))
-        if intensityHistory.count > maxIntensityHistory {
-            intensityHistory.removeFirst()
-        }
-
-        // Handle crying state
-        if isCrying {
-            handleCryingFrame(intensity: intensity, type: type, timestamp: timestamp)
-        } else {
-            handleQuietFrame(timestamp: timestamp)
-        }
-
-        return calculateMetrics(currentTime: timestamp)
     }
 
     /// Get current metrics without updating state
     func getCurrentMetrics() -> CryPatternMetrics {
-        return calculateMetrics(currentTime: lastUpdateTime ?? Date())
+        return stateQueue.sync {
+            return calculateMetricsUnsafe(currentTime: lastUpdateTime ?? Date())
+        }
     }
 
-    // MARK: - Private Methods - Frame Handling
+    // MARK: - Private Methods - Frame Handling (Unsafe - must be called within stateQueue)
 
-    private func handleCryingFrame(intensity: Double, type: CryType, timestamp: Date) {
+    private func handleCryingFrameUnsafe(intensity: Double, type: CryType, timestamp: Date) {
         // Track type history
         if type != .unknown {
             typeHistory.append(type)
             if typeHistory.count > maxTypeHistory {
                 typeHistory.removeFirst()
-            }
+            }   
         }
 
-        if currentBurst == nil {
+        if var burst = currentBurst {
+            // Update existing burst - use local copy to avoid exclusive access issues
+            burst.peakIntensity = max(burst.peakIntensity, intensity)
+            burst.intensitySamples.append(intensity)
+
+            // MEMORY SAFETY: Enforce maximum samples per burst
+            if burst.intensitySamples.count > maxIntensitySamplesPerBurst {
+                burst.intensitySamples.removeFirst(burst.intensitySamples.count - maxIntensitySamplesPerBurst)
+            }
+
+            // Update dominant type if we have a valid classification
+            if type != .unknown {
+                burst.dominantType = type
+            }
+
+            // Write back the modified burst
+            currentBurst = burst
+        } else {
             // Start new burst
             currentBurst = CryBurst(
                 startTime: timestamp,
@@ -259,19 +296,10 @@ class CryPatternTracker {
                 dominantType: type,
                 intensitySamples: [intensity]
             )
-        } else {
-            // Update current burst
-            currentBurst?.peakIntensity = max(currentBurst?.peakIntensity ?? 0, intensity)
-            currentBurst?.intensitySamples.append(intensity)
-
-            // Update dominant type if we have a valid classification
-            if type != .unknown {
-                currentBurst?.dominantType = type
-            }
         }
     }
 
-    private func handleQuietFrame(timestamp: Date) {
+    private func handleQuietFrameUnsafe(timestamp: Date) {
         guard var burst = currentBurst else { return }
 
         // Check if this is the end of a burst
@@ -290,9 +318,9 @@ class CryPatternTracker {
         }
     }
 
-    // MARK: - Private Methods - Metrics Calculation
+    // MARK: - Private Methods - Metrics Calculation (Unsafe - must be called within stateQueue)
 
-    private func calculateMetrics(currentTime: Date) -> CryPatternMetrics {
+    private func calculateMetricsUnsafe(currentTime: Date) -> CryPatternMetrics {
         // Total cry duration
         let completedDuration = bursts.reduce(0.0) { $0 + $1.duration }
         let currentDuration = currentBurst?.duration ?? 0

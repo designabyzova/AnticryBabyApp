@@ -1,0 +1,93 @@
+appId: com.anticry.babyincar
+---
+# Test: Library browsing and filtering
+# Verifies: Categories, search, filters, sorting
+
+- launchApp
+
+# Navigate to Library
+- tapOn:
+    id: "libraryTab"
+- assertVisible: "Library"
+
+# Test category tabs
+- assertVisible: "All"
+- assertVisible: "Classical"
+- assertVisible: "White Noise"
+- assertVisible: "Lullabies"
+
+# Browse Classical category
+- tapOn: "Classical"
+- assertVisible: "Classical Music"
+- scroll:
+    direction: DOWN
+    distance: 300
+
+# Browse White Noise category
+- tapOn: "White Noise"
+- assertVisible: "Rain Sounds"
+- assertVisible: "Ocean Waves"
+
+# Browse Lullabies category
+- tapOn: "Lullabies"
+- assertVisible: "Lullaby"
+
+# Test search functionality
+- tapOn:
+    id: "searchBar"
+- inputText: "Mozart"
+- assertVisible: "Mozart"
+
+# Clear search
+- tapOn:
+    id: "clearSearchButton"
+- assertVisible: "All"
+
+# Test filter button
+- tapOn:
+    id: "filterButton"
+- assertVisible: "Sort By"
+- assertVisible: "Filter by Age"
+
+# Test sorting
+- tapOn: "Sort By"
+- assertVisible: "Name"
+- assertVisible: "Duration"
+- assertVisible: "Popularity"
+- tapOn: "Duration"
+- back
+
+# Test age filter
+- tapOn: "Filter by Age"
+- assertVisible: "0-3 months"
+- assertVisible: "3-6 months"
+- assertVisible: "6-12 months"
+- tapOn: "3-6 months"
+- back
+
+# Test track details
+- tapOn:
+    text: "Classical"
+    index: 0
+- assertVisible: "Track Details"
+- assertVisible: "Duration"
+- assertVisible: "Category"
+- assertVisible: "Benefits"
+- back
+
+# Test premium content indicator
+- scroll:
+    direction: DOWN
+    distance: 500
+- assertVisible: "Premium"
+
+# Test playlist view
+- tapOn: "Playlists"
+- assertVisible: "My Playlists"
+- assertVisible: "System Playlists"
+
+# Test recently played
+- tapOn: "Recent"
+- assertVisible: "Recently Played"
+
+- takeScreenshot: "library_view"

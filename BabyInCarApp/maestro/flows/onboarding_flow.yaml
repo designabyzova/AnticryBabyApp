@@ -1,0 +1,38 @@
+appId: com.anticry.babyincar
+---
+# Test: Complete onboarding flow for new users
+# Verifies: Welcome screens, permissions, baby profile setup
+
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# Welcome Screen
+- assertVisible: "Welcome to Baby in Car"
+- assertVisible: "Next"
+- tapOn: "Next"
+
+# Features Screen
+- assertVisible: "Smart Cry Detection"
+- assertVisible: "Next"
+- tapOn: "Next"
+
+# Permissions Screen
+- assertVisible: "Microphone Access"
+- assertVisible: "Enable Microphone"
+# Note: Cannot programmatically grant mic permission in test
+# Manual test or mock required
+
+# Baby Profile Setup
+- assertVisible: "Create Baby Profile"
+- tapOn: "Baby's Name"
+- inputText: "Test Baby"
+- tapOn: "Baby's Age"
+- tapOn: "3-6 months"
+- tapOn: "Create Profile"
+
+# Should navigate to home screen
+- assertVisible: "Library"
+- assertVisible: "Favorites"
+
+- takeScreenshot: "onboarding_complete"

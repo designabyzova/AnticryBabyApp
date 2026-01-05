@@ -46,6 +46,12 @@ class ContentLibraryService: ObservableObject {
         allTracks = localTracks
         playlists = generateDefaultPlaylists()
 
+        // Initialize freemium track selection
+        initializeFreemiumSelection()
+
+        // Start trial if needed (for new users)
+        TrialManager.shared.startTrialIfNeeded()
+
         // Then fetch from server in background
         Task {
             await fetchServerContent()
@@ -158,7 +164,10 @@ class ContentLibraryService: ObservableObject {
             isDownloaded: cacheService.isTrackCached(apiTrack.id),
             audioSourceType: audioSourceType,
             generatorType: generatorType,
-            streamURL: apiTrack.streamUrl
+            streamURL: apiTrack.streamUrl,
+            serverId: apiTrack.id,  // Store original API ID for stream URL fetching
+            artworkURL: apiTrack.artworkUrl,
+            isLocked: apiTrack.isLocked ?? false
         )
     }
 
@@ -297,6 +306,8 @@ class ContentLibraryService: ObservableObject {
     // MARK: - Load Bundled Tracks from JSON Metadata
 
     /// Load all bundled tracks from the tracks.json metadata file
+    /// NOTE: In streaming-first architecture, most tracks are NOT bundled.
+    /// This loads metadata for ALL tracks, marking them as streamed if not in bundle.
     private func loadBundledTracksFromMetadata() -> [AudioTrack] {
         var tracks: [AudioTrack] = []
 
@@ -304,9 +315,11 @@ class ContentLibraryService: ObservableObject {
               let data = try? Data(contentsOf: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let trackArray = json["tracks"] as? [[String: Any]] else {
-            print("Could not load tracks.json metadata")
+            print("[ContentLibrary] ⚠️ Could not load tracks.json metadata")
             return tracks
         }
+
+        print("[ContentLibrary] 📦 Loading tracks from tracks.json (\(trackArray.count) total)")
 
         for trackData in trackArray {
             guard let id = trackData["id"] as? String,
@@ -317,13 +330,25 @@ class ContentLibraryService: ObservableObject {
             }
 
             let artist = trackData["artist"] as? String ?? "Various Artists"
-            let subcategory = trackData["subcategory"] as? String ?? "misc"
+            // Note: subcategory and tags are parsed from JSON but not currently used in AudioTrack model
+            // Keeping the parsing here for future extensibility
+            _ = trackData["subcategory"] as? String ?? "misc"
             let duration = trackData["duration"] as? Double ?? 180.0
             let calmScore = trackData["calmScore"] as? Double ?? 0.8
-            let tags = trackData["tags"] as? [String] ?? []
+            _ = trackData["tags"] as? [String] ?? []
 
             // Map category string to AudioCategory
             let category = mapStringToAudioCategory(categoryStr)
+
+            // Determine language from category (english/russian fairy tales)
+            let language: Language? = {
+                switch categoryStr.lowercased() {
+                case "english", "fairytales_en": return .english
+                case "russian", "fairytales_ru": return .russian
+                case "children", "lullabies": return .english  // Default for children's content
+                default: return nil  // Instrumental/nature/etc. have no language
+                }
+            }()
 
             // Extract file info from filename path
             let pathComponents = filename.split(separator: "/")
@@ -333,45 +358,92 @@ class ContentLibraryService: ObservableObject {
             let fileExtension = fileNameParts.count > 1 ? String(fileNameParts.last!) : "mp3"
             let subdirectory = pathComponents.count > 1 ? "Audio/" + pathComponents.dropLast().joined(separator: "/") : "Audio"
 
-            // Verify file exists in bundle
-            if Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory) != nil {
-                let track = AudioTrack(
-                    id: UUID(uuidString: id) ?? UUID(),
-                    title: title,
-                    artist: artist,
-                    category: category,
-                    duration: duration > 0 ? duration : 180,
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    calmingScore: calmScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: fileExtension
-                )
-                tracks.append(track)
+            // STREAMING-FIRST: Check if file exists in bundle, otherwise mark as streamed
+            let isBundled = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory) != nil
+
+            // Construct stream URL for non-bundled tracks
+            let streamURL: String?
+            if !isBundled {
+                // URL encode the filename for R2 storage
+                // R2 bucket structure: audio/{category}/{filename}
+                let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? filename
+                streamURL = "\(APIClient.r2PublicURL)/audio/\(encodedFilename)"
+            } else {
+                streamURL = nil
             }
+
+            let track = AudioTrack(
+                id: UUID(uuidString: id) ?? UUID(),
+                title: title,
+                artist: artist,
+                category: category,
+                language: language,
+                duration: duration > 0 ? duration : 180,
+                ageRangeMin: 0,
+                ageRangeMax: 36,
+                calmingScore: calmScore,
+                audioSourceType: isBundled ? .bundled : .streamed,
+                fileName: isBundled ? fileName : nil,
+                fileExtension: isBundled ? fileExtension : nil,
+                streamURL: streamURL
+            )
+            tracks.append(track)
         }
 
-        print("Loaded \(tracks.count) bundled tracks from metadata")
+        let bundledCount = tracks.filter { $0.audioSourceType == .bundled }.count
+        let streamedCount = tracks.filter { $0.audioSourceType == .streamed }.count
+        print("[ContentLibrary] ✅ Loaded \(tracks.count) tracks from metadata:")
+        print("  - 📦 Bundled: \(bundledCount)")
+        print("  - 🌐 Streamed: \(streamedCount)")
+        print("  - By category: Classical=\(tracks.filter { $0.category == .classicalMusic }.count), Fairy Tales=\(tracks.filter { $0.category == .fairyTales }.count), Children=\(tracks.filter { $0.category == .childrenSongs }.count), Podcasts=\(tracks.filter { $0.category == .podcasts }.count)")
+
         return tracks
     }
 
     /// Map category string from JSON to AudioCategory enum
+    /// NOTE: White noise category was REMOVED - user feedback says it's scary for babies!
     private func mapStringToAudioCategory(_ str: String) -> AudioCategory {
         switch str.lowercased() {
-        case "nature": return .natureSounds
-        case "whitenoise": return .whiteNoise
-        case "lullabies": return .childrenSongs
-        case "classical": return .classicalMusic
-        case "ambient": return .instrumental
-        case "children": return .childrenSongs
+        // Nature Sounds
+        case "nature", "nature_sounds": return .natureSounds
+
+        // Classical Music
+        case "classical", "classical_music": return .classicalMusic
+
+        // Lullabies (dedicated category)
+        case "lullabies": return .lullabies
+
+        // Children's Songs
+        case "children", "children_songs", "childrensongs": return .childrenSongs
+
+        // Ambient (dedicated category)
+        case "ambient": return .ambient
+
+        // Instrumental & Acoustic
         case "acoustic": return .instrumental
+        case "instrumental": return .instrumental
+
+        // Podcasts & Stories
         case "podcasts", "podcast": return .podcasts
         case "children_stories", "childrenstories": return .podcasts
+
+        // Fairy Tales (Modern & Legacy)
+        case "fairytales_en": return .fairyTales
+        case "fairytales_ru": return .fairyTales
+        case "fairytales", "fairy_tales": return .fairyTales
         case "russian_fairy_tales", "russianfairytales": return .fairyTales
         case "russian_fairy_tales_english": return .fairyTales
-        case "fairytales", "fairy_tales": return .fairyTales
-        default: return .instrumental
+        // Legacy: "english" and "russian" categories are FAIRY TALES
+        case "english": return .fairyTales
+        case "russian": return .fairyTales
+
+        // ⚠️ WHITE NOISE BANNED - Map old whitenoise to ambient instead
+        case "whitenoise", "white_noise": return .ambient
+
+        // Fallback to instrumental for unknown categories
+        default:
+            print("[ContentLibrary] ⚠️ Unknown category '\(str)' - defaulting to instrumental")
+            return .instrumental
         }
     }
 
@@ -530,29 +602,18 @@ class ContentLibraryService: ObservableObject {
         let podcastTracks = loadPodcastsFromMetadata()
         tracks.append(contentsOf: podcastTracks)
 
-        // MARK: White Noise & Calming Sounds
-        let whiteNoiseGenerators: [(GeneratorType, String)] = [
-            (.whiteNoise, "Pure White Noise"),
-            (.pinkNoise, "Soft Pink Noise"),
-            (.brownNoise, "Deep Brown Noise"),
-            (.blueNoise, "Crisp Blue Noise"),
-            (.violetNoise, "Bright Violet Noise"),
-            (.greyNoise, "Balanced Grey Noise"),
-            (.velvetNoise, "Smooth Velvet Noise"),
+        // MARK: Baby-Soothing Sounds (GENTLE ONLY - NO white noise, NO mechanical sounds!)
+        // ⚠️ WHITE NOISE REMOVED: User feedback says it's SCARY for babies!
+        let soothingGenerators: [(GeneratorType, String)] = [
             (.womb, "Womb Sounds"),
             (.heartbeat, "Mother's Heartbeat"),
-            (.shushing, "Gentle Shushing"),
-            (.vacuum, "Vacuum Cleaner"),
-            (.hairDryer, "Hair Dryer"),
-            (.fan, "Electric Fan"),
-            (.washingMachine, "Washing Machine"),
-            (.carEngine, "Car Engine Hum")
+            (.shushing, "Gentle Shushing")
         ]
 
-        for (generator, title) in whiteNoiseGenerators {
+        for (generator, title) in soothingGenerators {
             tracks.append(AudioTrack(
                 title: title,
-                artist: "Baby in Car",
+                artist: "Lulla",
                 category: generator.category,
                 duration: 3600, // 1 hour
                 ageRangeMin: generator.optimalAgeRange.lowerBound,
@@ -563,15 +624,11 @@ class ContentLibraryService: ObservableObject {
             ))
         }
 
-        // MARK: Nature Sounds
+        // MARK: Nature Sounds (ONLY gentle, baby-safe sounds - NO rain/thunder/wind!)
         let natureSounds: [(GeneratorType, String)] = [
-            (.rain, "Gentle Rain"),
-            (.rainOnRoof, "Cozy Rain on Roof"),
+            // ❌ REMOVED: .rain, .rainOnRoof, .wind, .thunderstorm, .thunderRumble (scary for babies!)
             (.ocean, "Ocean Waves"),
             (.river, "Babbling Brook"),
-            (.wind, "Soft Breeze"),
-            (.thunderstorm, "Distant Thunder"),
-            (.thunderRumble, "Rolling Thunder"),
             (.birds, "Morning Birds"),
             (.crickets, "Summer Crickets"),
             (.fireplace, "Crackling Fire"),
@@ -594,80 +651,22 @@ class ContentLibraryService: ObservableObject {
             ))
         }
 
-        // MARK: Bundled Real Nature Sounds (downloaded royalty-free)
-        let bundledNature: [(String, String, String, Int, Double)] = [
-            // (title, fileName, extension, duration_seconds, calmingScore)
-            ("Ambient Nature", "ambient_nature", "mp3", 600, 0.90),
-            ("Rain Ambience", "rain_ambient", "mp3", 300, 0.92),
-            ("Wind in Trees", "wind_trees", "mp3", 280, 0.88),
-            ("Ocean Waves (Real)", "ocean_waves", "mp3", 60, 0.91),
-            ("Wind Sounds", "wind", "mp3", 70, 0.85),
-            ("Gentle Rain", "rain_gentle", "mp3", 120, 0.94),
-            ("Rain Sounds", "rain_sounds", "mp3", 120, 0.93),
-            ("SoundBible Ocean Waves", "sb_ocean_waves", "mp3", 60, 0.90),
-            ("SoundBible Rain", "sb_rain2", "mp3", 60, 0.91),
-            ("Forest Stream", "sb_stream", "mp3", 60, 0.89),
-            ("Distant Thunderstorm", "sb_thunderstorm", "mp3", 60, 0.85),
-            ("Gentle Wind", "sb_wind", "mp3", 60, 0.86)
+        // MARK: STREAMING-FIRST ARCHITECTURE
+        // All nature sounds, music, fairy tales, etc. are now streamed from R2
+        // Only the default emergency track (Piano Moment) is bundled
+        // Real audio files are fetched via API and cached on-demand
+        // ⚠️ NO white noise content - removed based on user feedback!
+
+        // MARK: Gentle Ambient Sounds (for older babies - soothing only)
+        // REMOVED: trainRide, airplaneCabin, cityAmbience - too harsh/stimulating
+        let gentleAmbient: [(GeneratorType, String)] = [
+            (.aquarium, "Aquarium Bubbles")  // Only keeping the soothing aquarium sound
         ]
 
-        for (title, fileName, ext, duration, calmingScore) in bundledNature {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/nature") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Nature Collection",
-                    category: .natureSounds,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // MARK: Bundled Real White Noise / Household Sounds (from whitenoise folder)
-        let bundledWhiteNoise: [(String, String, String, Int, Double)] = [
-            // (title, fileName, extension, duration_seconds, calmingScore)
-            ("Pure White Noise (Real)", "white_noise", "mp3", 600, 0.95),
-            ("Mother's Heartbeat (Real)", "heartbeat", "mp3", 120, 0.96),
-            ("Hair Dryer Sound", "hair_dryer", "mp3", 60, 0.88),
-            ("Vacuum Cleaner Sound", "vacuum_cleaner", "mp3", 60, 0.85)
-        ]
-
-        for (title, fileName, ext, duration, calmingScore) in bundledWhiteNoise {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/whitenoise") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "White Noise Collection",
-                    category: .whiteNoise,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // MARK: Toddler-Focused Travel & Ambient Sounds (12-36 months)
-        let toddlerSounds: [(GeneratorType, String)] = [
-            (.trainRide, "Train Journey"),
-            (.airplaneCabin, "Airplane Cabin"),
-            (.cityAmbience, "City Night Sounds"),
-            (.aquarium, "Aquarium Bubbles")
-        ]
-
-        for (generator, title) in toddlerSounds {
+        for (generator, title) in gentleAmbient {
             tracks.append(AudioTrack(
                 title: title,
-                artist: "Toddler Sounds",
+                artist: "Lulla",
                 category: generator.category,
                 duration: 3600,
                 ageRangeMin: generator.optimalAgeRange.lowerBound,
@@ -678,429 +677,35 @@ class ContentLibraryService: ObservableObject {
             ))
         }
 
-        // MARK: Instrumental / Music Box - Use REAL bundled audio, not synthetic generators
-        // Bundled instrumental files from Audio/lullabies folder
-        let bundledInstrumental: [(String, String, String, Int, Double)] = [
-            // Bells collection (15 WAV files)
-            ("Soft Bells 1", "bells_001", "wav", 120, 0.88),
-            ("Soft Bells 2", "bells_002", "wav", 120, 0.88),
-            ("Soft Bells 3", "bells_003", "wav", 120, 0.87),
-            ("Soft Bells 4", "bells_004", "wav", 120, 0.86),
-            ("Soft Bells 5", "bells_005", "wav", 120, 0.85),
-            // Harp collection (15 WAV files)
-            ("Gentle Harp 1", "harp_001", "wav", 120, 0.92),
-            ("Gentle Harp 2", "harp_002", "wav", 120, 0.91),
-            ("Gentle Harp 3", "harp_003", "wav", 120, 0.90),
-            ("Gentle Harp 4", "harp_004", "wav", 120, 0.89),
-            ("Gentle Harp 5", "harp_005", "wav", 120, 0.88),
-            // Soft Guitar collection (15 WAV files)
-            ("Acoustic Lullaby 1", "soft_guitar_001", "wav", 120, 0.85),
-            ("Acoustic Lullaby 2", "soft_guitar_002", "wav", 120, 0.84),
-            ("Acoustic Lullaby 3", "soft_guitar_003", "wav", 120, 0.83),
-            ("Acoustic Lullaby 4", "soft_guitar_004", "wav", 120, 0.82),
-            ("Acoustic Lullaby 5", "soft_guitar_005", "wav", 120, 0.81),
-            // Dreamy Arp collection (15 WAV files)
-            ("Dreamy Arp 1", "dreamy_arp_001", "wav", 120, 0.87),
-            ("Dreamy Arp 2", "dreamy_arp_002", "wav", 120, 0.86),
-            ("Dreamy Arp 3", "dreamy_arp_003", "wav", 120, 0.85),
-            ("Dreamy Arp 4", "dreamy_arp_004", "wav", 120, 0.84),
-            ("Dreamy Arp 5", "dreamy_arp_005", "wav", 120, 0.83)
-        ]
-
-        for (title, fileName, ext, duration, calmingScore) in bundledInstrumental {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/lullabies") != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Instrumental Collection",
-                    category: .instrumental,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
+        // MARK: Default Emergency Track (ONLY bundled audio file)
+        // Piano Moment - used as fallback when offline and no cached tracks
+        if Bundle.main.url(forResource: "bensound_pianomoment", withExtension: "mp3", subdirectory: "Audio/default") != nil {
+            tracks.append(AudioTrack(
+                title: "Piano Moment",
+                artist: "Lulla",
+                category: .classicalMusic,
+                duration: 180,
+                ageRangeMin: 0,
+                ageRangeMax: 36,
+                calmingScore: 0.92,
+                audioSourceType: .bundled,
+                fileName: "bensound_pianomoment",
+                fileExtension: "mp3"
+            ))
         }
-        // NOTE: Do NOT use synthetic generators (.lullaby, .musicBox, etc.) for instrumental.
-        // They produce simple sine wave beeps, not real music.
 
-        // MARK: Classical Music (Using public domain compositions)
-        let classicalTracks = generateClassicalMusicTracks()
-        tracks.append(contentsOf: classicalTracks)
-
-        // MARK: Fairy Tales (Text-to-Speech based)
-        let fairyTales = generateFairyTaleTracks()
-        tracks.append(contentsOf: fairyTales)
-
-        // MARK: Children's Songs (Simple generated melodies)
-        let childrenSongs = generateChildrenSongTracks()
-        tracks.append(contentsOf: childrenSongs)
-
-        // MARK: Russian Children's Content
-        let russianTracks = generateRussianContentTracks()
-        tracks.append(contentsOf: russianTracks)
+        // NOTE: All other content (classical, fairy tales, children's songs, lullabies)
+        // is now streamed from R2 via the API. See fetchServerContent() for loading.
+        // This reduces app size from 3GB to <50MB.
 
         return tracks
     }
 
-    // MARK: - Russian Content
+    // MARK: - Streaming Content Note
+    // All Russian, English fairy tales, classical music, lullabies, etc.
+    // are now streamed from R2 via fetchServerContent().
+    // This reduces app size from 3GB to <50MB.
 
-    private func generateRussianContentTracks() -> [AudioTrack] {
-        var tracks: [AudioTrack] = []
-
-        // MARK: Load Russian Fairytales from bundled files (fairytales/ru/)
-        // These are REAL audio files that exist in the bundle - Russian folk tales
-        let russianFairytales: [(String, String, String, Int, ClosedRange<Int>)] = [
-            // (title, fileName, extension, duration_estimate, ageRange)
-            ("Алёнушка", "ru_afanasyev_alyonushka", "mp3", 130, 12...36),
-            ("Баба Яга", "ru_afanasyev_baba_yaga", "mp3", 68, 18...36),
-            ("Баба Яга (часть 1)", "ru_afanasyev_baba_yaga_1", "mp3", 280, 18...36),
-            ("Баба Яга (часть 2)", "ru_afanasyev_baba_yaga_2", "mp3", 280, 18...36),
-            ("Демьянова уха", "ru_afanasyev_demyan", "mp3", 220, 18...36),
-            ("Финист - Ясный Сокол", "ru_afanasyev_finist", "mp3", 310, 18...36),
-            ("Фролка-сидень", "ru_afanasyev_frolka", "mp3", 350, 18...36),
-            ("Головиха", "ru_afanasyev_goloviha", "mp3", 68, 12...36),
-            ("Хаврошечка", "ru_afanasyev_havroshechka", "mp3", 320, 12...36),
-            ("Иван-дурак", "ru_afanasyev_ivan_durak", "mp3", 360, 18...36),
-            ("Иван и Марфа", "ru_afanasyev_ivan_marfa", "mp3", 760, 18...36),
-            ("Иван Попялов", "ru_afanasyev_ivan_popyalov", "mp3", 480, 18...36),
-            ("Кочет и Курица", "ru_afanasyev_kochet_kuritsa", "mp3", 88, 6...24),
-            ("Кощей Бессмертный", "ru_afanasyev_koschei", "mp3", 88, 18...36),
-            ("Кот, Петух и Лиса", "ru_afanasyev_kot_petuh_lisa", "mp3", 160, 12...36),
-            ("Коза-дереза", "ru_afanasyev_koza", "mp3", 270, 12...36),
-            ("Сестрица Алёнушка и братец Иванушка", "ru_afanasyev_kozlenochek", "mp3", 420, 12...36),
-            ("Летучий корабль", "ru_afanasyev_letuchiy_korabl", "mp3", 360, 18...36),
-            ("Лутонюшка", "ru_afanasyev_lutonyushka", "mp3", 180, 12...36),
-            ("Марко Богатый", "ru_afanasyev_marko_bogatiy", "mp3", 230, 18...36),
-            ("Марья Моревна", "ru_afanasyev_marya_morevna", "mp3", 147, 18...36),
-            ("Мена", "ru_afanasyev_mena", "mp3", 340, 12...36),
-            ("Мизгирь", "ru_afanasyev_mizgir", "mp3", 147, 18...36),
-            ("Молодец и река", "ru_afanasyev_molodets", "mp3", 1450, 18...36),
-            ("Мужик и медведь", "ru_afanasyev_muzhik_medved", "mp3", 205, 12...36),
-            ("Набитый дурак", "ru_afanasyev_nabitiy_durak", "mp3", 130, 12...36),
-            ("Не любо - не слушай", "ru_afanasyev_ne_lyubo", "mp3", 320, 18...36),
-            ("Петушок - золотой гребешок", "ru_afanasyev_petushok", "mp3", 340, 6...24),
-            ("Семь Симеонов", "ru_afanasyev_sem_simeonov", "mp3", 345, 18...36),
-            ("Сивка-Бурка", "ru_afanasyev_sivka_burka", "mp3", 860, 18...36),
-            ("Свинка", "ru_afanasyev_svinka", "mp3", 810, 12...36),
-            ("Царевна-лягушка", "ru_afanasyev_tsarevna_lyagushka", "mp3", 440, 12...36),
-            ("Царевна-лягушка (версия 2)", "ru_afanasyev_tsarevna_lyagushka_v2", "mp3", 320, 12...36),
-            ("Подземное царство", "ru_afanasyev_tsarevna_underground", "mp3", 280, 18...36),
-            ("Василиса Прекрасная", "ru_afanasyev_vasilisa", "mp3", 158, 18...36),
-            ("Волк и семеро козлят", "ru_afanasyev_volk", "mp3", 68, 6...24),
-            ("Волк и Коза", "ru_afanasyev_volk_koza", "mp3", 310, 6...24),
-            ("Жар-птица", "ru_afanasyev_zhar_ptitsa", "mp3", 180, 12...36)
-        ]
-
-        for (title, fileName, ext, duration, ageRange) in russianFairytales {
-            // Check if file exists in bundle - these are REAL audio files
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/fairytales/ru") != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Русские народные сказки",
-                    category: .fairyTales,
-                    language: .russian,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    calmingScore: 0.75,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // NOTE: Russian lullabies and children's songs (like "Спи, малыш", "Баю-баюшки-баю")
-        // are NOT bundled locally - the Audio/russian folder does not exist.
-        // These should be fetched from the API via fetchServerContent().
-        //
-        // DO NOT create synthetic fallbacks that produce beeps instead of real music.
-        // The generated lullaby/musicBox sounds are just simple sine waves, not real songs.
-
-        return tracks
-    }
-
-    private func generateClassicalMusicTracks() -> [AudioTrack] {
-        // Real bundled audio files - royalty-free classical music from Public Domain
-        var tracks: [AudioTrack] = []
-
-        // Piano pieces (Public Domain recordings from archive.org, Musopen)
-        let bundledPiano: [(String, String, String, String, Int, Double)] = [
-            // (title, artist/composer, fileName, extension, duration_seconds, calmingScore)
-            ("Moonlight Sonata", "Ludwig van Beethoven", "moonlight_sonata", "mp3", 360, 0.92),
-            ("Clair de Lune", "Claude Debussy", "clair_de_lune", "mp3", 300, 0.95),
-            ("Nocturne Op.9 No.2", "Frédéric Chopin", "chopin_nocturne_op9_no2", "mp3", 270, 0.93),
-            ("Gymnopédie No.1", "Erik Satie", "gymnopedie_no1", "mp3", 180, 0.90),
-            ("Three Gymnopédies", "Erik Satie", "satie_three_gymnopedies", "mp3", 600, 0.88),
-            ("Calm Piano", "Relaxing Music", "calm_piano", "mp3", 315, 0.88),
-            ("Soft Strings", "Classical Collection", "soft_strings", "mp3", 280, 0.86),
-            ("Dreamy Piano", "Sleep Sounds", "dreamy_piano", "mp3", 240, 0.87),
-            ("Piano Peaceful", "Ambient Music", "piano_peaceful", "mp3", 220, 0.85),
-            ("Ambient Calm", "Classical Collection", "ambient_calm", "mp3", 180, 0.84)
-        ]
-
-        for (title, artist, fileName, ext, duration, calmingScore) in bundledPiano {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/classical") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .classicalMusic,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 60,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // Violin & Orchestral pieces (Public Domain)
-        let bundledViolin: [(String, String, String, String, Int, Double)] = [
-            ("Air on the G String", "J.S. Bach", "bach_air_on_g_string", "mp3", 300, 0.94),
-            ("Air on G String (Violin/Cello)", "J.S. Bach", "bach_air_violin_cello", "mp3", 300, 0.92),
-            ("Canon in D", "Johann Pachelbel", "pachelbel_canon", "mp3", 300, 0.90),
-            ("Canon in D (Original)", "Johann Pachelbel", "canon_in_d", "mp3", 300, 0.89),
-            ("Romantic Violin", "Classical Collection", "romantic_violin", "mp3", 3600, 0.88),
-            ("Gymnopédie", "Erik Satie", "gymnopedie", "mp3", 180, 0.87)
-        ]
-
-        for (title, artist, fileName, ext, duration, calmingScore) in bundledViolin {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/classical") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .classicalMusic,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 55,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // Lullabies (Public Domain)
-        let bundledLullabies: [(String, String, String, String, Int, Double)] = [
-            ("Brahms' Lullaby", "Johannes Brahms", "brahms_lullaby", "mp3", 180, 0.96)
-        ]
-
-        for (title, artist, fileName, ext, duration, calmingScore) in bundledLullabies {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/classical") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .classicalMusic,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 50,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // Bensound ambient tracks (Royalty-free with attribution)
-        let bensoundTracks: [(String, String, String, String, Int, Double)] = [
-            ("Relaxing", "Bensound", "bensound_relaxing", "mp3", 240, 0.90),
-            ("Slow Motion", "Bensound", "bensound_slowmotion", "mp3", 180, 0.88),
-            ("Memories", "Bensound", "bensound_memories", "mp3", 200, 0.87),
-            ("Tenderness", "Bensound", "bensound_tenderness", "mp3", 160, 0.89),
-            ("All That", "Bensound", "bensound_allthat", "mp3", 180, 0.85)
-        ]
-
-        for (title, artist, fileName, ext, duration, calmingScore) in bensoundTracks {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/ambient") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: artist,
-                    category: .classicalMusic,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: 0,
-                    ageRangeMax: 36,
-                    tempoBPM: 70,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // NOTE: Do NOT use synthetic generator fallbacks for classical music.
-        // If bundled files are missing, the app should fetch from API via fetchServerContent().
-        // Synthetic lullaby generators produce beeps, not real classical music.
-
-        return tracks
-    }
-
-    private func generateFairyTaleTracks() -> [AudioTrack] {
-        var tracks: [AudioTrack] = []
-
-        // MARK: English Fairy Tales from bundled files (fairytales/en/)
-        // These are REAL Grimm fairy tale audio files
-        let englishFairytales: [(String, String, String, Int, ClosedRange<Int>)] = [
-            // Grimm fairy tales
-            ("Briar Rose (Sleeping Beauty)", "en_grimm_briar_rose", "mp3", 580, 12...36),
-            ("Cat and Mouse", "en_grimm_cat_mouse", "mp3", 420, 12...36),
-            ("Chanticleer and Partlet", "en_grimm_chanticleer", "mp3", 740, 12...36),
-            ("Cinderella", "en_grimm_cinderella", "mp3", 950, 12...36),
-            ("Clever Elsie", "en_grimm_clever_elsie", "mp3", 530, 12...36),
-            ("Clever Gretel", "en_grimm_clever_gretel", "mp3", 380, 12...36),
-            ("The Dog and the Sparrow", "en_grimm_dog_sparrow", "mp3", 530, 12...36),
-            ("The Fisherman and His Wife", "en_grimm_fisherman_wife", "mp3", 900, 12...36),
-            ("Frederick and Catherine", "en_grimm_frederick_catherine", "mp3", 745, 18...36),
-            ("The Frog Prince", "en_grimm_frog_prince", "mp3", 485, 6...24),
-            ("Fundevogel", "en_grimm_fundevogel", "mp3", 400, 12...36),
-            ("The Golden Bird", "en_grimm_golden_bird", "mp3", 980, 18...36),
-            ("The Goose Girl", "en_grimm_goose_girl", "mp3", 880, 18...36),
-            ("Hans in Luck", "en_grimm_hans_luck", "mp3", 950, 18...36),
-            ("Hansel and Gretel", "en_grimm_hansel_gretel", "mp3", 1150, 12...36),
-            ("Jorinda and Jorindel", "en_grimm_jorinda_jorindel", "mp3", 480, 12...36),
-            ("The Little Peasant", "en_grimm_little_peasant", "mp3", 805, 18...36),
-            ("The Miser in the Bush", "en_grimm_miser_bush", "mp3", 475, 18...36),
-            ("Mother Holle", "en_grimm_mother_holle", "mp3", 490, 12...36),
-            ("Mouse, Bird, and Sausage", "en_grimm_mouse_bird_sausage", "mp3", 260, 6...24),
-            ("The Old Man and His Grandson", "en_grimm_old_man_grandson", "mp3", 120, 6...24),
-            ("Old Sultan", "en_grimm_old_sultan", "mp3", 350, 12...36),
-            ("Rapunzel", "en_grimm_rapunzel", "mp3", 585, 12...36),
-            ("Little Red Riding Hood", "en_grimm_red_riding_hood", "mp3", 585, 6...24),
-            ("The Robber Bridegroom", "en_grimm_robber_bridegroom", "mp3", 560, 18...36),
-            ("Rumpelstiltskin", "en_grimm_rumpelstiltskin", "mp3", 490, 12...36),
-            ("Snow White", "en_grimm_snow_white", "mp3", 950, 12...36),
-            ("Straw, Coal, and Bean", "en_grimm_straw_coal_bean", "mp3", 220, 6...24),
-            ("Sweetheart Roland", "en_grimm_sweetheart_roland", "mp3", 580, 18...36),
-            ("The Pink", "en_grimm_the_pink", "mp3", 665, 12...36),
-            ("Tom Thumb", "en_grimm_tom_thumb", "mp3", 965, 12...36),
-            ("The Travelling Musicians", "en_grimm_travelling_musicians", "mp3", 555, 6...24),
-            ("The Twelve Dancing Princesses", "en_grimm_twelve_princesses", "mp3", 610, 12...36),
-            ("The Valiant Little Tailor", "en_grimm_valiant_tailor", "mp3", 1320, 18...36),
-            ("The Willow-Wren", "en_grimm_willow_wren", "mp3", 385, 12...36),
-            // Additional English fairy tales (en_ht_ series)
-            ("Cat and Mouse (HT)", "en_ht_cat_mouse", "mp3", 400, 12...36),
-            ("Faithful John", "en_ht_faithful_john", "mp3", 990, 18...36),
-            ("The Frog King", "en_ht_frog_king", "mp3", 460, 6...24),
-            ("A Good Bargain", "en_ht_good_bargain", "mp3", 580, 18...36),
-            ("Our Lady's Child", "en_ht_our_lady_child", "mp3", 695, 12...36),
-            ("Pack of Ragamuffins", "en_ht_pack_ragamuffins", "mp3", 290, 12...36),
-            ("The Strange Musician", "en_ht_strange_musician", "mp3", 340, 12...36),
-            ("The Twelve Brothers", "en_ht_twelve_brothers", "mp3", 850, 18...36),
-            ("Wolf and Seven Kids", "en_ht_wolf_seven_kids", "mp3", 380, 6...24),
-            ("The Youth Who Went to Learn Fear", "en_ht_youth_fear", "mp3", 1240, 18...36)
-        ]
-
-        for (title, fileName, ext, duration, ageRange) in englishFairytales {
-            // Check if file exists in bundle - these are REAL audio files
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/fairytales/en") != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Classic Fairy Tales",
-                    category: .fairyTales,
-                    language: .english,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    calmingScore: 0.75,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // NOTE: Other language fairy tales (Spanish, French, German, etc.)
-        // are NOT bundled locally. They should be fetched from the API via fetchServerContent().
-        // DO NOT create textToSpeech fallbacks - use API streaming instead.
-
-        return tracks
-    }
-
-    private func generateChildrenSongTracks() -> [AudioTrack] {
-        var tracks: [AudioTrack] = []
-
-        // Bundled children's songs from Audio/children folder (Bensound royalty-free)
-        let bundledChildrenSongs: [(String, String, String, Int, ClosedRange<Int>, Double)] = [
-            // (title, fileName, extension, duration_seconds, ageRange, calmingScore)
-            ("Cute", "bensound_cute", "mp3", 169, 6...36, 0.82),
-            ("Happy Rock", "bensound_happyrock", "mp3", 105, 12...36, 0.70),
-            ("Little Idea", "bensound_littleidea", "mp3", 147, 6...36, 0.80),
-            ("Sunny", "bensound_sunny", "mp3", 130, 6...36, 0.78)
-        ]
-
-        for (title, fileName, ext, duration, ageRange, calmingScore) in bundledChildrenSongs {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/children") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Bensound",
-                    category: .childrenSongs,
-                    language: .english,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 100,
-                    calmingScore: calmingScore,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // Bundled lullaby audio files from Audio/lullabies folder
-        let bundledLullabies: [(String, String, String, Int, ClosedRange<Int>)] = [
-            ("Gentle Melody", "gentle_melody", "mp3", 360, 0...36),
-            ("Lullaby Melody", "lullaby_melody", "mp3", 320, 0...36),
-            ("Sleep Sounds", "sleep_sounds", "mp3", 260, 0...24),
-            ("Bedtime Tune", "bedtime_tune", "mp3", 340, 0...36),
-            ("Soft Lullaby for Baby", "soft_lullaby_baby", "mp3", 280, 0...36),
-            ("Suo Gan (Welsh Lullaby)", "suo_gan", "mp3", 240, 0...36),
-            ("Twinkle Twinkle Little Star", "twinkle_twinkle", "mp3", 120, 0...36),
-            ("Rock-a-Bye Baby", "rock_a_bye_baby", "mp3", 90, 0...24)
-        ]
-
-        for (title, fileName, ext, duration, ageRange) in bundledLullabies {
-            if Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/lullabies") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext, subdirectory: "Audio/children") != nil ||
-               Bundle.main.url(forResource: fileName, withExtension: ext) != nil {
-                tracks.append(AudioTrack(
-                    title: title,
-                    artist: "Lullaby Collection",
-                    category: .childrenSongs,
-                    language: .english,
-                    duration: TimeInterval(duration),
-                    ageRangeMin: ageRange.lowerBound,
-                    ageRangeMax: ageRange.upperBound,
-                    tempoBPM: 70,
-                    calmingScore: 0.85,
-                    audioSourceType: .bundled,
-                    fileName: fileName,
-                    fileExtension: ext
-                ))
-            }
-        }
-
-        // NOTE: Do NOT add synthetic fallbacks that produce beeps (.generated with .musicBox)
-        // Real bundled lullabies and Bensound files are sufficient.
-        // Additional content should come from API streaming, not synthetic generation.
-
-        return tracks
-    }
 
     // MARK: - Default Playlists
 
@@ -1109,7 +714,7 @@ class ContentLibraryService: ObservableObject {
 
         // Newborn Essentials (0-3 months)
         let newbornTracks = allTracks.filter {
-            $0.ageRangeMin == 0 && [.whiteNoise, .natureSounds].contains($0.category)
+            $0.ageRangeMin == 0 && [.ambient, .natureSounds, .lullabies].contains($0.category)
         }
         playlists.append(Playlist(
             name: "Newborn Essentials",
@@ -1122,7 +727,7 @@ class ContentLibraryService: ObservableObject {
 
         // Sleep Time Favorites
         let sleepTracks = allTracks.filter {
-            $0.calmingScore >= 0.85 && [.whiteNoise, .natureSounds, .classicalMusic].contains($0.category)
+            $0.calmingScore >= 0.85 && [.ambient, .natureSounds, .classicalMusic, .lullabies].contains($0.category)
         }
         playlists.append(Playlist(
             name: "Sleep Time Favorites",
@@ -1132,15 +737,15 @@ class ContentLibraryService: ObservableObject {
             artworkName: "sleep_playlist"
         ))
 
-        // White Noise Collection
-        let whiteNoiseTracks = allTracks.filter { $0.category == .whiteNoise }
+        // Ambient Sounds Collection (womb, heartbeat, gentle sounds)
+        let ambientTracks = allTracks.filter { $0.category == .ambient }
         playlists.append(Playlist(
-            name: "White Noise Collection",
-            description: "All white noise and mechanical sounds",
-            tracks: whiteNoiseTracks,
-            category: .whiteNoise,
+            name: "Soothing Sounds",
+            description: "Gentle womb sounds and calming ambient",
+            tracks: ambientTracks,
+            category: .ambient,
             isSystemGenerated: true,
-            artworkName: "whitenoise_playlist"
+            artworkName: "ambient_playlist"
         ))
 
         // Nature Sounds
@@ -1206,35 +811,27 @@ class ContentLibraryService: ObservableObject {
             artworkName: "toddler_playlist"
         ))
 
-        // Premium Noise Collection (all noise variants)
-        let allNoiseTypes = allTracks.filter {
-            [GeneratorType.whiteNoise, .pinkNoise, .brownNoise, .blueNoise, .violetNoise, .greyNoise, .velvetNoise]
-                .contains($0.generatorType ?? .whiteNoise)
+        // Cozy Ambient Collection (fire sounds for relaxation)
+        let cozyAmbientTypes = allTracks.filter {
+            [GeneratorType.fireplace, .campfire].contains($0.generatorType ?? .lullaby)
         }
-        playlists.append(Playlist(
-            name: "Complete Noise Collection",
-            description: "White, pink, brown, blue, violet, grey & velvet noise",
-            tracks: allNoiseTypes,
-            category: .whiteNoise,
-            isSystemGenerated: true,
-            artworkName: "noise_collection"
-        ))
-
-        // Travel Sounds (for car rides, flights, trains)
-        let travelTracks = allTracks.filter {
-            [GeneratorType.trainRide, .airplaneCabin, .carEngine, .cityAmbience].contains($0.generatorType ?? .whiteNoise)
+        if !cozyAmbientTypes.isEmpty {
+            playlists.append(Playlist(
+                name: "Cozy Ambient",
+                description: "Warm, gentle fire sounds for relaxation",
+                tracks: cozyAmbientTypes,
+                category: .natureSounds,
+                isSystemGenerated: true,
+                artworkName: "cozy_playlist"
+            ))
         }
-        playlists.append(Playlist(
-            name: "Travel Companion",
-            description: "Familiar travel sounds to calm during journeys",
-            tracks: travelTracks,
-            isSystemGenerated: true,
-            artworkName: "travel_playlist"
-        ))
 
-        // Cozy Night Sounds
+        // REMOVED: Travel Sounds playlist - harsh sounds like train, airplane, car engine
+        // were removed as they don't fit the soothing baby calming purpose
+
+        // Cozy Night Sounds (NO rain/thunder - only gentle fire sounds)
         let cozyNightTracks = allTracks.filter {
-            [GeneratorType.rainOnRoof, .fireplace, .campfire, .thunderRumble, .rain].contains($0.generatorType ?? .whiteNoise)
+            [GeneratorType.fireplace, .campfire].contains($0.generatorType ?? .lullaby)
         }
         playlists.append(Playlist(
             name: "Cozy Night",
@@ -1343,6 +940,56 @@ class ContentLibraryService: ObservableObject {
         return allTracks.filter { $0.category == category }
     }
 
+    // MARK: - Freemium Content Access
+
+    /// Get all tracks the current user can play (respects freemium tier)
+    func getPlayableTracks() -> [AudioTrack] {
+        let gatekeeper = FreemiumGatekeeper.shared
+        return allTracks.filter { gatekeeper.canPlayTrack($0) }
+    }
+
+    /// Get only free tracks (always-free + rotating free)
+    func fetchFreeTracks() -> [AudioTrack] {
+        let gatekeeper = FreemiumGatekeeper.shared
+        return allTracks.filter { gatekeeper.isTrackFree($0) }
+    }
+
+    /// Get only premium/locked tracks (for upgrade prompts)
+    func fetchPremiumTracks() -> [AudioTrack] {
+        let gatekeeper = FreemiumGatekeeper.shared
+        return allTracks.filter { !gatekeeper.isTrackFree($0) }
+    }
+
+    /// Get free tracks by category
+    func getFreeTracks(for category: AudioCategory) -> [AudioTrack] {
+        let gatekeeper = FreemiumGatekeeper.shared
+        return allTracks.filter { $0.category == category && gatekeeper.isTrackFree($0) }
+    }
+
+    /// Get free track count by category
+    func getFreeTrackCount(for category: AudioCategory) -> Int {
+        return getFreeTracks(for: category).count
+    }
+
+    /// Get total free track count
+    func getTotalFreeTrackCount() -> Int {
+        return fetchFreeTracks().count
+    }
+
+    /// Initialize freemium track selection (call after content loads)
+    func initializeFreemiumSelection() {
+        let gatekeeper = FreemiumGatekeeper.shared
+        if gatekeeper.shouldRotateFreeTracks() {
+            gatekeeper.selectFreeTracksFrom(allTracks)
+        }
+    }
+
+    /// Get next free track rotation date
+    func getNextFreeTrackRotationDate() -> Date? {
+        guard let lastRotation = FreemiumGatekeeper.shared.lastFreeTrackRotation else { return nil }
+        return Calendar.current.date(byAdding: .day, value: 7, to: lastRotation)
+    }
+
     func getTracks(for language: Language) -> [AudioTrack] {
         return allTracks.filter { $0.language == language }
     }
@@ -1353,6 +1000,12 @@ class ContentLibraryService: ObservableObject {
 
     func getTrack(by id: UUID) -> AudioTrack? {
         return allTracks.first { $0.id == id }
+    }
+
+    /// Get track by string ID
+    func getTrack(byId id: String) -> AudioTrack? {
+        guard let uuid = UUID(uuidString: id) else { return nil }
+        return getTrack(by: uuid)
     }
 
     func getPlaylist(by id: UUID) -> Playlist? {

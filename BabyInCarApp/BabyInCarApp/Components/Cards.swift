@@ -152,23 +152,44 @@ struct TrackCardView: View {
     var isPlaying: Bool = false
     var showFavorite: Bool = true
     var isFavorite: Bool = false
+    var showEffectiveness: Bool = true
     var onFavoriteToggle: (() -> Void)?
+
+    @StateObject private var effectivenessManager = EffectivenessManager.shared
+    @State private var showingEffectivenessDetail = false
+
+    private var effectiveness: TrackEffectiveness? {
+        effectivenessManager.getEffectiveness(for: track.id)
+    }
 
     var body: some View {
         HStack(spacing: DesignTokens.spacingM) {
-            // Album art / category icon
-            ZStack {
-                RoundedRectangle(cornerRadius: DesignTokens.radiusS)
-                    .fill(Color.forCategory(track.category).opacity(0.15))
-                    .frame(width: 56, height: 56)
+            // Album art / category icon with effectiveness badge
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignTokens.radiusS)
+                        .fill(Color.forCategory(track.category).opacity(0.15))
+                        .frame(width: 56, height: 56)
 
-                if isPlaying {
-                    EqualizerAnimation()
-                        .frame(width: 24, height: 24)
-                } else {
-                    Image(systemName: track.category.icon)
-                        .font(.system(size: 24))
-                        .foregroundColor(Color.forCategory(track.category))
+                    if isPlaying {
+                        EqualizerAnimation()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image(systemName: track.category.icon)
+                            .font(.system(size: 24))
+                            .foregroundColor(Color.forCategory(track.category))
+                    }
+                }
+
+                // Effectiveness badge overlay
+                if showEffectiveness,
+                   let eff = effectiveness,
+                   eff.effectivenessScore > 0 {
+                    EffectivenessBadge(score: eff.effectivenessScore, size: .small)
+                        .offset(x: 8, y: -8)
+                        .onLongPressGesture {
+                            showingEffectivenessDetail = true
+                        }
                 }
             }
 
@@ -219,6 +240,20 @@ struct TrackCardView: View {
                 .fill(Color.appCardBackground)
                 .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
         )
+        .sheet(isPresented: $showingEffectivenessDetail) {
+            if let eff = effectiveness {
+                VStack {
+                    EffectivenessDetailPopover(
+                        effectiveness: eff,
+                        isPresented: $showingEffectivenessDetail
+                    )
+                    Spacer()
+                }
+                .padding(.top, 32)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+        }
     }
 }
 
@@ -389,8 +424,8 @@ struct EqualizerAnimation: View {
             // Quick picks
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 QuickPickCardView(title: "Lullabies", icon: "moon.stars.fill", color: .classicalColor)
-                QuickPickCardView(title: "Rain Sounds", icon: "cloud.rain.fill", color: .natureColor)
-                QuickPickCardView(title: "White Noise", icon: "waveform", color: .whiteNoiseColor)
+                QuickPickCardView(title: "Ocean Waves", icon: "water.waves", color: .natureColor)
+                QuickPickCardView(title: "Classical", icon: "music.note", color: .classicalColor)
             }
         }
         .padding()

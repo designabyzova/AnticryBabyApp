@@ -1,0 +1,114 @@
+# Maestro E2E Test: Playlist Management Flow
+# Tests creating, editing, and playing playlists
+#
+# Run: maestro test maestro/flows/playlist_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ll]ibrary.*"
+    timeout: 5000
+
+- takeScreenshot: "playlist_01_initial"
+
+# Navigate to Playlists
+- runFlow:
+    when:
+      visible: "Playlists"
+    commands:
+      - tapOn: "Playlists"
+
+- runFlow:
+    when:
+      visible:
+        id: "playlistsTab"
+    commands:
+      - tapOn:
+          id: "playlistsTab"
+
+# Should see playlist screen
+- extendedWaitUntil:
+    visible:
+      text: ".*[Pp]laylist.*|.*[Cc]reate.*"
+    timeout: 3000
+
+- takeScreenshot: "playlist_02_list"
+
+# Create new playlist if button exists
+- runFlow:
+    when:
+      visible:
+        text: ".*[Cc]reate.*[Pp]laylist.*|.*[Nn]ew.*[Pp]laylist.*|.*[Aa]dd.*"
+    commands:
+      - tapOn:
+          text: ".*[Cc]reate.*[Pp]laylist.*|.*[Nn]ew.*[Pp]laylist.*|.*[Aa]dd.*"
+      - takeScreenshot: "playlist_03_create_dialog"
+      # Enter playlist name
+      - runFlow:
+          when:
+            visible:
+              id: "playlistNameField"
+          commands:
+            - tapOn:
+                id: "playlistNameField"
+            - inputText: "Bedtime Mix"
+            - tapOn:
+                text: ".*[Cc]reate.*|.*[Ss]ave.*|.*[Dd]one.*"
+
+- runFlow:
+    when:
+      visible:
+        id: "createPlaylistButton"
+    commands:
+      - tapOn:
+          id: "createPlaylistButton"
+      - extendedWaitUntil:
+          visible:
+            id: "playlistNameField"
+          timeout: 2000
+      - inputText: "Bedtime Mix"
+      - tapOn:
+          text: ".*[Ss]ave.*|.*[Cc]reate.*"
+
+# Verify playlist was created or exists
+- takeScreenshot: "playlist_04_after_create"
+
+# Open a playlist if one exists
+- runFlow:
+    when:
+      visible:
+        text: ".*[Bb]edtime.*|.*[Ss]leep.*|.*[Pp]laylist.*"
+    commands:
+      - tapOn:
+          text: ".*[Bb]edtime.*|.*[Ss]leep.*"
+          index: 0
+      - takeScreenshot: "playlist_05_detail"
+
+# Test play all if available
+- runFlow:
+    when:
+      visible:
+        text: "Play All"
+    commands:
+      - tapOn: "Play All"
+      - takeScreenshot: "playlist_06_playing"
+
+# Test shuffle play if available
+- runFlow:
+    when:
+      visible:
+        text: "Shuffle"
+    commands:
+      - tapOn: "Shuffle"
+      - takeScreenshot: "playlist_07_shuffle"
+
+# Navigate back
+- back
+
+# Verify back at playlist list
+- assertVisible: ".*[Pp]laylist.*"
+- takeScreenshot: "playlist_08_final"

@@ -1,0 +1,17 @@
+{
+  "id": "0010-appstore-submission",
+  "title": "App Store Submission - Build, Screenshots & Submit",
+  "status": "completed",
+  "priority": "critical",
+  "created": "2026-01-01T00:00:00Z",
+  "feature": "FS-010",
+  "tags": [
+    "appstore",
+    "release",
+    "submission",
+    "screenshots",
+    "metadata"
+  ],
+  "updated": "2026-01-01T07:53:24.000Z",
+  "updatedAt": "2026-01-02T11:41:28.491247Z"
+}

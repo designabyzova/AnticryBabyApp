@@ -496,7 +496,7 @@ struct CryAcousticPattern: Codable {
     var examples: [AudioFeatures]
     var variance: AudioFeatures
 
-    private let maxExamples = 100
+    private var maxExamples: Int = 100
 
     init(type: CryType) {
         self.type = type
@@ -776,10 +776,14 @@ class AcousticFeatureExtractor {
 
         vDSP_DFT_Execute(fftSetup, &realInput, &imagInput, &realOutput, &imagOutput)
 
-        // Magnitudes
+        // Magnitudes - use withUnsafeMutableBufferPointer to satisfy lifetime requirements
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        var complex = DSPSplitComplex(realp: &realOutput, imagp: &imagOutput)
-        vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+        realOutput.withUnsafeMutableBufferPointer { realPtr in
+            imagOutput.withUnsafeMutableBufferPointer { imagPtr in
+                var complex = DSPSplitComplex(realp: realPtr.baseAddress!, imagp: imagPtr.baseAddress!)
+                vDSP_zvabs(&complex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+            }
+        }
 
         // Spectral centroid
         var weightedSum: Float = 0

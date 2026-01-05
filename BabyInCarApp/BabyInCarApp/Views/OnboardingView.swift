@@ -135,7 +135,7 @@ struct WelcomePage: View {
 
             // App name with gradient text
             VStack(spacing: DesignTokens.spacingS) {
-                Text("AnticryBaby")
+                Text("Lulla")
                     .font(.appDisplay)
                     .foregroundStyle(
                         LinearGradient(
@@ -145,7 +145,7 @@ struct WelcomePage: View {
                         )
                     )
 
-                Text("Sweet Dreams on Every Ride")
+                Text("Calm Baby, Anywhere")
                     .font(.appTitle3)
                     .foregroundColor(.appTextSecondary)
             }

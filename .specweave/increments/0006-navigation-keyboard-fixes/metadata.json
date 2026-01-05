@@ -1,0 +1,17 @@
+{
+  "id": "0006-navigation-keyboard-fixes",
+  "title": "Navigation, Safe Area & Keyboard Handling Fixes",
+  "status": "completed",
+  "priority": "high",
+  "created": "2025-12-31T12:00:00Z",
+  "feature": "FS-006",
+  "tags": [
+    "ui",
+    "ux",
+    "navigation",
+    "keyboard",
+    "safe-area",
+    "accessibility"
+  ],
+  "updated": "2025-12-31T19:25:38.000Z"
+}

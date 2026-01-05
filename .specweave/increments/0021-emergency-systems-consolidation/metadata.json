@@ -1,0 +1,14 @@
+{
+  "id": "0021-emergency-systems-consolidation",
+  "status": "completed",
+  "type": "refactor",
+  "priority": "P1",
+  "created": "2026-01-04T12:00:00Z",
+  "lastActivity": "2026-01-04T12:00:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "epic": "FS-021",
+  "title": "Emergency Systems Consolidation",
+  "description": "Consolidate duplicate emergency queue implementations (SmartQueue vs EmergencyQueue) into single SmartQueue system",
+  "updated": "2026-01-04T15:32:57.000Z"
+}

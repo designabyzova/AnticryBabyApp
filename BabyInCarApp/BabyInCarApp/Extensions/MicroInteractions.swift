@@ -412,19 +412,7 @@ struct PulsingGlowButtonStyle: ButtonStyle {
     }
 }
 
-/// Bouncy button style with spring physics
-struct BouncyButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.5), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { _, isPressed in
-                if isPressed {
-                    HapticManager.shared.lightTap()
-                }
-            }
-    }
-}
+// Note: BouncyButtonStyle is defined in Components/ButtonStyles.swift
 
 // MARK: - Transition Animations
 

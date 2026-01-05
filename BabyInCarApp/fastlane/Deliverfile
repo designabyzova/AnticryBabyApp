@@ -1,0 +1,23 @@
+# App Store Connect app identifier
+app_identifier "com.babyincar.app"
+
+# Your Apple ID email
+username "admin@easychamp.com"
+
+# App Store Connect Team ID
+team_id "NMCB2JZ7QG"
+
+# The app's primary category
+primary_category "HEALTH_AND_FITNESS"
+
+# Secondary category
+secondary_category "LIFESTYLE"
+
+# Copyright
+copyright "2026 Anton Abyzov"
+
+# Age rating - Skip via CLI, set manually in App Store Connect
+# app_rating_config_path "./fastlane/metadata/age_rating.json"
+
+# Don't set price - requires agreement
+# price_tier 0

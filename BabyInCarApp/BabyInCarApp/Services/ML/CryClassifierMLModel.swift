@@ -74,6 +74,7 @@ class CryClassifierMLModel {
 
     private var model: MLModel?
     private let modelName = "BabyCryClassifier"
+    private static var didLogModelNotFound = false  // Static to prevent spam across instances
 
     /// Whether ML model is loaded and ready
     var isModelLoaded: Bool {
@@ -116,7 +117,10 @@ class CryClassifierMLModel {
                 model = nil
             }
         } else {
-            print("CryClassifierMLModel: Model file not found, using rule-based fallback")
+            if !Self.didLogModelNotFound {
+                print("CryClassifierMLModel: Model file not found, using rule-based fallback")
+                Self.didLogModelNotFound = true
+            }
             model = nil
         }
     }
@@ -230,35 +234,95 @@ class CryClassifierMLModel {
 
     // MARK: - Rule-Based Classification
 
-    /// Rule-based cry classification using acoustic features
-    /// Implements the same logic as existing CryClassificationModel
+    /// Research-based multi-feature cry classification
+    /// Uses CryAcousticProfiles for scientifically-validated thresholds
     private func ruleBasedClassification(features: ExtendedAudioFeatures) -> MLClassificationResult {
-        var scores: [CryType: Double] = [:]
+        // Use new multi-feature scorer with research-based profiles
+        let scorer = CryMultiFeatureScorer()
+        let result = scorer.scoreAllTypes(features: features, temporalPattern: nil)
 
-        // Calculate score for each type
-        scores[.hunger] = calculateHungerScore(features)
-        scores[.tired] = calculateTiredScore(features)
-        scores[.pain] = calculatePainScore(features)
-        scores[.attention] = calculateAttentionScore(features)
-        scores[.discomfort] = calculateDiscomfortScore(features)
+        // If result is unreliable or ambiguous, fall back to simpler heuristics
+        if !result.isReliable {
+            // Apply strict thresholds to avoid over-classification
+            return fallbackClassification(features: features, preliminaryResult: result)
+        }
 
-        // General gets remaining probability
-        let specificTotal = scores.values.reduce(0, +)
-        scores[.general] = max(0, 1.0 - specificTotal) * 0.5
+        return MLClassificationResult(
+            type: result.bestType,
+            confidence: result.confidence,
+            probabilities: result.scores
+        )
+    }
 
-        // Normalize to probabilities
-        let totalScore = scores.values.reduce(0, +)
-        if totalScore > 0 {
+    /// Fallback classification when multi-feature scoring is inconclusive
+    /// Uses STRICT thresholds to avoid false positives
+    private func fallbackClassification(features: ExtendedAudioFeatures, preliminaryResult: CryScoreResult) -> MLClassificationResult {
+        var scores = preliminaryResult.scores
+
+        // PAIN CRY: Must have ALL of these (strict)
+        // - High intensity (>0.7)
+        // - High F0 (>500 Hz)
+        // - Sudden onset (>0.6)
+        let isPainLikely = features.intensity > 0.7 &&
+                          features.fundamentalFrequency > 500 &&
+                          features.onsetSharpness > 0.6
+        if !isPainLikely {
+            scores[.pain] = min(scores[.pain] ?? 0, 0.2)
+        }
+
+        // TIRED CRY: Must have LOW intensity (strict!)
+        // This fixes the "always tired" bug
+        // Tired cry is QUIET and IRREGULAR - not just "default"
+        let isTiredLikely = features.intensity < 0.35 &&  // MUST be quiet
+                           features.fundamentalFrequency < 420 &&  // Lower pitch
+                           features.harmonicToNoiseRatio < 0.4  // More breathy
+        if !isTiredLikely {
+            scores[.tired] = min(scores[.tired] ?? 0, 0.15)  // Strongly penalize
+        }
+
+        // HUNGER CRY: Must be rhythmic
+        // Rhythmicity estimated from pitch stability and harmonic structure
+        let isRhythmic = features.pitchVariability < 0.3 &&
+                        features.harmonicToNoiseRatio > 0.4
+        let isHungerLikely = isRhythmic &&
+                            features.fundamentalFrequency >= 350 &&
+                            features.fundamentalFrequency <= 480 &&
+                            features.intensity > 0.25 && features.intensity < 0.7
+        if !isHungerLikely {
+            scores[.hunger] = min(scores[.hunger] ?? 0, 0.25)
+        }
+
+        // ATTENTION CRY: Variable, pausing pattern
+        // Often has higher pitch variability
+        let isAttentionLikely = features.pitchVariability > 0.2 &&
+                               features.intensity > 0.2 && features.intensity < 0.65
+
+        if !isAttentionLikely {
+            scores[.attention] = min(scores[.attention] ?? 0, 0.2)
+        }
+
+        // Normalize scores
+        let total = scores.values.reduce(0, +)
+        if total > 0 {
             for key in scores.keys {
-                scores[key]! /= totalScore
+                scores[key]! /= total
             }
         }
 
         let bestMatch = scores.max(by: { $0.value < $1.value })
 
+        // If no clear winner, return general with low confidence
+        if (bestMatch?.value ?? 0) < 0.35 {
+            return MLClassificationResult(
+                type: .general,
+                confidence: 0.4,
+                probabilities: scores
+            )
+        }
+
         return MLClassificationResult(
             type: bestMatch?.key ?? .general,
-            confidence: bestMatch?.value ?? 0.5,
+            confidence: bestMatch?.value ?? 0.4,
             probabilities: scores
         )
     }

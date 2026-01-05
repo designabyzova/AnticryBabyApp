@@ -1,0 +1,112 @@
+# Maestro E2E Test: Audio Playback Flow
+# Tests core audio playback functionality
+#
+# Run: maestro test maestro/flows/playback_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Navigate to home/library
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Pp]lay.*"
+    timeout: 5000
+
+- takeScreenshot: "playback_01_home"
+
+# Select a category
+- runFlow:
+    when:
+      visible: "Lullabies"
+    commands:
+      - tapOn: "Lullabies"
+
+- runFlow:
+    when:
+      visible: "Library"
+    commands:
+      - tapOn: "Library"
+      - extendedWaitUntil:
+          visible: "Lullabies"
+          timeout: 3000
+      - tapOn: "Lullabies"
+
+# Wait for tracks to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]ullaby.*|.*[Mm]usic.*[Bb]ox.*|.*[Bb]rahms.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "playback_02_track_list"
+
+# Select first available track
+- tapOn:
+    index: 0
+    below: "Lullabies"
+
+# Player should open or play button should work
+- extendedWaitUntil:
+    visible:
+      id: "playButton|pauseButton|playPauseButton"
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "playback_03_player"
+
+# Test play/pause toggle
+- runFlow:
+    when:
+      visible:
+        id: "playButton"
+    commands:
+      - tapOn:
+          id: "playButton"
+      - assertVisible:
+          id: "pauseButton"
+          optional: true
+
+- runFlow:
+    when:
+      visible:
+        id: "pauseButton"
+    commands:
+      - tapOn:
+          id: "pauseButton"
+      - assertVisible:
+          id: "playButton"
+          optional: true
+
+- takeScreenshot: "playback_04_paused"
+
+# Test shuffle button if available
+- runFlow:
+    when:
+      visible:
+        id: "shuffleButton"
+    commands:
+      - tapOn:
+          id: "shuffleButton"
+      - takeScreenshot: "playback_05_shuffle_on"
+
+# Test repeat button if available
+- runFlow:
+    when:
+      visible:
+        id: "repeatButton"
+    commands:
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "playback_06_repeat_on"
+
+# Navigate back
+- runFlow:
+    when:
+      visible:
+        id: "backButton"
+    commands:
+      - tapOn:
+          id: "backButton"
+
+- assertVisible: ".*[Hh]ome.*|.*[Ll]ibrary.*"

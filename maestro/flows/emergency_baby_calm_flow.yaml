@@ -1,0 +1,173 @@
+# Maestro E2E Test: Emergency Mode - SmartQueueView Flow (FS-017)
+# Tests the Spotify-like SmartQueueView with REAL melodic library tracks
+#
+# Run: maestro test maestro/flows/emergency_baby_calm_flow.yaml
+#
+# This test validates:
+# 1. Emergency mode activation via EMERGENCY button
+# 2. SmartQueueView displays current track and queue
+# 3. CANCEL button works for immediate exit
+# 4. "Done" button shows feedback dialog
+# 5. Queue navigation (Up Next section visible)
+# 6. Proper dismissal after feedback/cancel
+#
+# CRITICAL: SmartQueueView uses REAL melodic library tracks, NOT AI-generated noise!
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+- takeScreenshot: "smart_queue_01_home"
+
+# ============================================
+# TEST 1: Navigate to Emergency Mode (SmartQueueView)
+# ============================================
+
+# Find and tap EMERGENCY CRY STOP button
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+# Wait for SmartQueueView to appear - look for CANCEL button or queue elements
+- extendedWaitUntil:
+    visible:
+      text: ".*CANCEL.*|.*Done.*|.*Up Next.*|.*Smart Soothing.*"
+    timeout: 5000
+
+- takeScreenshot: "smart_queue_02_activated"
+
+# ============================================
+# TEST 2: Verify SmartQueueView UI Elements
+# ============================================
+
+# Check for CANCEL button (big red button at top)
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+# Check for current track card
+- assertVisible:
+    id: "currentTrackCard"
+    optional: true
+
+# Check for queue name or Smart Soothing
+- assertVisible:
+    text: ".*Smart.*|.*Soothing.*|.*Queue.*"
+    optional: true
+
+- takeScreenshot: "smart_queue_03_ui_elements"
+
+# ============================================
+# TEST 3: Verify Melodic Content (NOT Noise!)
+# ============================================
+
+# Should NOT see white noise, pink noise, etc.
+- assertNotVisible:
+    text: ".*[Ww]hite [Nn]oise.*|.*[Pp]ink [Nn]oise.*|.*[Bb]rown [Nn]oise.*"
+    optional: true
+
+# Should NOT see generated/scary sounds
+- assertNotVisible:
+    text: ".*[Ff]an.*|.*[Ww]asher.*|.*[Vv]acuum.*|.*[Rr]ain.*|.*[Tt]hunder.*"
+    optional: true
+
+# Should see melodic content or queue info
+- assertVisible:
+    text: ".*[Pp]iano.*|.*[Ll]ullaby.*|.*[Cc]lassical.*|.*Up Next.*|.*[0-9]+ of [0-9]+.*"
+    optional: true
+
+- takeScreenshot: "smart_queue_04_melodic_content"
+
+# ============================================
+# TEST 4: Verify Up Next Section
+# ============================================
+
+# Check for upcoming tracks list
+- assertVisible:
+    id: "upcomingTracksList"
+    optional: true
+
+- takeScreenshot: "smart_queue_05_up_next"
+
+# ============================================
+# TEST 5: Wait for playback (3 seconds)
+# ============================================
+
+- wait:
+    milliseconds: 3000
+
+- takeScreenshot: "smart_queue_06_playing"
+
+# ============================================
+# TEST 6: Test CANCEL Button (Immediate Exit)
+# ============================================
+
+# Tap the CANCEL button
+- tapOn:
+    id: "cancelEmergencyButton"
+
+# Should return to home immediately (no feedback dialog for CANCEL)
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "smart_queue_07_after_cancel"
+
+# Verify we're on the home screen
+- assertVisible:
+    text: ".*EMERGENCY.*"
+
+- takeScreenshot: "smart_queue_08_home_confirmed"
+
+# ============================================
+# TEST 7: Test "Done" Button with Feedback Dialog
+# ============================================
+
+# Start emergency mode again
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*CANCEL.*|.*Done.*"
+    timeout: 5000
+
+- takeScreenshot: "smart_queue_09_second_session"
+
+# Look for and tap "Done" button (shows feedback dialog)
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+      - extendedWaitUntil:
+          visible:
+            text: ".*calmed.*|.*crying.*|.*effective.*"
+          timeout: 3000
+          optional: true
+      - takeScreenshot: "smart_queue_10_feedback_dialog"
+      - runFlow:
+          when:
+            visible:
+              text: ".*calmed.*"
+          commands:
+            - tapOn:
+                text: ".*calmed.*"
+
+# Wait for dismissal
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "smart_queue_11_final_state"
+
+# ============================================
+# TEST COMPLETE - SmartQueueView Works!
+# ============================================

@@ -1,0 +1,316 @@
+# Maestro E2E Test: SmartQueueView Complete Flow
+# Tests world-class Spotify-like queue interface
+#
+# Run: maestro test BabyInCarApp/maestro/flows/smart_queue_e2e_flow.yaml
+#
+# Test Coverage:
+# 1. Queue activation from home
+# 2. Now Playing hero display
+# 3. Playback controls (play/pause/next/prev)
+# 4. Up Next queue scrolling & navigation
+# 5. Queue counter badge accuracy
+# 6. Quick suggestions section
+# 7. Track tap-to-play functionality
+# 8. Cancel button exit
+# 9. Done button with feedback dialog
+# 10. Accessibility identifiers
+
+appId: com.anticry.babyincar
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 10000
+
+- takeScreenshot: "queue_01_home_screen"
+
+# ============================================
+# TEST 1: Activate Emergency Mode (SmartQueueView)
+# ============================================
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+- takeScreenshot: "queue_02_smart_queue_opened"
+
+# ============================================
+# TEST 2: Verify Cancel Button (Top Priority)
+# ============================================
+
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+- assertVisible:
+    text: "CANCEL"
+
+# ============================================
+# TEST 3: Verify Now Playing Hero Card
+# ============================================
+
+- assertVisible:
+    id: "currentTrackCard"
+
+# Should see track title (not noise!)
+- assertNotVisible:
+    text: ".*[Ww]hite [Nn]oise.*|.*[Pp]ink [Nn]oise.*"
+    optional: true
+
+- takeScreenshot: "queue_03_now_playing_hero"
+
+# ============================================
+# TEST 4: Verify Playback Controls
+# ============================================
+
+- assertVisible:
+    id: "playPauseButton"
+
+- assertVisible:
+    id: "previousButton"
+
+- assertVisible:
+    id: "nextButton"
+
+- assertVisible:
+    id: "trackProgressBar"
+
+- takeScreenshot: "queue_04_playback_controls"
+
+# ============================================
+# TEST 5: Test Play/Pause Toggle
+# ============================================
+
+# Tap play/pause
+- tapOn:
+    id: "playPauseButton"
+
+- wait:
+    milliseconds: 1000
+
+# Tap again to toggle back
+- tapOn:
+    id: "playPauseButton"
+
+- takeScreenshot: "queue_05_after_toggle"
+
+# ============================================
+# TEST 6: Verify Queue Counter Badge
+# ============================================
+
+- assertVisible:
+    id: "queueCounter"
+
+# Should show "X of Y" format
+- assertVisible:
+    text: ".*[0-9]+ of [0-9]+.*"
+    optional: true
+
+- takeScreenshot: "queue_06_queue_counter"
+
+# ============================================
+# TEST 7: Verify Up Next Section
+# ============================================
+
+- assertVisible:
+    id: "upNextHeader"
+
+- assertVisible:
+    text: "Up Next"
+
+- assertVisible:
+    id: "upcomingTracksList"
+
+- takeScreenshot: "queue_07_up_next_section"
+
+# ============================================
+# TEST 8: Scroll Through Queue
+# ============================================
+
+# Scroll down to see more tracks
+- scrollUntilVisible:
+    element:
+      id: "upcomingTrack-3"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "queue_08_scrolled_queue"
+
+# Continue scrolling
+- scrollUntilVisible:
+    element:
+      id: "upcomingTrack-5"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "queue_09_more_tracks"
+
+# ============================================
+# TEST 9: Tap Track in Queue to Play
+# ============================================
+
+# Tap on track 1 (first upcoming track)
+- runFlow:
+    when:
+      visible:
+        id: "upcomingTrack-0"
+    commands:
+      - tapOn:
+          id: "upcomingTrack-0"
+      - wait:
+          milliseconds: 1500
+      - takeScreenshot: "queue_10_after_track_tap"
+
+# ============================================
+# TEST 10: Test Next Button
+# ============================================
+
+- tapOn:
+    id: "nextButton"
+
+- wait:
+    milliseconds: 1500
+
+- takeScreenshot: "queue_11_after_next"
+
+# ============================================
+# TEST 11: Test Previous Button
+# ============================================
+
+- tapOn:
+    id: "previousButton"
+
+- wait:
+    milliseconds: 1000
+
+- takeScreenshot: "queue_12_after_previous"
+
+# ============================================
+# TEST 12: Verify Quick Suggestions Section
+# ============================================
+
+# Scroll back to top to see Quick Try section
+- scroll:
+    direction: UP
+
+- assertVisible:
+    text: "Quick Try"
+    optional: true
+
+- takeScreenshot: "queue_13_quick_suggestions"
+
+# ============================================
+# TEST 13: Test Cancel Button Exit
+# ============================================
+
+- tapOn:
+    id: "cancelEmergencyButton"
+
+# Should return to home immediately
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "queue_14_after_cancel"
+
+# Verify we're back home
+- assertVisible:
+    text: ".*EMERGENCY.*"
+
+# ============================================
+# TEST 14: Test Done Button with Feedback
+# ============================================
+
+# Start again
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+# Find and tap Done button
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+      - extendedWaitUntil:
+          visible:
+            text: ".*calmed.*|.*crying.*|.*End Session.*"
+          timeout: 3000
+          optional: true
+      - takeScreenshot: "queue_15_feedback_dialog"
+      # Select "Baby calmed down"
+      - runFlow:
+          when:
+            visible:
+              text: ".*calmed.*"
+          commands:
+            - tapOn:
+                text: ".*calmed.*"
+
+# Should dismiss after feedback
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "queue_16_final_state"
+
+# ============================================
+# TEST 15: Verify Accessibility
+# ============================================
+
+# Start one more time to check accessibility
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+# Verify all accessibility identifiers exist
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+- assertVisible:
+    id: "currentTrackCard"
+
+- assertVisible:
+    id: "playPauseButton"
+
+- assertVisible:
+    id: "trackProgressBar"
+
+- assertVisible:
+    id: "upcomingTracksList"
+
+- takeScreenshot: "queue_17_accessibility_check"
+
+# Exit cleanly
+- tapOn:
+    id: "cancelEmergencyButton"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "queue_18_test_complete"
+
+# ============================================
+# TEST COMPLETE - SmartQueueView Works!
+# ============================================

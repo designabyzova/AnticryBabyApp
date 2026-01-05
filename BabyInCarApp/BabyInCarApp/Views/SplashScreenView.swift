@@ -14,7 +14,6 @@ struct SplashScreenView: View {
     @State private var logoOpacity: Double = 0
     @State private var backgroundOpacity: Double = 1
     @State private var starsVisible = false
-    @State private var waveOffset: CGFloat = 0
     @State private var textOpacity: Double = 0
     @State private var showContent = false
 
@@ -27,15 +26,21 @@ struct SplashScreenView: View {
                 .opacity(backgroundOpacity)
                 .ignoresSafeArea()
 
-            // Floating stars
+            // Floating particles (calm magic effect)
             if starsVisible {
-                FloatingStarsView()
+                FloatingParticlesView()
                     .opacity(backgroundOpacity)
             }
 
-            // Sound waves animation behind logo
-            SoundWavesView(offset: waveOffset)
-                .opacity(backgroundOpacity * 0.3)
+            // Subtle vignette (focus on center)
+            RadialGradient(
+                colors: [Color.clear, Color.black.opacity(0.15)],
+                center: .center,
+                startRadius: 200,
+                endRadius: 500
+            )
+            .ignoresSafeArea()
+            .opacity(backgroundOpacity)
 
             // Main content
             VStack(spacing: DesignTokens.spacingL) {
@@ -46,8 +51,8 @@ struct SplashScreenView: View {
 
                 // App name
                 VStack(spacing: DesignTokens.spacingXS) {
-                    Text("AnticryBaby")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                    Text("Lulla")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [.appPrimary, .appSecondary],
@@ -55,10 +60,12 @@ struct SplashScreenView: View {
                                 endPoint: .trailing
                             )
                         )
+                        .shadow(color: Color.appPrimary.opacity(0.3), radius: 8, x: 0, y: 4)
 
-                    Text("Sweet Dreams on Every Ride")
-                        .font(.appSubheadline)
+                    Text("Calm Baby, Anywhere")
+                        .font(.system(size: 20, weight: .medium, design: .rounded))
                         .foregroundColor(.appTextSecondary)
+                        .tracking(0.5)
                 }
                 .opacity(textOpacity)
             }
@@ -88,11 +95,6 @@ struct SplashScreenView: View {
         // Phase 4: Start logo animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             isAnimating = true
-
-            // Sound wave animation
-            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
-                waveOffset = 100
-            }
         }
 
         // Phase 5: Transition out after delay
@@ -115,18 +117,61 @@ struct SplashScreenView: View {
 
 struct AnimatedGradientBackground: View {
     @State private var animateGradient = false
+    @State private var cloudOffset1: CGFloat = 0
+    @State private var cloudOffset2: CGFloat = 0
 
     var body: some View {
-        LinearGradient(
-            colors: animateGradient ?
-                [Color.appWarmCream, Color.appPrimary.opacity(0.2), Color.appSecondary.opacity(0.1)] :
-                [Color.appSecondary.opacity(0.1), Color.appWarmCream, Color.appPrimary.opacity(0.2)],
-            startPoint: animateGradient ? .topLeading : .bottomTrailing,
-            endPoint: animateGradient ? .bottomTrailing : .topLeading
-        )
+        ZStack {
+            // Base gradient - warmer palette
+            LinearGradient(
+                colors: animateGradient ?
+                    [Color.appWarmCream, Color(red: 0.95, green: 0.87, blue: 0.95), Color.appSecondary.opacity(0.15)] :
+                    [Color.appSecondary.opacity(0.15), Color(red: 0.95, green: 0.87, blue: 0.95), Color.appWarmCream],
+                startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                endPoint: animateGradient ? .bottomTrailing : .topLeading
+            )
+
+            // Floating cloud shapes (ultra-subtle depth)
+            GeometryReader { geometry in
+                // Cloud 1 - large, top-left
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.white.opacity(0.15), Color.clear],
+                            center: .center,
+                            startRadius: 50,
+                            endRadius: 200
+                        )
+                    )
+                    .frame(width: 400, height: 400)
+                    .offset(x: -100 + cloudOffset1, y: -50)
+
+                // Cloud 2 - large, bottom-right
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.appPrimary.opacity(0.08), Color.clear],
+                            center: .center,
+                            startRadius: 70,
+                            endRadius: 220
+                        )
+                    )
+                    .frame(width: 450, height: 450)
+                    .offset(x: geometry.size.width - 250 + cloudOffset2, y: geometry.size.height - 200)
+            }
+        }
         .onAppear {
             withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
                 animateGradient.toggle()
+            }
+
+            // Slow cloud drift
+            withAnimation(.easeInOut(duration: 15.0).repeatForever(autoreverses: true)) {
+                cloudOffset1 = 30
+            }
+
+            withAnimation(.easeInOut(duration: 20.0).repeatForever(autoreverses: true)) {
+                cloudOffset2 = -40
             }
         }
     }
@@ -142,19 +187,20 @@ struct SplashLogoView: View {
 
     var body: some View {
         ZStack {
-            // Outer glow
+            // Outer glow - larger and softer
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color.appPrimary.opacity(0.4), Color.clear],
+                        colors: [Color.appPrimary.opacity(0.3), Color.appSecondary.opacity(0.2), Color.clear],
                         center: .center,
-                        startRadius: 50,
-                        endRadius: 100
+                        startRadius: 60,
+                        endRadius: 140
                     )
                 )
-                .frame(width: 200, height: 200)
+                .frame(width: 280, height: 280)
                 .opacity(glowOpacity)
-                .scaleEffect(breatheScale * 1.2)
+                .scaleEffect(breatheScale * 1.15)
+                .blur(radius: 20)
 
             // Background circle
             Circle()
@@ -331,84 +377,81 @@ struct MiniMusicNote: View {
     }
 }
 
-// MARK: - Floating Stars View
+// MARK: - Floating Particles View (Calm Magic Effect)
 
-struct FloatingStarsView: View {
-    @State private var stars: [StarData] = []
+struct FloatingParticlesView: View {
+    @State private var particles: [ParticleData] = []
 
     var body: some View {
         GeometryReader { geometry in
-            ForEach(stars) { star in
-                Image(systemName: "star.fill")
-                    .font(.system(size: star.size))
-                    .foregroundColor(Color.appPrimary.opacity(star.opacity))
-                    .position(star.position)
+            ForEach(particles) { particle in
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                particle.color.opacity(particle.opacity),
+                                particle.color.opacity(particle.opacity * 0.3),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: particle.size / 2
+                        )
+                    )
+                    .frame(width: particle.size, height: particle.size)
+                    .position(particle.position)
+                    .offset(y: particle.yOffset)
+                    .opacity(particle.currentOpacity)
+                    .blur(radius: particle.blur)
                     .animation(
-                        .easeInOut(duration: star.duration)
+                        .easeInOut(duration: particle.duration)
                         .repeatForever(autoreverses: true)
-                        .delay(star.delay),
-                        value: star.opacity
+                        .delay(particle.delay),
+                        value: particle.yOffset
                     )
             }
         }
         .onAppear {
-            generateStars()
+            generateParticles()
         }
     }
 
-    private func generateStars() {
-        stars = (0..<15).map { _ in
-            StarData(
+    private func generateParticles() {
+        let colors: [Color] = [.appPrimary, .appSecondary, .appAccentMint, .white]
+
+        particles = (0..<20).map { index in
+            let yPos = CGFloat.random(in: 100...700)
+            return ParticleData(
                 position: CGPoint(
-                    x: CGFloat.random(in: 20...350),
-                    y: CGFloat.random(in: 50...700)
+                    x: CGFloat.random(in: 30...360),
+                    y: yPos
                 ),
-                size: CGFloat.random(in: 6...12),
-                opacity: Double.random(in: 0.2...0.6),
-                duration: Double.random(in: 1.5...3.0),
-                delay: Double.random(in: 0...1.5)
+                size: CGFloat.random(in: 8...24),
+                opacity: Double.random(in: 0.15...0.4),
+                currentOpacity: Double.random(in: 0.1...0.3),
+                duration: Double.random(in: 2.5...5.0),
+                delay: Double.random(in: 0...2.0),
+                yOffset: CGFloat.random(in: -15...15),
+                blur: CGFloat.random(in: 3...8),
+                color: colors[index % colors.count]
             )
         }
     }
 }
 
-struct StarData: Identifiable {
+struct ParticleData: Identifiable {
     let id = UUID()
     var position: CGPoint
     var size: CGFloat
     var opacity: Double
+    var currentOpacity: Double
     var duration: Double
     var delay: Double
+    var yOffset: CGFloat
+    var blur: CGFloat
+    var color: Color
 }
 
-// MARK: - Sound Waves View
-
-struct SoundWavesView: View {
-    var offset: CGFloat
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<20, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.appPrimary.opacity(0.3), Color.appSecondary.opacity(0.2)],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                    .frame(width: 3, height: waveHeight(for: index, offset: offset))
-            }
-        }
-        .frame(height: 60)
-    }
-
-    private func waveHeight(for index: Int, offset: CGFloat) -> CGFloat {
-        let phase = (CGFloat(index) * 0.5 + offset * 0.1)
-        let height = 20 + sin(phase) * 20
-        return max(8, height)
-    }
-}
 
 // MARK: - Preview
 

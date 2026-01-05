@@ -1,0 +1,54 @@
+{
+  "sessionId": "auto-2026-01-05-rtgu2y",
+  "status": "completed",
+  "startTime": "2026-01-05T00:00:15.190Z",
+  "iteration": 0,
+  "maxIterations": 2500,
+  "maxHours": 600,
+  "incrementQueue": [
+    "0027-voice-control-v2-llm"
+  ],
+  "currentIncrement": "0027-voice-control-v2-llm",
+  "completedIncrements": [],
+  "failedIncrements": [],
+  "humanGates": {
+    "pending": null,
+    "approved": [],
+    "blocked": []
+  },
+  "circuitBreakers": {
+    "github": {
+      "state": "closed",
+      "failures": 0
+    },
+    "jira": {
+      "state": "closed",
+      "failures": 0
+    },
+    "ado": {
+      "state": "closed",
+      "failures": 0
+    }
+  },
+  "lastActivity": "2026-01-05T00:00:15.190Z",
+  "simple": false,
+  "completionConditions": [
+    {
+      "type": "build",
+      "autoHeal": true,
+      "maxRetries": 3
+    },
+    {
+      "type": "coverage",
+      "threshold": 80,
+      "autoHeal": false
+    },
+    {
+      "type": "e2e-coverage",
+      "threshold": 70,
+      "autoHeal": false
+    }
+  ],
+  "endTime": "2026-01-05T00:23:06Z",
+  "endReason": "completion_promise"
+}

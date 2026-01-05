@@ -1,0 +1,16 @@
+{
+  "id": "0015-science-based-cry-intelligence",
+  "title": "Science-Based Cry Intelligence",
+  "status": "completed",
+  "createdAt": "2026-01-01T19:30:00Z",
+  "updatedAt": "2026-01-01T19:30:00Z",
+  "feature": "FS-015",
+  "priority": "high",
+  "tags": [
+    "cry-detection",
+    "ai",
+    "research",
+    "audio-analysis"
+  ],
+  "updated": "2026-01-02T03:15:47.000Z"
+}

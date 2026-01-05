@@ -240,6 +240,53 @@ struct ExtendedAudioFeatures: Codable {
         )
     }
 
+    // MARK: - Memory-Efficient Factory Methods
+
+    /// Create minimal features from basic spectral analysis
+    /// Used when memory is constrained to avoid heavy feature extraction
+    /// MEMORY SAFETY: No FFT or heavy allocations - just fills defaults
+    static func fromBasicAnalysis(
+        intensity: Double,
+        spectralCentroid: Double,
+        spectralFlatness: Double
+    ) -> ExtendedAudioFeatures {
+        ExtendedAudioFeatures(
+            fundamentalFrequency: spectralCentroid * 0.5,  // Rough estimate
+            intensity: intensity,
+            harmonicToNoiseRatio: 1.0 - spectralFlatness,  // Inverse of flatness
+            spectralCentroid: spectralCentroid,
+            spectralFlatness: spectralFlatness,
+            rhythmicity: 0.5,
+            pitchVariability: 0.3,
+            onsetSharpness: intensity,
+            cryDuration: 0,
+            pauseDuration: 0,
+            formantF1: spectralCentroid * 0.8,
+            formantF2: spectralCentroid * 1.5,
+            melFrequencyCoeffs: Array(repeating: 0, count: 13),
+            spectralRolloff: spectralCentroid * 1.5,
+            spectralBandwidth: 500,
+            spectralContrast: Array(repeating: 50, count: 6),
+            spectralFlux: intensity,
+            spectralSlope: -0.01,
+            zeroCrossingRate: 500,
+            rmsEnergy: intensity * 0.2,
+            loudnessDBFS: -20 - (1 - intensity) * 60,
+            peakAmplitude: intensity,
+            harmonicsStrength: Array(repeating: 0.3, count: 5),
+            harmonicDeviation: 0.1,
+            inharmonicity: 0.05,
+            jitter: 0.02,
+            shimmer: 0.03,
+            temporalModulation: 5,
+            formantF3: spectralCentroid * 2.0,
+            formantBandwidths: [100, 120, 150],
+            chromaFeatures: Array(repeating: 0.083, count: 12),
+            deltaCoeffs: Array(repeating: 0, count: 13),
+            deltaDeltaCoeffs: Array(repeating: 0, count: 13)
+        )
+    }
+
     // MARK: - Conversion from basic AudioFeatures
 
     /// Create extended features from basic AudioFeatures with defaults for missing values
@@ -280,6 +327,61 @@ struct ExtendedAudioFeatures: Codable {
         self.deltaCoeffs = Array(repeating: 0, count: 13)
         self.deltaDeltaCoeffs = Array(repeating: 0, count: 13)
     }
+
+    // MARK: - Convenience Initializer for Testing
+
+    /// Simplified initializer for testing with minimal required parameters
+    /// Maps alternative parameter names to canonical properties
+    init(
+        spectralCentroid: Double,
+        spectralSpread: Double,
+        spectralFlatness: Double,
+        spectralRolloff: Double,
+        mfcc: [Float],
+        zeroCrossingRate: Double,
+        rmsEnergy: Double,
+        fundamentalFrequency: Double,
+        harmonicRatio: Double,
+        temporalEnvelope: [Double],
+        onsetStrength: Double,
+        pitchVariability: Double,
+        energyEntropy: Double,
+        deltaEnergy: Double
+    ) {
+        self.fundamentalFrequency = fundamentalFrequency
+        self.intensity = rmsEnergy  // Map rmsEnergy to intensity
+        self.harmonicToNoiseRatio = harmonicRatio  // Map harmonicRatio to HNR
+        self.spectralCentroid = spectralCentroid
+        self.spectralFlatness = spectralFlatness
+        self.rhythmicity = 1.0 - energyEntropy  // Derive rhythmicity from entropy
+        self.pitchVariability = pitchVariability
+        self.onsetSharpness = onsetStrength  // Map onsetStrength to onsetSharpness
+        self.cryDuration = 2.0  // Default
+        self.pauseDuration = 0.5  // Default
+        self.formantF1 = fundamentalFrequency * 2  // Estimate F1
+        self.formantF2 = fundamentalFrequency * 3  // Estimate F2
+        self.melFrequencyCoeffs = mfcc.map { Double($0) }  // Convert Float to Double
+        self.spectralRolloff = spectralRolloff
+        self.spectralBandwidth = spectralSpread  // Map spectralSpread to bandwidth
+        self.spectralContrast = Array(repeating: 50, count: 6)
+        self.spectralFlux = onsetStrength
+        self.spectralSlope = -0.01
+        self.zeroCrossingRate = zeroCrossingRate * 1000  // Scale if needed
+        self.rmsEnergy = rmsEnergy
+        self.loudnessDBFS = -20 - (1 - rmsEnergy) * 60
+        self.peakAmplitude = temporalEnvelope.max() ?? rmsEnergy
+        self.harmonicsStrength = [0.5, 0.3, 0.2, 0.1, 0.05]
+        self.harmonicDeviation = 0.1
+        self.inharmonicity = 0.05
+        self.jitter = 0.02
+        self.shimmer = 0.03
+        self.temporalModulation = 5
+        self.formantF3 = fundamentalFrequency * 4
+        self.formantBandwidths = [100, 120, 150]
+        self.chromaFeatures = Array(repeating: 0.083, count: 12)
+        self.deltaCoeffs = [deltaEnergy] + Array(repeating: 0, count: 12)
+        self.deltaDeltaCoeffs = Array(repeating: 0, count: 13)
+    }
 }
 
 // MARK: - Advanced Feature Extractor
@@ -302,15 +404,18 @@ class AdvancedFeatureExtractor {
     private let numMFCCs = 13
 
     // MARK: - State for Temporal Features
+    // MEMORY SAFETY: All arrays have strict size limits to prevent unbounded growth
     private var previousMFCCs: [Double] = []
     private var previousDeltaMFCCs: [Double] = []
-    private var previousSamples: [Float] = []
+    private var previousSamples: [Float] = []  // Max 1024 samples (4KB)
     private var pitchHistory: [Float] = []
-    private let maxPitchHistory = 30
+    private let maxPitchHistory = 15  // REDUCED from 30 to save memory
+    private let maxPreviousSamples = 512  // REDUCED from 1024 to save memory
 
     // MARK: - Initialization
 
-    init(fftSize: Int = 4096) {
+    // MEMORY SAFETY: Default FFT size reduced from 4096 to 2048 to save ~50% memory
+    init(fftSize: Int = 2048) {
         self.fftSize = fftSize
         self.fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(fftSize), .FORWARD)
 
@@ -386,13 +491,15 @@ class AdvancedFeatureExtractor {
         let onsetSharp = calculateOnsetSharpness(samples: samples)
 
         // Update state for next frame
+        // MEMORY SAFETY: Use in-place copy where possible, enforce size limits
         previousMagnitudes = magnitudes
         previousMFCCs = mfccs
         previousDeltaMFCCs = deltas
-        previousSamples = Array(samples.suffix(1024))
+        previousSamples = Array(samples.suffix(maxPreviousSamples))  // Use reduced limit
         if fundamentalFreq > 0 {
             pitchHistory.append(fundamentalFreq)
-            if pitchHistory.count > maxPitchHistory {
+            // MEMORY SAFETY: Strict limit enforcement
+            while pitchHistory.count > maxPitchHistory {
                 pitchHistory.removeFirst()
             }
         }

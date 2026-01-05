@@ -69,34 +69,22 @@ struct SleepingBabyIllustration: View {
     @State private var floatOffset: CGFloat = 0
     @State private var heartScale: [CGFloat] = [1.0, 1.0, 1.0]
 
+    // Pre-computed heart offsets to simplify expressions
+    private let heartXOffsets: [CGFloat] = [-40, 50, -20]
+    private let heartYBaseOffsets: [CGFloat] = [-60, -40, -70]
+    private let heartYMultipliers: [CGFloat] = [1.0, 0.8, 1.2]
+
+    private func heartYOffset(for index: Int) -> CGFloat {
+        heartYBaseOffsets[index] + floatOffset * heartYMultipliers[index]
+    }
+
     var body: some View {
         ZStack {
             // Background glow
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color.appPrimary.opacity(0.3),
-                            Color.appPrimary.opacity(0.0)
-                        ]),
-                        center: .center,
-                        startRadius: 40,
-                        endRadius: 100
-                    )
-                )
-                .frame(width: 200, height: 200)
+            backgroundGlow
 
             // Floating hearts
-            ForEach(0..<3, id: \.self) { index in
-                HeartShape()
-                    .fill(Color.appAccentCoral.opacity(0.6))
-                    .frame(width: 16 + CGFloat(index * 4), height: 16 + CGFloat(index * 4))
-                    .scaleEffect(heartScale[index])
-                    .offset(
-                        x: CGFloat([-40, 50, -20][index]),
-                        y: CGFloat([-60 + floatOffset, -40 + floatOffset * 0.8, -70 + floatOffset * 1.2][index])
-                    )
-            }
+            floatingHearts
 
             // Baby face circle
             Circle()
@@ -160,6 +148,34 @@ struct SleepingBabyIllustration: View {
                     heartScale[i] = 1.2
                 }
             }
+        }
+    }
+
+    // MARK: - Extracted Views (to simplify type-checking)
+
+    private var backgroundGlow: some View {
+        Circle()
+            .fill(
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        Color.appPrimary.opacity(0.3),
+                        Color.appPrimary.opacity(0.0)
+                    ]),
+                    center: .center,
+                    startRadius: 40,
+                    endRadius: 100
+                )
+            )
+            .frame(width: 200, height: 200)
+    }
+
+    private var floatingHearts: some View {
+        ForEach(0..<3, id: \.self) { index in
+            HeartShape()
+                .fill(Color.appAccentCoral.opacity(0.6))
+                .frame(width: 16 + CGFloat(index * 4), height: 16 + CGFloat(index * 4))
+                .scaleEffect(heartScale[index])
+                .offset(x: heartXOffsets[index], y: heartYOffset(for: index))
         }
     }
 }

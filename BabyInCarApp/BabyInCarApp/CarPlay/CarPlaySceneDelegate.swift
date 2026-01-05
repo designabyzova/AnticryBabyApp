@@ -24,6 +24,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private let audioEngine = AudioEngine.shared
     private let contentLibrary = ContentLibraryService.shared
     private let aiEngine = AIRecommendationEngine.shared
+    private let smartCarPlay = SmartCarPlayController.shared
+    private let gatekeeper = FreemiumGatekeeper.shared
+    private var statusUpdateTimer: Timer?
+    private var premiumTrackSkips: [UUID] = [] // Track skipped premium tracks for post-drive prompt
 
     // MARK: - CPTemplateApplicationSceneDelegate
 
@@ -32,6 +36,20 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         didConnect interfaceController: CPInterfaceController
     ) {
         self.interfaceController = interfaceController
+
+        // 🔧 FIX: AUTO-ENABLE voice control when CarPlay connects (hands-free driving!)
+        print("[CarPlay] 🎤 Auto-enabling voice control for hands-free operation")
+        Task { @MainActor in
+            // Enable voice control via SmartCarPlayController
+            smartCarPlay.enableVoiceControl()
+
+            // Also ensure SpeechRecognitionService is ready
+            await SpeechRecognitionService.shared.requestAuthorization()
+
+            // Start listening immediately for safety
+            SpeechRecognitionService.shared.startListening()
+            print("[CarPlay] ✅ Voice control active and listening")
+        }
 
         // Set the root template
         let tabBarTemplate = createTabBarTemplate()
@@ -43,24 +61,164 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         didDisconnect interfaceController: CPInterfaceController
     ) {
         self.interfaceController = nil
+        statusUpdateTimer?.invalidate()
+        statusUpdateTimer = nil
+
+        // 🔧 FIX: Disable voice control when CarPlay disconnects
+        print("[CarPlay] 🎤 Disabling voice control (CarPlay disconnected)")
+        Task { @MainActor in
+            smartCarPlay.disableVoiceControl()
+            SpeechRecognitionService.shared.stopListening()
+            print("[CarPlay] ✅ Voice control disabled")
+        }
+
+        // Post notification about skipped premium tracks for gentle post-drive prompt
+        if !premiumTrackSkips.isEmpty {
+            NotificationCenter.default.post(
+                name: .carPlaySessionEnded,
+                object: nil,
+                userInfo: ["skippedPremiumTrackIds": premiumTrackSkips]
+            )
+            premiumTrackSkips = []
+        }
     }
 
     // MARK: - Tab Bar Template
 
     private func createTabBarTemplate() -> CPTabBarTemplate {
         let homeTab = createHomeTab()
+        let smartModeTab = createSmartModeTab()
         let categoriesTab = createCategoriesTab()
         let emergencyTab = createEmergencyTab()
         let nowPlayingTab = createNowPlayingTab()
 
         let tabBarTemplate = CPTabBarTemplate(templates: [
             homeTab,
+            smartModeTab,
             categoriesTab,
             emergencyTab,
             nowPlayingTab
         ])
 
         return tabBarTemplate
+    }
+
+    // MARK: - Smart Mode Tab
+
+    private func createSmartModeTab() -> CPListTemplate {
+        var sections: [CPListSection] = []
+
+        // Smart Mode Toggle
+        let smartModeItems = [
+            createListItem(
+                title: smartCarPlay.isActive ? "Disable Smart Mode" : "Enable Smart Mode",
+                subtitle: smartCarPlay.isActive ? smartCarPlay.statusMessage : "Auto-adjust based on baby + car sounds",
+                image: UIImage(systemName: smartCarPlay.isActive ? "brain.head.profile.fill" : "brain.head.profile")
+            ) { [weak self] in
+                self?.toggleSmartMode()
+            },
+            createListItem(
+                title: "Environment Status",
+                subtitle: smartCarPlay.environmentIndicator,
+                image: UIImage(systemName: "car.fill")
+            ) { },
+            createListItem(
+                title: "Baby Status",
+                subtitle: smartCarPlay.babyStateIndicator,
+                image: UIImage(systemName: "face.smiling")
+            ) { }
+        ]
+        sections.append(CPListSection(items: smartModeItems, header: "Smart Car Mode", sectionIndexTitle: nil))
+
+        // Settings
+        let settingsItems = [
+            createListItem(
+                title: "Voice Feedback",
+                subtitle: smartCarPlay.enableVoiceFeedback ? "Enabled" : "Disabled",
+                image: UIImage(systemName: "speaker.wave.2.fill")
+            ) { [weak self] in
+                Task { @MainActor in
+                    self?.smartCarPlay.enableVoiceFeedback.toggle()
+                }
+            }
+        ]
+        sections.append(CPListSection(items: settingsItems, header: "Settings", sectionIndexTitle: nil))
+
+        let template = CPListTemplate(title: "Smart Mode", sections: sections)
+        template.tabImage = UIImage(systemName: "brain.head.profile")
+
+        // Update periodically
+        startStatusUpdates(for: template)
+
+        return template
+    }
+
+    private func toggleSmartMode() {
+        Task { @MainActor in
+            if smartCarPlay.isActive {
+                smartCarPlay.disableSmartMode()
+            } else {
+                try? await smartCarPlay.enableSmartMode()
+            }
+            // Refresh the template
+            if let currentTemplate = interfaceController?.rootTemplate as? CPTabBarTemplate {
+                // Find and refresh smart mode tab
+                if let smartModeTemplate = currentTemplate.templates.first(where: { ($0 as? CPListTemplate)?.title == "Smart Mode" }) as? CPListTemplate {
+                    refreshSmartModeTab(smartModeTemplate)
+                }
+            }
+        }
+    }
+
+    private func startStatusUpdates(for template: CPListTemplate) {
+        statusUpdateTimer?.invalidate()
+        statusUpdateTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self, weak template] _ in
+            guard let self = self, let template = template else { return }
+            Task { @MainActor in
+                self.refreshSmartModeTab(template)
+            }
+        }
+    }
+
+    private func refreshSmartModeTab(_ template: CPListTemplate) {
+        // Rebuild sections with updated data
+        var sections: [CPListSection] = []
+
+        let smartModeItems = [
+            createListItem(
+                title: smartCarPlay.isActive ? "Disable Smart Mode" : "Enable Smart Mode",
+                subtitle: smartCarPlay.isActive ? smartCarPlay.statusMessage : "Auto-adjust based on baby + car sounds",
+                image: UIImage(systemName: smartCarPlay.isActive ? "brain.head.profile.fill" : "brain.head.profile")
+            ) { [weak self] in
+                self?.toggleSmartMode()
+            },
+            createListItem(
+                title: "Environment Status",
+                subtitle: smartCarPlay.environmentIndicator,
+                image: UIImage(systemName: "car.fill")
+            ) { },
+            createListItem(
+                title: "Baby Status",
+                subtitle: smartCarPlay.babyStateIndicator,
+                image: UIImage(systemName: "face.smiling")
+            ) { }
+        ]
+        sections.append(CPListSection(items: smartModeItems, header: "Smart Car Mode", sectionIndexTitle: nil))
+
+        let settingsItems = [
+            createListItem(
+                title: "Voice Feedback",
+                subtitle: smartCarPlay.enableVoiceFeedback ? "Enabled" : "Disabled",
+                image: UIImage(systemName: "speaker.wave.2.fill")
+            ) { [weak self] in
+                Task { @MainActor in
+                    self?.smartCarPlay.enableVoiceFeedback.toggle()
+                }
+            }
+        ]
+        sections.append(CPListSection(items: settingsItems, header: "Settings", sectionIndexTitle: nil))
+
+        template.updateSections(sections)
     }
 
     // MARK: - Home Tab
@@ -106,7 +264,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         }
         sections.append(CPListSection(items: Array(recentPlaylists), header: "Playlists", sectionIndexTitle: nil))
 
-        let template = CPListTemplate(title: "Baby in Car", sections: sections)
+        let template = CPListTemplate(title: "Lulla", sections: sections)
         template.tabImage = UIImage(systemName: "house.fill")
 
         return template
@@ -158,11 +316,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 self?.playEmergencySound(.womb)
             },
             createListItem(
-                title: "White Noise",
-                subtitle: "Masking sound",
-                image: UIImage(systemName: "speaker.wave.3.fill")
+                title: "Ocean Waves",
+                subtitle: "Gentle nature sounds",
+                image: UIImage(systemName: "water.waves")
             ) { [weak self] in
-                self?.playEmergencySound(.whiteNoise)
+                self?.playEmergencySound(.ocean)
             }
         ]
 
@@ -214,13 +372,18 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         let tracks = contentLibrary.getTracks(for: category)
 
         let trackItems = tracks.prefix(12).map { track in
-            createListItem(
+            // Determine access type for freemium
+            let accessType = gatekeeper.accessType(for: track)
+            let badgeText = accessType.badge ?? ""
+            let subtitle = badgeText.isEmpty ? track.artist : "[\(badgeText)] \(track.artist)"
+
+            return createListItem(
                 title: track.title,
-                subtitle: track.artist,
-                image: UIImage(systemName: "music.note")
+                subtitle: subtitle,
+                image: UIImage(systemName: accessType.canPlay ? "music.note" : "lock.fill")
             ) { [weak self] in
                 Task { @MainActor in
-                    self?.audioEngine.play(track: track)
+                    self?.playTrackWithFreemiumCheck(track)
                 }
             }
         }
@@ -229,6 +392,33 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         let template = CPListTemplate(title: category.rawValue, sections: [section])
 
         interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    }
+
+    // MARK: - Freemium Track Playback
+
+    private func playTrackWithFreemiumCheck(_ track: AudioTrack) {
+        let accessType = gatekeeper.accessType(for: track)
+
+        if accessType.canPlay {
+            // User has access - play normally
+            audioEngine.play(track: track)
+        } else {
+            // Premium track without access
+            // In CarPlay, we don't show upgrade prompts (safety first!)
+            // Instead, track the skip and show gentle prompt after drive
+            premiumTrackSkips.append(track.id)
+
+            // Try to play next free track instead
+            if let nextFreeTrack = findNextFreeTrack(after: track) {
+                audioEngine.play(track: nextFreeTrack)
+            }
+        }
+    }
+
+    private func findNextFreeTrack(after track: AudioTrack) -> AudioTrack? {
+        // Find a free track in the same category
+        let categoryTracks = contentLibrary.getTracks(for: track.category)
+        return categoryTracks.first { gatekeeper.canPlayTrack($0) && $0.id != track.id }
     }
 
     // MARK: - Playback Actions
@@ -360,6 +550,12 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     }
 }
 
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let carPlaySessionEnded = Notification.Name("carPlaySessionEnded")
+}
+
 // MARK: - AudioCategory CarPlay Extensions
 
 extension AudioCategory {
@@ -367,11 +563,12 @@ extension AudioCategory {
         switch self {
         case .classicalMusic: return "music.quarternote.3"
         case .fairyTales: return "book.fill"
-        case .whiteNoise: return "waveform"
         case .natureSounds: return "leaf.fill"
         case .instrumental: return "pianokeys"
         case .childrenSongs: return "music.mic"
         case .podcasts: return "mic.fill"
+        case .lullabies: return "moon.stars.fill"
+        case .ambient: return "sparkles"
         }
     }
 
@@ -379,11 +576,12 @@ extension AudioCategory {
         switch self {
         case .classicalMusic: return "Soothing classical pieces"
         case .fairyTales: return "Stories in 10+ languages"
-        case .whiteNoise: return "Calming background sounds"
         case .natureSounds: return "Peaceful nature ambience"
         case .instrumental: return "Gentle melodies"
         case .childrenSongs: return "Lullabies and songs"
         case .podcasts: return "Calming voice content"
+        case .lullabies: return "Traditional lullabies"
+        case .ambient: return "Gentle ambient sounds"
         }
     }
 }

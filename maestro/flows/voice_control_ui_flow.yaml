@@ -1,0 +1,97 @@
+# Maestro E2E Test: Voice Control UI Flow
+# Tests that Voice Control UI opens and displays correctly
+#
+# Note: Maestro cannot test actual voice input (requires microphone access).
+# Voice command parsing is tested via unit tests in VoiceCommandLLMServiceTests.swift
+#
+# Run: ~/.maestro/bin/maestro test maestro/flows/voice_control_ui_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for home screen to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*"
+    timeout: 10000
+
+- takeScreenshot: "voice_01_home"
+
+# Find and tap the Voice Control button
+# The button is labeled "Voice Control" in the UI
+- runFlow:
+    when:
+      visible: "Voice Control"
+    commands:
+      - tapOn: "Voice Control"
+
+# Alternatively, look for microphone icon button
+- runFlow:
+    when:
+      visible:
+        id: "voiceControlButton"
+    commands:
+      - tapOn:
+          id: "voiceControlButton"
+
+# Wait for Voice Control sheet to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]istening.*|.*[Tt]ap to speak.*|.*[Vv]oice.*"
+    timeout: 5000
+
+- takeScreenshot: "voice_02_sheet_opened"
+
+# Verify key UI elements are visible
+- assertVisible:
+    text: ".*[Tt]ry saying.*"
+    optional: true
+
+# Check for suggested commands
+- assertVisible:
+    text: ".*[Pp]lay.*[Pp]ause.*"
+    optional: true
+
+- assertVisible:
+    text: ".*[Nn]ext.*[Pp]revious.*"
+    optional: true
+
+- assertVisible:
+    text: ".*[Vv]olume.*"
+    optional: true
+
+- takeScreenshot: "voice_03_suggestions_visible"
+
+# Look for Start/Stop listening button
+- assertVisible:
+    text: ".*[Ss]tart [Ll]istening.*|.*[Ss]top [Ll]istening.*"
+    optional: true
+
+# Tap the listening button to toggle state
+- runFlow:
+    when:
+      visible:
+        text: ".*[Ss]top [Ll]istening.*"
+    commands:
+      - tapOn:
+          text: ".*[Ss]top [Ll]istening.*"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Ss]tart [Ll]istening.*|.*[Tt]ap to speak.*"
+          timeout: 3000
+
+- takeScreenshot: "voice_04_stopped_listening"
+
+# Close the sheet via Done button
+- runFlow:
+    when:
+      visible: "Done"
+    commands:
+      - tapOn: "Done"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Hh]ome.*"
+          timeout: 3000
+
+- takeScreenshot: "voice_05_sheet_closed"

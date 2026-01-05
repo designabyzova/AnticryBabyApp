@@ -1,0 +1,252 @@
+# Maestro E2E Test: Self-Learning Cry Detection System
+# Tests the adaptive learning system and "What Works" insights
+#
+# Run: maestro test maestro/flows/self_learning_system_flow.yaml
+#
+# This test validates:
+# 1. What Works Insights dashboard access
+# 2. Learning statistics display (sessions, patterns, confidence)
+# 3. Baby-specific pattern display
+# 4. Sound effectiveness insights
+# 5. Time patterns analysis
+# 6. Scientific basis display
+# 7. Learning system integration with cry detection
+#
+# Prerequisites: At least one session completed for insights to appear
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+- takeScreenshot: "learning_01_home"
+
+# ============================================
+# PREREQUISITE: Create a Learning Session
+# ============================================
+
+# Start an emergency session to generate learning data
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+# Wait for a meaningful session duration
+- wait:
+    milliseconds: 3000
+
+# Complete the session with "Baby is Calm" to record learning
+- tapOn:
+    text: "Baby is Calm"
+
+# Wait for success and dismissal
+- wait:
+    milliseconds: 3000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "learning_02_session_completed"
+
+# ============================================
+# TEST 1: Access What Works Insights
+# ============================================
+
+# Navigate to insights - try multiple paths
+- runFlow:
+    when:
+      visible:
+        text: "What Works"
+    commands:
+      - tapOn: "What Works"
+
+- runFlow:
+    when:
+      visible:
+        text: "AI Insights"
+    commands:
+      - tapOn: "AI Insights"
+
+- runFlow:
+    when:
+      visible:
+        text: "Insights"
+    commands:
+      - tapOn: "Insights"
+
+# Try tapping on the AI Cry Detection link
+- runFlow:
+    when:
+      visible:
+        text: "AI Cry Detection"
+    commands:
+      - tapOn: "AI Cry Detection"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ww]hat.*[Ww]orks.*|.*[Ii]nsights.*|.*[Ll]earning.*|.*[Pp]atterns.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "learning_03_insights_view"
+
+# ============================================
+# TEST 2: Verify Learning Statistics
+# ============================================
+
+# Check for AI confidence display
+- assertVisible:
+    text: ".*[Cc]onfidence.*|.*[0-9]+%.*"
+    optional: true
+
+# Check for sessions analyzed count
+- assertVisible:
+    text: ".*[Ss]essions.*|.*[Aa]nalyzed.*"
+    optional: true
+
+# Check for patterns learned
+- assertVisible:
+    text: ".*[Pp]atterns.*|.*[Ll]earned.*"
+    optional: true
+
+- takeScreenshot: "learning_04_statistics"
+
+# ============================================
+# TEST 3: Verify Insights Cards
+# ============================================
+
+# Scroll to see insight cards
+- scroll:
+    direction: DOWN
+
+# Check for "What Works" section
+- assertVisible:
+    text: ".*[Ww]hat.*[Ww]orks.*|.*[Bb]est.*[Ss]ounds.*|.*[Ee]ffective.*"
+    optional: true
+
+# Check for cry type displays
+- assertVisible:
+    text: ".*[Hh]unger.*|.*[Tt]ired.*|.*[Pp]ain.*|.*[Dd]iscomfort.*"
+    optional: true
+
+- takeScreenshot: "learning_05_insights_cards"
+
+# ============================================
+# TEST 4: Verify Sound Recommendations
+# ============================================
+
+# Check for sound type displays
+- assertVisible:
+    text: ".*[Ww]hite.*[Nn]oise.*|.*[Ss]hoooshing.*|.*[Ll]ullaby.*|.*[Hh]eartbeat.*|.*[Nn]ature.*"
+    optional: true
+
+# Check for effectiveness indicators
+- assertVisible:
+    text: ".*[0-9]+%.*|.*[Ee]ffective.*|.*[Ww]orks.*"
+    optional: true
+
+- takeScreenshot: "learning_06_sound_recommendations"
+
+# ============================================
+# TEST 5: Verify Time Patterns
+# ============================================
+
+# Scroll more
+- scroll:
+    direction: DOWN
+
+# Check for time-based patterns
+- assertVisible:
+    text: ".*[Mm]orning.*|.*[Aa]fternoon.*|.*[Ee]vening.*|.*[Nn]ight.*|.*[Tt]ime.*"
+    optional: true
+
+- takeScreenshot: "learning_07_time_patterns"
+
+# ============================================
+# TEST 6: Verify Scientific Basis
+# ============================================
+
+# Check for science section
+- assertVisible:
+    text: ".*[Ss]cience.*|.*[Rr]esearch.*|.*[Ss]tudy.*|.*AI.*"
+    optional: true
+
+- takeScreenshot: "learning_08_science_section"
+
+# ============================================
+# TEST 7: Return to Home
+# ============================================
+
+# Scroll back up
+- scroll:
+    direction: UP
+- scroll:
+    direction: UP
+
+# Navigate back
+- runFlow:
+    when:
+      visible:
+        id: "backButton"
+    commands:
+      - tapOn:
+          id: "backButton"
+
+- runFlow:
+    when:
+      visible:
+        text: "Back"
+    commands:
+      - tapOn: "Back"
+
+# Or swipe down to dismiss
+- swipe:
+    direction: DOWN
+    duration: 500
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "learning_09_back_home"
+
+# ============================================
+# TEST 8: Verify Learning Integration in Next Session
+# ============================================
+
+# Start another emergency session
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+# The system should now use learned preferences
+# Check for personalized sound selection
+- assertVisible:
+    text: ".*[Pp]laying.*|.*Soothing.*|.*[Bb]ased on.*|.*[Ll]earned.*"
+    optional: true
+
+- takeScreenshot: "learning_10_personalized_session"
+
+# End the session
+- tapOn:
+    text: "Baby is Calm"
+
+- wait:
+    milliseconds: 3000
+
+- takeScreenshot: "learning_11_test_complete"

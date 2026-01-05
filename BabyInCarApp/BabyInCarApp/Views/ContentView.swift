@@ -32,52 +32,57 @@ struct MainTabView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var selectedTab = 0
 
-    // Calculate bottom padding based on what's visible
-    private var bottomPadding: CGFloat {
-        let tabBarHeight: CGFloat = 85
-        let miniPlayerHeight: CGFloat = audioEngine.currentTrack != nil ? 74 : 0
+    // Calculate the total height of bottom overlay for proper insets
+    // Tab bar: ~60pt (8 top padding + 44 content + 6 bottom padding)
+    // Mini player: 72 when visible
+    private var bottomOverlayHeight: CGFloat {
+        let tabBarHeight: CGFloat = 60 // Tab bar content height (not including safe area)
+        let miniPlayerHeight: CGFloat = audioEngine.currentTrack != nil ? 72 : 0
         return tabBarHeight + miniPlayerHeight
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Main content - each view handles its own scrolling
-            Group {
-                switch selectedTab {
-                case 0:
-                    HomeView()
-                case 1:
-                    LibraryView()
-                case 2:
-                    FavoritesView()
-                case 3:
-                    ProfileView()
-                default:
-                    HomeView()
-                }
+        // Main content - each view handles its own scrolling
+        Group {
+            switch selectedTab {
+            case 0:
+                HomeView()
+            case 1:
+                LibraryView()
+            case 2:
+                FavoritesView()
+            case 3:
+                ProfileView()
+            default:
+                HomeView()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // Bottom overlay stack (mini player + tab bar)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Use safeAreaInset to properly push content above the tab bar
+        // This ensures content never overlaps with the tab bar
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                // Mini Player
+                // Mini Player - floats above tab bar
                 if audioEngine.currentTrack != nil {
                     MiniPlayerView()
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .animation(.spring(response: 0.3), value: audioEngine.currentTrack != nil)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        ))
                 }
 
-                // Custom Tab Bar
+                // Premium Tab Bar - pinned to very bottom
                 CustomTabBar(selectedTab: $selectedTab)
             }
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: audioEngine.currentTrack != nil)
         }
         .ignoresSafeArea(.keyboard)
         .onAppear {
             // Configure audio session on app launch
             audioEngine.configureAudioSession()
         }
-        // Pass bottom padding to child views via environment
-        .environment(\.bottomSafeAreaPadding, bottomPadding)
+        // Pass bottom padding to child views via environment (for manual adjustments if needed)
+        .environment(\.bottomSafeAreaPadding, bottomOverlayHeight)
     }
 }
 
@@ -93,15 +98,25 @@ extension EnvironmentValues {
     }
 }
 
-// MARK: - Premium Custom Tab Bar
+// MARK: - World-Class Premium Tab Bar
 
-/// Premium tab bar with animated selection indicator and micro-interactions
+/// A world-class floating tab bar that pins to the very bottom of the screen
+/// with proper safe area handling, elegant animations, and premium visual design.
+///
+/// Key features:
+/// - Proper intrinsic sizing for safeAreaInset compatibility
+/// - Pins content within safe area, background extends to screen edge
+/// - Premium frosted glass with subtle gradient
+/// - Smooth spring animations with haptic feedback
+/// - Accessibility-ready with proper labels
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
     @Namespace private var tabBarNamespace
+    @Environment(\.colorScheme) private var colorScheme
 
-    // Haptic feedback
+    // Haptic feedback generators
     private let selectionFeedback = UISelectionFeedbackGenerator()
+    private let impactFeedback = UIImpactFeedbackGenerator(style: .light)
 
     let tabs: [(icon: String, selectedIcon: String, label: String)] = [
         ("house", "house.fill", "Home"),
@@ -111,9 +126,10 @@ struct CustomTabBar: View {
     ]
 
     var body: some View {
+        // Tab buttons row with proper safe area handling
         HStack(spacing: 0) {
             ForEach(0..<tabs.count, id: \.self) { index in
-                PremiumTabBarButton(
+                WorldClassTabButton(
                     icon: tabs[index].icon,
                     selectedIcon: tabs[index].selectedIcon,
                     label: tabs[index].label,
@@ -121,64 +137,159 @@ struct CustomTabBar: View {
                     namespace: tabBarNamespace
                 ) {
                     if selectedTab != index {
-                        selectionFeedback.selectionChanged()
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        impactFeedback.impactOccurred(intensity: 0.6)
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
                             selectedTab = index
                         }
                     }
                 }
+                .accessibilityIdentifier(tabs[index].label)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 12)
-        .padding(.bottom, 28)
-        .background(tabBarBackground)
+        .padding(.horizontal, 4)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity)
+        // First background is for layout (respects safe area)
+        .background(Color.clear)
+        // Second background extends into the bottom safe area (home indicator)
+        .background(
+            tabBarBackground
+                .ignoresSafeArea(edges: .bottom)
+        )
         .onAppear {
             selectionFeedback.prepare()
+            impactFeedback.prepare()
         }
     }
 
     private var tabBarBackground: some View {
         ZStack {
-            // Frosted glass effect
+            // Ultra-premium frosted glass base
             Rectangle()
                 .fill(.ultraThinMaterial)
 
-            // Gradient overlay
+            // Subtle gradient overlay for depth and premium feel
             Rectangle()
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.appCardBackground.opacity(0.9),
-                            Color.appCardBackground.opacity(0.7)
+                            (colorScheme == .dark ? Color.black : Color.white).opacity(0.88),
+                            (colorScheme == .dark ? Color.black : Color.white).opacity(0.96)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
+                .blendMode(.overlay)
 
-            // Top border highlight
-            VStack {
+            // Premium top edge highlight
+            VStack(spacing: 0) {
                 Rectangle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.2),
-                                Color.white.opacity(0.05)
+                                Color.appPrimary.opacity(0.1),
+                                Color.appPrimary.opacity(0.03),
+                                Color.clear
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
-                    .frame(height: 0.5)
+                    .frame(height: 1)
                 Spacer()
             }
         }
-        .shadow(color: .black.opacity(0.08), radius: 12, y: -4)
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 20, y: -8)
     }
 }
 
+/// Individual world-class tab button with premium micro-interactions
+struct WorldClassTabButton: View {
+    let icon: String
+    let selectedIcon: String
+    let label: String
+    let isSelected: Bool
+    let namespace: Namespace.ID
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                ZStack {
+                    // Animated selection pill background
+                    if isSelected {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.appPrimary.opacity(0.18),
+                                        Color.appPrimary.opacity(0.10)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 48, height: 28)
+                            .matchedGeometryEffect(id: "tabPill", in: namespace)
+                    }
+
+                    // Icon with smooth morph and scale
+                    Image(systemName: isSelected ? selectedIcon : icon)
+                        .font(.system(size: 19, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(
+                            isSelected
+                                ? AnyShapeStyle(
+                                    LinearGradient(
+                                        colors: [.appPrimary, .appPrimary.opacity(0.85)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                : AnyShapeStyle(Color.appTextSecondary)
+                        )
+                        .scaleEffect(isSelected ? 1.05 : 1.0)
+                        // Note: symbolEffect removed - iOS 17+ only
+                }
+                .frame(height: 28)
+
+                // Label with elegant opacity fade
+                Text(label)
+                    .font(.system(size: 10, weight: isSelected ? .semibold : .medium, design: .rounded))
+                    .foregroundColor(isSelected ? .appPrimary : .appTextSecondary)
+                    .opacity(isSelected ? 1.0 : 0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .scaleEffect(isPressed ? 0.92 : 1.0)
+        }
+        .buttonStyle(TabButtonStyle(isPressed: $isPressed))
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// Custom button style that tracks press state for animations
+struct TabButtonStyle: ButtonStyle {
+    @Binding var isPressed: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { newValue in
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                    isPressed = newValue
+                }
+            }
+    }
+}
+
+// MARK: - Legacy Tab Bar Button (Kept for compatibility)
+
 /// Premium tab bar button with animated states and selection indicator
+/// @note Consider using WorldClassTabButton for new implementations
 struct PremiumTabBarButton: View {
     let icon: String
     let selectedIcon: String
@@ -283,8 +394,8 @@ struct MiniPlayerView: View {
             // Floating pill container
             miniPlayerContent
                 .offset(y: dragOffset)
-                .gesture(
-                    DragGesture()
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 10)
                         .onChanged { value in
                             // Allow dragging down to dismiss
                             if value.translation.height > 0 {
@@ -313,33 +424,41 @@ struct MiniPlayerView: View {
         .fullScreenCover(isPresented: $showingFullPlayer) {
             PlayerView()
                 .environmentObject(audioEngine)
+                .interactiveDismissDisabled(false)
         }
     }
 
     private var miniPlayerContent: some View {
-        Button {
-            impactMedium.impactOccurred()
-            showingFullPlayer = true
-        } label: {
+        HStack(spacing: 12) {
+            // Tappable area (artwork + track info) opens full player
             HStack(spacing: 12) {
                 // Artwork with progress ring
                 artworkWithProgressRing
 
                 // Track Info with marquee effect for long titles
                 trackInfo
-
-                Spacer(minLength: 8)
-
-                // Playback Controls with animations
-                playbackControls
             }
-            .padding(.leading, 8)
-            .padding(.trailing, 12)
-            .padding(.vertical, 8)
-            .background(miniPlayerBackground)
-            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                TapGesture()
+                    .onEnded {
+                        impactMedium.impactOccurred()
+                        showingFullPlayer = true
+                    }
+            )
+
+            Spacer(minLength: 8)
+
+            // Playback Controls (not inside the tappable area)
+            playbackControls
         }
-        .buttonStyle(MiniPlayerButtonStyle(isPressed: $isPressed))
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .background(miniPlayerBackground)
+        .padding(.horizontal, 12)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
     }
 
     // MARK: - Artwork with Progress Ring
@@ -347,7 +466,7 @@ struct MiniPlayerView: View {
         ZStack {
             // Background circle with category color
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.15))
+                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.15))
                 .frame(width: 52, height: 52)
 
             // Progress ring
@@ -360,8 +479,8 @@ struct MiniPlayerView: View {
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.7)
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -378,8 +497,8 @@ struct MiniPlayerView: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.7)
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -434,6 +553,11 @@ struct MiniPlayerView: View {
 
                 if audioEngine.playbackState.isPlaying {
                     audioEngine.pause()
+                } else if audioEngine.playbackState == .paused {
+                    audioEngine.resume()
+                } else if let track = audioEngine.currentTrack {
+                    // Stopped state with a track - replay it
+                    audioEngine.play(track: track)
                 } else {
                     audioEngine.resume()
                 }

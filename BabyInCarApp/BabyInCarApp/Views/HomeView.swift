@@ -13,12 +13,17 @@ struct HomeView: View {
     @StateObject private var aiEngine = AIRecommendationEngine.shared
     @StateObject private var emergencyService = EmergencyCryStopService.shared
     @StateObject private var favoritesManager = FavoritesManager.shared
+    @StateObject private var effectivenessManager = EffectivenessManager.shared
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
     @State private var quickPickPlaylists: [Playlist] = []
     @State private var isLoading = true
     @State private var showingEmergencyMode = false
+    @State private var showingAdvancedCryDetection = false
     @State private var showingVoiceInput = false
+    @State private var showingSubscription = false
+    @State private var showingEmergencyCategorySelector = false
+    @State private var selectedEmergencyCategory: AudioCategory?
     @State private var scrollOffset: CGFloat = 0
 
     var body: some View {
@@ -26,6 +31,7 @@ struct HomeView: View {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: DesignTokens.spacingL) {
                     // Hero header with time-aware greeting
+                    // Spacer for safe area is handled by contentMargins
                     heroHeader
 
                     // Emergency Cry-Stop Button with pulsing glow
@@ -44,15 +50,26 @@ struct HomeView: View {
                         favoritesSection
                     }
 
+                    // What Works Section (if user has effectiveness data)
+                    if effectivenessManager.hasEffectivenessData {
+                        WhatWorksSection()
+                            .environmentObject(appState)
+                            .environmentObject(audioEngine)
+                    }
+
                     // Quick Picks
                     quickPicksSection
 
                     // Categories
                     categoriesSection
                 }
-                .padding(.bottom, bottomPadding + 20)
+                // Extra content padding at the bottom for comfortable scrolling.
+                // The safeAreaInset in MainTabView handles the tab bar + mini player space.
+                // This adds breathing room to prevent the mini player bar from hiding content.
+                .padding(.bottom, 100)
             }
             .scrollIndicators(.visible)
+            .scrollContentBackground(.hidden)
             .background(
                 // Subtle gradient background
                 LinearGradient(
@@ -62,16 +79,59 @@ struct HomeView: View {
                 )
                 .ignoresSafeArea()
             )
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .task {
             await loadQuickPicks()
         }
+        .onChange(of: appState.selectedLanguages) { _ in
+            // Reload quick picks when language selection changes
+            Task {
+                await loadQuickPicks()
+            }
+        }
         .fullScreenCover(isPresented: $showingEmergencyMode) {
-            EmergencyModeView()
+            // FS-017: Use SmartQueueView with REAL melodic library tracks!
+            // NO generated sounds, NO white noise - ONLY real compositions!
+            SmartQueueView(queue: SmartEmergencyQueue.shared)
+                .onAppear {
+                    // Activate emergency mode for the baby with saved category settings
+                    if let baby = appState.currentBaby {
+                        // Get the user's saved category preferences
+                        let settings = EmergencyCategorySettings.shared
+                        let categoriesToUse = settings.activeCategories
+
+                        print("[HomeView] 🚨 Starting Emergency Mode with categories: \(categoriesToUse.map { $0.rawValue })")
+
+                        Task {
+                            // Always use activateEmergencyPlaylistMode for proper AI-smart queue building
+                            // Pass the user's saved categories (either AI defaults or custom selection)
+                            await SmartCryResponseEngine.shared.activateEmergencyPlaylistMode(
+                                for: baby,
+                                preferredCategories: categoriesToUse
+                            )
+                        }
+                    }
+                }
+                .onDisappear {
+                    // Reset selected category when emergency mode is dismissed
+                    selectedEmergencyCategory = nil
+                }
+        }
+        .sheet(isPresented: $showingAdvancedCryDetection) {
+            CryDetectionView()
         }
         .sheet(isPresented: $showingVoiceInput) {
             VoiceControlSheet()
+        }
+        .sheet(isPresented: $showingSubscription) {
+            SubscriptionView()
+        }
+        .sheet(isPresented: $showingEmergencyCategorySelector) {
+            EmergencyCategorySelectorView(selectedCategory: $selectedEmergencyCategory) {
+                // User confirmed category selection - activate emergency mode
+                showingEmergencyMode = true
+            }
         }
     }
 
@@ -124,7 +184,7 @@ struct HomeView: View {
                 .buttonStyle(BounceButtonStyle())
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 8)
 
             // Time indicator pill
             HStack(spacing: DesignTokens.spacingXS) {
@@ -176,10 +236,51 @@ struct HomeView: View {
 
     // MARK: - Emergency Button with Pulsing Glow
     private var emergencyButton: some View {
-        EmergencyPulsingButton {
-            if let baby = appState.currentBaby {
-                emergencyService.activate(for: baby)
-                showingEmergencyMode = true
+        VStack(spacing: 12) {
+            // Main Emergency Button - Shows category selector first
+            EmergencyPulsingButton {
+                // Show category selector before activating emergency mode
+                showingEmergencyCategorySelector = true
+            }
+
+            // AI Cry Detection Link - Opens advanced monitoring
+            Button {
+                showingAdvancedCryDetection = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 14))
+                        .foregroundColor(.appPrimary)
+
+                    Text("AI Cry Detection & Insights")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.appPrimary)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(emergencyService.isAIMonitoringEnabled ? Color.green : Color.gray.opacity(0.4))
+                            .frame(width: 6, height: 6)
+                        Text(emergencyService.isAIMonitoringEnabled ? "Active" : "Tap to start")
+                            .font(.system(size: 11))
+                            .foregroundColor(.appTextSecondary)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextSecondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.appPrimary.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.appPrimary.opacity(0.2), lineWidth: 1)
+                        )
+                )
             }
         }
         .padding(.horizontal, 20)
@@ -222,6 +323,7 @@ struct HomeView: View {
                     .shadow(color: .black.opacity(0.05), radius: 4)
             )
         }
+        .accessibilityIdentifier("voiceControlButton")
         .padding(.horizontal, 20)
     }
 
@@ -237,12 +339,12 @@ struct HomeView: View {
                 // Album art / category icon
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.2))
+                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.2))
                         .frame(width: 60, height: 60)
 
                     Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
                         .font(.system(size: 28))
-                        .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+                        .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -255,17 +357,28 @@ struct HomeView: View {
                         .font(.system(size: 14))
                         .foregroundColor(.appTextSecondary)
 
-                    // Progress bar
+                    // Progress bar - DRAGGABLE!
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
+                            // Background track
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.appPrimary.opacity(0.2))
                                 .frame(height: 4)
 
+                            // Progress fill
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.appPrimary)
                                 .frame(width: geometry.size.width * CGFloat(audioEngine.currentTime / max(1, audioEngine.duration)), height: 4)
                         }
+                        .contentShape(Rectangle()) // Make entire area tappable
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                    let newTime = progress * audioEngine.duration
+                                    audioEngine.seek(to: newTime)
+                                }
+                        )
                     }
                     .frame(height: 4)
                 }
@@ -276,6 +389,10 @@ struct HomeView: View {
                 Button {
                     if audioEngine.playbackState.isPlaying {
                         audioEngine.pause()
+                    } else if audioEngine.playbackState == .paused {
+                        audioEngine.resume()
+                    } else if let track = audioEngine.currentTrack {
+                        audioEngine.play(track: track)
                     } else {
                         audioEngine.resume()
                     }
@@ -297,7 +414,8 @@ struct HomeView: View {
 
     // MARK: - Favorites Section
     private var favoritesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let favoriteTracks = favoritesManager.getFavoriteTracks()
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "heart.fill")
                     .foregroundColor(.appSecondary)
@@ -316,10 +434,11 @@ struct HomeView: View {
             }
             .padding(.horizontal, 20)
 
+            // Smart queue: pass all favorites as context so next/previous work
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(favoritesManager.getFavoriteTracks().prefix(6)) { track in
-                        FavoriteTrackCard(track: track)
+                    ForEach(favoriteTracks.prefix(6)) { track in
+                        FavoriteTrackCard(track: track, contextTracks: favoriteTracks)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -388,7 +507,9 @@ struct HomeView: View {
     private func loadQuickPicks() async {
         isLoading = true
         if let baby = appState.currentBaby {
-            quickPickPlaylists = await aiEngine.getQuickPicks(for: baby)
+            // Pass selected languages to filter content by user's language preferences
+            let languages = appState.selectedLanguages.isEmpty ? nil : appState.selectedLanguages
+            quickPickPlaylists = await aiEngine.getQuickPicks(for: baby, languages: languages)
         }
         isLoading = false
     }
@@ -397,12 +518,19 @@ struct HomeView: View {
 // MARK: - Favorite Track Card
 struct FavoriteTrackCard: View {
     let track: AudioTrack
+    /// Context tracks for smart queue - enables next/previous through favorites
+    var contextTracks: [AudioTrack]?
     @EnvironmentObject var audioEngine: AudioEngine
     @StateObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         Button {
-            audioEngine.play(track: track)
+            // Smart queue: if we have context, enable next/previous navigation
+            if let tracks = contextTracks, !tracks.isEmpty {
+                audioEngine.play(track: track, fromTracks: tracks, contextName: "Favorites")
+            } else {
+                audioEngine.play(track: track)
+            }
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 ZStack(alignment: .topTrailing) {
@@ -448,12 +576,12 @@ struct QuickPickCard: View {
             VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.forCategory(playlist.category ?? .whiteNoise).opacity(0.15))
+                        .fill(Color.forCategory(playlist.category ?? .instrumental).opacity(0.15))
                         .frame(height: 80)
 
                     Image(systemName: playlist.category?.icon ?? "music.note.list")
                         .font(.system(size: 28))
-                        .foregroundColor(Color.forCategory(playlist.category ?? .whiteNoise))
+                        .foregroundColor(Color.forCategory(playlist.category ?? .instrumental))
                 }
 
                 Text(playlist.category?.rawValue ?? playlist.name)
@@ -511,98 +639,394 @@ struct CategoryCard: View {
 // MARK: - Emergency Mode View
 struct EmergencyModeView: View {
     @StateObject private var emergencyService = EmergencyCryStopService.shared
+    @StateObject private var learningEngine = AdaptiveLearningEngine.shared
+    @StateObject private var smartResponseEngine = SmartCryResponseEngine.shared
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var audioEngine: AudioEngine
     @Environment(\.dismiss) var dismiss
 
+    // Animation states for "Baby is Calm" feedback
+    @State private var showingSuccessAnimation = false
+    @State private var successScale: CGFloat = 1.0
+    @State private var successOpacity: Double = 1.0
+    @State private var confettiTrigger = false
+    @State private var feedbackMessage = ""
+    @State private var sessionStartTime = Date()
+
     var body: some View {
-        ZStack {
-            // Gradient background
-            LinearGradient(
-                colors: [Color.appDanger.opacity(0.9), Color.appDanger],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                // Gradient background - transitions to green on success
+                LinearGradient(
+                    colors: showingSuccessAnimation
+                        ? [Color.green.opacity(0.9), Color.green]
+                        : [Color.appDanger.opacity(0.9), Color.appDanger],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.5), value: showingSuccessAnimation)
 
-            VStack(spacing: 32) {
-                Spacer()
+                VStack(spacing: 32) {
+                    // Top safe area spacer
+                    Color.clear.frame(height: max(geometry.safeAreaInsets.top, 20))
 
-                // Phase indicator
-                VStack(spacing: 16) {
-                    Text(emergencyService.currentPhase.rawValue)
-                        .font(.system(size: 28, weight: .bold))
+                    Spacer()
+
+                    // Success animation overlay OR normal phase indicator
+                    if showingSuccessAnimation {
+                        successAnimationView
+                    } else {
+                        phaseIndicatorView
+                    }
+
+                    // Phase description
+                    Text(showingSuccessAnimation ? feedbackMessage : phaseDescription)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .animation(.easeInOut, value: showingSuccessAnimation)
+
+                    // Now Playing Section with sound switching
+                    if !showingSuccessAnimation {
+                        nowPlayingSection
+                    }
+
+                    Spacer()
+
+                    // Action buttons
+                    if !showingSuccessAnimation {
+                        actionButtons(geometry: geometry)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            sessionStartTime = Date()
+        }
+    }
+
+    // MARK: - Phase Indicator View
+
+    private var phaseIndicatorView: some View {
+        VStack(spacing: 16) {
+            Text(emergencyService.currentPhase.rawValue)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+
+            // Progress circle
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                    .frame(width: 150, height: 150)
+
+                Circle()
+                    .trim(from: 0, to: emergencyService.phaseProgress)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .frame(width: 150, height: 150)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear, value: emergencyService.phaseProgress)
+
+                VStack {
+                    Image(systemName: phaseIcon)
+                        .font(.system(size: 40))
                         .foregroundColor(.white)
 
-                    // Progress circle
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
-                            .frame(width: 150, height: 150)
-
-                        Circle()
-                            .trim(from: 0, to: emergencyService.phaseProgress)
-                            .stroke(Color.white, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                            .frame(width: 150, height: 150)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.linear, value: emergencyService.phaseProgress)
-
-                        VStack {
-                            Image(systemName: phaseIcon)
-                                .font(.system(size: 40))
-                                .foregroundColor(.white)
-
-                            Text("\(Int(emergencyService.phaseProgress * 100))%")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-
-                // Phase description
-                Text(phaseDescription)
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                Spacer()
-
-                // Action buttons
-                VStack(spacing: 16) {
-                    Button {
-                        if let baby = appState.currentBaby {
-                            emergencyService.reportSuccess(for: baby)
-                        }
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                            Text("Baby is Calm")
-                        }
+                    Text("\(Int(emergencyService.phaseProgress * 100))%")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.appDanger)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                        )
-                    }
-
-                    Button {
-                        emergencyService.deactivate()
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
+                        .foregroundColor(.white)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 40)
             }
         }
     }
+
+    // MARK: - Success Animation View
+
+    private var successAnimationView: some View {
+        VStack(spacing: 24) {
+            // Animated checkmark
+            ZStack {
+                // Outer glow
+                Circle()
+                    .fill(Color.white.opacity(0.2))
+                    .frame(width: 180, height: 180)
+                    .scaleEffect(successScale)
+
+                // Inner circle
+                Circle()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 150, height: 150)
+
+                // Checkmark
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundColor(.white)
+                    .scaleEffect(successScale)
+            }
+
+            Text("Baby is Calm!")
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(.white)
+                .opacity(successOpacity)
+
+            // Learning feedback
+            VStack(spacing: 8) {
+                Text("Learning saved")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+
+                HStack(spacing: 4) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 12))
+                    Text("We'll remember what worked!")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(.white.opacity(0.7))
+            }
+            .opacity(successOpacity)
+        }
+    }
+
+    // MARK: - Now Playing Section with Sound Switching
+
+    private var nowPlayingSection: some View {
+        VStack(spacing: 16) {
+            // Current Sound Display
+            if let currentSound = smartResponseEngine.currentSound {
+                VStack(spacing: 12) {
+                    // Now Playing Header
+                    HStack {
+                        Image(systemName: "music.note")
+                            .font(.system(size: 14))
+                        Text("NOW PLAYING")
+                            .font(.system(size: 12, weight: .semibold))
+                        Spacer()
+
+                        // Auto-switch countdown
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                            Text("Auto-switch: \(Int(smartResponseEngine.secondsUntilNextSound))s")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.white.opacity(0.6))
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+
+                    // Current Sound Card
+                    HStack(spacing: 16) {
+                        // Sound Icon
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.2))
+                                .frame(width: 56, height: 56)
+
+                            Image(systemName: currentSound.icon)
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                        }
+
+                        // Sound Name and Type
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(currentSound.displayName)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+
+                            Text(soundTypeDescription(for: currentSound))
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+
+                        Spacer()
+
+                        // Stop/Mute Button
+                        Button {
+                            audioEngine.pause()
+                        } label: {
+                            Image(systemName: audioEngine.playbackState.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white.opacity(0.15))
+                    )
+
+                    // Alternative Sounds (Quick Switch)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Try Different Sound:")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+
+                        HStack(spacing: 12) {
+                            ForEach(smartResponseEngine.alternativeSounds.prefix(3), id: \.self) { sound in
+                                Button {
+                                    smartResponseEngine.switchToSound(sound)
+                                    // Haptic feedback
+                                    let generator = UIImpactFeedbackGenerator(style: .light)
+                                    generator.impactOccurred()
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(0.2))
+                                                .frame(width: 48, height: 48)
+
+                                            Image(systemName: sound.icon)
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.white)
+                                        }
+
+                                        Text(sound.shortName)
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundColor(.white.opacity(0.9))
+                                    }
+                                }
+                                .buttonStyle(BounceButtonStyle())
+                            }
+                        }
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.black.opacity(0.2))
+                )
+                .padding(.horizontal, 24)
+            }
+        }
+    }
+
+    /// Get a user-friendly description for the sound type
+    private func soundTypeDescription(for sound: GeneratorType) -> String {
+        switch sound {
+        case .musicBox, .lullaby, .softPiano, .gentleGuitar, .chimes, .bells:
+            return "Melodic • Calming"
+        case .ocean, .waterfall, .river, .forest:
+            return "Nature • Soothing"
+        case .heartbeat, .womb, .shushing:
+            return "Comfort • Familiar"
+        default:
+            return "Ambient • Relaxing"
+        }
+    }
+
+    // MARK: - Action Buttons
+
+    private func actionButtons(geometry: GeometryProxy) -> some View {
+        VStack(spacing: 16) {
+            // Baby is Calm button with enhanced feedback
+            Button {
+                handleBabyIsCalm()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                    Text("Baby is Calm")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                .foregroundColor(.appDanger)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+                )
+            }
+            .buttonStyle(BounceButtonStyle())
+
+            // Cancel button
+            Button {
+                emergencyService.deactivate()
+                dismiss()
+            } label: {
+                Text("Cancel")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 20)
+    }
+
+    // MARK: - Handle Baby is Calm Action
+
+    private func handleBabyIsCalm() {
+        // 1. Haptic feedback - success pattern
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+
+        // 2. Calculate session metrics
+        let timeToCalm = Date().timeIntervalSince(sessionStartTime)
+
+        // 3. Record learning data
+        if let baby = appState.currentBaby {
+            let cryType = emergencyService.detectedCryType
+            let currentSound = SmartCryResponseEngine.shared.currentSound ?? .ocean
+
+            // Record to adaptive learning engine
+            learningEngine.recordSession(
+                cryType: cryType,
+                soundType: currentSound,
+                wasSuccessful: true,
+                timeToCalm: timeToCalm,
+                cryIntensity: CryDetectionService.shared.cryIntensity,
+                features: nil
+            )
+
+            // Also record to legacy system
+            emergencyService.reportSuccessWithFeedback(
+                for: baby,
+                timeToCalm: timeToCalm
+            )
+
+            // 3b. Trigger engagement event for freemium upgrade prompts (after soothing)
+            // This will show gentle upgrade prompts to free users who had a successful experience
+            let trackTitle = audioEngine.currentTrack?.title ?? currentSound.rawValue
+            EngagementTriggerService.shared.recordCryDetectionSuccess(
+                trackTitle: trackTitle,
+                timeToCalmSeconds: Int(timeToCalm)
+            )
+        }
+
+        // 4. Set feedback message
+        if timeToCalm < 60 {
+            feedbackMessage = "Amazing! Calmed in \(Int(timeToCalm)) seconds"
+        } else {
+            let minutes = Int(timeToCalm / 60)
+            feedbackMessage = "Great job! Calmed in \(minutes) minute\(minutes > 1 ? "s" : "")"
+        }
+
+        // 5. Start audio fade-out (graceful 2.5 second fade)
+        audioEngine.fadeOutAndStop(duration: 2.5)
+
+        // 6. Show success animation
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            showingSuccessAnimation = true
+        }
+
+        // 7. Animate success elements
+        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+            successScale = 1.1
+        }
+
+        // 8. Second haptic for confirmation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+        }
+
+        // 9. Dismiss after animation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            dismiss()
+        }
+    }
+
+    // MARK: - Helper Properties
 
     private var phaseIcon: String {
         switch emergencyService.currentPhase {
@@ -1064,8 +1488,8 @@ struct PremiumQuickPickCard: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.forCategory(playlist.category ?? .whiteNoise).opacity(0.2),
-                                    Color.forCategory(playlist.category ?? .whiteNoise).opacity(0.1)
+                                    Color.forCategory(playlist.category ?? .instrumental).opacity(0.2),
+                                    Color.forCategory(playlist.category ?? .instrumental).opacity(0.1)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -1076,7 +1500,7 @@ struct PremiumQuickPickCard: View {
                     // Category icon
                     Image(systemName: playlist.category?.icon ?? "music.note.list")
                         .font(.system(size: 28, weight: .medium))
-                        .foregroundColor(Color.forCategory(playlist.category ?? .whiteNoise))
+                        .foregroundColor(Color.forCategory(playlist.category ?? .instrumental))
 
                     // Play indicator on hover
                     Circle()
@@ -1085,7 +1509,7 @@ struct PremiumQuickPickCard: View {
                         .overlay(
                             Image(systemName: "play.fill")
                                 .font(.system(size: 14))
-                                .foregroundColor(Color.forCategory(playlist.category ?? .whiteNoise))
+                                .foregroundColor(Color.forCategory(playlist.category ?? .instrumental))
                                 .opacity(isPressed ? 1 : 0)
                         )
                 }
@@ -1156,8 +1580,550 @@ struct PremiumCategoryCard: View {
     }
 }
 
+// MARK: - Emergency Category Settings Manager
+/// Manages user's emergency mode category preferences with persistence
+class EmergencyCategorySettings: ObservableObject {
+    static let shared = EmergencyCategorySettings()
+
+    private let defaultsKey = "EmergencyCategorySettings"
+
+    /// Default categories that AI Instant Calm uses (most effective for baby calming)
+    static let defaultCategories: Set<AudioCategory> = [
+        .classicalMusic,
+        .instrumental,
+        .natureSounds
+    ]
+
+    /// User's selected categories for emergency mode
+    @Published var selectedCategories: Set<AudioCategory> {
+        didSet {
+            saveSettings()
+        }
+    }
+
+    /// Whether user is using the AI default (true) or custom selection (false)
+    @Published var useAIDefault: Bool {
+        didSet {
+            saveSettings()
+        }
+    }
+
+    private init() {
+        // Load saved settings or use defaults
+        if let data = UserDefaults.standard.data(forKey: defaultsKey),
+           let settings = try? JSONDecoder().decode(EmergencySettings.self, from: data) {
+            self.selectedCategories = settings.categories
+            self.useAIDefault = settings.useAIDefault
+        } else {
+            self.selectedCategories = Self.defaultCategories
+            self.useAIDefault = true
+        }
+    }
+
+    /// Get the active categories (either AI defaults or user selection)
+    var activeCategories: Set<AudioCategory> {
+        useAIDefault ? Self.defaultCategories : selectedCategories
+    }
+
+    /// Reset to application defaults
+    func resetToDefaults() {
+        selectedCategories = Self.defaultCategories
+        useAIDefault = true
+    }
+
+    private func saveSettings() {
+        let settings = EmergencySettings(categories: selectedCategories, useAIDefault: useAIDefault)
+        if let data = try? JSONEncoder().encode(settings) {
+            UserDefaults.standard.set(data, forKey: defaultsKey)
+        }
+    }
+
+    private struct EmergencySettings: Codable {
+        let categories: Set<AudioCategory>
+        let useAIDefault: Bool
+
+        init(categories: Set<AudioCategory>, useAIDefault: Bool) {
+            // Convert Set to Array for encoding, then back to Set for decoding
+            self.categories = categories
+            self.useAIDefault = useAIDefault
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case categories, useAIDefault
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let categoriesArray = try container.decode([AudioCategory].self, forKey: .categories)
+            self.categories = Set(categoriesArray)
+            self.useAIDefault = try container.decode(Bool.self, forKey: .useAIDefault)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(Array(categories), forKey: .categories)
+            try container.encode(useAIDefault, forKey: .useAIDefault)
+        }
+    }
+}
+
+// MARK: - Emergency Category Selector
+struct EmergencyCategorySelectorView: View {
+    @Binding var selectedCategory: AudioCategory?
+    let onConfirm: () -> Void
+    @Environment(\.dismiss) var dismiss
+    @StateObject private var settings = EmergencyCategorySettings.shared
+
+    /// Multi-select categories state
+    @State private var selectedCategories: Set<AudioCategory> = []
+    @State private var useAIDefault: Bool = true
+
+    // Calming categories (research-backed for baby soothing)
+    // NOTE: White Noise removed - only appears once below
+    private let calmingCategories: [AudioCategory] = [
+        .classicalMusic,
+        .natureSounds,
+        .instrumental,
+        .childrenSongs
+    ]
+
+    // Other categories (can still be selected, but less recommended)
+    private let otherCategories: [AudioCategory] = [
+        .fairyTales,
+        .podcasts
+    ]
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header description
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Emergency Cry-Stop Mode")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.appText)
+
+                        Text("Select one or more categories to create a smart calming playlist. Your settings are saved automatically.")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                    // AI Instant Calm - Default option with multi-category
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("RECOMMENDED")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.appTextSecondary)
+
+                            Spacer()
+
+                            // Reset to defaults button
+                            if !useAIDefault {
+                                Button {
+                                    resetToDefaults()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .font(.system(size: 11))
+                                        Text("Reset")
+                                            .font(.system(size: 12, weight: .medium))
+                                    }
+                                    .foregroundColor(.appPrimary)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+
+                        Button {
+                            useAIDefault = true
+                            selectedCategories = EmergencyCategorySettings.defaultCategories
+                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                            generator.impactOccurred()
+                        } label: {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.appPrimary.opacity(0.2), Color.appPrimary.opacity(0.1)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(width: 56, height: 56)
+
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundColor(.appPrimary)
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Text("AI Instant Calm")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundColor(.appText)
+
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.orange)
+                                    }
+
+                                    Text("AI-optimized mix: Classical + Instrumental + Nature")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.appTextSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                Spacer()
+
+                                // Selection indicator
+                                Image(systemName: useAIDefault ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(useAIDefault ? .appPrimary : .appTextTertiary)
+                            }
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.appCardBackground)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(useAIDefault ? Color.appPrimary : Color.clear, lineWidth: 2)
+                                    )
+                                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                            )
+                        }
+                        .padding(.horizontal, 20)
+                    }
+
+                    // Calming Categories - Multi-select
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("CALMING CATEGORIES")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.appTextSecondary)
+
+                            Spacer()
+
+                            if !useAIDefault && !selectedCategories.isEmpty {
+                                Text("\(selectedCategories.count) selected")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.appPrimary)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            ForEach(calmingCategories) { category in
+                                EmergencyMultiSelectCategoryCard(
+                                    category: category,
+                                    isSelected: selectedCategories.contains(category)
+                                ) {
+                                    toggleCategory(category)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+
+                    // Other Categories
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("OTHER CATEGORIES")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.appTextSecondary)
+                            .padding(.horizontal, 20)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            ForEach(otherCategories) { category in
+                                EmergencyMultiSelectCategoryCard(
+                                    category: category,
+                                    isSelected: selectedCategories.contains(category)
+                                ) {
+                                    toggleCategory(category)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+
+                    // Selection summary
+                    if !useAIDefault && !selectedCategories.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("YOUR SELECTION")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.appTextSecondary)
+
+                            Text(selectedCategories.map { $0.rawValue }.sorted().joined(separator: " + "))
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.appText)
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+                .padding(.bottom, 120) // Space for bottom button
+            }
+            .background(
+                LinearGradient(
+                    colors: [Color.appBackground, Color.appWarmCream.opacity(0.5)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                // Confirm button - always visible at bottom
+                VStack(spacing: 8) {
+                    Button {
+                        // Save settings before confirming
+                        saveSettings()
+
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                        dismiss()
+                        onConfirm()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+
+                            Text("Start Emergency Mode")
+                                .font(.system(size: 18, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.appDanger, Color.appDanger.opacity(0.85)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: Color.appDanger.opacity(0.4), radius: 12, x: 0, y: 6)
+                    }
+                    .disabled(!useAIDefault && selectedCategories.isEmpty)
+                    .opacity(!useAIDefault && selectedCategories.isEmpty ? 0.5 : 1.0)
+
+                    if !useAIDefault && selectedCategories.isEmpty {
+                        Text("Select at least one category")
+                            .font(.system(size: 12))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    Color.appBackground
+                        .shadow(color: .black.opacity(0.1), radius: 8, y: -4)
+                )
+            }
+            .onAppear {
+                // Load saved settings
+                loadSettings()
+            }
+        }
+    }
+
+    private func toggleCategory(_ category: AudioCategory) {
+        useAIDefault = false
+
+        if selectedCategories.contains(category) {
+            selectedCategories.remove(category)
+        } else {
+            selectedCategories.insert(category)
+        }
+
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+
+    private func loadSettings() {
+        useAIDefault = settings.useAIDefault
+        selectedCategories = settings.selectedCategories
+    }
+
+    private func saveSettings() {
+        settings.useAIDefault = useAIDefault
+        settings.selectedCategories = selectedCategories
+    }
+
+    private func resetToDefaults() {
+        settings.resetToDefaults()
+        useAIDefault = true
+        selectedCategories = EmergencyCategorySettings.defaultCategories
+
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+}
+
+// MARK: - Multi-Select Emergency Category Card
+struct EmergencyMultiSelectCategoryCard: View {
+    let category: AudioCategory
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.forCategory(category).opacity(isSelected ? 0.3 : 0.2),
+                                    Color.forCategory(category).opacity(isSelected ? 0.2 : 0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(height: 80)
+
+                    Image(systemName: category.icon)
+                        .font(.system(size: 32))
+                        .foregroundColor(Color.forCategory(category))
+
+                    // Multi-select checkbox indicator
+                    VStack {
+                        HStack {
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(isSelected ? Color.appPrimary : Color.white)
+                                    .frame(width: 24, height: 24)
+                                    .shadow(color: .black.opacity(0.1), radius: 2)
+
+                                if isSelected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                } else {
+                                    Circle()
+                                        .stroke(Color.appTextTertiary, lineWidth: 2)
+                                        .frame(width: 24, height: 24)
+                                }
+                            }
+                            .padding(8)
+                        }
+                        Spacer()
+                    }
+                }
+
+                VStack(spacing: 2) {
+                    Text(category.rawValue)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.appText)
+                        .lineLimit(1)
+
+                    Text(category.description)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.appCardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? Color.appPrimary : Color.clear, lineWidth: 2)
+                    )
+                    .shadow(color: .black.opacity(0.05), radius: 4)
+            )
+        }
+    }
+}
+
+// MARK: - Emergency Category Card
+struct EmergencyCategoryCard: View {
+    let category: AudioCategory
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.forCategory(category).opacity(0.2),
+                                    Color.forCategory(category).opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(height: 80)
+
+                    Image(systemName: category.icon)
+                        .font(.system(size: 32))
+                        .foregroundColor(Color.forCategory(category))
+
+                    // Selection indicator
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 20))
+                                .foregroundColor(isSelected ? .appPrimary : .appTextTertiary)
+                                .padding(8)
+                        }
+                        Spacer()
+                    }
+                }
+
+                VStack(spacing: 2) {
+                    Text(category.rawValue)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.appText)
+                        .lineLimit(1)
+
+                    Text(category.description)
+                        .font(.system(size: 11))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.appCardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? Color.appPrimary : Color.clear, lineWidth: 2)
+                    )
+                    .shadow(color: .black.opacity(0.05), radius: 4)
+            )
+        }
+    }
+}
+
 #Preview {
     HomeView()
         .environmentObject(AppState())
         .environmentObject(AudioEngine.shared)
+}
+
+#Preview("Emergency Category Selector") {
+    EmergencyCategorySelectorView(
+        selectedCategory: .constant(.classicalMusic),
+        onConfirm: {}
+    )
 }

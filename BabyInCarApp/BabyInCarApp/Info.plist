@@ -4,9 +4,9 @@
 <dict>
     <!-- App Information -->
     <key>CFBundleName</key>
-    <string>Baby in Car</string>
+    <string>Lulla</string>
     <key>CFBundleDisplayName</key>
-    <string>Baby in Car</string>
+    <string>Lulla: Baby Cry Soother</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
@@ -71,15 +71,22 @@
         <string>processing</string>
     </array>
 
+    <!-- Background Task Identifiers (required for 'processing' mode) -->
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.babyincar.app.refresh</string>
+        <string>com.babyincar.app.audioprocessing</string>
+    </array>
+
     <!-- Privacy Usage Descriptions -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>Baby in Car uses the microphone for voice commands so you can control playback hands-free while driving.</string>
+    <string>Lulla uses the microphone to detect when your baby is crying and automatically play soothing sounds. The microphone is also used for voice commands so you can control playback hands-free while driving. Audio is processed on-device and is never uploaded to servers.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Baby in Car uses speech recognition to understand your voice commands for hands-free control while driving safely.</string>
+    <string>Lulla uses speech recognition to understand your voice commands for hands-free control while driving safely.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Baby in Car can access your photos to set a profile picture for your baby.</string>
+    <string>Lulla can access your photos to set a profile picture for your baby.</string>
     <key>NSCameraUsageDescription</key>
-    <string>Baby in Car can use your camera to take a profile picture for your baby.</string>
+    <string>Lulla can use your camera to take a profile picture for your baby.</string>
 
     <!-- App Transport Security -->
     <key>NSAppTransportSecurity</key>

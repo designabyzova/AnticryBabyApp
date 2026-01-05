@@ -1,0 +1,111 @@
+# Free Tier Playback E2E Test
+# Verifies free users can access content and soft paywalls work correctly
+#
+# Test Case: US-002, US-005 - Free Tier Content & Soft Paywalls
+# ACs: AC-US2-01, AC-US2-03, AC-US5-02, AC-US5-03
+
+appId: com.anticry.babyincar
+name: "Free Tier Playback Flow"
+tags:
+  - freemium
+  - playback
+  - paywall
+  - critical
+
+---
+# Step 1: Launch app (with cleared state to simulate expired trial)
+- launchApp:
+    clearState: false
+
+# Step 2: Navigate to Library
+- tapOn:
+    id: "libraryTab"
+- runFlow:
+    when:
+      visible: "Library"
+    commands:
+      - tapOn: "Library"
+
+# Wait for content to load
+- wait: 2000
+
+# Step 3: Verify category headers are visible
+- assertVisible:
+    text: "Classical Music|Lullabies|White Noise|Nature Sounds"
+    regex: true
+
+# Step 4: Verify free/premium badges exist
+- runFlow:
+    when:
+      visible: "FREE"
+    commands:
+      - assertVisible: "FREE"
+
+# Step 5: Tap on a category to see tracks
+- tapOn:
+    text: "Classical Music"
+    optional: true
+- runFlow:
+    when:
+      visible: "All"
+    commands:
+      - tapOn: "All"
+
+# Wait for tracks to load
+- wait: 1500
+
+# Step 6: Find and tap a free track (should work)
+- runFlow:
+    when:
+      visible: "FREE"
+    commands:
+      - tapOn:
+          text: "FREE"
+          index: 0
+      # Verify playback starts (no paywall)
+      - wait: 2000
+      - assertVisible:
+          text: ".*Playing.*|.*Pause.*|.*▶.*"
+          regex: true
+          optional: true
+
+# Step 7: Go back and find a premium track
+- back
+- wait: 1000
+
+# Step 8: Tap on a premium track (should show soft paywall)
+- runFlow:
+    when:
+      visible: "PREMIUM"
+    commands:
+      - tapOn:
+          text: "PREMIUM"
+          index: 0
+      # Verify soft paywall appears
+      - wait: 1000
+      - assertVisible:
+          text: "Unlock.*Premium|Preview|Not Now"
+          regex: true
+
+# Step 9: Verify "Not Now" button is visible (non-aggressive)
+- assertVisible:
+    text: "Not Now"
+
+# Step 10: Dismiss the paywall
+- tapOn:
+    text: "Not Now"
+
+# Step 11: Verify we're back in library (not stuck)
+- wait: 1000
+- assertVisible:
+    text: "Classical Music|Lullabies|Library"
+    regex: true
+
+# Step 12: Take screenshot
+- takeScreenshot: "free_tier_playback_complete"
+
+# Success!
+- runScript:
+    script: |
+      console.log("Free tier playback test passed!")
+      console.log("Verified: Free tracks playable, premium shows soft paywall, dismissable")

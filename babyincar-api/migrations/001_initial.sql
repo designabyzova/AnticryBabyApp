@@ -117,15 +117,19 @@ CREATE TABLE IF NOT EXISTS emergency_sessions (
 
 -- User favorites table
 CREATE TABLE IF NOT EXISTS favorites (
+  id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   track_id TEXT,
   playlist_id TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, COALESCE(track_id, ''), COALESCE(playlist_id, '')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
   FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
 );
+
+-- Unique constraint for favorites (user can only favorite a track or playlist once)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_unique ON favorites(user_id, track_id) WHERE track_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_playlist_unique ON favorites(user_id, playlist_id) WHERE playlist_id IS NOT NULL;
 
 -- Sessions for auth
 CREATE TABLE IF NOT EXISTS sessions (

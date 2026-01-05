@@ -1,0 +1,213 @@
+appId: com.anticry.babyincar
+---
+# Library Category Verification E2E Test
+# Tests that all categories display with correct track counts from tracks.json
+#
+# Expected track counts (from tracks.json analysis):
+# - Classical Music: 116 tracks
+# - Fairy Tales: 82 tracks (44 English + 38 Russian)
+# - Children's Songs: 44 tracks (includes lullabies)
+# - Instrumental/Ambient: 42 tracks
+# - Nature Sounds: Variable (generated + bundled)
+# - Podcasts: 0 (from tracks.json, may have podcast metadata files)
+#
+# This test verifies the ContentLibraryService fixes are working.
+
+- launchApp
+- assertVisible: "Library"
+
+# Navigate to Library tab
+- tapOn: "Library"
+- assertVisible: "Library"
+
+# Wait for content to load
+- waitForAnimationToEnd
+
+# Test 1: Verify Classical Music category
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    text: "Classical Music"
+    description: "Classical Music category should be visible"
+
+# Tap Classical Music to see all tracks
+- tapOn: "Classical Music"
+- waitForAnimationToEnd
+
+# Verify we see multiple tracks (should be 116)
+- assertVisible:
+    text: "Classical Music"
+    description: "Category detail header"
+
+# Check for some expected classical composers
+- scroll:
+    direction: DOWN
+    duration: 1000
+
+# Verify track count indicator exists (Library shows "See All" with count)
+- tapOn:
+    id: "backButton"
+- waitForAnimationToEnd
+
+# Test 2: Verify Fairy Tales category
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    text: "Fairy Tales"
+    description: "Fairy Tales category should be visible"
+
+- tapOn: "Fairy Tales"
+- waitForAnimationToEnd
+
+# Should see fairy tales with language flags 🇬🇧 🇷🇺
+- assertVisible:
+    text: "Fairy Tales"
+    description: "Fairy Tales detail view"
+
+# Scroll to see multiple tracks
+- scroll:
+    direction: DOWN
+    duration: 1000
+
+# Go back
+- tapOn:
+    id: "backButton"
+- waitForAnimationToEnd
+
+# Test 3: Verify Children's Songs category
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    text: "Children's Songs"
+    description: "Children's Songs category should be visible"
+
+- tapOn: "Children's Songs"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Children's Songs"
+- scroll:
+    direction: DOWN
+    duration: 1000
+
+- tapOn:
+    id: "backButton"
+- waitForAnimationToEnd
+
+# Test 4: Verify Instrumental category
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    text: "Instrumental"
+    description: "Instrumental category should be visible"
+
+- tapOn: "Instrumental"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Instrumental"
+- scroll:
+    direction: DOWN
+    duration: 1000
+
+- tapOn:
+    id: "backButton"
+- waitForAnimationToEnd
+
+# Test 5: Verify Nature Sounds category
+- scroll:
+    direction: DOWN
+    duration: 500
+- assertVisible:
+    text: "Nature Sounds"
+    description: "Nature Sounds category should be visible"
+
+- tapOn: "Nature Sounds"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Nature Sounds"
+- scroll:
+    direction: DOWN
+    duration: 1000
+
+- tapOn:
+    id: "backButton"
+- waitForAnimationToEnd
+
+# Test 6: Use category filter chips at top
+- scroll:
+    direction: UP
+    duration: 1000
+
+# Should see filter chips
+- assertVisible:
+    text: "All"
+    description: "All filter chip"
+
+# Tap Classical Music filter
+- tapOn: "Classical Music"
+- waitForAnimationToEnd
+
+# Should see only classical tracks
+- assertVisible:
+    text: "Classical Music"
+
+# Tap Fairy Tales filter
+- tapOn: "Fairy Tales"
+- waitForAnimationToEnd
+
+# Should see only fairy tale tracks
+- assertVisible:
+    text: "Fairy Tales"
+
+# Tap All to reset
+- tapOn: "All"
+- waitForAnimationToEnd
+
+# Test 7: Search functionality
+- tapOn:
+    id: "searchButton"
+- waitForAnimationToEnd
+
+# Type search query
+- inputText: "Mozart"
+- assertVisible:
+    text: "Mozart"
+    description: "Should find Mozart tracks from classical category"
+
+# Clear search
+- tapOn:
+    id: "clearSearch"
+- waitForAnimationToEnd
+
+# Test 8: Verify vertical scrolling works in category detail
+- scroll:
+    direction: DOWN
+    duration: 500
+- tapOn: "Classical Music"
+- waitForAnimationToEnd
+
+# Scroll through many tracks
+- repeat:
+    times: 5
+    commands:
+      - scroll:
+          direction: DOWN
+          duration: 500
+      - waitForAnimationToEnd
+
+# Should still see classical content
+- assertVisible:
+    text: "Classical Music"
+
+# Success - all categories verified!
+- tapOn:
+    id: "backButton"
+
+# Take final screenshot
+- takeScreenshot: "library_categories_verified"

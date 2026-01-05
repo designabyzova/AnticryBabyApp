@@ -281,4 +281,100 @@ analytics.get('/insights/:baby_id', async (c) => {
   });
 });
 
+// DELETE /analytics/history/:baby_id - Clear all learning history for a baby
+// Use this to reset "what worked" data and start fresh
+analytics.delete('/history/:baby_id', async (c) => {
+  const userId = c.get('userId');
+  const babyId = c.req.param('baby_id');
+
+  // Validate baby belongs to user
+  const baby = await c.env.DB.prepare(`
+    SELECT id, preferences FROM babies WHERE id = ? AND user_id = ?
+  `).bind(babyId, userId).first<{ id: string; preferences: string }>();
+
+  if (!baby) {
+    return c.json({ success: false, error: 'Baby not found' }, 404);
+  }
+
+  // Delete track effectiveness records
+  const effectivenessResult = await c.env.DB.prepare(`
+    DELETE FROM track_effectiveness WHERE baby_id = ?
+  `).bind(babyId).run();
+
+  // Delete playback events
+  const playbackResult = await c.env.DB.prepare(`
+    DELETE FROM playback_events WHERE baby_id = ?
+  `).bind(babyId).run();
+
+  // Delete emergency sessions
+  const emergencyResult = await c.env.DB.prepare(`
+    DELETE FROM emergency_sessions WHERE baby_id = ?
+  `).bind(babyId).run();
+
+  // Reset baby preferences (clear effective_tracks)
+  const preferences = JSON.parse(baby.preferences || '{}');
+  preferences.effective_tracks = [];
+
+  await c.env.DB.prepare(`
+    UPDATE babies SET preferences = ?, updated_at = ? WHERE id = ?
+  `).bind(JSON.stringify(preferences), new Date().toISOString(), babyId).run();
+
+  return c.json({
+    success: true,
+    message: 'Learning history cleared',
+    deleted: {
+      effectiveness_records: effectivenessResult.meta?.changes || 0,
+      playback_events: playbackResult.meta?.changes || 0,
+      emergency_sessions: emergencyResult.meta?.changes || 0,
+    },
+  });
+});
+
+// GET /analytics/history/:baby_id - Get all learning history for a baby
+analytics.get('/history/:baby_id', async (c) => {
+  const userId = c.get('userId');
+  const babyId = c.req.param('baby_id');
+
+  // Validate baby belongs to user
+  const baby = await c.env.DB.prepare(`
+    SELECT id, preferences FROM babies WHERE id = ? AND user_id = ?
+  `).bind(babyId, userId).first<{ id: string; preferences: string }>();
+
+  if (!baby) {
+    return c.json({ success: false, error: 'Baby not found' }, 404);
+  }
+
+  // Get track effectiveness records
+  const effectiveness = await c.env.DB.prepare(`
+    SELECT te.*, t.title as track_title, t.category as track_category
+    FROM track_effectiveness te
+    LEFT JOIN tracks t ON te.track_id = t.id
+    WHERE te.baby_id = ?
+    ORDER BY te.created_at DESC
+    LIMIT 100
+  `).bind(babyId).all();
+
+  // Get emergency sessions
+  const emergencySessions = await c.env.DB.prepare(`
+    SELECT * FROM emergency_sessions
+    WHERE baby_id = ?
+    ORDER BY created_at DESC
+    LIMIT 50
+  `).bind(babyId).all();
+
+  // Get baby preferences
+  const preferences = JSON.parse(baby.preferences || '{}');
+
+  return c.json({
+    success: true,
+    history: {
+      effectiveness_records: effectiveness.results,
+      emergency_sessions: emergencySessions.results,
+      effective_tracks: preferences.effective_tracks || [],
+      total_effectiveness_records: effectiveness.results.length,
+      total_emergency_sessions: emergencySessions.results.length,
+    },
+  });
+});
+
 export default analytics;

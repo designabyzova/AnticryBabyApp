@@ -12,14 +12,69 @@ import SwiftUI
 struct TrackDownloadButton: View {
     let track: AudioTrack
     @ObservedObject var downloadManager = AudioDownloadManager.shared
+    @ObservedObject var cacheService = AudioCacheService.shared
+    @State private var showRemoveConfirmation = false
 
     var body: some View {
-        let state = downloadManager.getDownloadState(for: track.id.uuidString)
+        let state = getActualDownloadState()
 
-        Button(action: handleTap) {
-            downloadStateIcon(state)
+        Group {
+            if case .downloaded = state {
+                // For downloaded tracks, use a menu to show remove option
+                Menu {
+                    Button(role: .destructive) {
+                        showRemoveConfirmation = true
+                    } label: {
+                        Label("Remove Download", systemImage: "trash")
+                    }
+                } label: {
+                    downloadStateIcon(state)
+                }
+            } else {
+                Button(action: handleTap) {
+                    downloadStateIcon(state)
+                }
+            }
         }
         .buttonStyle(.plain)
+        .confirmationDialog(
+            "Remove Download?",
+            isPresented: $showRemoveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Download", role: .destructive) {
+                removeDownload()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("'\(track.title)' will be removed from offline storage. You can download it again later.")
+        }
+    }
+
+    /// Get the actual download state by checking both the download manager and cache
+    private func getActualDownloadState() -> DownloadState {
+        let trackId = track.id.uuidString
+
+        // First check if actively downloading
+        if let state = downloadManager.downloadStates[trackId] {
+            if case .downloading = state {
+                return state
+            }
+        }
+
+        // Then verify if actually cached on disk
+        if cacheService.isTrackCached(trackId) {
+            return .downloaded
+        }
+
+        // Check for failed state
+        if let state = downloadManager.downloadStates[trackId] {
+            if case .failed = state {
+                return state
+            }
+        }
+
+        return .notDownloaded
     }
 
     @ViewBuilder
@@ -60,7 +115,7 @@ struct TrackDownloadButton: View {
     }
 
     private func handleTap() {
-        let state = downloadManager.getDownloadState(for: track.id.uuidString)
+        let state = getActualDownloadState()
 
         switch state {
         case .notDownloaded, .failed:
@@ -76,9 +131,16 @@ struct TrackDownloadButton: View {
             downloadManager.cancelDownload(trackId: track.id.uuidString)
 
         case .downloaded:
-            // Already downloaded - could show options to delete
+            // This is now handled by the menu
             break
         }
+    }
+
+    private func removeDownload() {
+        let trackId = track.id.uuidString
+        // Remove from both cache service and download manager
+        cacheService.deleteCachedTrack(trackId)
+        downloadManager.deleteCachedTrack(trackId: trackId)
     }
 }
 
@@ -88,6 +150,7 @@ struct TrackRowWithDownload: View {
     let track: AudioTrack
     let onPlay: () -> Void
     @ObservedObject var downloadManager = AudioDownloadManager.shared
+    @ObservedObject var cacheService = AudioCacheService.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -135,9 +198,28 @@ struct TrackRowWithDownload: View {
         .padding(.vertical, 8)
     }
 
+    /// Get the actual download state by checking both the download manager and cache
+    private func getActualDownloadState() -> DownloadState {
+        let trackId = track.id.uuidString
+
+        // First check if actively downloading
+        if let state = downloadManager.downloadStates[trackId] {
+            if case .downloading = state {
+                return state
+            }
+        }
+
+        // Then verify if actually cached on disk
+        if cacheService.isTrackCached(trackId) {
+            return .downloaded
+        }
+
+        return .notDownloaded
+    }
+
     @ViewBuilder
     private var sourceIndicator: some View {
-        let state = downloadManager.getDownloadState(for: track.id.uuidString)
+        let state = getActualDownloadState()
 
         HStack(spacing: 4) {
             switch state {
@@ -899,6 +981,7 @@ struct CachedTrackRow: View {
 struct BulkDownloadView: View {
     let tracks: [AudioTrack]
     @ObservedObject var downloadManager = AudioDownloadManager.shared
+    @ObservedObject var cacheService = AudioCacheService.shared
     @State private var isDownloading = false
     @State private var progress: Double = 0
     @Environment(\.dismiss) private var dismiss
@@ -906,7 +989,7 @@ struct BulkDownloadView: View {
     var downloadableTracks: [AudioTrack] {
         tracks.filter { track in
             track.audioSourceType == .streamed &&
-            !downloadManager.getDownloadState(for: track.id.uuidString).isDownloaded
+            !cacheService.isTrackCached(track.id.uuidString)
         }
     }
 

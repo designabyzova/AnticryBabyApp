@@ -54,9 +54,10 @@ class AudioCacheService: ObservableObject {
     @Published var isCleaningCache: Bool = false
 
     // MARK: - Private Properties
-    private let fileManager = FileManager.default
-    private let cacheDirectory: URL
-    private let metadataFile: URL
+    // Note: cacheDirectory and metadataFile need to be nonisolated for Task.detached access
+    // FileManager.default is accessed directly where needed to avoid Sendable issues
+    private nonisolated let cacheDirectory: URL
+    private nonisolated let metadataFile: URL
 
     // MARK: - Configuration
     private let maxCacheSize: Int64 = 500 * 1024 * 1024 // 500 MB
@@ -64,12 +65,13 @@ class AudioCacheService: ObservableObject {
     private let minFreeSpace: Int64 = 100 * 1024 * 1024 // 100 MB minimum free space
 
     private init() {
-        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        // Initialize nonisolated properties first
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         cacheDirectory = documentsPath.appendingPathComponent("AudioCache", isDirectory: true)
         metadataFile = documentsPath.appendingPathComponent("AudioCacheMetadata.json")
 
         // Ensure cache directory exists
-        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
 
         // Load metadata
         loadMetadata()
@@ -81,7 +83,7 @@ class AudioCacheService: ObservableObject {
     /// Get local URL for a cached track
     func getCachedURL(for trackId: String) -> URL? {
         let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        guard fileManager.fileExists(atPath: fileURL.path) else {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             // Clean up orphaned metadata
             cachedTracks.removeValue(forKey: trackId)
             return nil
@@ -116,7 +118,7 @@ class AudioCacheService: ObservableObject {
 
     /// Update last played time for a track
     func updateLastPlayed(trackId: String) {
-        guard var metadata = cachedTracks[trackId] else { return }
+        guard let metadata = cachedTracks[trackId] else { return }
 
         cachedTracks[trackId] = CachedTrackMetadata(
             trackId: metadata.trackId,
@@ -137,7 +139,7 @@ class AudioCacheService: ObservableObject {
     /// Delete a cached track
     func deleteCachedTrack(_ trackId: String) {
         let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        try? fileManager.removeItem(at: fileURL)
+        try? FileManager.default.removeItem(at: fileURL)
         cachedTracks.removeValue(forKey: trackId)
         saveMetadata()
         updateStatistics()
@@ -147,10 +149,12 @@ class AudioCacheService: ObservableObject {
     func clearAllCache() async {
         isCleaningCache = true
 
-        await Task.detached { [weak self] in
-            guard let self = self else { return }
-            try? self.fileManager.removeItem(at: self.cacheDirectory)
-            try? self.fileManager.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
+        // Capture nonisolated properties for use in detached task
+        let cacheDirPath = cacheDirectory
+        await Task.detached {
+            let fm = FileManager.default
+            try? fm.removeItem(at: cacheDirPath)
+            try? fm.createDirectory(at: cacheDirPath, withIntermediateDirectories: true)
         }.value
 
         cachedTracks.removeAll()
@@ -192,7 +196,7 @@ class AudioCacheService: ObservableObject {
 
     /// Get device free space
     func getDeviceFreeSpace() -> Int64? {
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         guard let values = try? documentsURL.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
               let freeSpace = values.volumeAvailableCapacityForImportantUsage else {
             return nil

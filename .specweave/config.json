@@ -101,5 +101,8 @@
       "incrementSpecs": false
     },
     "keepEnglishOriginals": false
+  },
+  "limits": {
+    "hardCap": 4
   }
 }

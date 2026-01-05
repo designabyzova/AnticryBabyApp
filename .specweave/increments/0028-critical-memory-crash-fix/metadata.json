@@ -1,0 +1,22 @@
+{
+  "id": "0028-critical-memory-crash-fix",
+  "title": "Critical Memory Crash Fix - Realistic Thresholds and Service Cleanup Handlers",
+  "type": "hotfix",
+  "priority": "P1",
+  "status": "ready-for-testing",
+  "created": "2026-01-04T13:45:00Z",
+  "lastActivity": "2026-01-04T17:10:00Z",
+  "verified": "2026-01-04T17:10:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "estimatedHours": 20,
+  "feature_id": null,
+  "epic_id": null,
+  "externalLinks": {
+    "github": {
+      "milestone": "https://github.com/designabyzova/AnticryBabyApp/milestone/1",
+      "milestoneNumber": 1
+    }
+  },
+  "description": "Fix critical app crashes from excessive memory usage at 111MB. Update MemoryMonitor thresholds to realistic 80/90/100MB limits. Implement cleanup notification handlers in all 6 services (AudioEngine, SmartQueue, AI engines). Add proactive memory management and comprehensive testing with 80MB baseline."
+}

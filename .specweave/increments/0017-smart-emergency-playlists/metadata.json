@@ -1,0 +1,20 @@
+{
+  "id": "0017-smart-emergency-playlists",
+  "title": "Smart Emergency Playlist System with Research-Backed Content",
+  "status": "completed",
+  "createdAt": "2026-01-02T20:00:00Z",
+  "updatedAt": "2026-01-03T06:20:00Z",
+  "completedAt": "2026-01-03T06:20:00Z",
+  "feature": "FS-017",
+  "priority": "high",
+  "tags": [
+    "emergency-mode",
+    "playlists",
+    "ai-selection",
+    "content-library",
+    "language-support",
+    "queue-ui"
+  ],
+  "dependencies": ["0015-science-based-cry-intelligence", "0016-smooth-audio-transitions"],
+  "estimatedHours": 26
+}

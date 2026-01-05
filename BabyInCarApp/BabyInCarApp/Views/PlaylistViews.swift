@@ -42,7 +42,9 @@ struct PlaylistDetailView: View {
                 // Tracks list
                 tracksList
             }
-            .padding(.bottom, bottomPadding + 20)
+            // Extra content padding at the bottom for comfortable scrolling.
+            // The safeAreaInset in MainTabView handles the tab bar + mini player space.
+            .padding(.bottom, 20)
         }
         .scrollIndicators(.visible)
         .background(Color.appBackground)
@@ -98,12 +100,12 @@ struct PlaylistDetailView: View {
             ZStack(alignment: .topTrailing) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.forCategory(currentPlaylist.dominantCategory ?? .whiteNoise).opacity(0.15))
+                        .fill(Color.forCategory(currentPlaylist.dominantCategory ?? .instrumental).opacity(0.15))
                         .frame(width: 160, height: 160)
 
                     Image(systemName: currentPlaylist.dominantCategory?.icon ?? "music.note.list")
                         .font(.system(size: 60))
-                        .foregroundColor(Color.forCategory(currentPlaylist.dominantCategory ?? .whiteNoise))
+                        .foregroundColor(Color.forCategory(currentPlaylist.dominantCategory ?? .instrumental))
                 }
 
                 // Favorite button overlay
@@ -166,7 +168,7 @@ struct PlaylistDetailView: View {
                 .padding(.vertical, 14)
                 .background(
                     Capsule()
-                        .fill(Color.forCategory(currentPlaylist.dominantCategory ?? .whiteNoise))
+                        .fill(Color.forCategory(currentPlaylist.dominantCategory ?? .instrumental))
                 )
             }
 
@@ -180,12 +182,12 @@ struct PlaylistDetailView: View {
                     Text("Shuffle")
                 }
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color.forCategory(currentPlaylist.dominantCategory ?? .whiteNoise))
+                .foregroundColor(Color.forCategory(currentPlaylist.dominantCategory ?? .instrumental))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(
                     Capsule()
-                        .stroke(Color.forCategory(currentPlaylist.dominantCategory ?? .whiteNoise), lineWidth: 2)
+                        .stroke(Color.forCategory(currentPlaylist.dominantCategory ?? .instrumental), lineWidth: 2)
                 )
             }
         }
@@ -588,12 +590,12 @@ struct AddToPlaylistSheet: View {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.forCategory(playlist.dominantCategory ?? .whiteNoise).opacity(0.15))
+                                            .fill(Color.forCategory(playlist.dominantCategory ?? .instrumental).opacity(0.15))
                                             .frame(width: 50, height: 50)
 
                                         Image(systemName: playlist.dominantCategory?.icon ?? "music.note.list")
                                             .font(.system(size: 20))
-                                            .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .whiteNoise))
+                                            .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .instrumental))
                                     }
 
                                     VStack(alignment: .leading, spacing: 2) {
@@ -715,12 +717,12 @@ struct UserPlaylistCard: View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.forCategory(playlist.dominantCategory ?? .whiteNoise).opacity(0.15))
+                    .fill(Color.forCategory(playlist.dominantCategory ?? .instrumental).opacity(0.15))
                     .frame(width: 140, height: 140)
 
                 Image(systemName: playlist.dominantCategory?.icon ?? "music.note.list")
                     .font(.system(size: 44))
-                    .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .whiteNoise))
+                    .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .instrumental))
 
                 // Track count badge
                 VStack {

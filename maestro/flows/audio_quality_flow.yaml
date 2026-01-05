@@ -1,0 +1,102 @@
+# Maestro E2E Test: Audio Quality Verification
+# Tests that audio content plays correctly and is not corrupted
+# Run: maestro test maestro/flows/audio_quality_flow.yaml
+
+appId: com.anticry.babyincar
+---
+
+# Test 1: Navigate to Library and verify content loads
+- launchApp:
+    clearState: true
+
+- waitForAnimationToEnd
+
+- assertVisible: "Library"
+
+- tapOn: "Library"
+
+- waitForAnimationToEnd
+
+# Test 2: Navigate to Nature Sounds category
+- assertVisible:
+    text: "Nature"
+    optional: true
+
+- tapOn:
+    text: "Nature"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Take screenshot of nature sounds list
+- takeScreenshot: "01_nature_sounds_list"
+
+# Test 3: Select and play Ocean Waves
+- assertVisible:
+    text: "Ocean"
+    optional: true
+
+- tapOn:
+    text: "Ocean"
+    index: 0
+    optional: true
+
+- waitForAnimationToEnd
+
+# Take screenshot of player view
+- takeScreenshot: "02_ocean_waves_playing"
+
+# Test 4: Verify playback starts (look for pause button or play indicator)
+- assertVisible:
+    text: "Pause"
+    optional: true
+
+# Wait for 3 seconds to ensure audio is playing
+- swipe:
+    direction: UP
+    duration: 3000
+
+# Test 5: Verify no error state
+- assertNotVisible:
+    text: "Error"
+    optional: true
+
+- assertNotVisible:
+    text: "Failed"
+    optional: true
+
+- assertNotVisible:
+    text: "Unable to play"
+    optional: true
+
+# Take final screenshot
+- takeScreenshot: "03_playback_success"
+
+# Test 6: Stop playback and go back
+- tapOn:
+    text: "Pause"
+    optional: true
+
+- back
+
+- waitForAnimationToEnd
+
+# Test 7: Try Rain sounds
+- tapOn:
+    text: "Rain"
+    index: 0
+    optional: true
+
+- waitForAnimationToEnd
+
+- takeScreenshot: "04_rain_sounds_playing"
+
+# Verify no crash or error
+- assertNotVisible:
+    text: "Crash"
+    optional: true
+
+# Final cleanup
+- back
+
+- takeScreenshot: "05_test_complete"

@@ -12,7 +12,6 @@ import SwiftUI
 enum CategoryIconType: String, CaseIterable {
     case classical = "Classical Music"
     case fairyTales = "Fairy Tales"
-    case whiteNoise = "White Noise"
     case natureSounds = "Nature Sounds"
     case instrumental = "Instrumental"
     case childrensSongs = "Children's Songs"
@@ -25,7 +24,6 @@ enum CategoryIconType: String, CaseIterable {
         switch self {
         case .classical: return Color.appPrimary
         case .fairyTales: return Color(hex: "E8B4D4") // Soft pink
-        case .whiteNoise: return Color.appSecondary
         case .natureSounds: return Color.appAccentMint
         case .instrumental: return Color(hex: "F4D03F") // Golden
         case .childrensSongs: return Color.appAccentCoral
@@ -40,7 +38,6 @@ enum CategoryIconType: String, CaseIterable {
         switch self {
         case .classical: return [Color.appPrimary, Color.appPrimary.opacity(0.6)]
         case .fairyTales: return [Color(hex: "E8B4D4"), Color(hex: "DDA0DD")]
-        case .whiteNoise: return [Color.appSecondary, Color.appSecondary.opacity(0.6)]
         case .natureSounds: return [Color.appAccentMint, Color(hex: "98D8AA")]
         case .instrumental: return [Color(hex: "F4D03F"), Color(hex: "F5CBA7")]
         case .childrensSongs: return [Color.appAccentCoral, Color.appAccentCoral.opacity(0.7)]
@@ -96,8 +93,6 @@ struct CategoryIconView: View {
             ClassicalMusicIcon(isAnimating: isAnimating)
         case .fairyTales:
             FairyTalesIcon(isAnimating: isAnimating)
-        case .whiteNoise:
-            WhiteNoiseIcon(isAnimating: isAnimating)
         case .natureSounds:
             NatureSoundsIcon(isAnimating: isAnimating)
         case .instrumental:
@@ -195,38 +190,6 @@ struct BookShape: Shape {
         path.addLine(to: CGPoint(x: w * 0.5, y: h * 0.9))
 
         return path
-    }
-}
-
-// MARK: - White Noise Icon (Soft Waves)
-
-struct WhiteNoiseIcon: View {
-    var isAnimating: Bool
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<5, id: \.self) { index in
-                WaveBar(delay: Double(index) * 0.1, isAnimating: isAnimating)
-            }
-        }
-    }
-}
-
-struct WaveBar: View {
-    var delay: Double
-    var isAnimating: Bool
-
-    @State private var height: CGFloat = 8
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 2)
-            .fill(Color.white)
-            .frame(width: 3, height: height)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(delay)) {
-                    height = CGFloat.random(in: 12...20)
-                }
-            }
     }
 }
 
@@ -560,8 +523,8 @@ struct CategoryIconFactory {
             return .classical
         } else if lowercased.contains("fairy") || lowercased.contains("story") || lowercased.contains("tale") {
             return .fairyTales
-        } else if lowercased.contains("white") || lowercased.contains("noise") || lowercased.contains("static") {
-            return .whiteNoise
+        } else if lowercased.contains("noise") || lowercased.contains("static") {
+            return .ambient
         } else if lowercased.contains("nature") || lowercased.contains("rain") || lowercased.contains("ocean") || lowercased.contains("forest") {
             return .natureSounds
         } else if lowercased.contains("instrument") || lowercased.contains("harp") || lowercased.contains("guitar") {
@@ -607,7 +570,7 @@ struct CategoryIconFactory {
     HStack(spacing: 20) {
         CategoryIconView(type: .classical, size: 32)
         CategoryIconView(type: .fairyTales, size: 48)
-        CategoryIconView(type: .whiteNoise, size: 64)
+        CategoryIconView(type: .ambient, size: 64)
         CategoryIconView(type: .natureSounds, size: 80)
     }
     .padding()

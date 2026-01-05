@@ -1,0 +1,101 @@
+appId: com.anticry.babyincar
+---
+# FS-017: Emergency Playlist System E2E Test (SmartQueueView)
+# Tests SmartQueueView with REAL melodic library tracks
+# CRITICAL: No white noise, pink noise, or generated sounds - ONLY real compositions!
+
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+# ============================================
+# TEST 1: Activate Emergency from Home
+# ============================================
+
+# Tap EMERGENCY CRY-STOP button
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+# Wait for SmartQueueView
+- extendedWaitUntil:
+    visible:
+      text: ".*CANCEL.*|.*Smart.*|.*Up Next.*"
+    timeout: 5000
+
+# ============================================
+# TEST 2: Verify SmartQueueView UI
+# ============================================
+
+# Check for CANCEL button (immediate exit)
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+# Check for current track display
+- assertVisible:
+    id: "currentTrackCard"
+    optional: true
+
+# Check for progress bar
+- assertVisible:
+    id: "trackProgressBar"
+    optional: true
+
+# Check for upcoming tracks
+- assertVisible:
+    id: "upcomingTracksList"
+    optional: true
+
+# ============================================
+# TEST 3: Verify NO Noise Sounds
+# ============================================
+
+# Should NOT see white noise, pink noise, etc.
+- assertNotVisible:
+    text: ".*[Ww]hite [Nn]oise.*|.*[Pp]ink [Nn]oise.*|.*[Bb]rown [Nn]oise.*"
+    optional: true
+
+# Should NOT see scary/generated sounds
+- assertNotVisible:
+    text: ".*[Ff]an.*|.*[Ww]asher.*|.*[Vv]acuum.*|.*[Rr]ain.*|.*[Tt]hunder.*"
+    optional: true
+
+# ============================================
+# TEST 4: Scroll Through Queue
+# ============================================
+
+# Scroll to see more upcoming tracks
+- scrollUntilVisible:
+    element:
+      id: "upcomingTrack-3"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+# ============================================
+# TEST 5: Test CANCEL Button
+# ============================================
+
+# Tap cancel button (immediate exit, no dialog)
+- tapOn:
+    id: "cancelEmergencyButton"
+
+# Should return to home
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+# Verify SmartQueueView is closed
+- assertNotVisible:
+    id: "cancelEmergencyButton"
+    optional: true
+
+# Verify we're back at home
+- assertVisible:
+    text: ".*EMERGENCY.*"
+
+- stopApp

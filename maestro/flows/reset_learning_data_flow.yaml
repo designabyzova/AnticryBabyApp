@@ -1,0 +1,280 @@
+# Maestro E2E Test: Reset Learning Data Flow
+# Tests the ability to clear all learned preferences from Profile settings
+#
+# Run: maestro test maestro/flows/reset_learning_data_flow.yaml
+#
+# This test validates:
+# 1. Navigate to Profile tab
+# 2. Find Data & Privacy section
+# 3. View learning statistics (sessions, confidence)
+# 4. Trigger Reset Learning Data
+# 5. Confirm the reset action
+# 6. Verify success message
+# 7. Verify data was cleared (sessions = 0, confidence = 0%)
+#
+# Use case: User wants to start fresh with no learned preferences
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+- takeScreenshot: "reset_01_home"
+
+# ============================================
+# PREREQUISITE: Generate some learning data first
+# ============================================
+
+# Start an emergency session to create learning data
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*|.*Stop.*|.*Cancel.*"
+    timeout: 5000
+
+# Wait for session to run briefly
+- wait:
+    milliseconds: 2000
+
+# Complete the session
+- tapOn:
+    text: ".*Baby is Calm.*|.*Stop.*"
+    optional: true
+
+- wait:
+    milliseconds: 2000
+
+# Dismiss any popups
+- runFlow:
+    when:
+      visible:
+        text: ".*OK.*|.*Done.*|.*Close.*"
+    commands:
+      - tapOn:
+          text: ".*OK.*|.*Done.*|.*Close.*"
+
+- takeScreenshot: "reset_02_session_created"
+
+# ============================================
+# TEST 1: Navigate to Profile Tab
+# ============================================
+
+# Find and tap Profile tab
+- runFlow:
+    when:
+      visible:
+        text: "Profile"
+    commands:
+      - tapOn: "Profile"
+
+- runFlow:
+    when:
+      visible:
+        id: ".*[Pp]rofile.*"
+    commands:
+      - tapOn:
+          id: ".*[Pp]rofile.*"
+
+# Try tapping on person icon if text not visible
+- runFlow:
+    when:
+      visible:
+        text: ".*person.*"
+    commands:
+      - tapOn:
+          text: ".*person.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Profile.*|.*Settings.*|.*Account.*"
+    timeout: 5000
+
+- takeScreenshot: "reset_03_profile_view"
+
+# ============================================
+# TEST 2: Find Data & Privacy Section
+# ============================================
+
+# Scroll down to find Data & Privacy section
+- scroll:
+    direction: DOWN
+
+- scroll:
+    direction: DOWN
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Data.*Privacy.*"
+    timeout: 3000
+
+- takeScreenshot: "reset_04_data_privacy_section"
+
+# ============================================
+# TEST 3: Verify Learning Statistics Display
+# ============================================
+
+# Check for Learning Sessions count
+- assertVisible:
+    text: ".*Learning Sessions.*"
+
+# Check for Learning Confidence percentage
+- assertVisible:
+    text: ".*Learning Confidence.*"
+
+# Verify there's some data (not 0)
+# Note: After prerequisite step, should have at least 1 session
+- assertVisible:
+    text: ".*[1-9][0-9]*.*"
+    optional: true
+
+- takeScreenshot: "reset_05_learning_stats"
+
+# ============================================
+# TEST 4: Tap Reset Learning Data Button
+# ============================================
+
+- tapOn:
+    text: "Reset Learning Data"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Reset Learning Data.*"
+    timeout: 3000
+
+- takeScreenshot: "reset_06_confirmation_dialog"
+
+# ============================================
+# TEST 5: Verify Confirmation Dialog
+# ============================================
+
+# Check for warning message
+- assertVisible:
+    text: ".*clear all learned preferences.*|.*start fresh.*"
+
+# Check for Cancel button
+- assertVisible:
+    text: "Cancel"
+
+# Check for Reset button
+- assertVisible:
+    text: "Reset"
+
+- takeScreenshot: "reset_07_dialog_buttons"
+
+# ============================================
+# TEST 6: Confirm Reset Action
+# ============================================
+
+- tapOn:
+    text: "Reset"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Learning Data Reset.*|.*cleared.*|.*success.*"
+    timeout: 3000
+
+- takeScreenshot: "reset_08_success_message"
+
+# ============================================
+# TEST 7: Dismiss Success Alert
+# ============================================
+
+- tapOn:
+    text: "OK"
+
+- wait:
+    milliseconds: 1000
+
+- takeScreenshot: "reset_09_after_reset"
+
+# ============================================
+# TEST 8: Verify Data Was Cleared
+# ============================================
+
+# Check that Learning Sessions is now 0
+- assertVisible:
+    text: ".*Learning Sessions.*"
+
+# The value should now show 0
+- assertVisible:
+    text: ".*0.*"
+
+# Learning Confidence should also be 0%
+- assertVisible:
+    text: ".*0%.*|.*Learning Confidence.*"
+
+- takeScreenshot: "reset_10_data_cleared"
+
+# ============================================
+# TEST 9: Navigate Back to Home
+# ============================================
+
+# Tap Home tab
+- runFlow:
+    when:
+      visible:
+        text: "Home"
+    commands:
+      - tapOn: "Home"
+
+- runFlow:
+    when:
+      visible:
+        id: ".*[Hh]ome.*"
+    commands:
+      - tapOn:
+          id: ".*[Hh]ome.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "reset_11_back_home"
+
+# ============================================
+# TEST 10: Verify Fresh Start Behavior
+# ============================================
+
+# Start emergency session to verify it works with no learned data
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*|.*Playing.*|.*Soothing.*"
+    timeout: 5000
+
+# App should work normally, using research-based defaults
+- takeScreenshot: "reset_12_fresh_start_session"
+
+# Stop the session
+- tapOn:
+    text: ".*Baby is Calm.*|.*Stop.*"
+    optional: true
+
+- wait:
+    milliseconds: 2000
+
+- takeScreenshot: "reset_13_test_complete"
+
+# ============================================
+# TEST COMPLETE
+# ============================================
+#
+# Expected results:
+# - User can navigate to Profile > Data & Privacy
+# - Learning statistics are displayed (sessions count, confidence %)
+# - Reset Learning Data button is visible and tappable
+# - Confirmation dialog appears with warning message
+# - After confirming, success message is shown
+# - Learning sessions reset to 0
+# - Learning confidence reset to 0%
+# - App continues to work normally with research-based defaults

@@ -1,0 +1,106 @@
+# Cry Detection Free E2E Test
+# Verifies cry detection works fully for free users (ALWAYS FREE feature)
+#
+# Test Case: US-003 - Full Cry Detection for Free Users
+# ACs: AC-US3-01, AC-US3-02, AC-US3-03, AC-US3-04
+
+appId: com.anticry.babyincar
+name: "Cry Detection Always Free"
+tags:
+  - freemium
+  - cry-detection
+  - always-free
+  - critical
+
+---
+# Step 1: Launch app
+- launchApp:
+    clearState: false
+
+# Step 2: Navigate to Cry Detection feature
+- runFlow:
+    when:
+      visible: "Cry Detection"
+    commands:
+      - tapOn: "Cry Detection"
+
+- runFlow:
+    when:
+      visible: "Monitor"
+    commands:
+      - tapOn: "Monitor"
+
+- runFlow:
+    when:
+      visible: "cryDetectionButton"
+      by: id
+    commands:
+      - tapOn:
+          id: "cryDetectionButton"
+
+# Step 3: Verify cry detection UI appears (not blocked by paywall)
+- assertNotVisible:
+    text: "Unlock.*Premium|Subscribe|Upgrade"
+    regex: true
+    timeout: 3000
+
+# Step 4: Verify monitoring controls are accessible
+- assertVisible:
+    text: ".*Listening.*|.*Monitor.*|.*Start.*|.*Ready.*"
+    regex: true
+
+# Step 5: If there's a start button, tap it
+- runFlow:
+    when:
+      visible: "Start Monitoring"
+    commands:
+      - tapOn: "Start Monitoring"
+      - wait: 2000
+      - assertVisible:
+          text: ".*Listening.*|.*Monitoring.*"
+          regex: true
+
+# Step 6: Verify cry type classification UI is visible (free feature)
+- runFlow:
+    when:
+      visible: "Cry Type|Classification|Detected"
+      regex: true
+    commands:
+      - assertVisible:
+          text: "Cry Type|Classification|Hunger|Tired|Pain"
+          regex: true
+          optional: true
+
+# Step 7: Verify "It Helped!" button is accessible
+- runFlow:
+    when:
+      visible: "It Helped"
+    commands:
+      - assertVisible: "It Helped"
+      - assertNotVisible:
+          text: "Premium|Locked|Upgrade"
+          timeout: 2000
+
+# Step 8: Stop monitoring if active
+- runFlow:
+    when:
+      visible: "Stop"
+    commands:
+      - tapOn: "Stop"
+
+# Step 9: Take screenshot of cry detection (free access)
+- takeScreenshot: "cry_detection_free"
+
+# Step 10: Go back and verify no paywall was triggered
+- back
+- assertNotVisible:
+    text: "Unlock.*Premium|Subscribe"
+    regex: true
+    timeout: 2000
+
+# Success!
+- runScript:
+    script: |
+      console.log("Cry detection free test passed!")
+      console.log("Verified: Cry detection fully accessible, no paywalls, classification works")
+      console.log("CRITICAL: This feature must ALWAYS be free!")

@@ -56,22 +56,23 @@ class AudioDownloadManager: NSObject, ObservableObject {
     private var progressHandlers: [String: (Double) -> Void] = [:]
     private var completionHandlers: [String: (Result<URL, Error>) -> Void] = [:]
 
-    private let fileManager = FileManager.default
-    private let cacheDirectory: URL
+    // Note: cacheDirectory needs to be nonisolated for URLSessionDelegate methods
+    // FileManager.default is accessed directly in nonisolated methods to avoid Sendable issues
+    private nonisolated let cacheDirectory: URL
 
     // MARK: - Configuration
     private let maxConcurrentDownloads = 3
     private let maxCacheSize: Int64 = 500 * 1024 * 1024 // 500 MB
 
     private override init() {
-        // Setup cache directory
-        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        // Setup cache directory - must be done before super.init() for nonisolated property
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         cacheDirectory = documentsPath.appendingPathComponent("AudioCache", isDirectory: true)
 
         super.init()
 
         // Create cache directory if needed
-        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
 
         // Setup URL session with background configuration
         let config = URLSessionConfiguration.background(withIdentifier: "com.babyincar.audiodownload")
@@ -87,12 +88,25 @@ class AudioDownloadManager: NSObject, ObservableObject {
     // MARK: - Public API
 
     /// Get download state for a track
+    /// Note: For accurate state, prefer checking AudioCacheService.shared.isTrackCached() directly
     func getDownloadState(for trackId: String) -> DownloadState {
+        // First check if actively downloading or failed
         if let state = downloadStates[trackId] {
-            return state
+            if case .downloading = state {
+                return state
+            }
+            if case .failed = state {
+                return state
+            }
         }
 
-        // Check if file exists in cache
+        // Use AudioCacheService as the single source of truth for downloaded state
+        if AudioCacheService.shared.isTrackCached(trackId) {
+            downloadStates[trackId] = .downloaded
+            return .downloaded
+        }
+
+        // Also check local file existence as fallback
         if isTrackCached(trackId: trackId) {
             downloadStates[trackId] = .downloaded
             return .downloaded
@@ -103,10 +117,12 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
     /// Download a track from the server
     func downloadTrack(_ track: AudioTrack) async throws -> URL {
-        let trackId = track.id.uuidString
+        // Use serverId for API calls if available, otherwise fall back to UUID string
+        let trackId = track.serverId ?? track.id.uuidString
 
-        // Check if already downloaded
-        if let cachedURL = getCachedURL(for: trackId) {
+        // Check if already downloaded (verify with AudioCacheService for single source of truth)
+        let cacheService = AudioCacheService.shared
+        if cacheService.isTrackCached(trackId), let cachedURL = getCachedURL(for: trackId) {
             downloadStates[trackId] = .downloaded
             return cachedURL
         }
@@ -119,15 +135,16 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
         // Get stream URL from track or API
         let streamURL: URL
-        if let urlString = track.streamURL, let url = URL(string: urlString) {
+        if let urlString = track.streamURL, !urlString.isEmpty, let url = URL(string: urlString) {
             streamURL = url
         } else {
-            // Fetch stream URL from API
+            // Fetch stream URL from API using serverId
             streamURL = try await fetchStreamURL(for: trackId)
         }
 
-        // Start download
-        return try await startDownload(trackId: trackId, from: streamURL)
+        // Start download and save metadata
+        let localURL = try await startDownload(trackId: trackId, from: streamURL, track: track)
+        return localURL
     }
 
     /// Download multiple tracks
@@ -173,20 +190,20 @@ class AudioDownloadManager: NSObject, ObservableObject {
     /// Delete cached track
     func deleteCachedTrack(trackId: String) {
         let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        try? fileManager.removeItem(at: fileURL)
+        try? FileManager.default.removeItem(at: fileURL)
         downloadStates[trackId] = .notDownloaded
     }
 
     /// Clear all cache
     func clearCache() {
-        try? fileManager.removeItem(at: cacheDirectory)
-        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? FileManager.default.removeItem(at: cacheDirectory)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         downloadStates.removeAll()
     }
 
     /// Get cache size
     func getCacheSize() -> Int64 {
-        guard let enumerator = fileManager.enumerator(
+        guard let enumerator = FileManager.default.enumerator(
             at: cacheDirectory,
             includingPropertiesForKeys: [.fileSizeKey],
             options: []
@@ -204,7 +221,7 @@ class AudioDownloadManager: NSObject, ObservableObject {
     /// Get local URL for cached track
     func getCachedURL(for trackId: String) -> URL? {
         let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        if fileManager.fileExists(atPath: fileURL.path) {
+        if FileManager.default.fileExists(atPath: fileURL.path) {
             return fileURL
         }
         return nil
@@ -226,7 +243,15 @@ class AudioDownloadManager: NSObject, ObservableObject {
         return url
     }
 
-    private func startDownload(trackId: String, from url: URL) async throws -> URL {
+    /// Tracks pending for metadata save after download completes
+    private var pendingTrackMetadata: [String: AudioTrack] = [:]
+
+    private func startDownload(trackId: String, from url: URL, track: AudioTrack? = nil) async throws -> URL {
+        // Store track for metadata save after download completes
+        if let track = track {
+            pendingTrackMetadata[trackId] = track
+        }
+
         return try await withCheckedThrowingContinuation { continuation in
             let task = urlSession.downloadTask(with: url)
             task.taskDescription = trackId
@@ -282,7 +307,7 @@ class AudioDownloadManager: NSObject, ObservableObject {
     }
 
     private func loadCachedStates() {
-        guard let enumerator = fileManager.enumerator(at: cacheDirectory, includingPropertiesForKeys: nil) else {
+        guard let enumerator = FileManager.default.enumerator(at: cacheDirectory, includingPropertiesForKeys: nil) else {
             return
         }
 
@@ -297,7 +322,7 @@ class AudioDownloadManager: NSObject, ObservableObject {
         guard currentSize > maxCacheSize else { return }
 
         // Get all cached files sorted by access date
-        guard let enumerator = fileManager.enumerator(
+        guard let enumerator = FileManager.default.enumerator(
             at: cacheDirectory,
             includingPropertiesForKeys: [.contentAccessDateKey, .fileSizeKey]
         ) else { return }
@@ -318,7 +343,7 @@ class AudioDownloadManager: NSObject, ObservableObject {
         var sizeToFree = currentSize - maxCacheSize
         for file in files {
             guard sizeToFree > 0 else { break }
-            try? fileManager.removeItem(at: file.url)
+            try? FileManager.default.removeItem(at: file.url)
             let trackId = file.url.deletingPathExtension().lastPathComponent
             downloadStates[trackId] = .notDownloaded
             sizeToFree -= file.size
@@ -333,13 +358,18 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
         guard let trackId = downloadTask.taskDescription else { return }
 
         let destinationURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
+        // Use FileManager.default directly in nonisolated context to avoid Sendable issues
+        let fm = FileManager.default
 
         do {
             // Remove existing file if any
-            try? fileManager.removeItem(at: destinationURL)
+            try? fm.removeItem(at: destinationURL)
 
             // Move downloaded file to cache
-            try fileManager.moveItem(at: location, to: destinationURL)
+            try fm.moveItem(at: location, to: destinationURL)
+
+            // Get file size for metadata
+            let fileSize: Int64 = (try? fm.attributesOfItem(atPath: destinationURL.path)[.size] as? Int64) ?? 0
 
             Task { @MainActor in
                 self.downloadStates[trackId] = .downloaded
@@ -347,6 +377,12 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
                 self.activeDownloads.removeAll { $0.trackId == trackId }
                 self.updateTotalProgress()
                 self.cleanupCacheIfNeeded()
+
+                // Save metadata to AudioCacheService for proper tracking
+                if let track = self.pendingTrackMetadata[trackId] {
+                    AudioCacheService.shared.saveTrackMetadata(track, fileSize: fileSize)
+                    self.pendingTrackMetadata.removeValue(forKey: trackId)
+                }
 
                 self.completionHandlers[trackId]?(.success(destinationURL))
                 self.completionHandlers.removeValue(forKey: trackId)
@@ -357,6 +393,7 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
                 self.downloadTasks.removeValue(forKey: trackId)
                 self.activeDownloads.removeAll { $0.trackId == trackId }
                 self.updateTotalProgress()
+                self.pendingTrackMetadata.removeValue(forKey: trackId)
 
                 self.completionHandlers[trackId]?(.failure(error))
                 self.completionHandlers.removeValue(forKey: trackId)

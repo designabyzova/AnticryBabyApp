@@ -1,0 +1,107 @@
+# SwiftLint Configuration for BabyInCarApp
+# Generated for Increment 0024: Comprehensive Code Quality Audit
+# Target: Detect P0 crashes, P1 performance issues, P2 maintainability problems
+
+# Excluded paths
+excluded:
+  - Pods
+  - DerivedData
+  - .build
+  - BabyInCarAppTests/Fixtures
+  - BabyInCarAppTests/Mocks
+
+# Opt-in rules for P0/P1 detection
+opt_in_rules:
+  - force_unwrapping                # P0: Detect dangerous force unwraps (!)
+  - implicitly_unwrapped_optional   # P0: Detect implicit unwraps (Type!)
+  - closure_body_length             # P2: Long closures hurt readability
+  - cyclomatic_complexity           # P1: Complex functions = bugs
+  - file_length                     # P2: God files
+  - function_body_length            # P1: God functions
+  - type_body_length                # P2: God classes
+  - large_tuple                     # P2: Use custom types instead
+  - trailing_closure                # P2: Consistency
+  - unused_optional_binding         # P2: Dead code
+  - implicit_optional_initialization  # P2: Code smell (renamed from redundant_optional_initialization)
+  - empty_count                     # P1: Performance (use isEmpty)
+  - array_init                      # P1: Performance optimization
+  - contains_over_filter_count      # P1: Performance optimization
+  - contains_over_filter_is_empty   # P1: Performance optimization
+  - contains_over_first_not_nil     # P1: Performance optimization
+  - contains_over_range_nil_comparison  # P1: Performance optimization
+  - first_where                     # P1: Performance optimization
+  - last_where                      # P1: Performance optimization
+
+# Disabled rules (too noisy for initial audit)
+disabled_rules:
+  - line_length  # Will re-enable after P0/P1 fixes
+  - trailing_whitespace  # Not critical for audit
+
+# Rule configurations with P0/P1/P2 severity mapping
+
+# P0: Force unwrapping (CRITICAL - causes crashes)
+force_unwrapping:
+  severity: error  # Block builds with force unwraps
+
+# P0: Implicitly unwrapped optionals (CRITICAL - crash risk)
+implicitly_unwrapped_optional:
+  severity: warning  # Warn but don't block (used in IBOutlets)
+
+# P1: Cyclomatic complexity (HIGH - bugs correlation)
+cyclomatic_complexity:
+  warning: 10  # Flag complex functions
+  error: 15    # Block extremely complex functions
+  ignores_case_statements: true
+
+# P2: File length (MEDIUM - maintainability)
+file_length:
+  warning: 500   # Warn on large files
+  error: 1500    # Block god files
+  ignore_comment_only_lines: true
+
+# P1: Function body length (HIGH - complexity indicator)
+function_body_length:
+  warning: 50    # Warn on long functions
+  error: 100     # Block god functions
+
+# P2: Type body length (MEDIUM - god classes)
+type_body_length:
+  warning: 500   # Warn on large types
+  error: 1000    # Block god classes
+
+# P2: Closure body length
+closure_body_length:
+  warning: 30
+  error: 50
+
+# P2: Large tuples (should use custom types)
+large_tuple:
+  warning: 3
+  error: 4
+
+# Reporter (use GitHub Actions format for CI)
+reporter: "xcode"  # Human-readable for local development
+
+# Custom rules for BabyInCarApp-specific patterns
+custom_rules:
+  # P0: Main thread blocking (detect synchronous operations on main actor)
+  main_thread_blocking:
+    name: "Main Thread Blocking"
+    regex: "@MainActor.*\\b(Thread\\.sleep|usleep|sleep)\\("
+    message: "Avoid blocking operations on @MainActor methods"
+    severity: error
+
+  # P1: Memory leak risk (detect unbounded array growth)
+  # Commented out - needs refined regex pattern
+  # unbounded_array_growth:
+  #   name: "Unbounded Array Growth"
+  #   regex: "\\b\\.append\\("
+  #   message: "Arrays should have size limits to prevent memory leaks. See 0012-memory-crash-fix."
+  #   severity: warning
+
+  # P2: TODO comments (track technical debt)
+  todo_comment:
+    name: "TODO Comment"
+    regex: "(TODO|FIXME|XXX):"
+    message: "Unresolved TODO - consider creating an increment"
+    severity: warning

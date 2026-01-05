@@ -23,7 +23,7 @@ class AIRecommendationEngine: ObservableObject {
     // MARK: - Age-Based Recommendations
 
     /// Get personalized playlist for baby's age
-    func getPersonalizedPlaylist(for baby: Baby, category: AudioCategory? = nil, count: Int = 10) async -> Playlist {
+    func getPersonalizedPlaylist(for baby: Baby, category: AudioCategory? = nil, languages: [Language]? = nil, count: Int = 10) async -> Playlist {
         isLoading = true
         defer { isLoading = false }
 
@@ -40,6 +40,15 @@ class AIRecommendationEngine: ObservableObject {
             // Filter by category if specified
             if let category = category {
                 guard track.category == category else { return false }
+            }
+
+            // Filter by language if specified and track has a language
+            // (non-language content like ambient/nature sounds passes through)
+            if let languages = languages, !languages.isEmpty {
+                if let trackLanguage = track.language {
+                    guard languages.contains(trackLanguage) else { return false }
+                }
+                // Tracks without language (instrumental, ambient, nature) are always included
             }
 
             return true
@@ -71,13 +80,13 @@ class AIRecommendationEngine: ObservableObject {
     }
 
     /// Get quick picks for home screen
-    func getQuickPicks(for baby: Baby) async -> [Playlist] {
+    func getQuickPicks(for baby: Baby, languages: [Language]? = nil) async -> [Playlist] {
         let stage = baby.developmentalStage
         var playlists: [Playlist] = []
 
         // Get recommended categories for this developmental stage
         for category in stage.recommendedCategories.prefix(6) {
-            let playlist = await getPersonalizedPlaylist(for: baby, category: category, count: 5)
+            let playlist = await getPersonalizedPlaylist(for: baby, category: category, languages: languages, count: 5)
             playlists.append(playlist)
         }
 
@@ -139,38 +148,38 @@ class AIRecommendationEngine: ObservableObject {
         var preferredCategories: [AudioCategory] {
             switch self {
             case .sleepy:
-                return [.whiteNoise, .classicalMusic, .instrumental]
+                return [.ambient, .classicalMusic, .lullabies]
             case .crying:
-                return [.whiteNoise, .natureSounds, .instrumental]
+                return [.ambient, .natureSounds, .instrumental]
             case .playful:
                 return [.childrenSongs, .fairyTales, .instrumental]
             case .calm:
                 return [.classicalMusic, .natureSounds, .podcasts]
             case .fussy:
-                return [.whiteNoise, .natureSounds, .classicalMusic]
+                return [.ambient, .natureSounds, .classicalMusic]
             case .restless:
-                return [.whiteNoise, .natureSounds, .instrumental]
+                return [.ambient, .natureSounds, .instrumental]
             case .overtired:
-                return [.whiteNoise, .instrumental, .classicalMusic]
+                return [.ambient, .lullabies, .classicalMusic]
             }
         }
 
         var preferredGenerators: [GeneratorType] {
             switch self {
             case .sleepy:
-                return [.pinkNoise, .rain, .ocean, .lullaby, .velvetNoise, .rainOnRoof]
+                return [.ocean, .lullaby, .river, .softPiano]
             case .crying:
-                return [.shushing, .womb, .heartbeat, .vacuum]
+                return [.shushing, .womb, .heartbeat, .ocean]
             case .playful:
                 return [.musicBox, .birds, .chimes, .aquarium, .forest]
             case .calm:
-                return [.rain, .ocean, .river, .wind, .greyNoise, .softPiano]
+                return [.ocean, .river, .softPiano, .forest]
             case .fussy:
-                return [.pinkNoise, .brownNoise, .fan, .shushing, .velvetNoise]
+                return [.shushing, .womb, .ocean, .heartbeat]
             case .restless:
-                return [.trainRide, .airplaneCabin, .greyNoise, .carEngine, .waterfall]
+                return [.waterfall, .river, .forest, .campfire]
             case .overtired:
-                return [.velvetNoise, .greyNoise, .rainOnRoof, .gentleGuitar, .campfire]
+                return [.womb, .river, .gentleGuitar, .campfire]
             }
         }
 
@@ -182,19 +191,19 @@ class AIRecommendationEngine: ObservableObject {
             if ageMonths >= 12 {
                 switch self {
                 case .sleepy:
-                    generators = [.greyNoise, .velvetNoise, .rainOnRoof, .softPiano, .gentleGuitar, .campfire]
+                    generators = [.forest, .waterfall, .river, .softPiano, .gentleGuitar, .campfire]
                 case .crying:
-                    generators = [.pinkNoise, .greyNoise, .trainRide, .airplaneCabin, .waterfall]
+                    generators = [.ocean, .forest, .lullaby, .softPiano, .waterfall]
                 case .playful:
                     generators = [.forest, .birds, .aquarium, .chimes, .musicBox]
                 case .calm:
-                    generators = [.forest, .campfire, .greyNoise, .softPiano, .gentleGuitar, .waterfall]
+                    generators = [.forest, .campfire, .forest, .softPiano, .gentleGuitar, .waterfall]
                 case .fussy:
-                    generators = [.velvetNoise, .greyNoise, .trainRide, .rainOnRoof, .thunderRumble]
+                    generators = [.waterfall, .forest, .lullaby, .river, .river]
                 case .restless:
-                    generators = [.trainRide, .airplaneCabin, .cityAmbience, .greyNoise, .blueNoise]
+                    generators = [.lullaby, .softPiano, .forest, .forest, .birds]
                 case .overtired:
-                    generators = [.velvetNoise, .greyNoise, .rainOnRoof, .campfire, .softPiano]
+                    generators = [.waterfall, .forest, .river, .campfire, .softPiano]
                 }
             }
 
@@ -284,16 +293,16 @@ class AIRecommendationEngine: ObservableObject {
         let calmingGenerators: [GeneratorType]
         if ageMonths >= 18 {
             // Toddlers prefer more complex, engaging sounds
-            calmingGenerators = [.greyNoise, .velvetNoise, .trainRide, .rainOnRoof, .campfire, .forest, .softPiano]
+            calmingGenerators = [.forest, .waterfall, .lullaby, .river, .campfire, .forest, .softPiano]
         } else if ageMonths >= 12 {
             // Older babies - transitioning to more varied sounds
-            calmingGenerators = [.greyNoise, .pinkNoise, .rainOnRoof, .ocean, .velvetNoise, .airplaneCabin]
+            calmingGenerators = [.forest, .ocean, .river, .ocean, .waterfall, .softPiano]
         } else if ageMonths >= 6 {
             // 6-12 months
-            calmingGenerators = [.pinkNoise, .rain, .ocean, .greyNoise, .fan]
+            calmingGenerators = [.ocean, .river, .womb, .forest, .lullaby]
         } else {
             // Newborns - stick to womb-like sounds
-            calmingGenerators = [.pinkNoise, .shushing, .womb, .heartbeat, .rain]
+            calmingGenerators = [.ocean, .shushing, .womb, .heartbeat, .ocean]
         }
 
         for i in 0..<calmingCount {
@@ -471,6 +480,39 @@ class EmergencyCryStopService: ObservableObject {
                 self?.responseEffectiveness = effectiveness.rawValue
             }
             .store(in: &cancellables)
+
+        // Sync SmartCryResponseEngine phase with our phase for UI display
+        smartResponseEngine.$currentPhase
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] smartPhase in
+                guard let self = self, self.isEmergencyModeActive else { return }
+                // Map SmartCryResponseEngine phases to EmergencyCryStopService phases
+                switch smartPhase {
+                case .idle:
+                    break // Don't update - let our state machine handle idle
+                case .initializing:
+                    self.currentPhase = .detected
+                case .attentionCapture:
+                    self.currentPhase = .attention
+                case .primarySoothing, .deepCalming:
+                    self.currentPhase = .sustained
+                case .adaptiveTuning, .escalating:
+                    self.currentPhase = .adapting
+                case .sleepTransition, .monitoring:
+                    self.currentPhase = .transition
+                case .success:
+                    self.currentPhase = .complete
+                }
+            }
+            .store(in: &cancellables)
+
+        // Sync phase progress
+        smartResponseEngine.$phaseProgress
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] progress in
+                self?.phaseProgress = progress
+            }
+            .store(in: &cancellables)
     }
 
     private var cancellables = Set<AnyCancellable>()
@@ -488,27 +530,76 @@ class EmergencyCryStopService: ObservableObject {
 
     /// Disable AI monitoring
     func disableAIMonitoring() {
+        print("[EmergencyCryStop] Disabling AI monitoring...")
+
+        // Stop cry detection service first
         cryDetectionService.stopMonitoring()
+
+        // ALWAYS stop smart response engine (stops audio)
+        // Call regardless of isEmergencyModeActive flag - ensures audio stops
+        smartResponseEngine.deactivate()
+
+        // Stop any active emergency response
+        if isEmergencyModeActive {
+            deactivate()
+        }
+
+        // SAFETY: Explicitly stop audio engine as fallback
+        // In case any audio is playing outside of smart response
+        audioEngine.stop()
+
+        // Always reset UI state
         isAIMonitoringEnabled = false
         currentPhase = .idle
         cryDetectionStatus = "Ready"
+        detectedCryType = .unknown
+        phaseProgress = 0
+
+        // Cancel any pending timers
+        phaseTimer?.invalidate()
+        phaseTimer = nil
+
+        print("[EmergencyCryStop] AI monitoring disabled - all audio stopped, state reset")
     }
 
     private func handleCryDetectionChange(_ detected: Bool) {
-        guard isAIMonitoringEnabled, let baby = currentBaby else { return }
+        print("[EmergencyCryStop] handleCryDetectionChange: detected=\(detected), isAIMonitoringEnabled=\(isAIMonitoringEnabled), isEmergencyModeActive=\(isEmergencyModeActive)")
+
+        guard isAIMonitoringEnabled, let baby = currentBaby else {
+            print("[EmergencyCryStop] ⚠️ Skipping - AI monitoring not enabled or no baby set")
+            return
+        }
 
         if detected && !isEmergencyModeActive {
+            print("[EmergencyCryStop] 🔴 CRY DETECTED - Starting confirmation period for \(baby.displayName)")
             currentPhase = .detected
             Task {
-                // Small delay to confirm it's actually crying
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                if cryDetectionService.isCryDetected {
-                    if useSmartResponse {
-                        await smartResponseEngine.activate(for: baby)
-                        isEmergencyModeActive = true
-                    } else {
-                        activate(for: baby)
+                // CRITICAL: Wait 4 seconds to confirm it's actually crying
+                // This prevents false positives from brief noises, talking, or ambient sounds
+                // User feedback: Previous 0.5s was too short, triggered from just talking!
+                let confirmationSeconds: UInt64 = 4
+                print("[EmergencyCryStop] ⏳ Confirming cry for \(confirmationSeconds) seconds...")
+
+                // Check every second for 4 seconds
+                for second in 1...Int(confirmationSeconds) {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+
+                    // If cry stopped during confirmation, it was a false positive
+                    if !cryDetectionService.isCryDetected {
+                        print("[EmergencyCryStop] ℹ️ False positive at second \(second) - cry stopped before confirmation")
+                        currentPhase = isAIMonitoringEnabled ? .listening : .idle
+                        return
                     }
+                    print("[EmergencyCryStop] ⏳ Cry still detected at second \(second)/\(confirmationSeconds)...")
+                }
+
+                // Cry persisted for full confirmation period
+                print("[EmergencyCryStop] 🎵 Confirmed cry after \(confirmationSeconds)s - activating SmartCryResponseEngine")
+                if useSmartResponse {
+                    await smartResponseEngine.activate(for: baby)
+                    isEmergencyModeActive = true
+                } else {
+                    activate(for: baby)
                 }
             }
         } else if !detected && isEmergencyModeActive {
@@ -523,25 +614,26 @@ class EmergencyCryStopService: ObservableObject {
 
     // MARK: - Manual Activation
     /// Manually activate emergency cry-stop mode
+    /// Uses GENERATED SOUNDS (womb/heartbeat) via NoiseGenerator - NOT real audio files!
+    /// This ensures instant playback with NO file loading delays
     func activate(for baby: Baby) {
         currentBaby = baby
         isEmergencyModeActive = true
         currentPhase = .attention
         sessionStartTime = Date()
 
-        // Check if we should use smart response
-        if useSmartResponse && isAIMonitoringEnabled {
-            Task {
-                await smartResponseEngine.activate(for: baby)
+        // 🚨 CRITICAL: Use single-sound mode with GENERATED sounds (womb/heartbeat)
+        // This uses NoiseGenerator for instant audio without file loading
+        // NEVER use activateEmergencyPlaylistMode() - that tries to load files from bundle!
+        Task {
+            await smartResponseEngine.activate(for: baby)
+
+            // ✅ Auto-enable AI monitoring if not already active (Increment 0026)
+            // This ensures both emergency and AI detection buttons provide consistent monitoring behavior
+            if !isAIMonitoringEnabled {
+                try? await enableAIMonitoring(for: baby)
             }
-            return
         }
-
-        // Get best calming tracks for this baby
-        let _ = AIRecommendationEngine.shared.getEmergencyTracks(for: baby)
-
-        // Start with attention-grabbing phase
-        startPhase(.attention, baby: baby)
     }
 
     func deactivate() {
@@ -630,22 +722,22 @@ class EmergencyCryStopService: ObservableObject {
         let adaptedGenerator: GeneratorType
         switch cryType {
         case .tired:
-            adaptedGenerator = ageMonths < 12 ? .velvetNoise : .rainOnRoof
+            adaptedGenerator = ageMonths < 12 ? .waterfall : .river
         case .hunger:
-            adaptedGenerator = ageMonths < 12 ? .shushing : .pinkNoise
+            adaptedGenerator = ageMonths < 12 ? .shushing : .ocean
         case .pain:
-            adaptedGenerator = ageMonths < 12 ? .vacuum : .brownNoise
+            adaptedGenerator = ageMonths < 12 ? .shushing : .river
         case .attention:
             adaptedGenerator = ageMonths < 18 ? .musicBox : .aquarium
         case .discomfort:
-            adaptedGenerator = ageMonths < 12 ? .womb : .greyNoise
+            adaptedGenerator = ageMonths < 12 ? .womb : .forest
         default:
-            adaptedGenerator = ageMonths < 12 ? .pinkNoise : .greyNoise
+            adaptedGenerator = ageMonths < 12 ? .womb : .ocean
         }
 
         let track = AudioTrack(
             title: "Adapted: \(adaptedGenerator.rawValue)",
-            category: .whiteNoise,
+            category: .ambient,
             duration: 60,
             calmingScore: 0.9,
             audioSourceType: .generated,
@@ -675,7 +767,7 @@ class EmergencyCryStopService: ObservableObject {
             let generator = getAttentionGenerator(age: ageMonths, cryType: cryType)
             return AudioTrack(
                 title: "Attention Grabber",
-                category: .whiteNoise,
+                category: .ambient,
                 duration: 30,
                 calmingScore: 0.9,
                 audioSourceType: .generated,
@@ -686,7 +778,7 @@ class EmergencyCryStopService: ObservableObject {
             let generator = getTransitionGenerator(age: ageMonths, cryType: cryType)
             return AudioTrack(
                 title: "Calming Transition",
-                category: .whiteNoise,
+                category: .ambient,
                 duration: 60,
                 calmingScore: 0.95,
                 audioSourceType: .generated,
@@ -705,10 +797,10 @@ class EmergencyCryStopService: ObservableObject {
             )
 
         default:
-            let generator: GeneratorType = ageMonths >= 12 ? .greyNoise : .pinkNoise
+            let generator: GeneratorType = ageMonths >= 12 ? .ocean : .womb
             return AudioTrack(
                 title: generator.rawValue,
-                category: .whiteNoise,
+                category: .ambient,
                 duration: 600,
                 calmingScore: 0.9,
                 audioSourceType: .generated,
@@ -718,14 +810,14 @@ class EmergencyCryStopService: ObservableObject {
     }
 
     private func getAttentionGenerator(age: Int, cryType: CryType) -> GeneratorType {
-        // Smarter selection based on cry type
+        // Smarter selection based on cry type (NO harsh mechanical sounds!)
         switch cryType {
         case .pain:
-            // Urgent - use strong attention-grabber
-            return age < 12 ? .vacuum : .brownNoise
+            // Urgent - use soothing womb sounds
+            return age < 12 ? .shushing : .womb
         case .tired:
             // Gentler approach
-            return age < 12 ? .shushing : .velvetNoise
+            return age < 12 ? .shushing : .lullaby
         default:
             // Standard approach
             if age < 6 {
@@ -733,7 +825,7 @@ class EmergencyCryStopService: ObservableObject {
             } else if age < 12 {
                 return .musicBox
             } else if age < 24 {
-                return .trainRide
+                return .chimes
             } else {
                 return .aquarium
             }
@@ -743,18 +835,18 @@ class EmergencyCryStopService: ObservableObject {
     private func getTransitionGenerator(age: Int, cryType: CryType) -> GeneratorType {
         switch cryType {
         case .tired:
-            return age < 12 ? .pinkNoise : .velvetNoise
+            return age < 12 ? .womb : .lullaby
         case .pain:
-            return age < 12 ? .womb : .brownNoise
+            return age < 12 ? .womb : .heartbeat
         default:
             if age < 6 {
                 return .womb
             } else if age < 12 {
-                return .pinkNoise
+                return .heartbeat
             } else if age < 24 {
-                return .velvetNoise
+                return .lullaby
             } else {
-                return .greyNoise
+                return .ocean
             }
         }
     }
@@ -762,14 +854,14 @@ class EmergencyCryStopService: ObservableObject {
     private func getSustainedGenerator(age: Int, cryType: CryType) -> GeneratorType {
         switch cryType {
         case .tired:
-            return age < 12 ? .heartbeat : .rainOnRoof
+            return age < 12 ? .heartbeat : .river
         default:
             if age < 6 {
                 return .heartbeat
             } else if age < 12 {
                 return .ocean
             } else if age < 24 {
-                return .rainOnRoof
+                return .river
             } else {
                 return .campfire
             }
@@ -777,6 +869,7 @@ class EmergencyCryStopService: ObservableObject {
     }
 
     // MARK: - Feedback & Learning
+
     /// Report that baby has calmed down (for learning)
     func reportSuccess(for baby: Baby) {
         deactivate()
@@ -789,6 +882,27 @@ class EmergencyCryStopService: ObservableObject {
             cryType: detectedCryType,
             wasSuccessful: true
         )
+    }
+
+    /// Enhanced success report with time-to-calm metric (for "Baby is Calm" button)
+    /// - Parameters:
+    ///   - baby: The baby that was calmed
+    ///   - timeToCalm: Measured time from emergency start to calm confirmation
+    func reportSuccessWithFeedback(for baby: Baby, timeToCalm: TimeInterval) {
+        // Don't deactivate here - caller handles that with fade-out
+
+        // Record session with precise timing
+        recordSession(
+            babyId: baby.id,
+            duration: timeToCalm,
+            cryType: detectedCryType,
+            wasSuccessful: true
+        )
+
+        // Deactivate after recording
+        deactivate()
+
+        print("EmergencyCryStop: Success recorded - \(detectedCryType.rawValue) calmed in \(Int(timeToCalm))s")
     }
 
     /// Report that the current approach isn't working

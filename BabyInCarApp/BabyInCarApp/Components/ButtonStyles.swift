@@ -456,7 +456,7 @@ struct PlayPauseButton: View {
             // Play/Pause
             PlayPauseButton(isPlaying: .constant(false), color: .classicalColor) {}
 
-            PlayPauseButton(isPlaying: .constant(true), color: .whiteNoiseColor) {}
+            PlayPauseButton(isPlaying: .constant(true), color: .ambientColor) {}
         }
         .padding()
     }

@@ -1,0 +1,15 @@
+# Test Fixtures Directory
+# Place test audio files here for audio processing tests
+#
+# Recommended test files:
+# - test_crying_baby.wav - Sample of baby crying for detection tests
+# - test_ambient_noise.wav - Background noise for negative tests
+# - test_car_engine.wav - Car engine sound for filtering tests
+# - test_music.wav - Music sample for false positive prevention
+#
+# Audio Format Requirements:
+# - Sample Rate: 44100 Hz
+# - Channels: Mono (1 channel)
+# - Bit Depth: 16-bit or 32-bit float
+# - Format: WAV (uncompressed)
+# - Duration: 2-5 seconds per file

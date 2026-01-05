@@ -1,0 +1,115 @@
+appId: com.anticry.babyincar
+---
+# Test: Playlist creation and management
+# Verifies: Create, edit, delete, add/remove tracks
+
+- launchApp
+
+# Navigate to Library
+- tapOn:
+    id: "libraryTab"
+- assertVisible: "Library"
+
+# Go to Playlists tab
+- tapOn: "Playlists"
+- assertVisible: "My Playlists"
+
+# Create new playlist
+- tapOn:
+    id: "createPlaylistButton"
+- assertVisible: "New Playlist"
+
+# Enter playlist details
+- tapOn:
+    id: "playlistNameField"
+- inputText: "Bedtime Mix"
+
+- tapOn:
+    id: "playlistDescriptionField"
+- inputText: "Relaxing tracks for sleep"
+
+- tapOn: "Create"
+- assertVisible: "Bedtime Mix"
+
+# Add tracks to playlist
+- tapOn: "Add Tracks"
+- assertVisible: "Select Tracks"
+
+# Select multiple tracks
+- tapOn:
+    text: "Mozart"
+    index: 0
+- tapOn:
+    text: "Lullaby"
+    index: 0
+- tapOn:
+    text: "Rain Sounds"
+    index: 0
+
+- tapOn: "Add Selected"
+- assertVisible: "3 tracks added"
+
+# Verify tracks in playlist
+- assertVisible: "Mozart"
+- assertVisible: "Lullaby"
+- assertVisible: "Rain Sounds"
+
+# Test reorder tracks
+- tapOn: "Edit"
+- longPressOn: "Mozart"
+- scroll:
+    direction: DOWN
+    distance: 100
+- tapOn: "Done"
+
+# Remove a track
+- tapOn: "Edit"
+- tapOn:
+    id: "removeButton"
+    index: 0
+- assertVisible: "Remove from playlist?"
+- tapOn: "Remove"
+- tapOn: "Done"
+
+# Play playlist
+- tapOn: "Play All"
+- assertVisible: "Now Playing"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Test shuffle playlist
+- tapOn: "Shuffle"
+- assertVisible: "Shuffle On"
+
+# Stop playback
+- tapOn:
+    id: "pauseButton"
+- back
+
+# Test edit playlist details
+- tapOn:
+    id: "playlistOptionsButton"
+- tapOn: "Edit Details"
+- tapOn:
+    id: "playlistNameField"
+- eraseText
+- inputText: "Sleep Time"
+- tapOn: "Save"
+- assertVisible: "Sleep Time"
+
+# Test share playlist
+- tapOn:
+    id: "playlistOptionsButton"
+- tapOn: "Share"
+- assertVisible: "Share Playlist"
+- back
+
+# Delete playlist
+- tapOn:
+    id: "playlistOptionsButton"
+- tapOn: "Delete Playlist"
+- assertVisible: "Delete playlist?"
+- tapOn: "Delete"
+- assertNotVisible: "Sleep Time"
+
+- takeScreenshot: "playlist_management"

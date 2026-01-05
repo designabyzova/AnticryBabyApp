@@ -1,0 +1,98 @@
+# Maestro E2E Test: Auto-Duck External Audio Settings Flow
+# Tests the auto-duck setting in Profile/Settings
+# When enabled, external audio (Spotify/Apple Music) is reduced when cry response activates
+#
+# Run: maestro test maestro/flows/auto_duck_settings_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Pp]rofile.*"
+    timeout: 5000
+
+- takeScreenshot: "autoduck_01_app_loaded"
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+
+- extendedWaitUntil:
+    visible: "Audio Settings"
+    timeout: 3000
+
+- takeScreenshot: "autoduck_02_profile_view"
+
+# Scroll to Audio Settings section
+- scrollUntilVisible:
+    element:
+      text: "Audio Settings"
+    direction: DOWN
+    optional: true
+
+# Verify Auto-Duck External Audio setting is visible
+- assertVisible: "Auto-Duck External Audio"
+
+- takeScreenshot: "autoduck_03_settings_section"
+
+# Verify the setting subtitle
+- assertVisible:
+    text: "Reduce Spotify/Music volume when baby cries"
+    optional: true
+
+# The toggle should be visible with accessibility identifier
+- runFlow:
+    when:
+      visible:
+        id: "autoDuckExternalAudioToggle"
+    commands:
+      - takeScreenshot: "autoduck_04_toggle_visible"
+      # Toggle the setting OFF
+      - tapOn:
+          id: "autoDuckExternalAudioToggle"
+      - takeScreenshot: "autoduck_05_toggle_off"
+      # Toggle back ON (should be enabled by default for baby safety)
+      - tapOn:
+          id: "autoDuckExternalAudioToggle"
+      - takeScreenshot: "autoduck_06_toggle_on"
+
+# If accessibility identifier not set, try tapping on the row text
+- runFlow:
+    when:
+      notVisible:
+        id: "autoDuckExternalAudioToggle"
+    commands:
+      - tapOn:
+          text: "Auto-Duck External Audio"
+          optional: true
+      - takeScreenshot: "autoduck_04_tapped_row"
+
+# Verify the setting persists after leaving and returning
+- tapOn: "Library"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]ullabies.*|.*[Mm]usic.*"
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "autoduck_07_library"
+
+# Return to Profile
+- tapOn: "Profile"
+
+# Verify setting is still visible
+- scrollUntilVisible:
+    element:
+      text: "Auto-Duck External Audio"
+    direction: DOWN
+    optional: true
+
+- assertVisible: "Auto-Duck External Audio"
+
+- takeScreenshot: "autoduck_08_setting_persisted"
+
+# Final verification
+- takeScreenshot: "autoduck_09_final_check"

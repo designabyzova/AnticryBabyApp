@@ -62,6 +62,7 @@ class CryDetectorMLModel {
 
     private var model: MLModel?
     private let modelName = "BabyCryDetector"
+    private static var didLogModelNotFound = false  // Static to prevent spam across instances
 
     /// Whether ML model is loaded and ready
     var isModelLoaded: Bool {
@@ -73,8 +74,8 @@ class CryDetectorMLModel {
     /// Expected input feature vector size
     private let expectedFeatureCount = 50
 
-    /// Confidence threshold for cry detection
-    private let detectionThreshold: Double = 0.6
+    /// Confidence threshold for cry detection (lowered for rule-based fallback)
+    private let detectionThreshold: Double = 0.35
 
     // MARK: - Initialization
 
@@ -100,7 +101,10 @@ class CryDetectorMLModel {
                 model = nil
             }
         } else {
-            print("CryDetectorMLModel: Model file not found, using rule-based fallback")
+            if !Self.didLogModelNotFound {
+                print("CryDetectorMLModel: Model file not found, using rule-based fallback")
+                Self.didLogModelNotFound = true
+            }
             model = nil
         }
     }
@@ -213,51 +217,50 @@ class CryDetectorMLModel {
 
     /// Rule-based cry detection using acoustic characteristics
     /// Used when ML model is not available
+    /// IMPORTANT: Thresholds are deliberately lenient for better recall
     private func ruleBasedDetection(features: ExtendedAudioFeatures) -> MLInferenceResult {
         var confidence: Double = 0
 
-        // Baby cry fundamental frequency typically 300-600 Hz
-        let fundamentalInRange = features.fundamentalFrequency >= 300 && features.fundamentalFrequency <= 600
+        // Baby cry fundamental frequency typically 250-800 Hz (widened range)
+        let fundamentalInRange = features.fundamentalFrequency >= 250 && features.fundamentalFrequency <= 800
         if fundamentalInRange {
-            confidence += 0.25
+            confidence += 0.30  // Increased - frequency is strong indicator
         }
 
-        // Cries have harmonics - check harmonic strength
-        let harmonicsPresent = features.harmonicsStrength.count >= 2 &&
-                               features.harmonicsStrength[0] > 0.1 &&
-                               features.harmonicsStrength[1] > 0.05
+        // Cries have harmonics - check harmonic strength (more lenient)
+        let harmonicsPresent = features.harmonicsStrength.count >= 1 &&
+                               features.harmonicsStrength[0] > 0.05
         if harmonicsPresent {
-            confidence += 0.2
+            confidence += 0.20
         }
 
-        // Cries are tonal (low spectral flatness)
-        let isTonal = features.spectralFlatness < 0.5
+        // Cries are tonal (low spectral flatness) - more lenient
+        let isTonal = features.spectralFlatness < 0.7
         if isTonal {
             confidence += 0.15
         }
 
-        // Sufficient intensity
-        let sufficientIntensity = features.intensity > 0.1
+        // Sufficient intensity (lowered threshold significantly)
+        let sufficientIntensity = features.intensity > 0.03
         if sufficientIntensity {
-            confidence += 0.15
+            confidence += 0.20  // Increased - volume matters
         }
 
-        // Spectral centroid in expected range (500-2000 Hz)
-        let centroidInRange = features.spectralCentroid > 500 && features.spectralCentroid < 2000
+        // Spectral centroid in expected range (300-3000 Hz) - widened
+        let centroidInRange = features.spectralCentroid > 300 && features.spectralCentroid < 3000
         if centroidInRange {
-            confidence += 0.1
+            confidence += 0.10
         }
 
-        // Good harmonic-to-noise ratio (voices have higher HNR)
-        let goodHNR = features.harmonicToNoiseRatio > 0.4
+        // Good harmonic-to-noise ratio (lowered threshold)
+        let goodHNR = features.harmonicToNoiseRatio > 0.2
         if goodHNR {
-            confidence += 0.1
+            confidence += 0.10
         }
 
-        // Voice characteristics - tremolo or tension indicates distress
-        // This would come from VoiceCharacteristics if available
-        if features.jitter < 0.1 && features.shimmer < 0.15 {
-            confidence += 0.05 // Stable voice = more likely a sustained cry
+        // Voice characteristics - any voice-like signal
+        if features.jitter < 0.2 || features.shimmer < 0.25 {
+            confidence += 0.05
         }
 
         let isCry = confidence > detectionThreshold

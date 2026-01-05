@@ -1,0 +1,75 @@
+appId: com.anticry.babyincar
+---
+# FS-017: Language Filtering Test
+# Verifies language preferences affect playlist selection
+
+- launchApp
+
+# Navigate to Profile/Settings
+- tapOn: "Profile"
+- assertVisible: "Language Preferences"
+
+# Select English only
+- tapOn: "Language Preferences"
+- tapOn: "English"
+- assertVisible:
+    text: "✓ English"
+
+# Unselect Russian
+- tapOn: "Russian"
+- assertNotVisible:
+    text: "✓ Russian"
+
+# Save preferences
+- tapOn: "Save"
+- assertVisible: "Preferences saved"
+
+# Navigate back to Cry Detection
+- tapOn: "Cry Detection"
+- tapOn: "Start Monitoring"
+
+# Trigger emergency mode (manual or mock)
+# Then verify only English playlists appear
+
+# Verify queue shows only English/Instrumental tracks
+- assertVisible:
+    id: "currentTrackCard"
+- assertVisible:
+    text: "🇬🇧" # English flag
+    OR:
+      text: "🌐" # Instrumental flag
+
+# Verify no Russian tracks in queue
+- assertNotVisible:
+    text: "🇷🇺" # Russian flag
+
+# Cancel and switch to Russian
+- tapOn:
+    id: "cancelEmergencyButton"
+- tapOn: "Not Effective"
+
+# Go back to settings
+- tapOn: "Profile"
+- tapOn: "Language Preferences"
+- tapOn: "Russian"
+- assertVisible:
+    text: "✓ Russian"
+- tapOn: "Save"
+
+# Test Russian playlist selection
+- tapOn: "Cry Detection"
+- tapOn: "Start Monitoring"
+
+# Trigger emergency again
+# Verify Russian playlists now appear
+
+- assertVisible:
+    text: "🇷🇺" # Russian flag
+    OR:
+      text: "🌐" # Instrumental flag
+
+- tapOn:
+    id: "cancelEmergencyButton"
+- tapOn: "Very Effective"
+
+- stopApp

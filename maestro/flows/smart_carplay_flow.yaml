@@ -1,0 +1,184 @@
+# Maestro E2E Test: Smart CarPlay Mode Flow
+# Tests the intelligent CarPlay controller that adapts to baby sounds and car environment
+#
+# Run: maestro test maestro/flows/smart_carplay_flow.yaml
+#
+# Note: This test simulates CarPlay mode in the app, not actual CarPlay
+# (which requires physical device and CarPlay simulator)
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ss]ettings.*"
+    timeout: 5000
+
+- takeScreenshot: "carplay_01_initial"
+
+# Navigate to Settings or Smart Mode toggle
+- runFlow:
+    when:
+      visible: "Settings"
+    commands:
+      - tapOn: "Settings"
+
+- runFlow:
+    when:
+      visible:
+        id: "settingsTab"
+    commands:
+      - tapOn:
+          id: "settingsTab"
+
+# Look for Smart Mode or Car Mode toggle
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ss]mart.*[Mm]ode.*|.*[Cc]ar.*[Mm]ode.*|.*[Cc]arPlay.*"
+    timeout: 3000
+
+- takeScreenshot: "carplay_02_settings"
+
+# Enable Smart Mode
+- runFlow:
+    when:
+      visible:
+        id: "smartModeToggle"
+    commands:
+      - tapOn:
+          id: "smartModeToggle"
+
+- runFlow:
+    when:
+      visible: "Smart Mode"
+    commands:
+      - tapOn: "Smart Mode"
+
+- takeScreenshot: "carplay_03_smart_mode_enabled"
+
+# Verify status indicators appear
+- runFlow:
+    when:
+      visible:
+        text: ".*[Aa]ctive.*|.*[Mm]onitoring.*|.*[Ee]nabled.*"
+    commands:
+      - takeScreenshot: "carplay_04_status_active"
+
+# Look for environment indicator
+- runFlow:
+    when:
+      visible:
+        text: ".*[Ee]nvironment.*|.*[Cc]ar.*[Ss]ound.*"
+    commands:
+      - takeScreenshot: "carplay_05_environment_display"
+
+# Look for baby state indicator
+- runFlow:
+    when:
+      visible:
+        text: ".*[Bb]aby.*|.*[Cc]alm.*|.*[Mm]onitoring.*"
+    commands:
+      - takeScreenshot: "carplay_06_baby_state_display"
+
+# Navigate to Home while Smart Mode is active
+- runFlow:
+    when:
+      visible: "Home"
+    commands:
+      - tapOn: "Home"
+
+- runFlow:
+    when:
+      visible:
+        id: "homeTab"
+    commands:
+      - tapOn:
+          id: "homeTab"
+
+# Verify Smart Mode indicator is visible on Home
+- runFlow:
+    when:
+      visible:
+        text: ".*[Ss]mart.*|.*[Cc]ar.*[Mm]ode.*"
+    commands:
+      - takeScreenshot: "carplay_07_home_with_smart_mode"
+
+# Start playback to test volume adjustment
+- runFlow:
+    when:
+      visible:
+        id: "playButton"
+    commands:
+      - tapOn:
+          id: "playButton"
+      - takeScreenshot: "carplay_08_playing_with_smart_mode"
+
+# Look for volume/soothing score display
+- runFlow:
+    when:
+      visible:
+        text: ".*[Vv]olume.*|.*[Ss]oothing.*|.*%.*"
+    commands:
+      - takeScreenshot: "carplay_09_volume_display"
+
+# Look for explanations (why this volume)
+- runFlow:
+    when:
+      visible:
+        id: "smartModeExplanation"
+    commands:
+      - tapOn:
+          id: "smartModeExplanation"
+      - takeScreenshot: "carplay_10_explanation_detail"
+
+# Navigate back to Settings
+- runFlow:
+    when:
+      visible: "Settings"
+    commands:
+      - tapOn: "Settings"
+
+- runFlow:
+    when:
+      visible:
+        id: "settingsTab"
+    commands:
+      - tapOn:
+          id: "settingsTab"
+
+# Look for Smart Mode session summary
+- runFlow:
+    when:
+      visible:
+        text: ".*[Ss]ession.*|.*[Ss]ummary.*|.*[Dd]ecisions.*"
+    commands:
+      - takeScreenshot: "carplay_11_session_summary"
+
+# Disable Smart Mode
+- runFlow:
+    when:
+      visible:
+        id: "smartModeToggle"
+    commands:
+      - tapOn:
+          id: "smartModeToggle"
+
+- runFlow:
+    when:
+      visible: "Smart Mode"
+    commands:
+      - tapOn: "Smart Mode"
+
+- takeScreenshot: "carplay_12_smart_mode_disabled"
+
+# Verify disabled state
+- runFlow:
+    when:
+      visible:
+        text: ".*[Dd]isabled.*|.*[Oo]ff.*"
+    commands:
+      - takeScreenshot: "carplay_13_disabled_confirmed"
+
+- takeScreenshot: "carplay_14_final"

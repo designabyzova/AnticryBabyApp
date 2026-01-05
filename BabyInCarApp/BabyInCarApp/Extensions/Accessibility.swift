@@ -214,7 +214,7 @@ struct AccessibleAnimation<Content: View>: View {
             content()
         } else {
             content()
-                .animation(animation)
+                .animation(animation, value: UUID())
         }
     }
 }
@@ -260,7 +260,7 @@ extension Color {
 /// Helper to make VoiceOver announcements
 struct AccessibilityAnnouncement {
     /// Announce a message to VoiceOver users
-    static func announce(_ message: String, priority: UIAccessibility.Announcement.Priority = .low) {
+    static func announce(_ message: String) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             UIAccessibility.post(notification: .announcement, argument: message)
         }
@@ -282,11 +282,11 @@ struct AccessibilityAnnouncement {
 #Preview("Accessibility Controls") {
     VStack(spacing: 20) {
         Button("Play Track") {}
-            .accessibleButton(label: "Play Track", hint: "Double tap to start playback")
+            .accessibleButton(label: "Play Track", hint: "Double tap to start playback", action: {})
             .buttonStyle(AccessibleButtonStyle())
 
         Button("Pause") {}
-            .accessiblePlaybackControl(isPlaying: true, trackTitle: "Lullaby") {}
+            .accessiblePlaybackControl(isPlaying: true, trackTitle: "Lullaby", action: {})
 
         ProgressView(value: 0.5)
             .accessibleProgress(label: "Playback progress", value: 90, total: 180)

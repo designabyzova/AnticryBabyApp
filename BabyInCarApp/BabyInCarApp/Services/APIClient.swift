@@ -10,11 +10,9 @@ import Foundation
 // MARK: - API Configuration
 
 struct APIConfig {
-    #if DEBUG
-    static let baseURL = "http://localhost:8787"
-    #else
-    static let baseURL = "https://api.babyincar.app"
-    #endif
+    // Cloudflare Workers deployed API
+    // Custom domain api.babyincar.app can be configured in Cloudflare dashboard
+    static let baseURL = "https://babyincar-api.anton-abyzov.workers.dev"
 
     static let timeout: TimeInterval = 30
 }
@@ -27,6 +25,11 @@ class APIClient: ObservableObject {
 
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
+
+    /// Base URL for API requests - instance property for FS-017 compatibility
+    var baseURL: String {
+        return APIConfig.baseURL
+    }
 
     private var accessToken: String?
     private var refreshToken: String?
@@ -221,7 +224,7 @@ extension APIClient {
     func logout() async {
         if let refresh = refreshToken {
             let body = ["refresh_token": refresh]
-            try? await makeRequest(path: "/auth/logout", method: "DELETE", body: body)
+            _ = try? await makeRequest(path: "/auth/logout", method: "DELETE", body: body)
         }
         clearTokens()
     }
@@ -574,6 +577,294 @@ enum PlaybackEvent {
     }
 }
 
+// MARK: - Search API
+
+extension APIClient {
+    /// Search tracks with full-text search and filters
+    func searchTracks(
+        query: String? = nil,
+        category: String? = nil,
+        language: String? = nil,
+        origin: String? = nil,
+        author: String? = nil,
+        theme: String? = nil,
+        ageMin: Int? = nil,
+        ageMax: Int? = nil,
+        durationMax: Int? = nil,
+        limit: Int = 30,
+        offset: Int = 0
+    ) async throws -> SearchResponse {
+        var queryItems: [String] = []
+
+        if let q = query, !q.isEmpty {
+            queryItems.append("q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)")
+        }
+        if let category = category {
+            queryItems.append("category=\(category)")
+        }
+        if let language = language {
+            queryItems.append("language=\(language)")
+        }
+        if let origin = origin {
+            queryItems.append("origin=\(origin)")
+        }
+        if let author = author {
+            queryItems.append("author=\(author)")
+        }
+        if let theme = theme {
+            queryItems.append("theme=\(theme)")
+        }
+        if let ageMin = ageMin {
+            queryItems.append("age_min=\(ageMin)")
+        }
+        if let ageMax = ageMax {
+            queryItems.append("age_max=\(ageMax)")
+        }
+        if let durationMax = durationMax {
+            queryItems.append("duration_max=\(durationMax)")
+        }
+        queryItems.append("limit=\(limit)")
+        queryItems.append("offset=\(offset)")
+
+        // Add locale
+        let locale = Locale.current.language.languageCode?.identifier ?? "en"
+        queryItems.append("locale=\(locale)")
+
+        let path = "/search?\(queryItems.joined(separator: "&"))"
+        let data = try await makeRequest(path: path, authenticated: false)
+        return try decoder.decode(SearchResponse.self, from: data)
+    }
+
+    /// Get taxonomy items (origins, authors, themes, sources)
+    func getTaxonomy(type: TaxonomyType) async throws -> TaxonomyResponse {
+        let locale = Locale.current.language.languageCode?.identifier ?? "en"
+        let data = try await makeRequest(path: "/search/taxonomy/\(type.rawValue)?locale=\(locale)", authenticated: false)
+        return try decoder.decode(TaxonomyResponse.self, from: data)
+    }
+
+    /// Browse tracks by taxonomy
+    func browseTaxonomy(type: TaxonomyType, value: String, limit: Int = 50, offset: Int = 0, sortBy: String = "calming_score") async throws -> BrowseResponse {
+        let locale = Locale.current.language.languageCode?.identifier ?? "en"
+        let path = "/search/browse/\(type.rawValue)/\(value)?limit=\(limit)&offset=\(offset)&sort=\(sortBy)&locale=\(locale)"
+        let data = try await makeRequest(path: path, authenticated: false)
+        return try decoder.decode(BrowseResponse.self, from: data)
+    }
+
+    /// Get related tracks for a given track
+    func getRelatedTracks(trackId: String, limit: Int = 10) async throws -> RelatedTracksResponse {
+        let data = try await makeRequest(path: "/search/related/\(trackId)?limit=\(limit)", authenticated: false)
+        return try decoder.decode(RelatedTracksResponse.self, from: data)
+    }
+
+    /// Get search suggestions (recent + popular + featured taxonomies)
+    func getSearchSuggestions() async throws -> SearchSuggestionsResponse {
+        let locale = Locale.current.language.languageCode?.identifier ?? "en"
+        let data = try await makeRequest(path: "/search/suggestions?locale=\(locale)", authenticated: false)
+        return try decoder.decode(SearchSuggestionsResponse.self, from: data)
+    }
+
+    /// Clear search history
+    func clearSearchHistory() async throws {
+        _ = try await makeRequest(path: "/search/history", method: "DELETE")
+    }
+}
+
+// MARK: - Search Response Types
+
+enum TaxonomyType: String, CaseIterable {
+    case origin
+    case author
+    case theme
+    case source
+    case collection
+
+    var displayName: String {
+        switch self {
+        case .origin: return "Origin"
+        case .author: return "Author"
+        case .theme: return "Theme"
+        case .source: return "Source"
+        case .collection: return "Collection"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .origin: return "globe"
+        case .author: return "person"
+        case .theme: return "tag"
+        case .source: return "archivebox"
+        case .collection: return "folder"
+        }
+    }
+}
+
+struct SearchResponse: Decodable {
+    let success: Bool
+    let query: String?
+    let normalizedQuery: String?
+    let filters: SearchFilters?
+    let tracks: [SearchTrack]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct SearchFilters: Decodable {
+    let category: String?
+    let language: String?
+    let origin: String?
+    let author: String?
+    let theme: String?
+}
+
+struct SearchTrack: Decodable, Identifiable {
+    let id: String
+    let title: String
+    let artist: String
+    let category: String
+    let language: String
+    let duration: Int
+    let ageRangeMin: Int
+    let ageRangeMax: Int
+    let calmingScore: Double
+    let audioSourceType: String
+    let streamUrl: String?
+    let artworkUrl: String?
+    let isPremium: Bool
+    let isLocked: Bool?
+    let relevanceScore: Double?
+    let taxonomies: TrackTaxonomies?
+
+    // Custom decoder to handle isPremium being either Bool or Int (0/1)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        artist = try container.decode(String.self, forKey: .artist)
+        category = try container.decode(String.self, forKey: .category)
+        language = try container.decode(String.self, forKey: .language)
+        duration = try container.decode(Int.self, forKey: .duration)
+        ageRangeMin = try container.decode(Int.self, forKey: .ageRangeMin)
+        ageRangeMax = try container.decode(Int.self, forKey: .ageRangeMax)
+        calmingScore = try container.decode(Double.self, forKey: .calmingScore)
+        audioSourceType = try container.decode(String.self, forKey: .audioSourceType)
+        streamUrl = try container.decodeIfPresent(String.self, forKey: .streamUrl)
+        artworkUrl = try container.decodeIfPresent(String.self, forKey: .artworkUrl)
+
+        // Handle isPremium as Bool or Int
+        if let boolValue = try? container.decode(Bool.self, forKey: .isPremium) {
+            isPremium = boolValue
+        } else if let intValue = try? container.decode(Int.self, forKey: .isPremium) {
+            isPremium = intValue != 0
+        } else {
+            isPremium = false
+        }
+
+        // Handle isLocked as Bool or Int (SQLite returns 0/1)
+        if let boolValue = try? container.decode(Bool.self, forKey: .isLocked) {
+            isLocked = boolValue
+        } else if let intValue = try? container.decode(Int.self, forKey: .isLocked) {
+            isLocked = intValue != 0
+        } else {
+            isLocked = nil
+        }
+        relevanceScore = try container.decodeIfPresent(Double.self, forKey: .relevanceScore)
+        taxonomies = try container.decodeIfPresent(TrackTaxonomies.self, forKey: .taxonomies)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, artist, category, language, duration
+        case ageRangeMin, ageRangeMax, calmingScore, audioSourceType
+        case streamUrl, artworkUrl, isPremium, isLocked, relevanceScore, taxonomies
+    }
+}
+
+struct TrackTaxonomies: Decodable {
+    let origin: [String]?
+    let author: [String]?
+    let theme: [String]?
+    let source: [String]?
+}
+
+struct TaxonomyResponse: Decodable {
+    let success: Bool
+    let taxonomyType: String
+    let items: [TaxonomyItem]
+}
+
+struct TaxonomyItem: Decodable, Identifiable {
+    var id: String { value }
+    let value: String
+    let displayName: String
+    let icon: String?
+    let color: String?
+    let isFeatured: Bool
+    let trackCount: Int
+}
+
+struct BrowseResponse: Decodable {
+    let success: Bool
+    let taxonomy: TaxonomyInfo
+    let tracks: [SearchTrack]
+    let total: Int
+    let hasMore: Bool
+}
+
+struct TaxonomyInfo: Decodable {
+    let type: String
+    let value: String
+    let displayName: String
+    let icon: String?
+    let color: String?
+    let description: String?
+}
+
+struct RelatedTracksResponse: Decodable {
+    let success: Bool
+    let sourceTrack: SourceTrackInfo
+    let relatedTracks: [SearchTrack]
+}
+
+struct SourceTrackInfo: Decodable {
+    let id: String
+    let title: String
+    let category: String
+}
+
+struct SearchSuggestionsResponse: Decodable {
+    let success: Bool
+    let suggestions: SearchSuggestions
+}
+
+struct SearchSuggestions: Decodable {
+    let recent: [RecentSearch]
+    let popular: [PopularSearch]
+    let featuredTaxonomies: [FeaturedTaxonomy]
+}
+
+struct RecentSearch: Decodable, Identifiable {
+    var id: String { query }
+    let query: String
+    let resultsCount: Int
+}
+
+struct PopularSearch: Decodable, Identifiable {
+    var id: String { query }
+    let query: String
+    let searchCount: Int
+}
+
+struct FeaturedTaxonomy: Decodable, Identifiable {
+    var id: String { "\(taxonomyType)_\(taxonomyValue)" }
+    let taxonomyType: String
+    let taxonomyValue: String
+    let displayName: String
+    let icon: String?
+    let color: String?
+    let isFeatured: Int
+    let trackCount: Int
+}
+
 // MARK: - Music Generation API
 
 extension APIClient {
@@ -820,6 +1111,48 @@ struct APITrack: Decodable, Identifiable {
     let artworkUrl: String?
     let isPremium: Bool
     let isLocked: Bool?
+
+    // Custom decoder to handle isPremium being either Bool or Int (0/1)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        artist = try container.decode(String.self, forKey: .artist)
+        category = try container.decode(String.self, forKey: .category)
+        language = try container.decode(String.self, forKey: .language)
+        duration = try container.decode(Int.self, forKey: .duration)
+        ageRangeMin = try container.decode(Int.self, forKey: .ageRangeMin)
+        ageRangeMax = try container.decode(Int.self, forKey: .ageRangeMax)
+        calmingScore = try container.decode(Double.self, forKey: .calmingScore)
+        audioSourceType = try container.decode(String.self, forKey: .audioSourceType)
+        generatorType = try container.decodeIfPresent(String.self, forKey: .generatorType)
+        streamUrl = try container.decodeIfPresent(String.self, forKey: .streamUrl)
+        artworkUrl = try container.decodeIfPresent(String.self, forKey: .artworkUrl)
+
+        // Handle isPremium as Bool or Int
+        if let boolValue = try? container.decode(Bool.self, forKey: .isPremium) {
+            isPremium = boolValue
+        } else if let intValue = try? container.decode(Int.self, forKey: .isPremium) {
+            isPremium = intValue != 0
+        } else {
+            isPremium = false
+        }
+
+        // Handle isLocked as Bool or Int (SQLite returns 0/1)
+        if let boolValue = try? container.decode(Bool.self, forKey: .isLocked) {
+            isLocked = boolValue
+        } else if let intValue = try? container.decode(Int.self, forKey: .isLocked) {
+            isLocked = intValue != 0
+        } else {
+            isLocked = nil
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, artist, category, language, duration
+        case ageRangeMin, ageRangeMax, calmingScore, audioSourceType
+        case generatorType, streamUrl, artworkUrl, isPremium, isLocked
+    }
 }
 
 struct TracksResponse: Decodable {
@@ -840,6 +1173,34 @@ struct APIPlaylist: Decodable, Identifiable {
     let trackCount: Int?
     let totalDuration: Int?
     let tracks: [APITrack]?
+
+    // Custom decoder to handle isSystem as both Int and Bool
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, category, targetAgeMonths, artworkUrl, isSystem, trackCount, totalDuration, tracks
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decode(String.self, forKey: .description)
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+        targetAgeMonths = try container.decodeIfPresent(Int.self, forKey: .targetAgeMonths)
+        artworkUrl = try container.decodeIfPresent(String.self, forKey: .artworkUrl)
+        trackCount = try container.decodeIfPresent(Int.self, forKey: .trackCount)
+        totalDuration = try container.decodeIfPresent(Int.self, forKey: .totalDuration)
+        tracks = try container.decodeIfPresent([APITrack].self, forKey: .tracks)
+
+        // Handle isSystem as both Bool and Int (0/1)
+        if let boolValue = try? container.decode(Bool.self, forKey: .isSystem) {
+            isSystem = boolValue
+        } else if let intValue = try? container.decode(Int.self, forKey: .isSystem) {
+            isSystem = intValue != 0
+        } else {
+            isSystem = false // Default fallback
+        }
+    }
 }
 
 struct PlaylistsResponse: Decodable {

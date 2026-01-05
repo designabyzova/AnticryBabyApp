@@ -1,0 +1,18 @@
+{
+  "id": "0014-multi-baby-profiles",
+  "title": "Multi-Baby Profiles",
+  "description": "Enable parents with multiple children to manage separate baby profiles with individual settings, favorites, and learning histories",
+  "status": "abandoned",
+  "priority": "high",
+  "createdAt": "2026-01-01T12:00:00Z",
+  "updatedAt": "2026-01-04T00:00:00Z",
+  "abandonedAt": "2026-01-04T00:00:00Z",
+  "abandonedReason": "Superseded by different work",
+  "feature": "FS-0014",
+  "userStories": ["US-001", "US-002", "US-003", "US-004", "US-005", "US-006", "US-007"],
+  "tags": ["multi-baby", "profiles", "ux", "data-model"],
+  "complexity": "medium",
+  "estimatedEffort": "3-5 days",
+  "dependencies": [],
+  "blockedBy": []
+}

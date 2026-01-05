@@ -100,3 +100,17 @@ BabyInCarApp/BabyInCarApp/Resources/Audio/fairytales/
 
 # R2 upload tracking
 babyincar-api/r2-uploaded-files.json
+
+# Cloudflare Wrangler cache
+.wrangler/
+
+# Xcode build directory
+BabyInCarApp/build/
+
+# Downloaded audio for R2 upload
+babyincar-api/audio-library/downloads/
+
+# Maestro screenshots/artifacts
+screenshots/
+controls_*.png
+build/

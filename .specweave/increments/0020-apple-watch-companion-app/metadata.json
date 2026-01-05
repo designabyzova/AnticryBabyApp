@@ -1,0 +1,23 @@
+{
+  "id": "0020-apple-watch-companion-app",
+  "title": "Apple Watch Companion App",
+  "status": "completed",
+  "priority": "P1",
+  "created": "2026-01-04T12:00:00Z",
+  "updated": "2026-01-04T13:00:00Z",
+  "completedAt": "2026-01-04T13:00:00Z",
+  "type": "feature",
+  "dependencies": [],
+  "tech_stack": {
+    "detected_from": "project.pbxproj",
+    "language": "swift",
+    "framework": "swiftui",
+    "platform": ["ios", "watchos"]
+  },
+  "summary": {
+    "tasksCompleted": 23,
+    "tasksTotal": 23,
+    "userStories": 6,
+    "filesCreated": 12
+  }
+}

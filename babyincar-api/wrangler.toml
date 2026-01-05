@@ -20,16 +20,16 @@ APP_NAME = "Baby in Car API"
 [[d1_databases]]
 binding = "DB"
 database_name = "babyincar-db"
-database_id = "YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create babyincar-db
+database_id = "ef5e8555-8f3e-4d14-a2d9-6c369fea7e6d"
 
 # KV Namespace for sessions and cache
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "YOUR_KV_NAMESPACE_ID"  # Replace after running: wrangler kv:namespace create sessions
+id = "8836dde7b33a4f3680050f8120c547e7"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "YOUR_CACHE_KV_ID"  # Replace after running: wrangler kv:namespace create cache
+id = "f04a98bd5e034cac9ae923076e048275"
 
 # R2 Bucket for audio files and images
 [[r2_buckets]]
@@ -40,9 +40,10 @@ bucket_name = "anticrybaby"
 binding = "PODCAST_BUCKET"
 bucket_name = "anticrybaby"
 
-[[r2_buckets]]
-binding = "IMAGES_BUCKET"
-bucket_name = "babyincar-images"
+# Images bucket - disabled until created
+# [[r2_buckets]]
+# binding = "IMAGES_BUCKET"
+# bucket_name = "babyincar-images"
 
 # Rate limiting
 # [[unsafe.bindings]]
@@ -52,10 +53,10 @@ bucket_name = "babyincar-images"
 # simple = { limit = 100, period = 60 }
 
 # Scheduled triggers for automated audio curation
-# - Daily at 3 AM UTC: Full curation run
-# - Every 6 hours: Quick discovery check
-[triggers]
-crons = ["0 3 * * *", "0 */6 * * *"]
+# Free tier limit: 5 cron triggers per account
+# Disabled - using GitHub Actions or external cron instead
+# [triggers]
+# crons = ["0 3 * * *"]
 
 # Production environment
 [env.production]
@@ -82,7 +83,7 @@ bucket_name = "babyincar-audio-prod"
 binding = "IMAGES_BUCKET"
 bucket_name = "babyincar-images-prod"
 
-# Custom domain (configure after deployment)
-# routes = [
-#   { pattern = "api.babyincar.app", custom_domain = true }
-# ]
+# Custom domain
+routes = [
+  { pattern = "api.babyincar.app", custom_domain = true }
+]

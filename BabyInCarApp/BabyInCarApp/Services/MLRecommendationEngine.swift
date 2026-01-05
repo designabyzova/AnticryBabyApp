@@ -104,28 +104,28 @@ class MLRecommendationEngine: ObservableObject {
     /// Preferred generator types for each cry type at different ages
     private let cryTypePreferences: [CryType: (young: [GeneratorType], older: [GeneratorType])] = [
         .tired: (
-            young: [.pinkNoise, .womb, .heartbeat, .shushing, .velvetNoise],
-            older: [.velvetNoise, .greyNoise, .rainOnRoof, .pinkNoise, .lullaby]
+            young: [.ocean, .womb, .heartbeat, .shushing, .waterfall],
+            older: [.waterfall, .forest, .river, .ocean, .lullaby]
         ),
         .hunger: (
-            young: [.shushing, .musicBox, .pinkNoise, .heartbeat],
-            older: [.shushing, .musicBox, .pinkNoise, .chimes]
+            young: [.shushing, .musicBox, .ocean, .heartbeat],
+            older: [.shushing, .musicBox, .ocean, .chimes]
         ),
         .pain: (
-            young: [.vacuum, .womb, .shushing, .brownNoise, .hairDryer],
-            older: [.brownNoise, .trainRide, .pinkNoise, .vacuum]
+            young: [.shushing, .womb, .shushing, .river, .womb],
+            older: [.river, .lullaby, .ocean, .shushing]
         ),
         .attention: (
             young: [.musicBox, .birds, .chimes, .heartbeat],
             older: [.aquarium, .forest, .softPiano, .musicBox]
         ),
         .discomfort: (
-            young: [.pinkNoise, .fan, .ocean, .womb],
-            older: [.pinkNoise, .fan, .ocean, .rain]
+            young: [.ocean, .womb, .shushing, .heartbeat],
+            older: [.ocean, .river, .waterfall, .womb]
         ),
         .general: (
-            young: [.pinkNoise, .whiteNoise, .rain, .heartbeat],
-            older: [.pinkNoise, .rain, .ocean, .lullaby]
+            young: [.ocean, .womb, .heartbeat, .shushing],
+            older: [.ocean, .river, .lullaby, .musicBox]
         )
     ]
 
@@ -243,13 +243,13 @@ class MLRecommendationEngine: ObservableObject {
 
         // 5. If intensity is very high, prioritize proven soothers
         if cryIntensity > 0.8 {
-            // Move vacuum/womb/shushing to front for young babies
+            // Move womb/shushing/ocean to front for young babies
             if babyAge < 12 {
                 let urgentSoothers = candidates.filter {
-                    [GeneratorType.vacuum, .womb, .shushing, .hairDryer].contains($0.generatorType ?? .whiteNoise)
+                    [GeneratorType.womb, .shushing, .heartbeat, .ocean].contains($0.generatorType ?? .ocean)
                 }
                 let others = candidates.filter {
-                    ![GeneratorType.vacuum, .womb, .shushing, .hairDryer].contains($0.generatorType ?? .whiteNoise)
+                    ![GeneratorType.womb, .shushing, .heartbeat, .ocean].contains($0.generatorType ?? .ocean)
                 }
                 candidates = urgentSoothers + others
             }
@@ -355,7 +355,7 @@ class MLRecommendationEngine: ObservableObject {
         switch context {
         case .sleep:
             if track.calmingScore >= 0.8 {
-                if track.category == .whiteNoise || track.generatorType == .lullaby {
+                if track.category == .ambient || track.category == .lullabies || track.generatorType == .lullaby {
                     return 0.1
                 }
             }
@@ -363,14 +363,14 @@ class MLRecommendationEngine: ObservableObject {
 
         case .crying, .emergency:
             if let generator = track.generatorType,
-               [.shushing, .womb, .heartbeat, .vacuum, .pinkNoise].contains(generator) {
+               [.shushing, .womb, .heartbeat, .ocean, .river].contains(generator) {
                 return 0.1
             }
             return 0
 
         case .carRide:
             if let generator = track.generatorType,
-               [.carEngine, .trainRide, .airplaneCabin, .pinkNoise].contains(generator) {
+               [.ocean, .river, .womb, .shushing].contains(generator) {
                 return 0.05
             }
             return 0

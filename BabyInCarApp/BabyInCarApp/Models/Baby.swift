@@ -111,9 +111,9 @@ enum DevelopmentalStage: String, Codable, CaseIterable {
     var description: String {
         switch self {
         case .fourthTrimester:
-            return "Mimics intrauterine environment with womb sounds, heartbeat, and deep white noise"
+            return "Mimics intrauterine environment with womb sounds, heartbeat, and shushing"
         case .earlyRegulation:
-            return "Sleep cycle development with pink noise, gentle lullabies, and shushing sounds"
+            return "Sleep cycle development with gentle lullabies and soothing sounds"
         case .sensoryExploration:
             return "Language acquisition window with simple melodies and vowel-rich stories"
         case .motorDevelopment:
@@ -130,9 +130,9 @@ enum DevelopmentalStage: String, Codable, CaseIterable {
     var recommendedCategories: [AudioCategory] {
         switch self {
         case .fourthTrimester:
-            return [.whiteNoise, .natureSounds, .instrumental]
+            return [.ambient, .natureSounds, .lullabies]
         case .earlyRegulation:
-            return [.whiteNoise, .classicalMusic, .instrumental, .childrenSongs]
+            return [.ambient, .lullabies, .classicalMusic, .instrumental]
         case .sensoryExploration:
             return [.natureSounds, .classicalMusic, .fairyTales, .childrenSongs]
         case .motorDevelopment:

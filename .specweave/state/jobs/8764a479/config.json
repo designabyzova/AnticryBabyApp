@@ -1,0 +1,16 @@
+{
+  "jobId": "8764a479",
+  "projectPath": "/Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp",
+  "userInputs": {
+    "additionalSources": [
+      "docs"
+    ],
+    "priorityAreas": [],
+    "knownPainPoints": [],
+    "analysisDepth": "deep-interactive"
+  },
+  "dependsOn": [
+    "94694d9c"
+  ],
+  "startedAt": "2025-12-31T00:58:49.863Z"
+}

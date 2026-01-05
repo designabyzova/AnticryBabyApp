@@ -1,0 +1,30 @@
+{
+  "id": "0008-generous-freemium-engagement",
+  "title": "Generous Freemium & Engagement-First Monetization",
+  "status": "completed",
+  "priority": "critical",
+  "created": "2025-12-31T14:00:00Z",
+  "completed": "2025-12-31T00:00:00Z",
+  "feature": "FS-008",
+  "tags": [
+    "monetization",
+    "freemium",
+    "engagement",
+    "conversion",
+    "user-experience",
+    "e2e-testing"
+  ],
+  "dependencies": [
+    "0003-it-helped-feedback",
+    "0004-baby-mood-intelligence"
+  ],
+  "estimatedTasks": 30,
+  "completedTasks": 30,
+  "testingRequirements": {
+    "unitTests": true,
+    "e2eTests": true,
+    "maestroFlows": 5,
+    "coverageTarget": 80
+  },
+  "updated": "2025-12-31T00:00:00Z"
+}

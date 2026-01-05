@@ -1,0 +1,19 @@
+{
+  "id": "0026-auto-enable-listening-emergency",
+  "title": "Auto-Enable Listening on Emergency Buttons",
+  "description": "Fix inconsistency where emergency stop cry button doesn't enable listening but AI cry detection button does - both buttons should automatically start monitoring baby for consistent UX",
+  "status": "completed",
+  "type": "bug",
+  "priority": "P0",
+  "created": "2026-01-04T19:35:00.000Z",
+  "lastActivity": "2026-01-04T20:05:00.000Z",
+  "completed": "2026-01-04T20:05:00.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "feature_id": "FS-026",
+  "epic_id": null,
+  "externalLinks": {},
+  "tags": ["bug", "P0", "emergency", "cry-detection", "ux-consistency"],
+  "complexity": "low",
+  "estimatedEffort": "1-2 hours"
+}

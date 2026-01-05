@@ -6,21 +6,22 @@
 //
 
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 import Combine
+import UIKit
 
 @MainActor
 class AudioEngine: ObservableObject {
     static let shared = AudioEngine()
 
     // MARK: - Published Properties
-    @Published var playbackState: PlaybackState = .stopped
+    @Published var playbackState: LocalPlaybackState = .stopped
     @Published var currentTrack: AudioTrack?
     @Published var currentPlaylist: Playlist?
     @Published var currentPlaylistIndex: Int = 0
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
-    @Published var volume: Float = 0.5
+    @Published var volume: Float = 1.0
     @Published var isMuted: Bool = false
     @Published var sleepTimer: SleepTimer = .off
     @Published var sleepTimerRemaining: TimeInterval = 0
@@ -32,6 +33,71 @@ class AudioEngine: ObservableObject {
     }
     @Published var isBuffering: Bool = false
     @Published var bufferProgress: Double = 0
+    /// True when user is actively dragging the progress slider - prevents time updates from overwriting user intent
+    @Published var isScrubbing: Bool = false
+    @Published var playbackRate: Float = 1.0 {
+        didSet { applyPlaybackRate() }
+    }
+
+    // MARK: - Audio Ducking (Auto-duck external audio when cry detected)
+    /// Whether ducking is currently active (external audio volume reduced)
+    @Published private(set) var isDuckingActive: Bool = false
+
+    /// User preference: auto-duck external audio when cry response activates
+    /// Default: true (enabled) - Reduces Spotify/Apple Music volume when baby cries
+    static var autoDuckExternalAudio: Bool {
+        get {
+            // Default to true if not set
+            if UserDefaults.standard.object(forKey: "audioEngine.autoDuckExternalAudio") == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: "audioEngine.autoDuckExternalAudio")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "audioEngine.autoDuckExternalAudio")
+        }
+    }
+
+    // MARK: - Ducking Telemetry
+    /// Tracks ducking activation count for analytics
+    private(set) var duckingActivationCount: Int = 0
+    /// Last ducking activation timestamp
+    private(set) var lastDuckingActivation: Date?
+    /// Total time spent with ducking active (for effectiveness correlation)
+    private(set) var totalDuckingDuration: TimeInterval = 0
+    /// Ducking start time for duration tracking
+    private var duckingStartTime: Date?
+
+    /// Smooth audio transitions with crossfade (synced with AppState)
+    /// Default: true - provides seamless track transitions
+    @Published var smoothTransitionsEnabled: Bool = true {
+        didSet { savePlaybackSettings() }
+    }
+
+    // Playback rate options
+    enum PlaybackRate: Float, CaseIterable {
+        case half = 0.5
+        case threeQuarters = 0.75
+        case normal = 1.0
+        case oneAndQuarter = 1.25
+        case oneAndHalf = 1.5
+        case double = 2.0
+
+        var displayName: String {
+            switch self {
+            case .half: return "0.5x"
+            case .threeQuarters: return "0.75x"
+            case .normal: return "1x"
+            case .oneAndQuarter: return "1.25x"
+            case .oneAndHalf: return "1.5x"
+            case .double: return "2x"
+            }
+        }
+    }
+
+    // Fast forward/rewind state
+    @Published var isSeeking: Bool = false
+    @Published var seekSpeed: Int = 1 // 1x, 2x, 5x, 10x
 
     // MARK: - Queue Management (Spotify-like)
     /// Original playlist order before shuffle
@@ -41,6 +107,12 @@ class AudioEngine: ObservableObject {
     /// History of played tracks for "previous" navigation
     private var playbackHistory: [AudioTrack] = []
     private let maxHistorySize = 50
+
+    // MARK: - LRU Buffer Cache (Increment 0028)
+    /// LRU cache for recently played audio buffers (max 5 entries)
+    /// Stores AVPlayer instances to avoid re-loading recently played tracks
+    private var recentlyPlayedBuffers: [(trackId: UUID, player: AVPlayer)] = []
+    private let maxRecentBuffers = 5
 
     // MARK: - Shuffle State
     /// Tracks already played in shuffle mode (to avoid repeats until all played)
@@ -88,7 +160,7 @@ class AudioEngine: ObservableObject {
     private var fadeTimer: Timer?
 
     // MARK: - Settings
-    private let maxSafeVolume: Float = 0.7 // ~50dB safety limit
+    private let maxSafeVolume: Float = 1.0 // Full system volume
 
     // MARK: - Services
     private let downloadManager = AudioDownloadManager.shared
@@ -103,6 +175,7 @@ class AudioEngine: ObservableObject {
     private func savePlaybackSettings() {
         UserDefaults.standard.set(repeatMode.rawValue, forKey: "audioEngine.repeatMode")
         UserDefaults.standard.set(isShuffleEnabled, forKey: "audioEngine.shuffleEnabled")
+        UserDefaults.standard.set(smoothTransitionsEnabled, forKey: "audioEngine.smoothTransitions")
     }
 
     private func loadPlaybackSettings() {
@@ -111,17 +184,147 @@ class AudioEngine: ObservableObject {
             repeatMode = mode
         }
         isShuffleEnabled = UserDefaults.standard.bool(forKey: "audioEngine.shuffleEnabled")
+
+        // Smooth transitions defaults to TRUE if not set
+        if UserDefaults.standard.object(forKey: "audioEngine.smoothTransitions") == nil {
+            smoothTransitionsEnabled = true  // Default ON
+        } else {
+            smoothTransitionsEnabled = UserDefaults.standard.bool(forKey: "audioEngine.smoothTransitions")
+        }
     }
 
     // MARK: - Audio Session Configuration
-    func configureAudioSession() {
+    @discardableResult
+    func configureAudioSession(interruptOtherAudio: Bool = false) -> Bool {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
+
+            if interruptOtherAudio {
+                // Emergency mode: Interrupt and duck other audio (Spotify, YouTube, etc.)
+                // This ensures baby hears the soothing sound clearly
+                // NOTE: .defaultToSpeaker is INVALID with .playback category - removed!
+                try session.setCategory(
+                    .playback,
+                    mode: .default,
+                    options: [.duckOthers, .allowBluetooth]
+                )
+                print("[AudioEngine] 🚨 Emergency audio session configured - will interrupt other audio")
+            } else {
+                // Normal mode: Mix with other audio
+                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+                print("[AudioEngine] 🎵 Normal audio session configured - will mix with other audio")
+            }
+
             try session.setActive(true)
+            return true
         } catch {
-            print("Failed to configure audio session: \(error)")
+            print("[AudioEngine] ⚠️ Failed to configure audio session: \(error)")
+            print("[AudioEngine] ⚠️ Audio may still play, but mixing behavior is undefined")
+            return false
         }
+    }
+
+    /// Enable or disable audio ducking (reduces external audio volume)
+    /// When enabled, Spotify/Apple Music/other apps will reduce volume to ~20%
+    /// while this app plays soothing sounds
+    ///
+    /// - Parameters:
+    ///   - enabled: true to duck external audio, false to restore normal mixing
+    ///   - emergencyMode: true for emergency (interrupt), false for normal (mix)
+    func enableDucking(_ enabled: Bool, emergencyMode: Bool = false) {
+        // Skip if user preference is disabled
+        guard Self.autoDuckExternalAudio || !enabled else {
+            print("[AudioEngine] Auto-duck disabled by user preference")
+            return
+        }
+
+        // Skip if already in desired state
+        guard isDuckingActive != enabled else {
+            return
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+
+            if enabled {
+                // CRITICAL: Emergency mode INTERRUPTS, normal mode MIXES
+                // NOTE: .defaultToSpeaker is INVALID with .playback category - removed!
+                let options: AVAudioSession.CategoryOptions = emergencyMode
+                    ? [.duckOthers, .allowBluetooth]  // INTERRUPT - no mixing!
+                    : [.mixWithOthers, .duckOthers, .allowBluetooth]  // MIX with ducking
+
+                try session.setCategory(
+                    .playback,
+                    mode: .default,
+                    options: options
+                )
+
+                if emergencyMode {
+                    print("[AudioEngine] 🚨 EMERGENCY Ducking ENABLED - external audio INTERRUPTED")
+                } else {
+                    print("[AudioEngine] Ducking ENABLED - external audio will be reduced")
+                }
+
+                // Track ducking activation
+                trackDuckingEvent(enabled: true)
+            } else {
+                // Disable ducking: restore normal mixing (external audio at full volume)
+                try session.setCategory(
+                    .playback,
+                    mode: .default,
+                    options: [.mixWithOthers, .allowBluetooth]
+                )
+                print("[AudioEngine] Ducking DISABLED - external audio restored")
+
+                // Track ducking deactivation
+                trackDuckingEvent(enabled: false)
+            }
+
+            // Only call setActive if audio session is not already active
+            // Optimization: Avoid unnecessary ~1ms overhead on every ducking toggle
+            if session.isOtherAudioPlaying || !enabled {
+                try session.setActive(true)
+            }
+
+            isDuckingActive = enabled
+        } catch {
+            print("[AudioEngine] Failed to \(enabled ? "enable" : "disable") ducking: \(error)")
+        }
+    }
+
+    /// Track ducking events for analytics and effectiveness correlation
+    private func trackDuckingEvent(enabled: Bool) {
+        if enabled {
+            // Ducking activated
+            duckingActivationCount += 1
+            lastDuckingActivation = Date()
+            duckingStartTime = Date()
+
+            print("[AudioEngine Telemetry] Ducking activation #\(duckingActivationCount)")
+        } else {
+            // Ducking deactivated - calculate duration
+            if let startTime = duckingStartTime {
+                let duration = Date().timeIntervalSince(startTime)
+                totalDuckingDuration += duration
+                duckingStartTime = nil
+
+                print("[AudioEngine Telemetry] Ducking deactivated. Duration: \(String(format: "%.1f", duration))s, Total: \(String(format: "%.1f", totalDuckingDuration))s")
+            }
+        }
+    }
+
+    /// Get ducking telemetry for effectiveness correlation
+    /// Returns: (activationCount, totalDuration, lastActivation)
+    func getDuckingTelemetry() -> (activations: Int, totalDuration: TimeInterval, lastActivation: Date?) {
+        return (duckingActivationCount, totalDuckingDuration, lastDuckingActivation)
+    }
+
+    /// Reset ducking telemetry (for testing or session boundaries)
+    func resetDuckingTelemetry() {
+        duckingActivationCount = 0
+        totalDuckingDuration = 0
+        lastDuckingActivation = nil
+        duckingStartTime = nil
     }
 
     private func setupNotifications() {
@@ -144,15 +347,86 @@ class AudioEngine: ObservableObject {
                 self?.handleRouteChange(notification)
             }
         }
+
+        // MEMORY OPTIMIZATION (Increment 0022): Clean up on memory warnings
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                print("[AudioEngine] ⚠️ Memory warning received - cleaning up")
+                self?.cleanup()
+            }
+        }
+
+        // MEMORY OPTIMIZATION (Increment 0022): Respond to MemoryMonitor cleanup requests
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("MemoryCleanupRequested"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                if let level = notification.userInfo?["level"] as? String {
+                    print("[AudioEngine] 🧹 Memory cleanup requested (\(level)) - cleaning up")
+                    self?.cleanup()
+                }
+            }
+        }
     }
 
     // MARK: - Playback Control
-    func play(track: AudioTrack) {
+
+    /// Play track with optional smooth crossfade transition
+    /// Respects smoothTransitionsEnabled global setting
+    /// NOTE: This is called directly by views AND by PlaybackSessionManager
+    func play(track: AudioTrack, crossfadeDuration: TimeInterval = 1.0) {
+        print("[AudioEngine] 🎵 Play request: \(track.title)")
+
+        // If smooth transitions disabled, play immediately without fade
+        guard smoothTransitionsEnabled else {
+            playImmediate(track: track)
+            return
+        }
+
+        // If already playing, crossfade to new track
+        if playbackState == .playing, let _ = currentTrack {
+            crossfadeToTrack(track, duration: crossfadeDuration)
+        } else {
+            // No current playback, start with fade-in
+            stopCurrentPlayback()
+            currentTrack = track
+            duration = track.duration
+            playbackState = .loading
+            startPlaybackWithFadeIn(track: track, fadeDuration: 0.5)
+        }
+    }
+
+    /// Play track immediately without any fade (for emergency mode or when smooth transitions disabled)
+    func playImmediateWithoutFade(track: AudioTrack) {
+        playImmediate(track: track)
+    }
+
+    /// Legacy function for backward compatibility (no crossfade)
+    private func playImmediate(track: AudioTrack) {
         stopCurrentPlayback()
 
         currentTrack = track
         duration = track.duration
         playbackState = .loading
+
+        // CRITICAL FIX: Configure audio session before playback
+        // This ensures audio works after emergency mode stops
+        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
+        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        if !isEmergencyActive {
+            // Only configure normal audio session if NOT in emergency mode
+            configureAudioSession(interruptOtherAudio: false)
+        } else {
+            // In emergency mode - ensure we have an active audio session but DON'T reset it
+            // The emergency session was already configured by SmartCryResponseEngine
+            print("[AudioEngine] 🚨 Emergency mode active - preserving emergency audio session")
+        }
 
         // Track recently played
         PlaylistManager.shared.addToRecentlyPlayed(track)
@@ -180,14 +454,58 @@ class AudioEngine: ObservableObject {
         currentPlaylist = playlist
         currentPlaylistIndex = startIndex
 
-        // If shuffle is enabled, shuffle the playlist but keep the selected track first
-        if isShuffleEnabled {
-            applyShuffleToPlaylist(keepingTrackAt: startIndex)
-        }
+        // Mark the starting track as played for shuffle tracking
+        shufflePlayedIndices.insert(startIndex)
 
         if currentPlaylistIndex < (currentPlaylist?.tracks.count ?? 0) {
             play(track: currentPlaylist!.tracks[currentPlaylistIndex])
         }
+    }
+
+    // MARK: - Smart Queue (Spotify-like behavior)
+
+    /// Play a track within the context of a list of tracks (smart queue).
+    /// This enables next/previous navigation like Spotify - when you tap a song
+    /// in a category, the whole category becomes your queue.
+    ///
+    /// - Parameters:
+    ///   - track: The track to start playing
+    ///   - tracks: All tracks in the context (e.g., all tracks from a category)
+    ///   - contextName: Name for the implicit playlist (e.g., "Classical Music")
+    func play(track: AudioTrack, fromTracks tracks: [AudioTrack], contextName: String = "Queue") {
+        guard !tracks.isEmpty else {
+            // Fallback to single track play
+            play(track: track)
+            return
+        }
+
+        // Find the index of the selected track in the context
+        guard let startIndex = tracks.firstIndex(where: { $0.id == track.id }) else {
+            // Track not found in context, play as single track
+            play(track: track)
+            return
+        }
+
+        // Create an implicit playlist from the context
+        let implicitPlaylist = Playlist(
+            name: contextName,
+            tracks: tracks,
+            category: track.category
+        )
+
+        // Play as a playlist starting from the selected track
+        play(playlist: implicitPlaylist, startIndex: startIndex)
+    }
+
+    /// Play a track within the context of a category.
+    /// Automatically fetches all tracks from that category and creates a queue.
+    ///
+    /// - Parameters:
+    ///   - track: The track to start playing
+    ///   - category: The category to use as context for the queue
+    func play(track: AudioTrack, fromCategory category: AudioCategory) {
+        let categoryTracks = ContentLibraryService.shared.getTracks(for: category)
+        play(track: track, fromTracks: categoryTracks, contextName: category.rawValue)
     }
 
     /// Play a playlist in shuffle mode starting with a random track
@@ -404,10 +722,11 @@ class AudioEngine: ObservableObject {
         // Seek in stream player
         if let player = streamPlayer {
             let cmTime = CMTime(seconds: currentTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-            player.seek(to: cmTime) { [weak self] _ in
-                guard let self = self else { return }
+            // Capture track before entering non-MainActor closure
+            let trackToReport = currentTrack
+            player.seek(to: cmTime) { _ in
                 // Report seek event
-                if let track = self.currentTrack {
+                if let track = trackToReport {
                     Task {
                         try? await APIClient.shared.reportPlayback(
                             trackId: track.id.uuidString,
@@ -426,6 +745,80 @@ class AudioEngine: ObservableObject {
         playerNode?.volume = volume
         streamPlayer?.volume = volume
         noiseGenerator?.setVolume(volume)
+    }
+
+    // MARK: - Playback Rate Control
+    func setPlaybackRate(_ rate: Float) {
+        playbackRate = max(0.5, min(2.0, rate))
+    }
+
+    func cyclePlaybackRate() {
+        let rates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
+        if let currentIndex = rates.firstIndex(of: playbackRate) {
+            let nextIndex = (currentIndex + 1) % rates.count
+            playbackRate = rates[nextIndex]
+        } else {
+            playbackRate = 1.0
+        }
+    }
+
+    private func applyPlaybackRate() {
+        audioPlayer?.rate = playbackRate
+        audioPlayer?.enableRate = true
+        streamPlayer?.rate = playbackRate
+    }
+
+    // MARK: - Fast Forward / Rewind with Speed
+    /// Start fast forward/rewind at a given speed multiplier
+    func startSeek(forward: Bool, speed: Int = 2) {
+        isSeeking = true
+        seekSpeed = speed
+        let seekInterval: TimeInterval = 0.1 // Update every 100ms
+        let seekAmount = TimeInterval(speed) * seekInterval
+
+        // Start a timer for continuous seeking
+        Timer.scheduledTimer(withTimeInterval: seekInterval, repeats: true) { [weak self] timer in
+            Task { @MainActor in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                guard self.isSeeking else {
+                    timer.invalidate()
+                    return
+                }
+                if forward {
+                    let newTime = min(self.currentTime + seekAmount, self.duration)
+                    self.seek(to: newTime)
+                    if newTime >= self.duration {
+                        self.stopSeek()
+                    }
+                } else {
+                    let newTime = max(self.currentTime - seekAmount, 0)
+                    self.seek(to: newTime)
+                    if newTime <= 0 {
+                        self.stopSeek()
+                    }
+                }
+            }
+        }
+    }
+
+    func stopSeek() {
+        isSeeking = false
+        seekSpeed = 1
+    }
+
+    /// Skip forward by a fixed amount (default 15 seconds)
+    func skipForward(seconds: TimeInterval = 15) {
+        let newTime = min(currentTime + seconds, duration)
+        seek(to: newTime)
+    }
+
+    /// Skip backward by a fixed amount (default 15 seconds)
+    func skipBackward(seconds: TimeInterval = 15) {
+        let newTime = max(currentTime - seconds, 0)
+        seek(to: newTime)
     }
 
     func toggleMute() {
@@ -473,7 +866,7 @@ class AudioEngine: ObservableObject {
 
     /// Apply shuffle to playlist while keeping a specific track at the front
     private func applyShuffleToPlaylist(keepingTrackAt index: Int) {
-        guard var playlist = currentPlaylist else { return }
+        guard currentPlaylist != nil else { return }
 
         // The selected track becomes index 0
         shufflePlayedIndices.removeAll()
@@ -590,8 +983,22 @@ class AudioEngine: ObservableObject {
             return
         }
 
+        print("[AudioEngine] 🎛️ Starting generated audio: \(generatorType.rawValue)")
+        print("[AudioEngine] 📢 Volume: \(volume), Muted: \(isMuted)")
+
+        // Stop any existing noise generator
+        if noiseGenerator != nil {
+            print("[AudioEngine] 🛑 Stopping existing noise generator")
+            noiseGenerator?.stop()
+        }
+
+        // Create and start new noise generator
+        print("[AudioEngine] 🔨 Creating new NoiseGenerator for \(generatorType.rawValue)")
         noiseGenerator = NoiseGenerator(type: generatorType)
-        noiseGenerator?.setVolume(isMuted ? 0 : volume)
+        let actualVolume = isMuted ? 0 : volume
+        print("[AudioEngine] 🔊 Setting volume to \(actualVolume)")
+        noiseGenerator?.setVolume(actualVolume)
+        print("[AudioEngine] ▶️ Starting NoiseGenerator...")
         noiseGenerator?.start()
 
         playbackState = .playing
@@ -599,6 +1006,8 @@ class AudioEngine: ObservableObject {
 
         // For infinite/looping sounds, set a long duration
         duration = track.duration > 0 ? track.duration : 3600
+
+        print("[AudioEngine] ✅ Generated audio pipeline complete - UI updated, timer started")
     }
 
     private func playBundledAudio(track: AudioTrack) {
@@ -624,8 +1033,10 @@ class AudioEngine: ObservableObject {
                 subdirectories = ["Audio/children", "Audio/lullabies"]
             case .natureSounds:
                 subdirectories = ["Audio/nature"]
-            case .whiteNoise:
-                subdirectories = ["Audio/whitenoise"]
+            case .ambient:
+                subdirectories = ["Audio/ambient"]
+            case .lullabies:
+                subdirectories = ["Audio/lullabies"]
             case .instrumental:
                 // Instrumental tracks are stored in lullabies folder (bells, harp, soft_guitar, dreamy_arp)
                 subdirectories = ["Audio/lullabies", "Audio/ambient"]
@@ -652,7 +1063,7 @@ class AudioEngine: ObservableObject {
 
         // Try all known audio subdirectories as a last resort
         if url == nil {
-            let allSubdirectories = ["Audio/children", "Audio/lullabies", "Audio/classical", "Audio/nature", "Audio/whitenoise", "Audio/ambient", "Audio/podcasts", "Audio/meditation", "Audio/fairytales/en", "Audio/fairytales/ru", "Audio/acoustic"]
+            let allSubdirectories = ["Audio/default", "Audio/children", "Audio/lullabies", "Audio/classical", "Audio/nature", "Audio/ambient", "Audio/podcasts", "Audio/meditation", "Audio/fairytales/en", "Audio/fairytales/ru", "Audio/acoustic"]
             for subdirectory in allSubdirectories {
                 url = Bundle.main.url(forResource: fileName, withExtension: fileExtension, subdirectory: subdirectory)
                 if url != nil {
@@ -679,6 +1090,8 @@ class AudioEngine: ObservableObject {
             audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
             audioPlayer?.volume = isMuted ? 0 : volume
             audioPlayer?.delegate = AudioPlayerDelegate.shared
+            audioPlayer?.enableRate = true
+            audioPlayer?.rate = playbackRate
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
 
@@ -693,7 +1106,8 @@ class AudioEngine: ObservableObject {
     }
 
     private func playStreamedAudio(track: AudioTrack) {
-        let trackId = track.id.uuidString
+        // Use serverId for API calls if available, otherwise fall back to UUID string
+        let trackId = track.serverId ?? track.id.uuidString
 
         // First, check if we have a cached version
         if let cachedURL = cacheService.getCachedURL(for: trackId) {
@@ -707,15 +1121,18 @@ class AudioEngine: ObservableObject {
             do {
                 let streamURL: URL
 
-                if let urlString = track.streamURL, let url = URL(string: urlString) {
+                if let urlString = track.streamURL, !urlString.isEmpty, let url = URL(string: urlString) {
                     streamURL = url
+                    print("[AudioEngine] 🎵 Using existing streamURL: \(urlString.prefix(50))...")
                 } else {
-                    // Fetch stream URL from API
+                    // Fetch stream URL from API using serverId
+                    print("[AudioEngine] 🔄 Fetching stream URL for trackId: \(trackId)")
                     let response = try await APIClient.shared.getStreamURL(trackId: trackId)
                     guard let url = URL(string: response.streamUrl) else {
                         throw DownloadError.invalidURL
                     }
                     streamURL = url
+                    print("[AudioEngine] ✅ Got stream URL: \(response.streamUrl.prefix(50))...")
                 }
 
                 // Use AVPlayer for progressive streaming
@@ -725,9 +1142,10 @@ class AudioEngine: ObservableObject {
                 startBackgroundDownload(track: track)
 
             } catch {
+                print("[AudioEngine] ❌ Streaming failed for '\(track.title)': \(error)")
                 // Fallback to generated audio if streaming fails
                 if track.generatorType != nil {
-                    print("Streaming failed, falling back to generated audio: \(error)")
+                    print("[AudioEngine] 🔄 Falling back to generated audio")
                     playGeneratedAudio(track: track)
                 } else {
                     playbackState = .error("Failed to stream: \(error.localizedDescription)")
@@ -744,9 +1162,25 @@ class AudioEngine: ObservableObject {
         isBuffering = true
         bufferProgress = 0
 
-        let playerItem = AVPlayerItem(url: url)
-        streamPlayer = AVPlayer(playerItem: playerItem)
-        streamPlayer?.volume = isMuted ? 0 : volume
+        // MEMORY OPTIMIZATION (Increment 0028): Check LRU cache first
+        let playerItem: AVPlayerItem
+        if let cachedPlayer = getCachedBuffer(for: track.id) {
+            // Reuse cached player - just update the item
+            playerItem = AVPlayerItem(url: url)
+            cachedPlayer.replaceCurrentItem(with: playerItem)
+            streamPlayer = cachedPlayer
+            streamPlayer?.volume = isMuted ? 0 : volume
+            print("[AudioEngine] 🚀 Reusing cached AVPlayer for track \(track.title)")
+        } else {
+            // Create new player and cache it
+            playerItem = AVPlayerItem(url: url)
+            let newPlayer = AVPlayer(playerItem: playerItem)
+            newPlayer.volume = isMuted ? 0 : volume
+            streamPlayer = newPlayer
+
+            // Add to LRU cache
+            cacheBuffer(trackId: track.id, player: newPlayer)
+        }
 
         // Observe buffering status
         playerItemObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
@@ -808,16 +1242,22 @@ class AudioEngine: ObservableObject {
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             Task { @MainActor in
-                self?.currentTime = time.seconds
+                guard let self = self else { return }
 
-                // Update buffer progress
+                // CRITICAL FIX: Don't update currentTime while user is scrubbing the slider
+                // This prevents the slider from "jumping back" during seek operations
+                if !self.isScrubbing {
+                    self.currentTime = time.seconds
+                }
+
+                // Update buffer progress (always, even during scrubbing)
                 if let item = player.currentItem {
                     let loadedRanges = item.loadedTimeRanges
                     if let firstRange = loadedRanges.first?.timeRangeValue {
                         let bufferedEnd = CMTimeGetSeconds(CMTimeAdd(firstRange.start, firstRange.duration))
                         let duration = CMTimeGetSeconds(item.duration)
                         if duration > 0 {
-                            self?.bufferProgress = bufferedEnd / duration
+                            self.bufferProgress = bufferedEnd / duration
                         }
                     }
                 }
@@ -894,12 +1334,27 @@ class AudioEngine: ObservableObject {
     private func startProgressTimer() {
         progressTimer?.invalidate()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            // FIX: Use DispatchQueue.main.async instead of Task { @MainActor in }
+            // This ensures @Published updates happen in the next run loop,
+            // preventing "Publishing changes from within view updates" errors
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                if let player = self.audioPlayer {
+
+                // CRITICAL FIX: Don't update currentTime while user is scrubbing
+                // This prevents the slider from "fighting" with user input
+                guard !self.isScrubbing else { return }
+
+                // CRITICAL FIX: Only read from active players to prevent timeline flickering
+                // Try bundled player first (AVAudioPlayer)
+                if let player = self.audioPlayer, player.isPlaying {
                     self.currentTime = player.currentTime
-                } else {
-                    // For generated audio, just increment
+                }
+                // Try streamed player (AVPlayer)
+                else if let player = self.streamPlayer, player.rate > 0 {
+                    self.currentTime = CMTimeGetSeconds(player.currentTime())
+                }
+                // For generated audio or when no active player, increment manually
+                else if self.playbackState == .playing {
                     self.currentTime += 0.5
                     if self.currentTime >= self.duration {
                         self.handleTrackEnd()
@@ -918,27 +1373,190 @@ class AudioEngine: ObservableObject {
         stopProgressTimer()
         audioPlayer?.stop()
         audioPlayer = nil
-        playerNode?.stop()
+
+        // MEMORY OPTIMIZATION (Increment 0022): Release AVAudioPlayerNode buffers
+        if let player = playerNode {
+            releaseBuffer(for: player)
+        }
+
         cleanupStreamPlayer()
         noiseGenerator?.stop()
         noiseGenerator = nil
         currentTime = 0
     }
 
-    private func handleTrackEnd() {
-        if let playlist = currentPlaylist {
-            next()
+    // MARK: - Memory Optimization (Increment 0022)
+
+    /// Release AVAudioPlayerNode buffers to free memory
+    /// Call this when a track finishes playing to prevent buffer accumulation
+    func releaseBuffer(for playerNode: AVAudioPlayerNode) {
+        // Stop the player node
+        playerNode.stop()
+
+        // Force buffer release by resetting the node
+        // This deallocates any AVAudioPCMBuffer objects held by the node
+        playerNode.reset()
+
+        print("[AudioEngine] 🗑️ Released buffer for player node")
+    }
+
+    /// Clean up inactive audio resources to reduce memory usage
+    /// Should be called periodically or on memory warnings
+    func cleanup() {
+        // Release player node if not playing
+        if playbackState != .playing, let player = playerNode {
+            releaseBuffer(for: player)
+            playerNode = nil
+            print("[AudioEngine] 🧹 Cleaned up inactive player node")
+        }
+
+        // Clear cached audio player if not in use
+        if audioPlayer?.isPlaying == false {
+            audioPlayer = nil
+            print("[AudioEngine] 🧹 Cleared inactive audio player")
+        }
+
+        // Clean up stream player if stopped
+        if streamPlayer?.rate == 0 {
+            cleanupStreamPlayer()
+            print("[AudioEngine] 🧹 Cleaned up inactive stream player")
+        }
+
+        // MEMORY OPTIMIZATION (Increment 0028): Clear LRU buffer cache
+        clearBufferCache()
+
+        // Listen for memory warnings and clean up automatically
+        NotificationCenter.default.post(name: NSNotification.Name("AudioEngineDidCleanup"), object: nil)
+    }
+
+    // MARK: - LRU Buffer Cache (Increment 0028)
+
+    /// Check if a track's buffer is in the LRU cache
+    /// - Parameter trackId: Track UUID
+    /// - Returns: Cached AVPlayer if available
+    private func getCachedBuffer(for trackId: UUID) -> AVPlayer? {
+        if let index = recentlyPlayedBuffers.firstIndex(where: { $0.trackId == trackId }) {
+            // Move to end (most recently used)
+            let cached = recentlyPlayedBuffers.remove(at: index)
+            recentlyPlayedBuffers.append(cached)
+            print("[AudioEngine] 🎯 LRU cache HIT for track \(trackId)")
+            return cached.player
+        }
+        print("[AudioEngine] ❌ LRU cache MISS for track \(trackId)")
+        return nil
+    }
+
+    /// Add a player to the LRU cache, evicting oldest if needed
+    /// - Parameters:
+    ///   - trackId: Track UUID
+    ///   - player: AVPlayer instance
+    private func cacheBuffer(trackId: UUID, player: AVPlayer) {
+        // Remove if already exists (to update position)
+        if let index = recentlyPlayedBuffers.firstIndex(where: { $0.trackId == trackId }) {
+            recentlyPlayedBuffers.remove(at: index)
+        }
+
+        // Add to end (most recent)
+        recentlyPlayedBuffers.append((trackId: trackId, player: player))
+
+        // Evict oldest if over limit
+        if recentlyPlayedBuffers.count > maxRecentBuffers {
+            let evicted = recentlyPlayedBuffers.removeFirst()
+            // Clean up evicted player
+            evicted.player.pause()
+            evicted.player.replaceCurrentItem(with: nil)
+            print("[AudioEngine] 🗑️ LRU cache EVICTED oldest track \(evicted.trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
         } else {
-            stop()
+            print("[AudioEngine] 💾 LRU cache STORED track \(trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
+        }
+    }
+
+    /// Clear the entire LRU cache (called during memory cleanup)
+    private func clearBufferCache() {
+        let count = recentlyPlayedBuffers.count
+        for cached in recentlyPlayedBuffers {
+            cached.player.pause()
+            cached.player.replaceCurrentItem(with: nil)
+        }
+        recentlyPlayedBuffers.removeAll()
+        print("[AudioEngine] 🧹 Cleared LRU buffer cache (\(count) buffers released)")
+    }
+
+    private func handleTrackEnd() {
+        handleTrackEndInternal()
+    }
+
+    /// Called by AudioPlayerDelegate when audio finishes playing
+    func handleTrackEndFromDelegate() {
+        handleTrackEndInternal()
+    }
+
+    private func handleTrackEndInternal() {
+        // CRITICAL: Post notification for external queue systems (SmartEmergencyQueue) FIRST
+        // This allows external queue managers to take control before we auto-stop
+        NotificationCenter.default.post(name: .audioTrackDidFinish, object: currentTrack)
+
+        // CRITICAL: Give external queue managers time to respond (100ms)
+        // If SmartEmergencyQueue is active, it will start playing the next track
+        // We delay our auto-stop logic to prevent conflicts
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+
+            // Check if playback has already resumed (external queue took over)
+            if self.playbackState == .playing {
+                print("[AudioEngine] External queue handled track end - skipping auto-stop")
+                return
+            }
+
+            // Handle repeat one mode - replay current track
+            if self.repeatMode == .one {
+                if let track = self.currentTrack {
+                    // Re-play the track from beginning
+                    self.play(track: track)
+                } else {
+                    self.seek(to: 0)
+                    if self.playbackState != .playing {
+                        self.resume()
+                    }
+                }
+                return
+            }
+
+            if let playlist = self.currentPlaylist {
+                self.next()
+            } else {
+                // Single track playback - check repeat mode
+                if self.repeatMode == .all {
+                    // Repeat the single track
+                    if let track = self.currentTrack {
+                        self.play(track: track)
+                    } else {
+                        self.seek(to: 0)
+                        if self.playbackState != .playing {
+                            self.resume()
+                        }
+                    }
+                } else {
+                    // Only stop if no external queue took over
+                    print("[AudioEngine] Track ended, no playlist, no repeat - stopping")
+                    self.stop()
+                }
+            }
         }
     }
 
     // MARK: - Fade Out
-    private func fadeOutAndStop() {
-        let fadeSteps = 20
-        let stepDuration: TimeInterval = 0.5
+
+    /// Gracefully fade out audio and stop playback
+    /// - Parameter duration: Total fade duration in seconds (default 2.5s for "Baby is Calm")
+    func fadeOutAndStop(duration: TimeInterval = 2.5) {
+        let fadeSteps = 25  // Smooth fade with 25 steps
+        let stepDuration: TimeInterval = duration / Double(fadeSteps)
         var currentStep = 0
         let initialVolume = volume
+
+        // Cancel any existing fade
+        fadeTimer?.invalidate()
 
         fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
             Task { @MainActor in
@@ -948,14 +1566,191 @@ class AudioEngine: ObservableObject {
                 }
 
                 currentStep += 1
-                let newVolume = initialVolume * Float(fadeSteps - currentStep) / Float(fadeSteps)
-                self.setVolume(newVolume)
+
+                // Exponential fade curve for more natural sound decay
+                let progress = Float(currentStep) / Float(fadeSteps)
+                let curve = 1.0 - pow(progress, 2) // Quadratic ease-out
+                let newVolume = initialVolume * curve
+                self.setVolume(max(0, newVolume))
 
                 if currentStep >= fadeSteps {
                     timer.invalidate()
+                    self.fadeTimer = nil
                     self.stop()
                     self.setVolume(initialVolume) // Restore volume for next play
                     self.sleepTimer = .off
+                }
+            }
+        }
+    }
+
+    /// Legacy private method for sleep timer (calls public method)
+    private func fadeOutForSleepTimer() {
+        fadeOutAndStop(duration: 10.0) // Slower fade for sleep timer
+    }
+
+    // MARK: - Progress (for FS-017 Emergency Queue)
+
+    /// Current playback progress as a value from 0.0 to 1.0
+    var currentProgress: Double {
+        guard duration > 0 else { return 0.0 }
+        return currentTime / duration
+    }
+
+    // MARK: - Crossfade & Fade-In
+
+    /// Public crossfade method for transitioning between tracks (FS-017 Emergency Queue)
+    /// - Parameters:
+    ///   - track: The new track to crossfade to
+    ///   - duration: Duration of the crossfade in seconds (default 2.0)
+    func crossfade(to track: AudioTrack, duration: TimeInterval = 2.0) async throws {
+        crossfadeToTrack(track, duration: duration)
+    }
+
+    /// Crossfade from current track to new track
+    private func crossfadeToTrack(_ newTrack: AudioTrack, duration: TimeInterval) {
+        let fadeSteps = 20
+        let stepDuration = duration / Double(fadeSteps)
+        var currentStep = 0
+        let initialVolume = volume
+
+        // CRITICAL FIX: Configure audio session before crossfade
+        // This ensures audio works after emergency mode stops
+        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
+        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        if !isEmergencyActive {
+            // Only configure normal audio session if NOT in emergency mode
+            configureAudioSession(interruptOtherAudio: false)
+        } else {
+            // In emergency mode - don't reset audio session, it was already configured
+            print("[AudioEngine] 🚨 Emergency mode active - preserving emergency audio session (crossfade)")
+        }
+
+        // Store old playback components
+        var oldPlayer = audioPlayer
+        var oldPlayerNode = playerNode
+        var oldStreamPlayer = streamPlayer
+        var oldNoiseGenerator = noiseGenerator
+
+        // Prepare new track (but don't start yet)
+        currentTrack = newTrack
+        self.duration = newTrack.duration
+        playbackState = .loading
+
+        // Start new track at zero volume
+        setVolume(0)
+
+        switch newTrack.audioSourceType {
+        case .generated:
+            playGeneratedAudio(track: newTrack)
+        case .bundled:
+            playBundledAudio(track: newTrack)
+        case .streamed:
+            playStreamedAudio(track: newTrack)
+        case .textToSpeech:
+            playTextToSpeech(track: newTrack)
+        }
+
+        // Crossfade timer
+        fadeTimer?.invalidate()
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
+            Task { @MainActor in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+
+                currentStep += 1
+                let progress = Float(currentStep) / Float(fadeSteps)
+
+                // Fade out old track (quadratic ease-out)
+                let fadeOutCurve = 1.0 - pow(progress, 2)
+                oldPlayer?.volume = initialVolume * fadeOutCurve
+                oldPlayerNode?.volume = initialVolume * fadeOutCurve
+                oldStreamPlayer?.volume = initialVolume * fadeOutCurve
+
+                // Fade in new track (quadratic ease-in)
+                let fadeInCurve = pow(progress, 2)
+                self.setVolume(initialVolume * fadeInCurve)
+
+                if currentStep >= fadeSteps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+
+                    // Stop old playback (AVPlayer uses pause, not stop)
+                    oldPlayer?.pause()
+                    oldPlayerNode?.stop()
+                    oldStreamPlayer?.pause()
+                    oldNoiseGenerator?.stop()
+
+                    // CRITICAL FIX: Nullify old players to prevent audio overlap
+                    // This ensures progress timer and audio engine don't access stale players
+                    oldPlayer = nil
+                    oldStreamPlayer = nil
+                    oldPlayerNode = nil
+                    oldNoiseGenerator = nil
+
+                    // Restore full volume
+                    self.setVolume(initialVolume)
+                }
+            }
+        }
+    }
+
+    /// Start playback with fade-in
+    private func startPlaybackWithFadeIn(track: AudioTrack, fadeDuration: TimeInterval) {
+        let fadeSteps = 15
+        let stepDuration = fadeDuration / Double(fadeSteps)
+        var currentStep = 0
+        let targetVolume = volume
+
+        // CRITICAL FIX: Configure audio session before fade-in playback
+        // This ensures audio works after emergency mode stops
+        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
+        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        if !isEmergencyActive {
+            // Only configure normal audio session if NOT in emergency mode
+            configureAudioSession(interruptOtherAudio: false)
+        } else {
+            // In emergency mode - don't reset audio session, it was already configured
+            print("[AudioEngine] 🚨 Emergency mode active - preserving emergency audio session (fade-in)")
+        }
+
+        // Start at zero volume
+        setVolume(0)
+
+        // Track recently played
+        PlaylistManager.shared.addToRecentlyPlayed(track)
+
+        switch track.audioSourceType {
+        case .generated:
+            playGeneratedAudio(track: track)
+        case .bundled:
+            playBundledAudio(track: track)
+        case .streamed:
+            playStreamedAudio(track: track)
+        case .textToSpeech:
+            playTextToSpeech(track: track)
+        }
+
+        // Fade in
+        fadeTimer?.invalidate()
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
+            Task { @MainActor in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+
+                currentStep += 1
+                let progress = Float(currentStep) / Float(fadeSteps)
+                let fadeInCurve = pow(progress, 2) // Quadratic ease-in
+                self.setVolume(targetVolume * fadeInCurve)
+
+                if currentStep >= fadeSteps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.setVolume(targetVolume)
                 }
             }
         }
@@ -1005,14 +1800,16 @@ class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor in
             if flag {
-                AudioEngine.shared.next()
+                // Use handleTrackEnd for consistent repeat/shuffle handling
+                AudioEngine.shared.handleTrackEndFromDelegate()
             }
         }
     }
 }
 
 // MARK: - Noise Generator
-class NoiseGenerator {
+// @unchecked Sendable because NoiseGenerator is only accessed from MainActor context via AudioEngine
+class NoiseGenerator: @unchecked Sendable {
     private var audioEngine: AVAudioEngine?
     private var noiseNode: AVAudioSourceNode?
     private var volume: Float = 0.5
@@ -1057,6 +1854,9 @@ class NoiseGenerator {
         if let node = noiseNode {
             engine.attach(node)
             engine.connect(node, to: engine.mainMixerNode, format: format)
+            // 🚨 CRITICAL FIX: Connect mixer to output node - WITHOUT THIS, NO SOUND!
+            engine.connect(engine.mainMixerNode, to: engine.outputNode, format: format)
+            print("[NoiseGenerator] ✅ Audio chain connected: NoiseNode → MainMixer → OutputNode")
         }
     }
 
@@ -1066,63 +1866,9 @@ class NoiseGenerator {
     private var tertiaryValue: Double = 0
 
     private func generateSample() -> Double {
+        // ⚠️ WHITE NOISE AND MECHANICAL SOUNDS REMOVED!
+        // Only gentle, baby-safe sounds remain.
         switch type {
-        case .whiteNoise:
-            return Double.random(in: -1...1)
-
-        case .pinkNoise:
-            // Pink noise using Voss-McCartney algorithm (simplified)
-            let white = Double.random(in: -1...1)
-            previousValue = 0.99 * previousValue + 0.01 * white
-            return previousValue * 3
-
-        case .brownNoise:
-            // Brown noise (random walk)
-            let step = Double.random(in: -0.1...0.1)
-            previousValue = max(-1, min(1, previousValue + step))
-            return previousValue
-
-        case .blueNoise:
-            // Blue noise - high-pass filtered white noise (opposite of brown)
-            // Emphasizes higher frequencies, good for older toddlers
-            let white = Double.random(in: -1...1)
-            let filtered = white - previousValue
-            previousValue = white * 0.5
-            return filtered * 0.6
-
-        case .violetNoise:
-            // Violet noise - even more high-frequency emphasis (differentiated blue)
-            // Creates a "brighter" sound profile
-            let white = Double.random(in: -1...1)
-            let diff1 = white - previousValue
-            let diff2 = diff1 - blueNoiseState
-            previousValue = white
-            blueNoiseState = diff1
-            return diff2 * 0.4
-
-        case .greyNoise:
-            // Grey noise - psychoacoustically balanced (equal loudness curve)
-            // Sounds equally loud across all frequencies to human ear
-            phase += 1.0 / 44100.0
-            let white = Double.random(in: -1...1)
-            // Apply A-weighting approximation
-            let lowBoost = sin(phase * 2 * .pi * 100) * 0.15
-            let midCut = sin(phase * 2 * .pi * 1000) * 0.05
-            previousValue = 0.85 * previousValue + 0.15 * white
-            return (previousValue + lowBoost - midCut) * 0.5
-
-        case .velvetNoise:
-            // Velvet noise - sparse impulse noise, very smooth sounding
-            // Great for toddlers as it's less harsh than continuous noise
-            phase += 1.0 / 44100.0
-            let impulseRate = 0.02 // Sparse impulses
-            if Double.random(in: 0...1) < impulseRate {
-                previousValue = Double.random(in: -1...1)
-            }
-            // Smooth decay between impulses
-            previousValue *= 0.9995
-            return previousValue * 0.7
-
         case .heartbeat:
             // Simulated heartbeat at ~70 BPM
             phase += 70.0 / 60.0 / 44100.0
@@ -1147,25 +1893,6 @@ class NoiseGenerator {
             let noise = Double.random(in: -1...1)
             return noise * envelope * 0.6
 
-        case .rain:
-            // Rain: filtered noise with varying intensity
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.7 * previousValue + 0.3 * noise
-            // Add occasional "drops"
-            let drop = Double.random(in: 0...1) > 0.999 ? Double.random(in: 0.3...0.6) : 0
-            return (previousValue * 0.5 + drop)
-
-        case .rainOnRoof:
-            // Rain on roof - more muffled, cozy feeling
-            phase += 1.0 / 44100.0
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.92 * previousValue + 0.08 * noise // More filtering = muffled
-            // Occasional heavier drops on roof
-            let roofDrop = Double.random(in: 0...1) > 0.998 ? Double.random(in: 0.2...0.4) : 0
-            // Low rumble of continuous rain
-            let rumble = sin(phase * 2 * .pi * 40) * 0.08
-            return (previousValue * 0.4 + roofDrop + rumble)
-
         case .ocean:
             // Ocean waves with slow modulation
             phase += 1.0 / 44100.0
@@ -1174,19 +1901,7 @@ class NoiseGenerator {
             previousValue = 0.8 * previousValue + 0.2 * noise
             return previousValue * wavePhase * 0.7
 
-        case .fan:
-            // Fan: continuous filtered noise with slight wobble
-            phase += 1.0 / 44100.0
-            let wobble = sin(phase * 2 * .pi * 3) * 0.05 + 1.0
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.85 * previousValue + 0.15 * noise
-            return previousValue * wobble * 0.5
-
-        case .vacuum:
-            // Vacuum: louder, harsher noise
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.6 * previousValue + 0.4 * noise
-            return previousValue * 0.7
+        // ⚠️ REMOVED: .ocean, .shushing - harsh mechanical sounds removed!
 
         case .forest:
             // Forest ambience - layered birds, wind, rustling leaves
@@ -1231,68 +1946,7 @@ class NoiseGenerator {
             let cricket = sin(phase * 2 * .pi * cricketFreq) * 0.05 * (sin(phase * 8) > 0 ? 1 : 0)
             return (previousValue * 0.35 + pop + cricket)
 
-        case .trainRide:
-            // Train ride - rhythmic clacking + engine drone
-            phase += 1.0 / 44100.0
-            // Rhythmic wheel clacking (about 1.5 Hz for realistic train speed)
-            let clackPhase = fmod(phase * 1.5, 1.0)
-            var clack = 0.0
-            if clackPhase < 0.05 || (clackPhase > 0.5 && clackPhase < 0.55) {
-                clack = (1.0 - clackPhase * 10) * 0.4
-            }
-            // Engine drone
-            let drone = sin(phase * 2 * .pi * 80) * 0.2 + sin(phase * 2 * .pi * 120) * 0.1
-            // Subtle vibration noise
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.95 * previousValue + 0.05 * noise
-            return (drone + clack + previousValue * 0.15)
-
-        case .airplaneCabin:
-            // Airplane cabin - consistent engine drone + air circulation
-            phase += 1.0 / 44100.0
-            // Low engine drone (multiple harmonics)
-            let engine = sin(phase * 2 * .pi * 100) * 0.25
-                + sin(phase * 2 * .pi * 200) * 0.1
-                + sin(phase * 2 * .pi * 150) * 0.08
-            // Air circulation noise
-            let airNoise = Double.random(in: -1...1)
-            previousValue = 0.92 * previousValue + 0.08 * airNoise
-            // Subtle pressure variation
-            let pressure = sin(phase * 2 * .pi * 0.03) * 0.05
-            return (engine + previousValue * 0.25 + pressure)
-
-        case .thunderRumble:
-            // Distant thunder rumble - low frequency with occasional louder moments
-            phase += 1.0 / 44100.0
-            // Base low rumble
-            let rumble = sin(phase * 2 * .pi * 25) * 0.3
-                + sin(phase * 2 * .pi * 40) * 0.15
-            // Filtered noise for texture
-            let noise = Double.random(in: -1...1)
-            previousValue = 0.98 * previousValue + 0.02 * noise
-            // Occasional thunder swell
-            secondaryPhase *= 0.9995
-            if Double.random(in: 0...1) > 0.9999 {
-                secondaryPhase = 1.0
-            }
-            let swell = secondaryPhase * 0.4
-            return (rumble + previousValue * 0.2) * (0.6 + swell)
-
-        case .cityAmbience:
-            // City night - distant traffic, occasional sounds
-            phase += 1.0 / 44100.0
-            // Base traffic hum
-            let traffic = Double.random(in: -1...1)
-            previousValue = 0.96 * previousValue + 0.04 * traffic
-            // Distant car pass-by effect
-            secondaryPhase *= 0.9999
-            if Double.random(in: 0...1) > 0.9998 {
-                secondaryPhase = 1.0
-            }
-            let passby = sin(phase * 2 * .pi * 80) * secondaryPhase * 0.2
-            // Subtle urban tone
-            let tone = sin(phase * 2 * .pi * 60) * 0.05
-            return (previousValue * 0.3 + passby + tone)
+        // ⚠️ REMOVED: .lullaby, .softPiano, .forest - removed from GeneratorType!
 
         case .aquarium:
             // Aquarium bubbles - gentle, rhythmic bubbling
@@ -1315,66 +1969,305 @@ class NoiseGenerator {
             return (previousValue * 0.2 + bubble * 0.4 + pump)
 
         case .lullaby, .musicBox:
-            // Simple music box melody
-            phase += 1.0 / 44100.0
-            let noteFreq: Double = [262, 294, 330, 349, 392][Int(phase * 0.5) % 5]
-            let tone = sin(phase * 2 * .pi * noteFreq)
-            let envelope = 0.5 + 0.5 * sin(phase * 2 * .pi * 0.2)
-            return tone * envelope * 0.3
+            // Music box melody with proper musical timing
+            // Tempo: 72 BPM = 1.2 beats per second, each note is a quarter note
+            let bpm = 72.0
+            let beatDuration = 60.0 / bpm  // ~0.833 seconds per beat
+            let noteDuration = beatDuration  // Quarter note
 
-        case .softPiano:
-            // Soft piano - gentle chord progressions
             phase += 1.0 / 44100.0
-            // Simple chord (C major arpeggio with harmonics)
-            let chordIndex = Int(phase * 0.3) % 4
-            let baseFreqs: [[Double]] = [
-                [262, 330, 392], // C major
-                [220, 277, 330], // A minor
-                [196, 247, 294], // G major
-                [262, 330, 392]  // C major
+
+            // "Twinkle Twinkle Little Star" melody pattern (classic lullaby)
+            // Using note degrees: C D E F G (1 1 5 5 6 6 5, 4 4 3 3 2 2 1)
+            let melodyNotes: [Double] = [
+                262, 262, 392, 392, 440, 440, 392,  // Twin-kle twin-kle lit-tle star
+                349, 349, 330, 330, 294, 294, 262,  // How I won-der what you are
+                392, 392, 349, 349, 330, 330, 294,  // Up a-bove the world so high
+                392, 392, 349, 349, 330, 330, 294,  // Like a dia-mond in the sky
+                262, 262, 392, 392, 440, 440, 392,  // Twin-kle twin-kle lit-tle star
+                349, 349, 330, 330, 294, 294, 262   // How I won-der what you are
             ]
-            let freqs = baseFreqs[chordIndex]
-            var chord = 0.0
-            for (i, freq) in freqs.enumerated() {
-                let harmonic = sin(phase * 2 * .pi * freq) * (1.0 - Double(i) * 0.2)
-                chord += harmonic
-            }
-            // Piano-like envelope with soft attack
-            let notePhase = fmod(phase * 0.3, 1.0)
-            let envelope = exp(-notePhase * 2) * 0.8
-            return chord / 3.0 * envelope * 0.4
 
-        case .gentleGuitar:
-            // Gentle acoustic guitar - fingerpicking pattern
-            phase += 1.0 / 44100.0
-            // Guitar strings with harmonics
-            let stringIndex = Int(phase * 2) % 6
-            let guitarFreqs: [Double] = [196, 247, 294, 330, 392, 440] // G chord pattern
-            let freq = guitarFreqs[stringIndex]
-            // Guitar tone with harmonics
-            let fundamental = sin(phase * 2 * .pi * freq)
-            let harmonic2 = sin(phase * 2 * .pi * freq * 2) * 0.3
-            let harmonic3 = sin(phase * 2 * .pi * freq * 3) * 0.1
-            let tone = fundamental + harmonic2 + harmonic3
-            // Pluck envelope
-            let pluckPhase = fmod(phase * 2, 1.0)
-            let envelope = exp(-pluckPhase * 4)
+            // Calculate which note we're on based on time
+            let totalMelodyDuration = Double(melodyNotes.count) * noteDuration
+            let melodyPhase = fmod(phase, totalMelodyDuration)
+            let noteIndex = Int(melodyPhase / noteDuration) % melodyNotes.count
+            let noteFreq = melodyNotes[noteIndex]
+
+            // Time within current note (0 to 1)
+            let notePhase = fmod(melodyPhase, noteDuration) / noteDuration
+
+            // Music box tone with harmonics (bell-like sound)
+            let fundamental = sin(phase * 2 * .pi * noteFreq)
+            let harmonic2 = sin(phase * 2 * .pi * noteFreq * 2) * 0.3
+            let harmonic3 = sin(phase * 2 * .pi * noteFreq * 3) * 0.15
+            let harmonic4 = sin(phase * 2 * .pi * noteFreq * 4) * 0.08
+            let tone = fundamental + harmonic2 + harmonic3 + harmonic4
+
+            // Bell-like envelope: quick attack, gradual decay
+            let attack = min(notePhase * 20.0, 1.0)  // Fast attack (first 5%)
+            let decay = exp(-notePhase * 3.0)  // Exponential decay
+            let envelope = attack * decay
+
             return tone * envelope * 0.25
 
-        default:
-            // Default to white noise for unsupported types
-            return Double.random(in: -1...1) * 0.5
+        case .softPiano:
+            // Soft piano - gentle chord progressions with proper timing
+            // Tempo: 60 BPM for very relaxing, 4 beats per chord (whole notes)
+            let bpm = 60.0
+            let beatDuration = 60.0 / bpm  // 1 second per beat
+            let chordDuration = beatDuration * 4.0  // 4 seconds per chord (whole note)
+
+            phase += 1.0 / 44100.0
+
+            // Gentle chord progression (I - vi - IV - V - I pattern in C major)
+            let chordProgressions: [[(Double, Double)]] = [
+                // C major (root position) - with octave bass
+                [(130.81, 1.0), (262, 0.8), (330, 0.7), (392, 0.6)],
+                // A minor
+                [(110, 1.0), (220, 0.8), (262, 0.7), (330, 0.6)],
+                // F major
+                [(87.31, 1.0), (175, 0.8), (220, 0.7), (262, 0.6)],
+                // G major (with 7th for tension)
+                [(98, 1.0), (196, 0.8), (247, 0.7), (294, 0.6)],
+                // C major (resolution)
+                [(130.81, 1.0), (262, 0.8), (330, 0.7), (392, 0.6)],
+                // E minor (relative minor)
+                [(82.41, 1.0), (165, 0.8), (196, 0.7), (247, 0.6)],
+                // A minor
+                [(110, 1.0), (220, 0.8), (262, 0.7), (330, 0.6)],
+                // G major (dominant)
+                [(98, 1.0), (196, 0.8), (247, 0.7), (392, 0.6)]
+            ]
+
+            // Calculate which chord we're on
+            let totalProgressionDuration = Double(chordProgressions.count) * chordDuration
+            let progressionPhase = fmod(phase, totalProgressionDuration)
+            let chordIndex = Int(progressionPhase / chordDuration) % chordProgressions.count
+            let currentChord = chordProgressions[chordIndex]
+
+            // Time within current chord (0 to 1)
+            let chordPhase = fmod(progressionPhase, chordDuration) / chordDuration
+
+            // Build chord sound with staggered note entries (arpeggiated feel)
+            var chordSound = 0.0
+            for (noteIndex, (freq, vol)) in currentChord.enumerated() {
+                // Stagger note entries slightly for arpeggiated feel
+                let noteDelay = Double(noteIndex) * 0.05  // 50ms between notes
+                let noteStartPhase = noteDelay / chordDuration
+
+                if chordPhase >= noteStartPhase {
+                    let adjustedNotePhase = (chordPhase - noteStartPhase) / (1.0 - noteStartPhase)
+
+                    // Piano tone with harmonics
+                    let fundamental = sin(phase * 2 * .pi * freq)
+                    let harmonic2 = sin(phase * 2 * .pi * freq * 2) * 0.2
+                    let harmonic3 = sin(phase * 2 * .pi * freq * 3) * 0.05
+                    let tone = (fundamental + harmonic2 + harmonic3) * vol
+
+                    // Soft attack, long sustain, gentle decay
+                    let attack = min(adjustedNotePhase * 10.0, 1.0)  // 100ms attack
+                    let sustain = 0.7
+                    let decay = sustain + (1.0 - sustain) * exp(-adjustedNotePhase * 1.5)
+                    let noteEnvelope = attack * decay
+
+                    chordSound += tone * noteEnvelope
+                }
+            }
+
+            return chordSound / Double(currentChord.count) * 0.35
+
+        case .gentleGuitar:
+            // Gentle acoustic guitar - fingerpicking arpeggio pattern
+            // Tempo: 80 BPM, eighth notes for fingerpicking
+            let bpm = 80.0
+            let beatDuration = 60.0 / bpm  // 0.75 seconds per beat
+            let noteDuration = beatDuration / 2.0  // Eighth notes (0.375 seconds)
+
+            phase += 1.0 / 44100.0
+
+            // Fingerpicking pattern for a gentle G-Em-C-D progression
+            // Pattern: bass, 3rd, 2nd, 1st, 2nd, 3rd (Travis picking inspired)
+            let chordPatterns: [[(Double, Int)]] = [
+                // G major: G2-B3-D4-G4-D4-B3
+                [(98, 0), (247, 2), (294, 1), (392, 0), (294, 1), (247, 2), (98, 0), (196, 2)],
+                // E minor: E2-G3-B3-E4-B3-G3
+                [(82.41, 0), (196, 2), (247, 1), (330, 0), (247, 1), (196, 2), (82.41, 0), (165, 2)],
+                // C major: C2-E3-G3-C4-G3-E3
+                [(65.41, 0), (165, 2), (196, 1), (262, 0), (196, 1), (165, 2), (65.41, 0), (130.81, 2)],
+                // D major: D2-F#3-A3-D4-A3-F#3
+                [(73.42, 0), (185, 2), (220, 1), (294, 0), (220, 1), (185, 2), (73.42, 0), (147, 2)]
+            ]
+
+            // Calculate timing
+            let patternLength = 8  // 8 notes per chord pattern
+            let chordDuration = Double(patternLength) * noteDuration
+            let totalProgressionDuration = Double(chordPatterns.count) * chordDuration
+            let progressionPhase = fmod(phase, totalProgressionDuration)
+            let chordIndex = Int(progressionPhase / chordDuration) % chordPatterns.count
+            let pattern = chordPatterns[chordIndex]
+
+            // Calculate which note in the pattern
+            let chordLocalPhase = fmod(progressionPhase, chordDuration)
+            let noteIndex = Int(chordLocalPhase / noteDuration) % pattern.count
+            let (freq, stringType) = pattern[noteIndex]
+
+            // Time within current note (0 to 1)
+            let notePhase = fmod(chordLocalPhase, noteDuration) / noteDuration
+
+            // Guitar tone with realistic harmonics
+            // Bass strings (type 0) have more low harmonics
+            // Treble strings (type 1-2) are brighter
+            let h2Strength = stringType == 0 ? 0.4 : 0.25
+            let h3Strength = stringType == 0 ? 0.2 : 0.15
+            let h4Strength = stringType == 0 ? 0.1 : 0.08
+
+            let fundamental = sin(phase * 2 * .pi * freq)
+            let harmonic2 = sin(phase * 2 * .pi * freq * 2) * h2Strength
+            let harmonic3 = sin(phase * 2 * .pi * freq * 3) * h3Strength
+            let harmonic4 = sin(phase * 2 * .pi * freq * 4) * h4Strength
+            let tone = fundamental + harmonic2 + harmonic3 + harmonic4
+
+            // Guitar pluck envelope: instant attack, medium-fast decay
+            // Lower strings ring longer
+            let decayRate = stringType == 0 ? 2.5 : 3.5
+            let envelope = exp(-notePhase * decayRate)
+
+            return tone * envelope * 0.28
+
+        case .river:
+            // River stream - continuous flowing water with gentle variations
+            phase += 1.0 / 44100.0
+            let noise = Double.random(in: -1...1)
+            // Heavy filtering for smooth water sound
+            previousValue = 0.88 * previousValue + 0.12 * noise
+            // Occasional ripple/splash sounds
+            let ripple = Double.random(in: 0...1) > 0.998 ? Double.random(in: 0.1...0.25) : 0
+            // Very slow modulation for flowing effect
+            let flow = sin(phase * 2 * .pi * 0.2) * 0.15 + 0.85
+            return (previousValue * flow * 0.45 + ripple)
+
+        case .birds:
+            // Birds chirping - gentle bird sounds with nature background
+            phase += 1.0 / 44100.0
+            secondaryPhase += 1.0 / 44100.0
+            // Soft ambient background
+            let ambient = Double.random(in: -1...1)
+            previousValue = 0.96 * previousValue + 0.04 * ambient
+            // Occasional bird chirp (multiple types)
+            var chirp = 0.0
+            if Double.random(in: 0...1) > 0.9995 {
+                tertiaryValue = 1.0
+                blueNoiseState = Double.random(in: 1500...3500) // Random bird frequency
+            }
+            if tertiaryValue > 0.01 {
+                // Warbling effect for realistic bird sound
+                let warble = sin(secondaryPhase * 80) * 300
+                chirp = sin(phase * 2 * .pi * (blueNoiseState + warble)) * tertiaryValue * 0.25
+                tertiaryValue *= 0.992
+            }
+            return (previousValue * 0.2 + chirp)
+
+        case .crickets:
+            // Crickets - rhythmic chirping at night
+            phase += 1.0 / 44100.0
+            // Very soft ambient night background
+            let ambient = Double.random(in: -1...1)
+            previousValue = 0.98 * previousValue + 0.02 * ambient
+            // Cricket chirps (rhythmic on/off pattern)
+            let cricketRate = 5.0 // 5 Hz chirp rate
+            let chirpPattern = sin(phase * 2 * .pi * cricketRate) > 0.3 ? 1.0 : 0.0
+            let cricketFreq = 4200.0 + sin(phase * 10) * 100 // Slight frequency variation
+            let cricket = sin(phase * 2 * .pi * cricketFreq) * chirpPattern * 0.15
+            // Second cricket at different rate for natural feel
+            let cricket2Rate = 4.3
+            let chirp2Pattern = sin(phase * 2 * .pi * cricket2Rate + 1.5) > 0.4 ? 1.0 : 0.0
+            let cricket2 = sin(phase * 2 * .pi * 3800) * chirp2Pattern * 0.1
+            return (previousValue * 0.15 + cricket + cricket2)
+
+        case .fireplace:
+            // Fireplace - crackling fire, cozy and warm
+            phase += 1.0 / 44100.0
+            // Base fire crackle (heavily filtered noise)
+            let crackle = Double.random(in: -1...1)
+            previousValue = 0.85 * previousValue + 0.15 * crackle
+            // Occasional pops (less frequent than campfire)
+            let pop = Double.random(in: 0...1) > 0.9997 ? Double.random(in: 0.2...0.5) : 0
+            // Low rumble of fire
+            let rumble = sin(phase * 2 * .pi * 35) * 0.1
+            return (previousValue * 0.35 + pop * 0.6 + rumble)
+
+        // ⚠️ REMOVED: .womb, .heartbeat, .river - harsh mechanical sounds!
+
+        case .chimes:
+            // Wind chimes - gentle random bell tones, NOT harsh
+            phase += 1.0 / 44100.0
+            // Pentatonic scale for pleasant, non-dissonant chimes
+            // C, D, E, G, A (262, 294, 330, 392, 440 Hz) - all sound good together
+            let chimeNotes: [Double] = [523, 587, 659, 784, 880, 1047, 1175] // Higher octave, softer
+
+            // Trigger new chime occasionally
+            if Double.random(in: 0...1) > 0.9992 {
+                tertiaryValue = 1.0
+                blueNoiseState = chimeNotes.randomElement() ?? 523
+            }
+
+            var chime = 0.0
+            if tertiaryValue > 0.01 {
+                // Bell-like tone with harmonics
+                let fundamental = sin(phase * 2 * .pi * blueNoiseState)
+                let h2 = sin(phase * 2 * .pi * blueNoiseState * 2) * 0.3
+                let h3 = sin(phase * 2 * .pi * blueNoiseState * 3) * 0.1
+                chime = (fundamental + h2 + h3) * tertiaryValue * 0.25
+                tertiaryValue *= 0.9985 // Slow decay for bell sound
+            }
+
+            // Very soft ambient wind
+            let windNoise = Double.random(in: -1...1)
+            previousValue = 0.97 * previousValue + 0.03 * windNoise
+            return (chime + previousValue * 0.1)
+
+        case .bells:
+            // Soft bells - slower, deeper bell tones
+            phase += 1.0 / 44100.0
+            // Lower, warmer bell frequencies
+            let bellNotes: [Double] = [262, 294, 330, 392, 440] // C4-A4 range
+
+            // Trigger new bell less frequently than chimes
+            if Double.random(in: 0...1) > 0.9996 {
+                tertiaryValue = 1.0
+                blueNoiseState = bellNotes.randomElement() ?? 262
+            }
+
+            var bell = 0.0
+            if tertiaryValue > 0.01 {
+                // Rich bell tone with more harmonics
+                let fundamental = sin(phase * 2 * .pi * blueNoiseState)
+                let h2 = sin(phase * 2 * .pi * blueNoiseState * 2) * 0.35
+                let h3 = sin(phase * 2 * .pi * blueNoiseState * 3) * 0.15
+                let h4 = sin(phase * 2 * .pi * blueNoiseState * 4) * 0.05
+                bell = (fundamental + h2 + h3 + h4) * tertiaryValue * 0.3
+                tertiaryValue *= 0.9975 // Even slower decay
+            }
+
+            return bell
         }
     }
 
     func start() {
-        guard !isRunning, let engine = audioEngine else { return }
+        guard !isRunning, let engine = audioEngine else {
+            print("[NoiseGenerator] ⚠️ Cannot start: isRunning=\(isRunning), engine=\(audioEngine != nil)")
+            return
+        }
 
         do {
+            print("[NoiseGenerator] 🎵 Starting audio engine for \(type.rawValue)")
+            print("[NoiseGenerator] 📊 Volume: \(volume), Connections: \(engine.attachedNodes.count) nodes")
             try engine.start()
             isRunning = true
+            print("[NoiseGenerator] ✅ Audio engine STARTED successfully - sound should now play!")
         } catch {
-            print("Failed to start noise generator: \(error)")
+            print("[NoiseGenerator] ❌ Failed to start noise generator: \(error)")
         }
     }
 
@@ -1405,6 +2298,7 @@ class SoundMixer: ObservableObject {
         var secondaryPhase: Double = 0
         var tertiaryValue: Double = 0
         var blueNoiseState: Double = 0
+        var birdsState: Double = 0  // Used for note frequency in melodic generators
     }
 
     @Published var activeChannels: [MixerChannel] = []
@@ -1432,6 +2326,10 @@ class SoundMixer: ObservableObject {
 
         engine.attach(mixer)
         engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        // 🚨 CRITICAL FIX: Connect mainMixer to output - WITHOUT THIS, NO SOUND!
+        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
+        engine.connect(engine.mainMixerNode, to: engine.outputNode, format: format)
+        print("[SoundMixer] ✅ Audio chain connected: SourceNodes → Mixer → MainMixer → OutputNode")
     }
 
     func addSound(_ type: GeneratorType, volume: Float = 0.5) -> String {
@@ -1491,17 +2389,17 @@ class SoundMixer: ObservableObject {
 
     func setChannelVolume(_ channelId: String, volume: Float) {
         if var generator = generators[channelId] {
-            generator.volume = min(volume, 0.7) // Safety limit
+            generator.volume = min(volume, 1.0)
             generators[channelId] = generator
         }
 
         if let index = activeChannels.firstIndex(where: { $0.id == channelId }) {
-            activeChannels[index].volume = min(volume, 0.7)
+            activeChannels[index].volume = min(volume, 1.0)
         }
     }
 
     func setMasterVolume(_ volume: Float) {
-        mixerNode?.outputVolume = min(volume, 0.7)
+        mixerNode?.outputVolume = min(volume, 1.0)
     }
 
     func start() {
@@ -1527,65 +2425,9 @@ class SoundMixer: ObservableObject {
     }
 
     // Simplified sample generation for mixer (reuses main generator logic)
+    // ⚠️ WHITE NOISE AND MECHANICAL SOUNDS REMOVED!
     private func generateSampleForType(_ type: GeneratorType, state: inout GeneratorState) -> Double {
         switch type {
-        case .whiteNoise:
-            return Double.random(in: -1...1)
-
-        case .pinkNoise:
-            let white = Double.random(in: -1...1)
-            state.previousValue = 0.99 * state.previousValue + 0.01 * white
-            return state.previousValue * 3
-
-        case .brownNoise:
-            let step = Double.random(in: -0.1...0.1)
-            state.previousValue = max(-1, min(1, state.previousValue + step))
-            return state.previousValue
-
-        case .blueNoise:
-            let white = Double.random(in: -1...1)
-            let filtered = white - state.previousValue
-            state.previousValue = white * 0.5
-            return filtered * 0.6
-
-        case .violetNoise:
-            let white = Double.random(in: -1...1)
-            let diff1 = white - state.previousValue
-            let diff2 = diff1 - state.blueNoiseState
-            state.previousValue = white
-            state.blueNoiseState = diff1
-            return diff2 * 0.4
-
-        case .greyNoise:
-            state.phase += 1.0 / sampleRate
-            let white = Double.random(in: -1...1)
-            let lowBoost = sin(state.phase * 2 * .pi * 100) * 0.15
-            let midCut = sin(state.phase * 2 * .pi * 1000) * 0.05
-            state.previousValue = 0.85 * state.previousValue + 0.15 * white
-            return (state.previousValue + lowBoost - midCut) * 0.5
-
-        case .velvetNoise:
-            state.phase += 1.0 / sampleRate
-            if Double.random(in: 0...1) < 0.02 {
-                state.previousValue = Double.random(in: -1...1)
-            }
-            state.previousValue *= 0.9995
-            return state.previousValue * 0.7
-
-        case .rain:
-            let noise = Double.random(in: -1...1)
-            state.previousValue = 0.7 * state.previousValue + 0.3 * noise
-            let drop = Double.random(in: 0...1) > 0.999 ? Double.random(in: 0.3...0.6) : 0
-            return (state.previousValue * 0.5 + drop)
-
-        case .rainOnRoof:
-            state.phase += 1.0 / sampleRate
-            let noise = Double.random(in: -1...1)
-            state.previousValue = 0.92 * state.previousValue + 0.08 * noise
-            let roofDrop = Double.random(in: 0...1) > 0.998 ? Double.random(in: 0.2...0.4) : 0
-            let rumble = sin(state.phase * 2 * .pi * 40) * 0.08
-            return (state.previousValue * 0.4 + roofDrop + rumble)
-
         case .ocean:
             state.phase += 1.0 / sampleRate
             let wavePhase = sin(state.phase * 2 * .pi * 0.1) * 0.5 + 0.5
@@ -1619,11 +2461,106 @@ class SoundMixer: ObservableObject {
             let cricket = sin(state.phase * 2 * .pi * cricketFreq) * 0.05 * (sin(state.phase * 8) > 0 ? 1 : 0)
             return (state.previousValue * 0.35 + pop + cricket)
 
-        default:
-            // Fallback to filtered white noise
+        case .river:
+            state.phase += 1.0 / sampleRate
             let noise = Double.random(in: -1...1)
-            state.previousValue = 0.8 * state.previousValue + 0.2 * noise
-            return state.previousValue * 0.5
+            state.previousValue = 0.88 * state.previousValue + 0.12 * noise
+            let ripple = Double.random(in: 0...1) > 0.998 ? Double.random(in: 0.1...0.25) : 0
+            let flow = sin(state.phase * 2 * .pi * 0.2) * 0.15 + 0.85
+            return (state.previousValue * flow * 0.45 + ripple)
+
+        case .chimes:
+            state.phase += 1.0 / sampleRate
+            let chimeNotes: [Double] = [523, 587, 659, 784, 880, 1047, 1175]
+            if Double.random(in: 0...1) > 0.9992 {
+                state.tertiaryValue = 1.0
+                state.birdsState = chimeNotes.randomElement() ?? 523
+            }
+            var chime = 0.0
+            if state.tertiaryValue > 0.01 {
+                let fundamental = sin(state.phase * 2 * .pi * state.birdsState)
+                let h2 = sin(state.phase * 2 * .pi * state.birdsState * 2) * 0.3
+                chime = (fundamental + h2) * state.tertiaryValue * 0.25
+                state.tertiaryValue *= 0.9985
+            }
+            let windNoise = Double.random(in: -1...1)
+            state.previousValue = 0.97 * state.previousValue + 0.03 * windNoise
+            return (chime + state.previousValue * 0.1)
+
+        case .bells:
+            state.phase += 1.0 / sampleRate
+            let bellNotes: [Double] = [262, 294, 330, 392, 440]
+            if Double.random(in: 0...1) > 0.9996 {
+                state.tertiaryValue = 1.0
+                state.birdsState = bellNotes.randomElement() ?? 262
+            }
+            var bell = 0.0
+            if state.tertiaryValue > 0.01 {
+                let fundamental = sin(state.phase * 2 * .pi * state.birdsState)
+                let h2 = sin(state.phase * 2 * .pi * state.birdsState * 2) * 0.35
+                bell = (fundamental + h2) * state.tertiaryValue * 0.3
+                state.tertiaryValue *= 0.9975
+            }
+            return bell
+
+        case .birds:
+            state.phase += 1.0 / sampleRate
+            state.secondaryPhase += 1.0 / sampleRate
+            let ambient = Double.random(in: -1...1)
+            state.previousValue = 0.96 * state.previousValue + 0.04 * ambient
+            var chirp = 0.0
+            if Double.random(in: 0...1) > 0.9995 {
+                state.tertiaryValue = 1.0
+                state.birdsState = Double.random(in: 1500...3500)
+            }
+            if state.tertiaryValue > 0.01 {
+                let warble = sin(state.secondaryPhase * 80) * 300
+                chirp = sin(state.phase * 2 * .pi * (state.birdsState + warble)) * state.tertiaryValue * 0.25
+                state.tertiaryValue *= 0.992
+            }
+            return (state.previousValue * 0.2 + chirp)
+
+        case .crickets:
+            state.phase += 1.0 / sampleRate
+            let ambient = Double.random(in: -1...1)
+            state.previousValue = 0.98 * state.previousValue + 0.02 * ambient
+            let cricketRate = 5.0
+            let chirpPattern = sin(state.phase * 2 * .pi * cricketRate) > 0.3 ? 1.0 : 0.0
+            let cricketFreq = 4200.0 + sin(state.phase * 10) * 100
+            let cricket = sin(state.phase * 2 * .pi * cricketFreq) * chirpPattern * 0.15
+            return (state.previousValue * 0.15 + cricket)
+
+        case .fireplace:
+            state.phase += 1.0 / sampleRate
+            let crackleF = Double.random(in: -1...1)
+            state.previousValue = 0.85 * state.previousValue + 0.15 * crackleF
+            let pop = Double.random(in: 0...1) > 0.9997 ? Double.random(in: 0.2...0.5) : 0
+            let rumble = sin(state.phase * 2 * .pi * 35) * 0.1
+            return (state.previousValue * 0.35 + pop * 0.6 + rumble)
+
+        case .lullaby, .musicBox, .softPiano, .gentleGuitar:
+            // For musical generators, use simple pleasant tones
+            state.phase += 1.0 / sampleRate
+            let melodyNotes: [Double] = [262, 294, 330, 349, 392, 440]
+            if Double.random(in: 0...1) > 0.998 {
+                state.tertiaryValue = 1.0
+                state.birdsState = melodyNotes.randomElement() ?? 262
+            }
+            var tone = 0.0
+            if state.tertiaryValue > 0.01 {
+                let fundamental = sin(state.phase * 2 * .pi * state.birdsState)
+                let h2 = sin(state.phase * 2 * .pi * state.birdsState * 2) * 0.2
+                tone = (fundamental + h2) * state.tertiaryValue * 0.25
+                state.tertiaryValue *= 0.997
+            }
+            return tone
+
+        case .heartbeat, .womb, .shushing, .aquarium, .waterfall:
+            // For these types, delegate to main NoiseGenerator via filtered noise fallback
+            state.phase += 1.0 / sampleRate
+            let noise = Double.random(in: -1...1)
+            state.previousValue = 0.85 * state.previousValue + 0.15 * noise
+            return state.previousValue * 0.4
         }
     }
 
@@ -1631,11 +2568,11 @@ class SoundMixer: ObservableObject {
 
     static func createSleepMix(for ageMonths: Int) -> [(GeneratorType, Float)] {
         if ageMonths >= 18 {
-            return [(.greyNoise, 0.4), (.rainOnRoof, 0.3), (.softPiano, 0.2)]
+            return [(.river, 0.4), (.softPiano, 0.3), (.ocean, 0.2)]
         } else if ageMonths >= 12 {
-            return [(.velvetNoise, 0.4), (.ocean, 0.3), (.chimes, 0.15)]
+            return [(.ocean, 0.4), (.lullaby, 0.3), (.chimes, 0.15)]
         } else if ageMonths >= 6 {
-            return [(.pinkNoise, 0.4), (.rain, 0.3)]
+            return [(.ocean, 0.4), (.womb, 0.3)]
         } else {
             return [(.womb, 0.4), (.heartbeat, 0.3)]
         }
@@ -1643,21 +2580,21 @@ class SoundMixer: ObservableObject {
 
     static func createCalmMix(for ageMonths: Int) -> [(GeneratorType, Float)] {
         if ageMonths >= 18 {
-            return [(.forest, 0.35), (.softPiano, 0.25), (.greyNoise, 0.2)]
+            return [(.forest, 0.35), (.softPiano, 0.25), (.river, 0.2)]
         } else if ageMonths >= 12 {
-            return [(.ocean, 0.35), (.birds, 0.2), (.velvetNoise, 0.25)]
+            return [(.ocean, 0.35), (.birds, 0.2), (.river, 0.25)]
         } else {
-            return [(.pinkNoise, 0.4), (.ocean, 0.3)]
+            return [(.ocean, 0.4), (.womb, 0.3)]
         }
     }
 
     static func createFocusMix(for ageMonths: Int) -> [(GeneratorType, Float)] {
         if ageMonths >= 18 {
-            return [(.blueNoise, 0.3), (.aquarium, 0.25), (.forest, 0.2)]
+            return [(.aquarium, 0.3), (.forest, 0.25), (.birds, 0.2)]
         } else if ageMonths >= 12 {
-            return [(.greyNoise, 0.35), (.river, 0.25)]
+            return [(.river, 0.35), (.ocean, 0.25)]
         } else {
-            return [(.pinkNoise, 0.4), (.fan, 0.25)]
+            return [(.ocean, 0.4), (.womb, 0.25)]
         }
     }
 }

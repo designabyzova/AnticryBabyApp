@@ -1,0 +1,273 @@
+# Maestro E2E Test: Emergency Category Selection Flow
+# Tests the new category selection UI before emergency activation
+#
+# Run: maestro test maestro/flows/emergency_category_selection_flow.yaml
+#
+# This test validates:
+# 1. Emergency button shows category selector sheet
+# 2. All major categories are visible
+# 3. Default "AI Instant Calm" option is available
+# 4. Category selection works correctly
+# 5. Start Emergency Mode button activates with selected category
+# 6. Cancel button dismisses without activation
+# 7. Selected category filters emergency queue tracks
+#
+# CRITICAL: This tests the new category selection UI added for better user control
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+- takeScreenshot: "category_select_01_home"
+
+# ============================================
+# TEST 1: Tap Emergency Button -> Category Selector Opens
+# ============================================
+
+# Find and tap EMERGENCY CRY STOP button
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+# Wait for Category Selector sheet to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*Emergency Cry-Stop Mode.*|.*Select a category.*"
+    timeout: 3000
+
+- takeScreenshot: "category_select_02_sheet_opened"
+
+# ============================================
+# TEST 2: Verify Category Selector UI Elements
+# ============================================
+
+# Check for sheet title
+- assertVisible:
+    text: ".*Emergency Cry-Stop Mode.*"
+
+# Check for description
+- assertVisible:
+    text: ".*Select a category.*"
+    optional: true
+
+# Check for RECOMMENDED section
+- assertVisible:
+    text: ".*RECOMMENDED.*"
+
+# Check for AI Instant Calm option
+- assertVisible:
+    text: ".*AI Instant Calm.*|.*Piano Moment.*"
+
+- takeScreenshot: "category_select_03_ui_elements"
+
+# ============================================
+# TEST 3: Verify Category Options Are Visible
+# ============================================
+
+# Scroll down to see all categories
+- scrollUntilVisible:
+    element:
+      text: ".*CALMING CATEGORIES.*"
+    direction: DOWN
+    optional: true
+
+- takeScreenshot: "category_select_04_calming_section"
+
+# Check for major categories - Classical Music
+- assertVisible:
+    text: ".*Classical.*"
+    optional: true
+
+# Check for Lullabies
+- assertVisible:
+    text: ".*Lullabies.*"
+    optional: true
+
+# Check for Nature Sounds
+- scrollUntilVisible:
+    element:
+      text: ".*Nature.*"
+    direction: DOWN
+    optional: true
+
+- takeScreenshot: "category_select_05_categories_visible"
+
+# ============================================
+# TEST 4: Test Category Selection (Classical Music)
+# ============================================
+
+# Scroll back up to calming categories
+- scroll:
+    direction: UP
+    optional: true
+
+# Tap Classical Music category
+- tapOn:
+    text: ".*Classical.*"
+
+# Visual indicator should show selection
+- takeScreenshot: "category_select_06_classical_selected"
+
+# Scroll down to Start Emergency Mode button
+- scrollUntilVisible:
+    element:
+      text: ".*Start Emergency Mode.*"
+    direction: DOWN
+
+- takeScreenshot: "category_select_07_ready_to_start"
+
+# ============================================
+# TEST 5: Activate Emergency Mode with Selected Category
+# ============================================
+
+# Tap Start Emergency Mode button
+- tapOn:
+    text: ".*Start Emergency Mode.*"
+
+# Wait for SmartQueueView to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*CANCEL.*|.*Classical.*|.*Smart.*"
+    timeout: 5000
+
+- takeScreenshot: "category_select_08_emergency_activated"
+
+# ============================================
+# TEST 6: Verify Classical Music Filter Works
+# ============================================
+
+# Should see Classical Music indicator or classical-related text
+- assertVisible:
+    text: ".*Classical.*|.*[Pp]iano.*|.*[Mm]ozart.*|.*[Bb]ach.*"
+    optional: true
+
+# Should NOT see other category content (nature sounds, white noise, etc.)
+- assertNotVisible:
+    text: ".*Ocean.*|.*Rain.*|.*White Noise.*"
+    optional: true
+
+- takeScreenshot: "category_select_09_classical_playing"
+
+# Wait for playback (3 seconds)
+- wait:
+    milliseconds: 3000
+
+- takeScreenshot: "category_select_10_playing"
+
+# ============================================
+# TEST 7: Exit Emergency Mode
+# ============================================
+
+# Tap CANCEL to exit
+- tapOn:
+    id: "cancelEmergencyButton"
+
+# Should return to home
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*[Hh]ome.*"
+    timeout: 3000
+
+- takeScreenshot: "category_select_11_after_cancel"
+
+# ============================================
+# TEST 8: Test Cancel Button on Category Selector
+# ============================================
+
+# Tap EMERGENCY again to open category selector
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+# Wait for category selector
+- extendedWaitUntil:
+    visible:
+      text: ".*Emergency Cry-Stop Mode.*"
+    timeout: 3000
+
+- takeScreenshot: "category_select_12_reopened"
+
+# Tap Cancel button on the sheet
+- tapOn:
+    text: "Cancel"
+
+# Should return to home WITHOUT activating emergency mode
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+# Verify we're on home (not in emergency mode)
+- assertVisible:
+    text: ".*EMERGENCY.*"
+
+- assertNotVisible:
+    text: ".*CANCEL.*|.*Smart.*"
+
+- takeScreenshot: "category_select_13_cancelled"
+
+# ============================================
+# TEST 9: Test AI Instant Calm (Default Track)
+# ============================================
+
+# Tap EMERGENCY again
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*AI Instant Calm.*"
+    timeout: 3000
+
+# Tap AI Instant Calm (default option)
+- tapOn:
+    text: ".*AI Instant Calm.*"
+
+- takeScreenshot: "category_select_14_ai_instant_calm_selected"
+
+# Scroll to Start button
+- scrollUntilVisible:
+    element:
+      text: ".*Start Emergency Mode.*"
+    direction: DOWN
+
+# Tap Start
+- tapOn:
+    text: ".*Start Emergency Mode.*"
+
+# Wait for emergency mode
+- extendedWaitUntil:
+    visible:
+      text: ".*CANCEL.*"
+    timeout: 5000
+
+- takeScreenshot: "category_select_15_ai_calm_activated"
+
+# Should play Piano Moment (default bundled track)
+- assertVisible:
+    text: ".*Piano.*"
+    optional: true
+
+- takeScreenshot: "category_select_16_piano_moment_playing"
+
+# Wait and exit
+- wait:
+    milliseconds: 2000
+
+- tapOn:
+    id: "cancelEmergencyButton"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "category_select_17_final_state"
+
+# ============================================
+# TEST COMPLETE - Category Selection Works!
+# ============================================

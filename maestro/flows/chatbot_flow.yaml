@@ -1,0 +1,162 @@
+# Maestro E2E Test: AI Chatbot Flow
+# Tests the AI-powered library chatbot for search, recommendations, and research
+#
+# Run: maestro test maestro/flows/chatbot_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ll]ibrary.*"
+    timeout: 5000
+
+- takeScreenshot: "chatbot_01_initial"
+
+# Navigate to Chat/Assistant (could be in Library or as a tab)
+- runFlow:
+    when:
+      visible: "Chat"
+    commands:
+      - tapOn: "Chat"
+
+- runFlow:
+    when:
+      visible:
+        id: "chatTab"
+    commands:
+      - tapOn:
+          id: "chatTab"
+
+- runFlow:
+    when:
+      visible: "Assistant"
+    commands:
+      - tapOn: "Assistant"
+
+# Should see chat interface with welcome message
+- extendedWaitUntil:
+    visible:
+      text: ".*[Aa]ssistant.*|.*[Hh]elp.*|.*[Aa]sk.*"
+    timeout: 3000
+
+- takeScreenshot: "chatbot_02_welcome"
+
+# Test quick action buttons if visible
+- runFlow:
+    when:
+      visible: "What works best?"
+    commands:
+      - tapOn: "What works best?"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Rr]ecommend.*|.*[Bb]est.*|.*[Ww]ork.*"
+          timeout: 5000
+      - takeScreenshot: "chatbot_03_quick_action_response"
+
+# Test typing a search query
+- runFlow:
+    when:
+      visible:
+        id: "chatInput"
+    commands:
+      - tapOn:
+          id: "chatInput"
+      - inputText: "find lullabies for sleep"
+      - tapOn:
+          id: "sendButton"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Ll]ullaby.*|.*[Ss]leep.*|.*[Tt]rack.*"
+          timeout: 5000
+      - takeScreenshot: "chatbot_04_search_response"
+
+# Test asking about research
+- runFlow:
+    when:
+      visible:
+        id: "chatInput"
+    commands:
+      - tapOn:
+          id: "chatInput"
+      - inputText: "why does white noise help babies?"
+      - tapOn:
+          id: "sendButton"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Rr]esearch.*|.*[Ss]tudy.*|.*[Ww]omb.*"
+          timeout: 5000
+      - takeScreenshot: "chatbot_05_research_response"
+
+# Test recommendation request
+- runFlow:
+    when:
+      visible:
+        id: "chatInput"
+    commands:
+      - tapOn:
+          id: "chatInput"
+      - inputText: "my baby seems tired, what should I play?"
+      - tapOn:
+          id: "sendButton"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Rr]ecommend.*|.*[Tt]ired.*|.*[Pp]lay.*"
+          timeout: 5000
+      - takeScreenshot: "chatbot_06_recommendation_response"
+
+# Test track recommendation card if visible
+- runFlow:
+    when:
+      visible:
+        id: "trackRecommendationCard"
+    commands:
+      - tapOn:
+          id: "trackRecommendationCard"
+      - takeScreenshot: "chatbot_07_playing_recommended"
+
+# Test asking about car mode
+- runFlow:
+    when:
+      visible:
+        id: "chatInput"
+    commands:
+      - tapOn:
+          id: "chatInput"
+      - inputText: "how does smart car mode work?"
+      - tapOn:
+          id: "sendButton"
+      - extendedWaitUntil:
+          visible:
+            text: ".*[Cc]ar.*|.*[Ss]mart.*|.*[Ee]nvironment.*"
+          timeout: 5000
+      - takeScreenshot: "chatbot_08_carmode_explanation"
+
+# Verify citations appear for research questions
+- runFlow:
+    when:
+      visible:
+        text: ".*[Cc]itation.*|.*[Ss]ource.*|.*[Rr]eference.*"
+    commands:
+      - takeScreenshot: "chatbot_09_citations_visible"
+
+# Test history/context (asking follow-up)
+- runFlow:
+    when:
+      visible:
+        id: "chatInput"
+    commands:
+      - tapOn:
+          id: "chatInput"
+      - inputText: "tell me more"
+      - tapOn:
+          id: "sendButton"
+      - extendedWaitUntil:
+          notVisible:
+            id: "typingIndicator"
+          timeout: 5000
+      - takeScreenshot: "chatbot_10_followup_response"
+
+- takeScreenshot: "chatbot_11_final"

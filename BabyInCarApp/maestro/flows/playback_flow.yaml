@@ -1,0 +1,110 @@
+appId: com.anticry.babyincar
+---
+# Test: Audio playback controls and features
+# Verifies: Play/pause, skip, shuffle, repeat, volume
+
+- launchApp
+
+# Navigate to Library
+- tapOn:
+    id: "libraryTab"
+- assertVisible: "Library"
+
+# Select first track
+- tapOn:
+    text: "Classical Music"
+    index: 0
+- tapOn:
+    text: "Play"
+    index: 0
+
+# Wait for playback to start
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Verify player UI
+- assertVisible: "Now Playing"
+- assertVisible:
+    id: "pauseButton"
+
+# Test pause
+- tapOn:
+    id: "pauseButton"
+- assertVisible:
+    id: "playButton"
+
+# Test play
+- tapOn:
+    id: "playButton"
+- assertVisible:
+    id: "pauseButton"
+
+# Test skip forward
+- tapOn:
+    id: "skipForwardButton"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Test skip backward
+- tapOn:
+    id: "skipBackwardButton"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Test shuffle toggle
+- tapOn:
+    id: "shuffleButton"
+- assertVisible: "Shuffle On"
+
+- tapOn:
+    id: "shuffleButton"
+- assertVisible: "Shuffle Off"
+
+# Test repeat modes
+- tapOn:
+    id: "repeatButton"
+- assertVisible: "Repeat One"
+
+- tapOn:
+    id: "repeatButton"
+- assertVisible: "Repeat All"
+
+- tapOn:
+    id: "repeatButton"
+- assertVisible: "Repeat Off"
+
+# Test volume control
+- tapOn:
+    id: "volumeSlider"
+- scroll:
+    direction: RIGHT
+    distance: 50%
+
+# Test mini player collapse
+- tapOn: "Minimize"
+- assertVisible: "Mini Player"
+
+# Test mini player expand
+- tapOn: "Mini Player"
+- assertVisible: "Now Playing"
+
+# Test queue
+- tapOn: "Queue"
+- assertVisible: "Up Next"
+- assertVisible: "Recently Played"
+- back
+
+# Test favorites
+- tapOn:
+    id: "favoriteButton"
+- assertVisible: "Added to Favorites"
+
+- tapOn:
+    id: "favoriteButton"
+- assertVisible: "Removed from Favorites"
+
+- takeScreenshot: "player_view"
+
+# Stop playback
+- tapOn:
+    id: "pauseButton"

@@ -1,0 +1,86 @@
+# Maestro E2E Test: Smooth Transitions Settings Flow
+# Tests the smooth audio transitions global setting in Profile/Settings
+#
+# Run: maestro test maestro/flows/smooth_transitions_settings_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Pp]rofile.*"
+    timeout: 5000
+
+- takeScreenshot: "smooth_01_app_loaded"
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+
+- extendedWaitUntil:
+    visible: "Audio Settings"
+    timeout: 3000
+
+- takeScreenshot: "smooth_02_profile_view"
+
+# Verify Smooth Transitions setting is visible
+- assertVisible: "Smooth Transitions"
+
+- takeScreenshot: "smooth_03_settings_section"
+
+# Scroll to ensure the setting is visible if needed
+- scrollUntilVisible:
+    element:
+      text: "Smooth Transitions"
+    direction: DOWN
+    optional: true
+
+# Verify the setting subtitle
+- assertVisible:
+    text: "Crossfade between tracks"
+    optional: true
+
+# The toggle should be visible
+- runFlow:
+    when:
+      visible:
+        id: "smoothTransitionsToggle"
+    commands:
+      - takeScreenshot: "smooth_04_toggle_visible"
+      # Toggle the setting OFF
+      - tapOn:
+          id: "smoothTransitionsToggle"
+      - takeScreenshot: "smooth_05_toggle_off"
+      # Toggle back ON
+      - tapOn:
+          id: "smoothTransitionsToggle"
+      - takeScreenshot: "smooth_06_toggle_on"
+
+# If accessibility identifier not set, try tapping on the row
+- runFlow:
+    when:
+      notVisible:
+        id: "smoothTransitionsToggle"
+    commands:
+      - tapOn:
+          text: "Smooth Transitions"
+          optional: true
+      - takeScreenshot: "smooth_04_tapped_row"
+
+# Navigate to Library and play a track to verify playback still works
+- tapOn: "Library"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]ullabies.*|.*[Mm]usic.*"
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "smooth_07_library"
+
+# Verify audio settings integration works
+- tapOn: "Profile"
+- assertVisible: "Smooth Transitions"
+
+- takeScreenshot: "smooth_08_final_check"

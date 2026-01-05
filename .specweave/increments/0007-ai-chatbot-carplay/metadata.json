@@ -1,0 +1,37 @@
+{
+  "id": "0007-ai-chatbot-carplay",
+  "title": "AI Chatbot & Smart CarPlay",
+  "status": "completed",
+  "createdAt": "2025-12-31T15:00:00.000Z",
+  "updatedAt": "2025-12-31T18:30:00.000Z",
+  "completedAt": "2025-12-31T18:30:00.000Z",
+  "feature": "FS-007",
+  "priority": "high",
+  "tags": [
+    "ai",
+    "chatbot",
+    "carplay",
+    "environment-aware",
+    "core-feature"
+  ],
+  "filesCreated": [
+    "BabyInCarApp/BabyInCarApp/Services/ResearchKnowledgeBase.swift",
+    "BabyInCarApp/BabyInCarApp/Models/EnvironmentState.swift",
+    "BabyInCarApp/BabyInCarApp/Services/EnvironmentSoundDetector.swift",
+    "BabyInCarApp/BabyInCarApp/Models/ChatMessage.swift",
+    "BabyInCarApp/BabyInCarApp/Services/LibraryChatbotService.swift",
+    "BabyInCarApp/BabyInCarApp/Services/SmartCarPlayController.swift",
+    "BabyInCarApp/BabyInCarApp/Views/ChatbotView.swift",
+    "BabyInCarApp/BabyInCarAppTests/Services/ResearchKnowledgeBaseTests.swift",
+    "BabyInCarApp/BabyInCarAppTests/Services/EnvironmentSoundDetectorTests.swift",
+    "BabyInCarApp/BabyInCarAppTests/Services/LibraryChatbotServiceTests.swift",
+    "BabyInCarApp/BabyInCarAppTests/Services/SmartCarPlayControllerTests.swift",
+    "maestro/flows/chatbot_flow.yaml",
+    "maestro/flows/smart_carplay_flow.yaml"
+  ],
+  "filesModified": [
+    "BabyInCarApp/BabyInCarApp/CarPlay/CarPlaySceneDelegate.swift"
+  ],
+  "summary": "AI-powered library chatbot for natural language discovery and Smart CarPlay mode that adapts music based on baby cries AND environmental sounds (car engine, road noise).",
+  "updated": "2025-12-31T18:30:00.000Z"
+}

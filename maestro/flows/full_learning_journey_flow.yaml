@@ -1,0 +1,275 @@
+# Maestro E2E Test: Full Learning Journey - Multiple Sessions
+# Tests the complete learning system evolution across multiple sessions
+#
+# Run: maestro test maestro/flows/full_learning_journey_flow.yaml
+#
+# This test validates:
+# 1. First session - establishes baseline
+# 2. Second session - learning starts to apply
+# 3. Third session - personalization visible
+# 4. Insights dashboard reflects accumulated learning
+# 5. Session history persistence
+#
+# This is a longer test that simulates realistic usage patterns
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 8000
+
+- takeScreenshot: "journey_01_start"
+
+# ============================================
+# SESSION 1: Baseline Session (Hunger Cry Simulated)
+# ============================================
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+- takeScreenshot: "journey_02_session1_start"
+
+# Let it play for 4 seconds (simulates short cry episode)
+- wait:
+    milliseconds: 4000
+
+# Mark as successful - baby calmed down
+- tapOn:
+    text: "Baby is Calm"
+
+# Wait for success animation and learning save
+- wait:
+    milliseconds: 3000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "journey_03_session1_complete"
+
+# ============================================
+# SESSION 2: Second Session (Learning Applies)
+# ============================================
+
+# Wait a moment between sessions
+- wait:
+    milliseconds: 1000
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+- takeScreenshot: "journey_04_session2_start"
+
+# Let it play for 6 seconds (medium session)
+- wait:
+    milliseconds: 6000
+
+# Mark as successful
+- tapOn:
+    text: "Baby is Calm"
+
+- wait:
+    milliseconds: 3000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "journey_05_session2_complete"
+
+# ============================================
+# SESSION 3: Third Session (Learning Visible)
+# ============================================
+
+- wait:
+    milliseconds: 1000
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+# By now the system should have learned patterns
+- takeScreenshot: "journey_06_session3_personalized"
+
+# Short session - baby calms quickly (system is learning!)
+- wait:
+    milliseconds: 3000
+
+- tapOn:
+    text: "Baby is Calm"
+
+- wait:
+    milliseconds: 3000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "journey_07_session3_complete"
+
+# ============================================
+# SESSION 4: Test "Not Working" Path
+# ============================================
+
+- wait:
+    milliseconds: 1000
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*|.*Cancel.*"
+    timeout: 5000
+
+- takeScreenshot: "journey_08_session4_start"
+
+# Let it play briefly
+- wait:
+    milliseconds: 2000
+
+# This time, cancel without success (teaches system this didn't work)
+- runFlow:
+    when:
+      visible:
+        text: "Cancel"
+    commands:
+      - tapOn: "Cancel"
+
+- runFlow:
+    when:
+      visible:
+        text: "Not Working"
+    commands:
+      - tapOn: "Not Working"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "journey_09_session4_cancelled"
+
+# ============================================
+# VERIFY: Check Insights Accumulated Learning
+# ============================================
+
+# Navigate to insights
+- runFlow:
+    when:
+      visible:
+        text: "What Works"
+    commands:
+      - tapOn: "What Works"
+
+- runFlow:
+    when:
+      visible:
+        text: "AI Cry Detection"
+    commands:
+      - tapOn: "AI Cry Detection"
+
+- runFlow:
+    when:
+      visible:
+        text: "Insights"
+    commands:
+      - tapOn: "Insights"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ww]hat.*[Ww]orks.*|.*[Ii]nsights.*|.*[Ss]essions.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "journey_10_insights_after_learning"
+
+# Verify sessions count increased (should be 3+ sessions)
+- assertVisible:
+    text: ".*[Ss]essions.*"
+    optional: true
+
+# Verify confidence has increased
+- assertVisible:
+    text: ".*[Cc]onfidence.*"
+    optional: true
+
+# Scroll to see patterns
+- scroll:
+    direction: DOWN
+
+- takeScreenshot: "journey_11_patterns_learned"
+
+# Check for pattern insights
+- assertVisible:
+    text: ".*[Pp]attern.*|.*[Ll]earned.*|.*[Ww]orks.*"
+    optional: true
+
+- scroll:
+    direction: DOWN
+
+- takeScreenshot: "journey_12_detailed_insights"
+
+# ============================================
+# FINAL: Navigate Home and Final Session
+# ============================================
+
+# Navigate back
+- swipe:
+    direction: DOWN
+    duration: 500
+
+- swipe:
+    direction: DOWN
+    duration: 500
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "journey_13_home_final"
+
+# Final session to verify learning is applied
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Baby is Calm.*"
+    timeout: 5000
+
+- takeScreenshot: "journey_14_final_session"
+
+# Quick success
+- wait:
+    milliseconds: 2000
+
+- tapOn:
+    text: "Baby is Calm"
+
+- wait:
+    milliseconds: 3000
+
+- takeScreenshot: "journey_15_complete"

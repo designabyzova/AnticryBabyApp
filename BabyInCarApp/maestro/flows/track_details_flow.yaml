@@ -1,0 +1,148 @@
+# Maestro E2E Test: Track Details Sheet
+# Tests long-press to view track details and actions
+#
+# Run: maestro test BabyInCarApp/maestro/flows/track_details_flow.yaml
+#
+# Test Coverage:
+# 1. Long press on track to open details
+# 2. Track info display
+# 3. Play Now action
+# 4. Add to Favorites action
+# 5. Sheet dismissal
+
+appId: com.anticry.babyincar
+---
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 10000
+
+# ============================================
+# SETUP: Activate SmartQueueView
+# ============================================
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+- takeScreenshot: "details_01_queue_opened"
+
+# ============================================
+# TEST 1: Tap Current Track to Open Details
+# ============================================
+
+- tapOn:
+    id: "currentTrackCard"
+
+- extendedWaitUntil:
+    visible:
+      text: "Track Details"
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "details_02_sheet_opened"
+
+# ============================================
+# TEST 2: Verify Track Info Display
+# ============================================
+
+# Track details should show
+- assertVisible:
+    text: "Track Details"
+    optional: true
+
+# Should see Play Now button
+- assertVisible:
+    text: ".*Play Now.*"
+    optional: true
+
+# Should see Favorites button
+- assertVisible:
+    text: ".*Favorites.*"
+    optional: true
+
+- takeScreenshot: "details_03_info_visible"
+
+# ============================================
+# TEST 3: Dismiss Sheet with Done
+# ============================================
+
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+      - wait:
+          milliseconds: 500
+      - takeScreenshot: "details_04_sheet_dismissed"
+
+# ============================================
+# TEST 4: Verify Back in Queue View
+# ============================================
+
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+- assertVisible:
+    id: "currentTrackCard"
+
+- takeScreenshot: "details_05_back_to_queue"
+
+# ============================================
+# TEST 5: Test Favorites Toggle (if available)
+# ============================================
+
+# Open details again
+- tapOn:
+    id: "currentTrackCard"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*Favorites.*"
+    timeout: 3000
+    optional: true
+
+# Tap favorites button
+- runFlow:
+    when:
+      visible:
+        text: ".*Favorites.*"
+    commands:
+      - tapOn:
+          text: ".*Favorites.*"
+      - wait:
+          milliseconds: 500
+      - takeScreenshot: "details_06_favorites_toggled"
+
+# Dismiss
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+
+# ============================================
+# CLEANUP: Exit Queue
+# ============================================
+
+- tapOn:
+    id: "cancelEmergencyButton"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "details_07_test_complete"
+
+# ============================================
+# TEST COMPLETE
+# ============================================

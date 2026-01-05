@@ -17,26 +17,27 @@ struct FavoritesView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Tab selector
-                HStack(spacing: 0) {
-                    TabButton(title: "Favorites", isSelected: selectedTab == 0) {
-                        selectedTab = 0
-                    }
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(spacing: 0) {
+                    // Tab selector (scrolls with content but stays at top)
+                    HStack(spacing: 0) {
+                        TabButton(title: "Favorites", isSelected: selectedTab == 0) {
+                            selectedTab = 0
+                        }
 
-                    TabButton(title: "Playlists", isSelected: selectedTab == 1) {
-                        selectedTab = 1
-                    }
+                        TabButton(title: "Playlists", isSelected: selectedTab == 1) {
+                            selectedTab = 1
+                        }
 
-                    TabButton(title: "Recent", isSelected: selectedTab == 2) {
-                        selectedTab = 2
+                        TabButton(title: "Recent", isSelected: selectedTab == 2) {
+                            selectedTab = 2
+                        }
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
 
-                // Content
-                ScrollView(.vertical, showsIndicators: true) {
+                    // Content based on selected tab
                     switch selectedTab {
                     case 0:
                         favoritesContent
@@ -46,8 +47,11 @@ struct FavoritesView: View {
                         recentlyPlayedContent
                     }
                 }
-                .scrollIndicators(.visible)
+                // Extra content padding at the bottom for comfortable scrolling.
+                // The safeAreaInset in MainTabView handles the tab bar + mini player space.
+                .padding(.bottom, 20)
             }
+            .scrollIndicators(.visible)
             .background(Color.appBackground)
             .navigationTitle("Favorites")
             .toolbar {
@@ -141,9 +145,14 @@ struct FavoritesView: View {
                         }
                         .padding(.horizontal, 20)
 
+                        // Smart queue: pass all favorites as context for next/previous navigation
                         LazyVStack(spacing: 8) {
                             ForEach(favoriteTracks) { track in
-                                TrackRow(track: track)
+                                TrackRow(
+                                    track: track,
+                                    contextTracks: favoriteTracks,
+                                    contextName: "Favorites"
+                                )
                             }
                         }
                         .padding(.horizontal, 20)
@@ -169,7 +178,6 @@ struct FavoritesView: View {
             }
         }
         .padding(.vertical, 20)
-        .padding(.bottom, bottomPadding + 20)
     }
 
     // MARK: - Playlists Content
@@ -215,7 +223,6 @@ struct FavoritesView: View {
             }
         }
         .padding(.vertical, 20)
-        .padding(.bottom, bottomPadding + 20)
     }
 
     // MARK: - Recently Played Content
@@ -283,9 +290,14 @@ struct FavoritesView: View {
                         .padding(.horizontal, 20)
                     }
 
+                    // Smart queue: pass recently played as context for next/previous navigation
                     LazyVStack(spacing: 8) {
                         ForEach(playlistManager.recentlyPlayed) { track in
-                            TrackRow(track: track)
+                            TrackRow(
+                                track: track,
+                                contextTracks: playlistManager.recentlyPlayed,
+                                contextName: "Recently Played"
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
@@ -293,7 +305,6 @@ struct FavoritesView: View {
             }
         }
         .padding(.vertical, 20)
-        .padding(.bottom, bottomPadding + 20)
     }
 
     // MARK: - Empty Views
@@ -392,12 +403,12 @@ struct UserPlaylistRow: View {
             // Playlist artwork
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.forCategory(playlist.dominantCategory ?? .whiteNoise).opacity(0.15))
+                    .fill(Color.forCategory(playlist.dominantCategory ?? .instrumental).opacity(0.15))
                     .frame(width: 64, height: 64)
 
                 Image(systemName: playlist.dominantCategory?.icon ?? "music.note.list")
                     .font(.system(size: 26))
-                    .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .whiteNoise))
+                    .foregroundColor(Color.forCategory(playlist.dominantCategory ?? .instrumental))
             }
 
             // Playlist info

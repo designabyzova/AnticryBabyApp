@@ -1,0 +1,108 @@
+# Maestro E2E Test: Library Navigation Flow
+# Tests browsing and navigation through the audio library
+#
+# Run: maestro test maestro/flows/library_navigation_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ll]ibrary.*"
+    timeout: 5000
+
+- takeScreenshot: "library_01_initial"
+
+# Navigate to Library (if not already there)
+- runFlow:
+    when:
+      visible:
+        text: "Library"
+    commands:
+      - tapOn: "Library"
+
+- runFlow:
+    when:
+      visible:
+        id: "libraryTab"
+    commands:
+      - tapOn:
+          id: "libraryTab"
+
+# Should see categories
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ll]ullabies.*|.*[Ww]hite.*[Nn]oise.*|.*[Cc]lassical.*"
+    timeout: 3000
+
+- takeScreenshot: "library_02_categories"
+
+# Test each major category navigation
+- runFlow:
+    when:
+      visible: "Lullabies"
+    commands:
+      - tapOn: "Lullabies"
+      - takeScreenshot: "library_03_lullabies"
+      - back
+
+- runFlow:
+    when:
+      visible: "White Noise"
+    commands:
+      - tapOn: "White Noise"
+      - takeScreenshot: "library_04_whitenoise"
+      - back
+
+- runFlow:
+    when:
+      visible: "Classical"
+    commands:
+      - tapOn: "Classical"
+      - takeScreenshot: "library_05_classical"
+      - back
+
+- runFlow:
+    when:
+      visible: "Nature"
+    commands:
+      - tapOn: "Nature"
+      - takeScreenshot: "library_06_nature"
+      - back
+
+- runFlow:
+    when:
+      visible: "Ambient"
+    commands:
+      - tapOn: "Ambient"
+      - takeScreenshot: "library_07_ambient"
+      - back
+
+# Test search if available
+- runFlow:
+    when:
+      visible:
+        id: "searchField"
+    commands:
+      - tapOn:
+          id: "searchField"
+      - inputText: "lullaby"
+      - takeScreenshot: "library_08_search_results"
+      - tapOn:
+          id: "clearSearchButton"
+          optional: true
+
+# Test favorites if available
+- runFlow:
+    when:
+      visible: "Favorites"
+    commands:
+      - tapOn: "Favorites"
+      - takeScreenshot: "library_09_favorites"
+      - back
+
+# Verify we're back at library
+- assertVisible: ".*[Ll]ibrary.*|.*[Cc]ategories.*"
+- takeScreenshot: "library_10_final"

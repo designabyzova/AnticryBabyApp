@@ -10,6 +10,7 @@ import Foundation
 import AVFoundation
 import Accelerate
 import Combine
+import UIKit
 
 // MARK: - Cry Detection Service
 /// Real-time audio analysis service that detects baby crying patterns using
@@ -30,7 +31,13 @@ class CryDetectionService: ObservableObject {
 
     // MARK: - ML Integration
     /// Whether to use ML-enhanced detection
-    var useMLEnhancement: Bool = true
+    /// MEMORY SAFETY: DISABLED BY DEFAULT - app crashed at 150-200MB with ML enabled!
+    /// Rule-based detection works fine, ML can be enabled manually on newer devices
+    var useMLEnhancement: Bool = false  // CRITICAL: changed from true to prevent crash
+
+    /// Whether to use DeepInfant pre-trained model (more accurate but heavier)
+    /// MEMORY SAFETY: DISABLED BY DEFAULT
+    var useDeepInfant: Bool = false  // CRITICAL: changed from true to prevent crash
 
     /// Blend ratio: 0 = all rule-based, 1 = all ML
     var mlBlendRatio: Double = 0.6
@@ -43,6 +50,47 @@ class CryDetectionService: ObservableObject {
 
     /// ML cry classifier
     private lazy var mlCryClassifier = CryClassifierMLModel()
+
+    /// DeepInfant V2 classifier (pre-trained model, ~89% accuracy)
+    /// Uses DeepInfantClassifier from Services/ML/
+    private lazy var deepInfantClassifier: DeepInfantClassifierProtocol = DeepInfantClassifier()
+
+    /// Audio buffer for DeepInfant (needs ~2 seconds at 16kHz for reasonable accuracy)
+    /// MEMORY SAFETY: Pre-allocated circular buffer to prevent unbounded growth
+    /// REDUCED from 64KB to 32KB to save memory (2 seconds instead of 4)
+    private var deepInfantBuffer: [Float] = []
+    private let deepInfantBufferSize: Int = 32000  // 2 seconds at 16kHz (was 64000)
+    private var deepInfantBufferWriteIndex: Int = 0  // Circular buffer write position
+    private var deepInfantLastClassification: Date = .distantPast
+    private let deepInfantClassificationInterval: TimeInterval = 2.0  // Run every 2 seconds
+
+    /// MEMORY SAFETY: Reusable ML model instances (avoid per-frame allocation)
+    /// These are created once and reused for thread-safe inference
+    private let reusableCryDetector = CryDetectorMLModel()
+    private let reusableCryClassifier = CryClassifierMLModel()
+    private let reusableFeatureExtractor: AdvancedFeatureExtractor
+    private let reusableVoiceAnalyzer = VoiceCharacteristicsAnalyzer()
+
+    // MEMORY FIX: Thread-safe shared ML instances for background processing
+    // These are stateless and can be safely shared across threads
+    // Created once, used forever - prevents ~90 allocations/second memory leak!
+    // NOTE: nonisolated(unsafe) required for @MainActor class with static properties accessed from nonisolated contexts
+    private nonisolated(unsafe) static let sharedCryDetector = CryDetectorMLModel()
+    private nonisolated(unsafe) static let sharedCryClassifier = CryClassifierMLModel()
+    private nonisolated(unsafe) static let sharedVoiceAnalyzer = VoiceCharacteristicsAnalyzer()
+    private nonisolated(unsafe) static var sharedFeatureExtractor: AdvancedFeatureExtractor?
+    private nonisolated(unsafe) static let featureExtractorLock = NSLock()
+
+    /// Get or create shared feature extractor for background thread (thread-safe)
+    private nonisolated static func getSharedFeatureExtractor(fftSize: Int) -> AdvancedFeatureExtractor {
+        featureExtractorLock.lock()
+        defer { featureExtractorLock.unlock() }
+
+        if sharedFeatureExtractor == nil {
+            sharedFeatureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
+        }
+        return sharedFeatureExtractor!
+    }
 
     /// Voice characteristics analyzer
     private lazy var voiceAnalyzer = VoiceCharacteristicsAnalyzer()
@@ -58,6 +106,9 @@ class CryDetectionService: ObservableObject {
 
     /// Pattern metrics
     @Published var latestPatternMetrics: CryPatternMetrics?
+
+    /// Latest ML classification result (includes all probabilities)
+    @Published var latestClassification: CryClassification?
 
     // MARK: - Detection State
     enum DetectionStatus: String {
@@ -76,10 +127,30 @@ class CryDetectionService: ObservableObject {
     private let analysisQueue = DispatchQueue(label: "com.babyincar.crydetection", qos: .userInteractive)
 
     // FFT Configuration
-    private let fftSize: Int = 4096
+    // MEMORY SAFETY: Reduced from 4096 to 2048 to save ~50% FFT memory
+    // 2048 samples at 44.1kHz = ~46ms window, still sufficient for cry detection
+    // Frequency resolution: 44100/2048 = 21.5Hz (good enough for 200-600Hz cry fundamentals)
+    private let fftSize: Int = 2048  // REDUCED from 4096
     private var fftSetup: vDSP_DFT_Setup?
     private var window: [Float] = []
     private var magnitudes: [Float] = []
+
+    // MEMORY FIX: Thread-safe FFT setup for background processing
+    // Created once and reused - prevents ~30 allocations/second memory leak!
+    // NOTE: nonisolated(unsafe) required for @MainActor class with static properties accessed from nonisolated contexts
+    private nonisolated(unsafe) static var sharedBackgroundFFTSetup: vDSP_DFT_Setup?
+    private nonisolated(unsafe) static let fftSetupLock = NSLock()
+
+    /// Get or create shared FFT setup for background thread (thread-safe)
+    private nonisolated static func getBackgroundFFTSetup(size: Int) -> vDSP_DFT_Setup? {
+        fftSetupLock.lock()
+        defer { fftSetupLock.unlock() }
+
+        if sharedBackgroundFFTSetup == nil {
+            sharedBackgroundFFTSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(size), .FORWARD)
+        }
+        return sharedBackgroundFFTSetup
+    }
 
     // Cry Detection Parameters
     private let cryFrequencyRange: ClosedRange<Float> = 300...600 // Fundamental cry frequency Hz
@@ -95,16 +166,18 @@ class CryDetectionService: ObservableObject {
     private var cryPatternBuffer: [CryFrame] = []
     private let patternBufferSize = 30 // ~1 second at 30fps
     private var consecutiveCryFrames: Int = 0
-    private let minCryFramesForDetection = 10 // ~0.33 seconds
+    private let minCryFramesForDetection = 5 // ~0.17 seconds (lowered for faster response)
 
-    // Adaptive thresholds
-    private var ambientNoiseLevel: Float = 0
-    private var adaptiveThreshold: Float = 0.15
-    private let minCryConfidence: Double = 0.65
+    // Adaptive thresholds - CONSERVATIVE defaults to prevent false positives
+    private var ambientNoiseLevel: Float = 0.02  // Will be calibrated on start
+    private var adaptiveThreshold: Float = 0.18  // Higher threshold for accuracy (was 0.08)
+    private let minCryConfidence: Double = 0.70  // Require high confidence (was 0.45)
+    private var isCalibrated: Bool = false       // Track calibration status
 
     // Cry type classification history
     private var cryTypeHistory: [CryType] = []
     private let cryTypeHistorySize = 15
+    private var detectionHistory: [Date] = []  // Track detection events for memory cleanup
 
     // Callbacks
     var onCryDetected: ((CryType, Double) -> Void)?
@@ -123,7 +196,121 @@ class CryDetectionService: ObservableObject {
     }
 
     private init() {
+        // Initialize reusable feature extractor with FFT size
+        reusableFeatureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
+
+        // Pre-allocate DeepInfant buffer to prevent runtime allocation
+        deepInfantBuffer.reserveCapacity(deepInfantBufferSize)
+
         setupFFT()
+
+        // SMART ML AUTO-ENABLE: Only enable ML on devices with enough RAM
+        // This prevents crashes on older devices while enabling better detection on newer ones
+        configureMLBasedOnDeviceCapability()
+
+        // MEMORY OPTIMIZATION (Increment 0028): Setup memory cleanup handlers
+        setupMemoryObservers()
+    }
+
+    // MARK: - Memory Management
+
+    /// Setup memory cleanup observers
+    private func setupMemoryObservers() {
+        // MEMORY OPTIMIZATION (Increment 0028): Clean up on memory warnings
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                print("[CryDetection] ⚠️ Memory warning received - cleaning up")
+                self?.cleanup()
+            }
+        }
+
+        // MEMORY OPTIMIZATION (Increment 0028): Respond to MemoryMonitor cleanup requests
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("MemoryCleanupRequested"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                if let level = notification.userInfo?["level"] as? String {
+                    print("[CryDetection] 🧹 Memory cleanup requested (\(level)) - cleaning up")
+                    self?.cleanup()
+                }
+            }
+        }
+    }
+
+    /// Clean up resources to reduce memory footprint
+    private func cleanup() {
+        print("[CryDetection] 🧹 Starting memory cleanup...")
+
+        // Clear DeepInfant audio buffer
+        let bufferSize = deepInfantBuffer.count
+        deepInfantBuffer.removeAll(keepingCapacity: true) // Keep capacity to avoid reallocation
+        print("[CryDetection] 🧹 Cleared DeepInfant buffer (\(bufferSize) samples)")
+
+        // Clear detection history (keep last 5 only)
+        let historyCount = detectionHistory.count
+        if historyCount > 5 {
+            detectionHistory = Array(detectionHistory.suffix(5))
+            print("[CryDetection] 🧹 Trimmed detection history (kept 5 most recent, removed \(historyCount - 5))")
+        }
+
+        // Reset transient state if not actively monitoring
+        if !isMonitoring {
+            currentAudioLevel = 0
+            cryIntensity = 0
+            print("[CryDetection] 🧹 Reset transient state (not monitoring)")
+        }
+
+        print("[CryDetection] ✅ Memory cleanup complete")
+    }
+
+    /// Configure ML features based on device RAM
+    /// Enables ML only on devices with 4GB+ RAM (iPhone 11 and newer)
+    private func configureMLBasedOnDeviceCapability() {
+        let totalRAM = ProcessInfo.processInfo.physicalMemory
+        let totalRAMGB = Double(totalRAM) / (1024 * 1024 * 1024)
+
+        // Enable ML features only on devices with 4GB+ RAM
+        // iPhone 11 and newer have 4GB+, older devices have 2-3GB
+        if totalRAMGB >= 4.0 {
+            useMLEnhancement = true
+            useDeepInfant = true
+            print("[CryDetection] 🧠 ML enabled - device has \(String(format: "%.1f", totalRAMGB))GB RAM")
+        } else {
+            useMLEnhancement = false
+            useDeepInfant = false
+            print("[CryDetection] ⚡ ML disabled - device has \(String(format: "%.1f", totalRAMGB))GB RAM (rule-based detection active)")
+        }
+    }
+
+    /// Manually enable/disable ML features
+    /// Call this to override auto-detection
+    func setMLEnabled(_ enabled: Bool) {
+        useMLEnhancement = enabled
+        useDeepInfant = enabled
+        print("[CryDetection] ML manually set to: \(enabled)")
+    }
+
+    // MARK: - Memory Safety
+
+    /// Thread-safe memory check using Darwin task_info
+    /// Returns true if memory usage is high (> 120MB) and we should skip heavy processing
+    nonisolated static func isMemoryConstrained() -> Bool {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        guard result == KERN_SUCCESS else { return false }
+        let memoryMB = Double(info.resident_size) / (1024 * 1024)
+        return memoryMB > 120  // Skip heavy ML if > 120MB
     }
 
     // MARK: - Setup
@@ -166,6 +353,7 @@ class CryDetectionService: ObservableObject {
         detectionStatus = .idle
         consecutiveCryFrames = 0
         cryPatternBuffer.removeAll()
+        clearDeepInfantBuffer()
     }
 
     // MARK: - Permission
@@ -193,9 +381,12 @@ class CryDetectionService: ObservableObject {
         let recordingFormat = inputNode!.outputFormat(forBus: 0)
 
         // Install tap for audio analysis
+        // MEMORY FIX: Wrap callback in autoreleasepool to prevent accumulation of temporary objects
         let bufferSize: AVAudioFrameCount = AVAudioFrameCount(fftSize)
-        inputNode?.installTap(onBus: 0, bufferSize: bufferSize, format: recordingFormat) { [weak self] buffer, time in
-            self?.processAudioBuffer(buffer)
+        inputNode?.installTap(onBus: 0, bufferSize: bufferSize, format: recordingFormat) { [weak self] buffer, _ in
+            autoreleasepool {
+                self?.processAudioBuffer(buffer)
+            }
         }
     }
 
@@ -215,6 +406,7 @@ class CryDetectionService: ObservableObject {
         let useMLEnhancementLocal = useMLEnhancement
         let mlBlendRatioLocal = mlBlendRatio
         let sampleRateLocal = sampleRate
+        let isCalibrated = isCalibrated  // Capture calibration status
 
         analysisQueue.async { [weak self] in
             self?.analyzeAudioNonIsolated(
@@ -225,12 +417,14 @@ class CryDetectionService: ObservableObject {
                 adaptiveThreshold: adaptiveThresholdLocal,
                 useMLEnhancement: useMLEnhancementLocal,
                 mlBlendRatio: mlBlendRatioLocal,
-                sampleRate: sampleRateLocal
+                sampleRate: sampleRateLocal,
+                isCalibrated: isCalibrated
             )
         }
     }
 
     /// Non-isolated audio analysis that can run on background queue
+    /// MEMORY FIX: Consolidated into single Task to reduce Task allocation overhead
     private nonisolated func analyzeAudioNonIsolated(
         samples: [Float],
         fftSize: Int,
@@ -239,7 +433,8 @@ class CryDetectionService: ObservableObject {
         adaptiveThreshold: Float,
         useMLEnhancement: Bool,
         mlBlendRatio: Double,
-        sampleRate: Float
+        sampleRate: Float,
+        isCalibrated: Bool
     ) {
         guard samples.count >= fftSize else { return }
 
@@ -247,14 +442,25 @@ class CryDetectionService: ObservableObject {
         var rms: Float = 0
         vDSP_rmsqv(samples, 1, &rms, vDSP_Length(samples.count))
 
-        // Update audio level on main thread
-        Task { @MainActor [weak self] in
-            self?.currentAudioLevel = rms
+        // CRITICAL FIX: ALWAYS update audio level FIRST for UI visualization
+        // This ensures the Live Audio Analysis bars work even during calibration
+        // We update the level BEFORE any early returns so the UI always reflects current audio
+
+        // CRITICAL: Skip detection until calibration is complete (prevent false positives on app start)
+        guard isCalibrated else {
+            // MEMORY FIX: Single Task update for audio level only (when not calibrated)
+            Task { @MainActor [weak self] in
+                self?.currentAudioLevel = rms
+            }
+            return
         }
 
-        // Skip analysis if too quiet (likely just ambient noise)
+        // Skip DETECTION if too quiet (likely just ambient noise)
+        // BUT still update audio level for UI visualization
         guard rms > ambientNoiseLevel * 1.5 else {
+            // MEMORY FIX: Combined update - audio level + quiet frame handling in single Task
             Task { @MainActor [weak self] in
+                self?.currentAudioLevel = rms
                 self?.handleQuietFrame()
             }
             return
@@ -291,42 +497,60 @@ class CryDetectionService: ObservableObject {
         var extendedFeatures: ExtendedAudioFeatures?
         var voiceChars: VoiceCharacteristics?
         var mlCryDetected = false
-        var patterns: CryPatternMetrics?
 
         if useMLEnhancement {
-            // Create feature extractor locally for thread safety
-            let featureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
-            let features = featureExtractor.extractFeatures(from: samples, sampleRate: sampleRate)
+            // MEMORY FIX: Use shared singleton instances instead of creating new ones per frame
+            // This prevents ~90 object allocations per second (major memory leak!)
+
+            // MEMORY OPTIMIZATION: Skip ML if memory pressure is high
+            let skipHeavyML = Self.isMemoryConstrained()
+
+            // MEMORY FIX: Use shared feature extractor instead of creating new one per frame
+            let features: ExtendedAudioFeatures
+            if skipHeavyML {
+                features = ExtendedAudioFeatures.fromBasicAnalysis(
+                    intensity: Double(rms),
+                    spectralCentroid: Double(cryAnalysis.spectralCentroid),
+                    spectralFlatness: Double(cryAnalysis.spectralFlatness)
+                )
+            } else {
+                // MEMORY FIX: Use shared extractor (created once, reused forever)
+                features = Self.getSharedFeatureExtractor(fftSize: fftSize).extractFeatures(from: samples, sampleRate: sampleRate)
+            }
             extendedFeatures = features
 
-            // Create detector/classifier locally
-            let detector = CryDetectorMLModel()
-            let mlDetection = detector.detect(features: features)
+            // MEMORY FIX: Use shared detector (created once, reused forever)
+            let mlDetection = Self.sharedCryDetector.detect(features: features)
             mlCryDetected = mlDetection.isCryDetected
             let mlConfidence = mlDetection.confidence
 
             // If cry detected, classify type with ML
             if mlDetection.isCryDetected || mlDetection.confidence > 0.4 {
-                let classifier = CryClassifierMLModel()
-                let classification = classifier.classify(features: features)
+                // MEMORY FIX: Use shared classifier (created once, reused forever)
+                let classification = Self.sharedCryClassifier.classify(features: features)
 
-                // Blend ML classification with rule-based
                 if classification.confidence > confidence {
                     cryType = classification.type
                 }
             }
 
-            // Analyze voice characteristics
-            let voiceAnalyzer = VoiceCharacteristicsAnalyzer()
-            voiceChars = voiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
+            // MEMORY FIX: Use shared analyzer (created once, reused forever)
+            if !skipHeavyML {
+                voiceChars = Self.sharedVoiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
+            }
 
             // Blend confidences
             let blendedConfidence = (mlConfidence * mlBlendRatio) + (confidence * (1.0 - mlBlendRatio))
             confidence = blendedConfidence
 
-            // If ML detects cry but rule-based doesn't, use higher confidence
             if mlCryDetected && !cryAnalysis.isCryLike && mlConfidence > 0.7 {
                 confidence = max(confidence, mlConfidence)
+            }
+
+            // DeepInfant classification (runs asynchronously on accumulated buffer)
+            // MEMORY: This Task is acceptable as it runs infrequently (2 second interval)
+            Task { @MainActor [weak self] in
+                self?.accumulateForDeepInfant(samples: samples, sampleRate: sampleRate)
             }
         }
 
@@ -345,16 +569,19 @@ class CryDetectionService: ObservableObject {
             confidence: confidence
         )
 
-        // Update state on main thread
+        // MEMORY FIX: Single consolidated Task for ALL main actor updates
+        // Reduces Task allocation overhead from 3-4 Tasks per frame to 1
         Task { @MainActor [weak self] in
             guard let self = self else { return }
+
+            // Update audio level (moved from separate Task above)
+            self.currentAudioLevel = rms
 
             // Update ML state if applicable
             if useMLEnhancement {
                 self.latestExtendedFeatures = extendedFeatures
                 self.latestVoiceCharacteristics = voiceChars
 
-                // Update pattern tracker on main thread
                 let timestamp = Date()
                 let updatedPatterns = self.patternTracker.update(
                     isCrying: isCryLike,
@@ -371,9 +598,12 @@ class CryDetectionService: ObservableObject {
     }
 
     /// Non-isolated FFT computation
+    /// MEMORY FIX: Uses shared FFT setup instead of creating new one each frame
+    /// This prevents ~30 FFT setup allocations per second (major memory leak!)
     private nonisolated func performFFTNonIsolated(on samples: [Float], fftSize: Int, magnitudes: inout [Float]) {
-        guard let fftSetup = vDSP_DFT_zop_CreateSetup(nil, vDSP_Length(fftSize), .FORWARD) else { return }
-        defer { vDSP_DFT_DestroySetup(fftSetup) }
+        // MEMORY FIX: Use shared FFT setup (created once, reused forever)
+        guard let fftSetup = Self.getBackgroundFFTSetup(size: fftSize) else { return }
+        // NOTE: Do NOT destroy this setup - it's shared and reused!
 
         var realInput = samples
         var imagInput = [Float](repeating: 0, count: fftSize)
@@ -465,13 +695,65 @@ class CryDetectionService: ObservableObject {
 
         let fundamentalRatio = analysis.fundamentalPower / (analysis.harmonicPower + 0.001)
         let centroid = analysis.spectralCentroid
+        let power = analysis.fundamentalPower
 
-        if centroid < 700 && fundamentalRatio > 1.5 { return .hunger }
-        if centroid > 1200 && analysis.fundamentalPower > adaptiveThreshold * 2 { return .pain }
-        if analysis.fundamentalPower < adaptiveThreshold * 1.5 && centroid < 900 { return .tired }
-        if centroid > 800 && centroid < 1200 { return .attention }
-        if analysis.harmonicPower > analysis.fundamentalPower * 0.8 { return .discomfort }
+        // RESEARCH-BASED CLASSIFICATION (based on infant cry acoustics literature)
+        // Uses scoring system to find BEST match rather than strict thresholds
+        // Priority order: Pain > Hunger > Discomfort > Attention > Tired
 
+        var scores: [(CryType, Float)] = []
+
+        // PAIN: High centroid (piercing), high power, sudden
+        // Pain cries are URGENT - detect first
+        var painScore: Float = 0
+        if centroid > 1000 { painScore += min((centroid - 1000) / 500, 1.0) * 0.4 }
+        if power > adaptiveThreshold * 2.0 { painScore += min((power / (adaptiveThreshold * 3)), 1.0) * 0.6 }
+        if painScore > 0.5 { scores.append((.pain, painScore)) }
+
+        // HUNGER: Lower centroid, rhythmic (high fundamental ratio = more tonal/rhythmic)
+        // Hunger cries are RHYTHMIC with moderate power
+        var hungerScore: Float = 0
+        if centroid < 1000 { hungerScore += (1.0 - centroid / 1000) * 0.3 }
+        if fundamentalRatio > 1.0 { hungerScore += min(fundamentalRatio / 2.0, 1.0) * 0.4 }
+        if power > adaptiveThreshold * 0.5 && power < adaptiveThreshold * 3.0 {
+            hungerScore += 0.3
+        }
+        if hungerScore > 0.4 { scores.append((.hunger, hungerScore)) }
+
+        // DISCOMFORT: Strong harmonics relative to fundamental
+        var discomfortScore: Float = 0
+        let harmonicRatio = analysis.harmonicPower / (analysis.fundamentalPower + 0.001)
+        if harmonicRatio > 0.5 { discomfortScore += min(harmonicRatio, 1.0) * 0.5 }
+        if centroid > 600 && centroid < 1500 { discomfortScore += 0.3 }
+        if discomfortScore > 0.4 { scores.append((.discomfort, discomfortScore)) }
+
+        // ATTENTION: Mid-range centroid, moderate power
+        var attentionScore: Float = 0
+        if centroid > 600 && centroid < 1400 { attentionScore += 0.4 }
+        if power > adaptiveThreshold * 0.5 && power < adaptiveThreshold * 2.5 {
+            attentionScore += 0.4
+        }
+        if attentionScore > 0.4 { scores.append((.attention, attentionScore)) }
+
+        // TIRED: Low power, low centroid, breathy
+        var tiredScore: Float = 0
+        if power < adaptiveThreshold * 1.5 { tiredScore += (1.0 - power / (adaptiveThreshold * 2.0)) * 0.4 }
+        if centroid < 900 { tiredScore += (1.0 - centroid / 1200) * 0.3 }
+        if analysis.spectralFlatness > 0.25 { tiredScore += analysis.spectralFlatness * 0.3 }
+        if tiredScore > 0.4 { scores.append((.tired, tiredScore)) }
+
+        // Return highest scoring type, or general if no good match
+        if let best = scores.max(by: { $0.1 < $1.1 }), best.1 > 0.5 {
+            return best.0
+        }
+
+        // If no strong match but we have scores, return the best one anyway
+        // This is better than returning .general for user experience
+        if let best = scores.max(by: { $0.1 < $1.1 }) {
+            return best.0
+        }
+
+        // Only return general if we truly have no classification
         return .general
     }
 
@@ -545,8 +827,10 @@ class CryDetectionService: ObservableObject {
             mlConfidence = mlDetection.confidence
 
             // If cry detected, classify type with ML
+            var classificationResult: CryClassification?
             if mlDetection.isCryDetected || mlDetection.confidence > 0.4 {
                 let classification = mlCryClassifier.classify(features: features)
+                classificationResult = classification
 
                 // Blend ML classification with rule-based
                 if classification.confidence > confidence {
@@ -581,6 +865,7 @@ class CryDetectionService: ObservableObject {
                 self.latestExtendedFeatures = features
                 self.latestVoiceCharacteristics = voiceChars
                 self.latestPatternMetrics = patterns
+                self.latestClassification = classificationResult
             }
         }
         // ========== End ML Enhancement ==========
@@ -724,35 +1009,53 @@ class CryDetectionService: ObservableObject {
     private func classifyCryType(analysis: CryAnalysis) -> CryType {
         guard analysis.isCryLike else { return .unknown }
 
-        // Classification based on spectral characteristics
-        // Research shows different cry types have distinct acoustic signatures
+        // RESEARCH-BASED CLASSIFICATION
+        // Based on infant cry acoustics literature:
+        // - Barr et al. (1988) - Hunger patterns
+        // - Fuller & Horii (1986) - Pain acoustics
+        // - Wasz-Höckert et al. (1985) - Cry differentiation
 
         let fundamentalRatio = analysis.fundamentalPower / (analysis.harmonicPower + 0.001)
         let centroid = analysis.spectralCentroid
+        let power = analysis.fundamentalPower
 
-        // Hunger cry: rhythmic, lower pitch, moderate intensity
-        if centroid < 700 && fundamentalRatio > 1.5 {
-            return .hunger
-        }
+        // Priority order: Pain > Hunger > Discomfort > Attention > Tired > General
+        // Pain is most urgent, tired is least likely (avoid over-detection)
 
-        // Pain/discomfort cry: sudden onset, higher pitch, intense
-        if centroid > 1200 && analysis.fundamentalPower > adaptiveThreshold * 2 {
+        // PAIN CRY: High pitch, high intensity, piercing
+        // Research: F0 typically 500-700+ Hz, sudden onset
+        if centroid > 1200 && power > adaptiveThreshold * 2.5 {
             return .pain
         }
 
-        // Tired cry: lower intensity, somewhat irregular
-        if analysis.fundamentalPower < adaptiveThreshold * 1.5 && centroid < 900 {
-            return .tired
+        // HUNGER CRY: Rhythmic, lower pitch, moderate intensity
+        // Research: F0 350-480 Hz, rhythmic pattern (neh-neh)
+        if centroid < 800 && fundamentalRatio > 1.3 &&
+           power > adaptiveThreshold * 0.8 && power < adaptiveThreshold * 2.5 {
+            return .hunger
         }
 
-        // Attention-seeking: moderate pitch, building intensity
-        if centroid > 800 && centroid < 1200 {
+        // DISCOMFORT CRY: Strong harmonic structure
+        // Wet diaper, temperature, position issues
+        if analysis.harmonicPower > analysis.fundamentalPower * 0.7 &&
+           centroid > 700 && centroid < 1400 {
+            return .discomfort
+        }
+
+        // ATTENTION CRY: Mid-range, moderate power
+        // Wants interaction, escalates if ignored
+        if centroid > 700 && centroid < 1200 &&
+           power > adaptiveThreshold * 0.6 && power < adaptiveThreshold * 2.0 {
             return .attention
         }
 
-        // Discomfort: variable pitch, sustained
-        if analysis.harmonicPower > analysis.fundamentalPower * 0.8 {
-            return .discomfort
+        // TIRED CRY: STRICT - Must be LOW intensity
+        // Research: F0 300-400 Hz, irregular, whimpering, breathy
+        // FIX: Previously defaulting to tired too often
+        if power < adaptiveThreshold * 1.2 &&  // MUST be quiet
+           centroid < 800 &&
+           analysis.spectralFlatness > 0.3 {   // Breathy quality
+            return .tired
         }
 
         return .general
@@ -853,11 +1156,18 @@ class CryDetectionService: ObservableObject {
             self.cryIntensity = intensity
             self.cryType = dominantType
 
+            // Debug logging for cry detection troubleshooting
+            if cryLikeFrames.count > 0 {
+                print("[CryDetection] cryLikeFrames: \(cryLikeFrames.count), consecutiveCry: \(consecutiveCryFrames), avgConf: \(String(format: "%.2f", avgConfidence)), shouldDetect: \(shouldDetect)")
+            }
+
             if shouldDetect && !self.isCryDetected {
+                print("[CryDetection] 🔴 CRY DETECTED! Type: \(dominantType.rawValue), Confidence: \(String(format: "%.0f%%", avgConfidence * 100))")
                 self.isCryDetected = true
                 self.detectionStatus = .cryDetected
                 self.onCryDetected?(dominantType, avgConfidence)
             } else if !shouldDetect && self.isCryDetected && consecutiveCryFrames < minCryFramesForDetection / 3 {
+                print("[CryDetection] ✅ Cry ended - baby calming down")
                 self.isCryDetected = false
                 self.detectionStatus = .listening
             }
@@ -877,12 +1187,123 @@ class CryDetectionService: ObservableObject {
 
     // MARK: - Ambient Noise Calibration
     private func calibrateAmbientNoise() {
-        // Wait 2 seconds and measure ambient noise level
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        // Use Task-based calibration for proper MainActor isolation
+        Task { @MainActor [weak self] in
             guard let self = self else { return }
-            self.ambientNoiseLevel = self.currentAudioLevel * 1.2 // Add margin
-            self.adaptiveThreshold = max(0.1, self.ambientNoiseLevel * 2)
+
+            var samples: [Float] = []
+            let targetSamples = 30 // Collect 30 samples over 3 seconds
+
+            // Collect samples every 100ms for 3 seconds
+            for _ in 0..<targetSamples {
+                samples.append(self.currentAudioLevel)
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            }
+
+            guard !samples.isEmpty else { return }
+
+            // Use 75th percentile (not average) to handle brief noises during calibration
+            let sorted = samples.sorted()
+            let p75Index = Int(Double(sorted.count) * 0.75)
+            let baseline = sorted[min(p75Index, sorted.count - 1)]
+
+            // Set ambient noise with conservative margin
+            self.ambientNoiseLevel = baseline * 1.5
+            // Adaptive threshold is 3x ambient (more conservative)
+            self.adaptiveThreshold = max(0.15, self.ambientNoiseLevel * 3.0)
+            self.isCalibrated = true
+
+            print("[CryDetection] Calibration complete: ambient=\(self.ambientNoiseLevel), threshold=\(self.adaptiveThreshold)")
         }
+    }
+
+    // MARK: - DeepInfant Integration
+
+    /// Accumulate audio samples for DeepInfant classification
+    /// DeepInfant needs ~4 seconds of audio at 16kHz for best results
+    /// MEMORY SAFETY: Uses circular buffer pattern to prevent unbounded growth
+    private func accumulateForDeepInfant(samples: [Float], sampleRate: Float) {
+        guard useDeepInfant, deepInfantClassifier.isModelLoaded else { return }
+
+        // Resample to 16kHz if needed - MEMORY OPTIMIZATION: Only allocate when necessary
+        let targetSR: Float = 16000
+        let resampledSamples: [Float]
+        if abs(sampleRate - targetSR) > 100 {
+            let ratio = targetSR / sampleRate
+            let outputLength = Int(Float(samples.count) * ratio)
+            // MEMORY SAFETY: Pre-size the output array
+            var output = [Float](repeating: 0, count: outputLength)
+            for i in 0..<outputLength {
+                let srcIndex = Float(i) / ratio
+                let srcIndexInt = Int(srcIndex)
+                if srcIndexInt < samples.count {
+                    output[i] = samples[srcIndexInt]
+                }
+            }
+            resampledSamples = output
+        } else {
+            resampledSamples = samples
+        }
+
+        // MEMORY SAFETY: Use circular buffer approach instead of append/removeFirst
+        // This avoids memory fragmentation and unbounded growth
+        if deepInfantBuffer.count < deepInfantBufferSize {
+            // Initial fill: grow buffer up to max size
+            let spaceRemaining = deepInfantBufferSize - deepInfantBuffer.count
+            let samplesToAdd = min(resampledSamples.count, spaceRemaining)
+            deepInfantBuffer.append(contentsOf: resampledSamples.prefix(samplesToAdd))
+        } else {
+            // Buffer is full: overwrite oldest samples (circular write)
+            for sample in resampledSamples {
+                deepInfantBuffer[deepInfantBufferWriteIndex] = sample
+                deepInfantBufferWriteIndex = (deepInfantBufferWriteIndex + 1) % deepInfantBufferSize
+            }
+        }
+
+        // Run classification periodically (not every frame - too expensive)
+        let now = Date()
+        guard now.timeIntervalSince(deepInfantLastClassification) >= deepInfantClassificationInterval else {
+            return
+        }
+
+        // Only classify if we have enough audio and a potential cry is detected
+        guard deepInfantBuffer.count >= deepInfantBufferSize / 2,
+              (isCryDetected || confidenceLevel > 0.3) else {
+            return
+        }
+
+        deepInfantLastClassification = now
+
+        // Run DeepInfant classification on background queue
+        let bufferCopy = deepInfantBuffer
+        let classifier = deepInfantClassifier // Capture classifier to avoid actor isolation in Task.detached
+        Task {
+            // Run classification on background thread (classify is synchronous but CPU-intensive)
+            let result = await Task.detached {
+                return classifier.classify(
+                    samples: bufferCopy,
+                    sampleRate: targetSR
+                )
+            }.value
+
+            // Update on main thread if we got a confident result
+            if let result = result, result.confidence > 0.6 {
+                // Only update if DeepInfant is more confident
+                if result.confidence > self.confidenceLevel {
+                    self.cryType = result.cryType
+                    self.confidenceLevel = result.confidence
+                    print("[DeepInfant] Classification: \(result.cryType) (\(Int(result.confidence * 100))%) in \(Int(result.processingTimeMs))ms")
+                }
+            }
+        }
+    }
+
+    /// Clear DeepInfant buffer (call when stopping monitoring)
+    /// MEMORY SAFETY: Reset circular buffer state
+    private func clearDeepInfantBuffer() {
+        deepInfantBuffer.removeAll(keepingCapacity: true)  // Keep capacity to avoid reallocation
+        deepInfantBufferWriteIndex = 0
+        deepInfantLastClassification = .distantPast
     }
 
     // MARK: - Cleanup
@@ -891,114 +1312,6 @@ class CryDetectionService: ObservableObject {
             vDSP_DFT_DestroySetup(fftSetup)
         }
     }
-}
-
-// MARK: - Cry Type Enum
-enum CryType: String, Codable, CaseIterable {
-    case hunger = "Hungry"
-    case tired = "Tired"
-    case pain = "Pain/Discomfort"
-    case attention = "Wants Attention"
-    case discomfort = "Uncomfortable"
-    case general = "Crying"
-    case unknown = "Unknown"
-
-    var icon: String {
-        switch self {
-        case .hunger: return "fork.knife"
-        case .tired: return "moon.zzz"
-        case .pain: return "bandage"
-        case .attention: return "hand.wave"
-        case .discomfort: return "thermometer"
-        case .general: return "waveform"
-        case .unknown: return "questionmark.circle"
-        }
-    }
-
-    var suggestedAction: String {
-        switch self {
-        case .hunger:
-            return "Baby might be hungry. Consider feeding."
-        case .tired:
-            return "Baby seems tired. Soothing sounds can help."
-        case .pain:
-            return "Baby may be in discomfort. Check for causes."
-        case .attention:
-            return "Baby wants interaction or comfort."
-        case .discomfort:
-            return "Check diaper, temperature, or position."
-        case .general:
-            return "Playing calming sounds to soothe."
-        case .unknown:
-            return "Monitoring for cry patterns..."
-        }
-    }
-
-    /// Recommended soothing strategy for this cry type
-    var soothingStrategy: SoothingStrategy {
-        switch self {
-        case .hunger:
-            return .distraction // Temporary until feeding
-        case .tired:
-            return .sleepInduction
-        case .pain:
-            return .urgent // Needs attention first
-        case .attention:
-            return .comfort
-        case .discomfort:
-            return .gentle
-        case .general:
-            return .adaptive
-        case .unknown:
-            return .adaptive
-        }
-    }
-}
-
-// MARK: - Soothing Strategy
-enum SoothingStrategy: String {
-    case sleepInduction = "Sleep Induction"
-    case distraction = "Distraction"
-    case comfort = "Comfort"
-    case gentle = "Gentle Calming"
-    case urgent = "Urgent Response"
-    case adaptive = "Adaptive"
-
-    var phases: [SoothingPhase] {
-        switch self {
-        case .sleepInduction:
-            return [.gentleStart, .deepCalming, .sleepTransition]
-        case .distraction:
-            return [.attentionGrab, .engagement, .gentleCalm]
-        case .comfort:
-            return [.warmStart, .steadyComfort, .maintenance]
-        case .gentle:
-            return [.softStart, .gradualCalming, .maintenance]
-        case .urgent:
-            return [.immediateResponse, .intensiveCalming, .recovery]
-        case .adaptive:
-            return [.attentionGrab, .evaluation, .adaptiveResponse]
-        }
-    }
-}
-
-enum SoothingPhase: String {
-    case gentleStart = "Gentle Start"
-    case attentionGrab = "Getting Attention"
-    case warmStart = "Warm Start"
-    case softStart = "Soft Start"
-    case immediateResponse = "Immediate Response"
-    case deepCalming = "Deep Calming"
-    case engagement = "Engagement"
-    case steadyComfort = "Steady Comfort"
-    case gradualCalming = "Gradual Calming"
-    case intensiveCalming = "Intensive Calming"
-    case evaluation = "Evaluating Response"
-    case adaptiveResponse = "Adaptive Response"
-    case sleepTransition = "Sleep Transition"
-    case gentleCalm = "Gentle Calm"
-    case maintenance = "Maintenance"
-    case recovery = "Recovery"
 }
 
 // MARK: - Errors
@@ -1017,4 +1330,20 @@ enum CryDetectionError: Error, LocalizedError {
             return "Analysis error: \(message)"
         }
     }
+}
+
+// MARK: - DeepInfant Protocol
+// Protocol for dependency injection and testability
+// DeepInfantClassifier.swift conforms to this protocol
+
+protocol DeepInfantClassifierProtocol {
+    var isModelLoaded: Bool { get }
+    func classify(samples: [Float], sampleRate: Float) -> DeepInfantResultProtocol?
+}
+
+protocol DeepInfantResultProtocol {
+    var cryType: CryType { get }
+    var confidence: Double { get }
+    var processingTimeMs: Double { get }
+    var allProbabilities: [String: Double] { get }
 }

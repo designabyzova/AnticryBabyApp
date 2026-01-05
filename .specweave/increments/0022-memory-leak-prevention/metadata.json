@@ -1,0 +1,17 @@
+{
+  "id": "0022-memory-leak-prevention",
+  "status": "abandoned",
+  "abandoned": "2026-01-04T18:00:00.000Z",
+  "abandonReason": "Scope superseded by comprehensive code quality audit (0024). Memory leak prevention will be covered as part of broader quality review.",
+  "type": "hotfix",
+  "priority": "P1",
+  "created": "2026-01-04T10:00:00Z",
+  "lastActivity": "2026-01-04T10:00:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 70,
+  "feature_id": null,
+  "epic_id": null,
+  "externalLinks": {},
+  "title": "Comprehensive Memory Leak Prevention System",
+  "description": "Fix critical app crashes from excessive memory usage (85MB+), implement global memory monitoring, enforce limits across ALL services (audio streaming, smart queue, AI engines), add memory profiling tests, and ensure app stays under 50MB even during intensive audio playback and cry detection"
+}

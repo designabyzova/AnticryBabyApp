@@ -1,0 +1,282 @@
+# Maestro E2E Test: Comprehensive Playback Controls
+# Tests all playback controls including:
+# - Play/Pause
+# - Next/Previous
+# - Skip forward/backward (15 seconds)
+# - Shuffle toggle
+# - Repeat cycle (off -> all -> one -> off)
+# - Playback speed (1x -> 0.75x -> 1.25x -> 1.5x -> 2x)
+#
+# Run: maestro test maestro/flows/playback_controls_comprehensive.yaml
+
+appId: com.babyincar.app
+---
+- launchApp:
+    clearState: true
+
+# Handle onboarding if present
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - takeScreenshot: "controls_00_onboarding_welcome"
+      # Page 0: Welcome - tap Continue
+      - tapOn: "Continue"
+
+      # Page 1: Baby Info - enter baby name
+      - extendedWaitUntil:
+          visible: "Tell us about your baby"
+          timeout: 5000
+      - takeScreenshot: "controls_00_onboarding_baby_info"
+      # Tap on the text field and enter a name
+      - tapOn:
+          text: "Enter baby's name"
+      - inputText: "TestBaby"
+      - hideKeyboard
+      - takeScreenshot: "controls_00_onboarding_name_entered"
+      # Tap Continue to go to language selection
+      - tapOn: "Continue"
+
+      # Page 2: Language Selection - English is already selected by default
+      - extendedWaitUntil:
+          visible: "Select Languages"
+          timeout: 5000
+      - takeScreenshot: "controls_00_onboarding_languages"
+      - tapOn: "Continue"
+
+      # Page 3: Permissions - tap Get Started
+      - extendedWaitUntil:
+          visible: "Almost Ready"
+          timeout: 5000
+      - takeScreenshot: "controls_00_onboarding_permissions"
+      - tapOn: "Get Started"
+
+# Wait for app to load (home screen)
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ll]ibrary.*|.*[Ff]avorites.*|.*[Pp]rofile.*"
+    timeout: 15000
+
+- takeScreenshot: "controls_01_home"
+
+# Navigate to Library tab
+- tapOn:
+    id: "Library"
+
+- extendedWaitUntil:
+    visible: "Library"
+    timeout: 3000
+
+- takeScreenshot: "controls_02_library"
+
+# Look for any playable category and tap it
+# Try White Noise first as it's likely to have generated content that works offline
+- runFlow:
+    when:
+      visible: "White Noise"
+    commands:
+      - tapOn: "White Noise"
+
+- runFlow:
+    when:
+      visible: "Nature Sounds"
+    commands:
+      - tapOn: "Nature Sounds"
+
+# Wait for tracks to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Ww]hite.*|.*[Pp]ink.*|.*[Rr]ain.*|.*[Oo]cean.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "controls_03_track_list"
+
+# Tap on a track to start playback and open player
+# Try to find a generated/white noise track
+- runFlow:
+    when:
+      visible: "White Noise"
+    commands:
+      - tapOn: "White Noise"
+
+# Alternative: tap on first track in list
+- tapOn:
+    text: ".*[Nn]oise.*|.*[Rr]ain.*|.*[Oo]cean.*"
+    optional: true
+
+# Wait for player view to open
+- extendedWaitUntil:
+    visible:
+      id: "playPauseButton"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "controls_04_player_opened"
+
+# ==========================================
+# TEST 1: Play/Pause Toggle
+# ==========================================
+# The player should start playing automatically, let's pause it
+- runFlow:
+    when:
+      visible:
+        id: "playPauseButton"
+    commands:
+      - tapOn:
+          id: "playPauseButton"
+      - takeScreenshot: "controls_05_paused"
+      # Resume playing
+      - tapOn:
+          id: "playPauseButton"
+      - takeScreenshot: "controls_06_playing"
+
+# ==========================================
+# TEST 2: Skip Forward (15 seconds)
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "skipForward15Button"
+    commands:
+      - tapOn:
+          id: "skipForward15Button"
+      - takeScreenshot: "controls_07_skipped_forward"
+
+# ==========================================
+# TEST 3: Skip Backward (15 seconds)
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "skipBackward15Button"
+    commands:
+      - tapOn:
+          id: "skipBackward15Button"
+      - takeScreenshot: "controls_08_skipped_backward"
+
+# ==========================================
+# TEST 4: Next Track
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "nextButton"
+    commands:
+      - tapOn:
+          id: "nextButton"
+      - takeScreenshot: "controls_09_next_track"
+
+# ==========================================
+# TEST 5: Previous Track
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "previousButton"
+    commands:
+      - tapOn:
+          id: "previousButton"
+      - takeScreenshot: "controls_10_previous_track"
+
+# ==========================================
+# TEST 6: Shuffle Toggle (On and Off)
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "shuffleButton"
+    commands:
+      # Turn shuffle ON
+      - tapOn:
+          id: "shuffleButton"
+      - takeScreenshot: "controls_11_shuffle_on"
+      # Turn shuffle OFF
+      - tapOn:
+          id: "shuffleButton"
+      - takeScreenshot: "controls_12_shuffle_off"
+
+# ==========================================
+# TEST 7: Repeat Mode Cycle
+# ==========================================
+# Cycle through: off -> all -> one -> off
+- runFlow:
+    when:
+      visible:
+        id: "repeatButton"
+    commands:
+      # First tap: off -> all
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "controls_13_repeat_all"
+      # Second tap: all -> one
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "controls_14_repeat_one"
+      # Third tap: one -> off
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "controls_15_repeat_off"
+
+# ==========================================
+# TEST 8: Playback Speed Control
+# ==========================================
+# Cycle through: 1x -> 0.75x -> 1.25x -> 1.5x -> 2x -> 1x
+- runFlow:
+    when:
+      visible:
+        id: "playbackSpeedButton"
+    commands:
+      # Start at 1x, tap to go to 0.75x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "0.75x"
+      - takeScreenshot: "controls_16_speed_0.75x"
+      # Tap to go to 1x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "1x"
+      - takeScreenshot: "controls_17_speed_1x"
+      # Tap to go to 1.25x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "1.25x"
+      - takeScreenshot: "controls_18_speed_1.25x"
+      # Tap to go to 1.5x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "1.5x"
+      - takeScreenshot: "controls_19_speed_1.5x"
+      # Tap to go to 2x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "2x"
+      - takeScreenshot: "controls_20_speed_2x"
+      # Tap to cycle back to 0.75x
+      - tapOn:
+          id: "playbackSpeedButton"
+      - assertVisible: "0.75x"
+      - takeScreenshot: "controls_21_speed_cycled"
+
+# ==========================================
+# TEST 9: Close player and verify mini player
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        text: "chevron.down"
+    commands:
+      - tapOn:
+          text: "chevron.down"
+
+# If mini player is visible, verify playback continues
+- extendedWaitUntil:
+    visible:
+      text: ".*[Nn]ow [Pp]laying.*"
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "controls_22_mini_player"
+
+# Final success
+- takeScreenshot: "controls_final_success"

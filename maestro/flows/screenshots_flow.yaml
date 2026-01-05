@@ -1,0 +1,49 @@
+appId: com.babyincar.app
+---
+# App Store Screenshot Generation Flow
+
+# Launch app
+- launchApp:
+    clearState: true
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# Screenshot 1: Home Screen
+- takeScreenshot: screenshots/01_home
+
+# Tap on Library tab
+- tapOn:
+    text: "Library"
+
+- waitForAnimationToEnd
+
+# Screenshot 2: Library View
+- takeScreenshot: screenshots/02_library
+
+# Tap on Cry Detection tab
+- tapOn:
+    text: "Cry Detection"
+
+- waitForAnimationToEnd
+
+# Screenshot 3: Cry Detection
+- takeScreenshot: screenshots/03_cry_detection
+
+# Tap on Favorites tab
+- tapOn:
+    text: "Favorites"
+
+- waitForAnimationToEnd
+
+# Screenshot 4: Favorites
+- takeScreenshot: screenshots/04_favorites
+
+# Tap on Profile tab
+- tapOn:
+    text: "Profile"
+
+- waitForAnimationToEnd
+
+# Screenshot 5: Profile
+- takeScreenshot: screenshots/05_profile

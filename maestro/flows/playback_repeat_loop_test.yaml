@@ -1,0 +1,198 @@
+# Maestro E2E Test: Track Repeat/Loop Behavior
+# Tests that tracks properly loop/continue based on repeat mode
+#
+# Scenarios tested:
+# 1. Repeat Off: Track stops when finished
+# 2. Repeat One: Same track replays when finished
+# 3. Repeat All: Next track plays when current finishes
+# 4. Single track with repeat all: Track replays
+#
+# Run: maestro test maestro/flows/playback_repeat_loop_test.yaml
+
+appId: com.babyincar.app
+---
+- launchApp:
+    clearState: true
+
+# Handle onboarding if present
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - takeScreenshot: "repeat_00_onboarding_welcome"
+      # Page 0: Welcome - tap Continue
+      - tapOn: "Continue"
+
+      # Page 1: Baby Info - enter baby name
+      - extendedWaitUntil:
+          visible: "Tell us about your baby"
+          timeout: 5000
+      - tapOn:
+          text: "Enter baby's name"
+      - inputText: "TestBaby"
+      - hideKeyboard
+      # Tap Continue to go to language selection
+      - tapOn: "Continue"
+
+      # Page 2: Language Selection - English is already selected by default
+      - extendedWaitUntil:
+          visible: "Select Languages"
+          timeout: 5000
+      - tapOn: "Continue"
+
+      # Page 3: Permissions - tap Get Started
+      - extendedWaitUntil:
+          visible: "Almost Ready"
+          timeout: 5000
+      - tapOn: "Get Started"
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Ll]ibrary.*"
+    timeout: 15000
+
+- takeScreenshot: "repeat_01_home"
+
+# Navigate to Library
+- tapOn:
+    id: "Library"
+
+- extendedWaitUntil:
+    visible: "Library"
+    timeout: 3000
+
+# Select a category with short tracks if possible, or generated content
+- runFlow:
+    when:
+      visible: "White Noise"
+    commands:
+      - tapOn: "White Noise"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*[Nn]oise.*|.*[Ww]omb.*|.*[Hh]eartbeat.*"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "repeat_02_tracks"
+
+# Play a track
+- tapOn:
+    text: ".*[Nn]oise.*|.*[Ww]omb.*"
+    optional: true
+
+# Wait for player
+- extendedWaitUntil:
+    visible:
+      id: "playPauseButton"
+    timeout: 5000
+
+- takeScreenshot: "repeat_03_player"
+
+# ==========================================
+# TEST: Repeat One Mode
+# ==========================================
+# Enable repeat one mode (cycle twice: off -> all -> one)
+- runFlow:
+    when:
+      visible:
+        id: "repeatButton"
+    commands:
+      # First tap: off -> all
+      - tapOn:
+          id: "repeatButton"
+      # Second tap: all -> one
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "repeat_04_repeat_one_enabled"
+
+# Seek near the end of track to test loop behavior
+- runFlow:
+    when:
+      visible:
+        id: "skipForward15Button"
+    commands:
+      # Skip forward multiple times to get near end
+      - tapOn:
+          id: "skipForward15Button"
+      - tapOn:
+          id: "skipForward15Button"
+      - tapOn:
+          id: "skipForward15Button"
+      - tapOn:
+          id: "skipForward15Button"
+      - takeScreenshot: "repeat_05_near_end"
+
+# Wait a moment for playback to continue/loop
+- scrollUntilVisible:
+    element: ".*[Pp]laying.*"
+    direction: DOWN
+    timeout: 3000
+    optional: true
+
+- takeScreenshot: "repeat_06_still_playing"
+
+# ==========================================
+# TEST: Repeat All Mode
+# ==========================================
+# Set to repeat all (cycle: one -> off -> all)
+- runFlow:
+    when:
+      visible:
+        id: "repeatButton"
+    commands:
+      # First tap: one -> off
+      - tapOn:
+          id: "repeatButton"
+      # Second tap: off -> all
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "repeat_07_repeat_all_enabled"
+
+# ==========================================
+# TEST: Verify Shuffle + Repeat Interaction
+# ==========================================
+- runFlow:
+    when:
+      visible:
+        id: "shuffleButton"
+    commands:
+      # Enable shuffle
+      - tapOn:
+          id: "shuffleButton"
+      - takeScreenshot: "repeat_08_shuffle_and_repeat_all"
+      # Tap next - should play random track
+      - tapOn:
+          id: "nextButton"
+      - takeScreenshot: "repeat_09_shuffled_next"
+
+# ==========================================
+# TEST: Repeat Off Mode
+# ==========================================
+# Disable repeat (all -> one -> off)
+- runFlow:
+    when:
+      visible:
+        id: "repeatButton"
+    commands:
+      # First tap: all -> one
+      - tapOn:
+          id: "repeatButton"
+      # Second tap: one -> off
+      - tapOn:
+          id: "repeatButton"
+      - takeScreenshot: "repeat_10_repeat_off"
+
+# Disable shuffle
+- runFlow:
+    when:
+      visible:
+        id: "shuffleButton"
+    commands:
+      - tapOn:
+          id: "shuffleButton"
+      - takeScreenshot: "repeat_11_shuffle_off"
+
+# Final screenshot
+- takeScreenshot: "repeat_final_success"

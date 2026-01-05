@@ -238,28 +238,37 @@ class SubscriptionManager: ObservableObject {
 // MARK: - Subscription View
 struct SubscriptionView: View {
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var trialManager = TrialManager.shared
     @Environment(\.dismiss) var dismiss
     @State private var selectedPlan: String = ""
+    @State private var showingComparison = false
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Trial banner (if applicable)
+                    if trialManager.trialState.isActive {
+                        trialBanner
+                    }
+
                     // Header
                     VStack(spacing: 12) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 50))
                             .foregroundColor(.yellow)
 
-                        Text("Upgrade to Premium")
+                        Text(trialManager.trialState.isActive ? "Keep Premium Access" : "Upgrade to Premium")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.appText)
 
-                        Text("Unlock all features and content")
+                        Text(trialManager.trialState.isActive
+                             ? "Subscribe before your trial ends"
+                             : "Unlock all features and content")
                             .font(.system(size: 16))
                             .foregroundColor(.appTextSecondary)
                     }
-                    .padding(.top, 20)
+                    .padding(.top, trialManager.trialState.isActive ? 0 : 20)
 
                     // Features list
                     VStack(alignment: .leading, spacing: 12) {
@@ -313,6 +322,19 @@ struct SubscriptionView: View {
                     .disabled(selectedPlan.isEmpty || subscriptionManager.isLoading)
                     .padding(.horizontal, 20)
 
+                    // Compare plans link
+                    Button {
+                        showingComparison = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "list.bullet.rectangle")
+                                .font(.system(size: 14))
+                            Text("Compare Free vs Premium")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundColor(.appPrimary)
+                    }
+
                     // Restore purchases
                     Button {
                         Task {
@@ -343,12 +365,48 @@ struct SubscriptionView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingComparison) {
+            FreePremiumComparisonView()
+        }
         .onAppear {
             // Pre-select best value plan
             if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue }) {
                 selectedPlan = bestValue.id
             }
         }
+    }
+
+    // MARK: - Trial Banner
+
+    private var trialBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.appWarning)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(trialManager.trialDaysRemaining) days left in trial")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.appText)
+
+                Text("You're enjoying full Premium access")
+                    .font(.system(size: 13))
+                    .foregroundColor(.appTextSecondary)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.appWarning.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.appWarning.opacity(0.3), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
     }
 }
 

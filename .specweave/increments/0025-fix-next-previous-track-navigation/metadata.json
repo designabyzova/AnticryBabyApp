@@ -1,0 +1,19 @@
+{
+  "id": "0025-fix-next-previous-track-navigation",
+  "title": "Fix Next/Previous Track Navigation",
+  "description": "Fix next/previous track buttons not working when playing from search results - Update SearchView, WhatWorksSection, and PlayerView to use context-aware play functions so users can navigate through search results and recommended tracks",
+  "status": "completed",
+  "completed": "2026-01-04T19:30:00.000Z",
+  "type": "bug",
+  "priority": "P0",
+  "created": "2026-01-04T19:00:00.000Z",
+  "lastActivity": "2026-01-04T19:30:00.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "feature_id": "FS-025",
+  "epic_id": null,
+  "externalLinks": {},
+  "tags": ["bug", "P0", "audio-playback", "navigation", "ux"],
+  "complexity": "low",
+  "estimatedEffort": "2-4 hours"
+}

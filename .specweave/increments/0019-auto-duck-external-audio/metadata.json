@@ -1,0 +1,9 @@
+{
+  "id": "0019-auto-duck-external-audio",
+  "title": "Auto-Duck External Audio on Cry Detection",
+  "status": "completed",
+  "priority": "P1",
+  "createdAt": "2026-01-04T10:00:00Z",
+  "updatedAt": "2026-01-04T10:50:00Z",
+  "project": "BabyInCarApp"
+}

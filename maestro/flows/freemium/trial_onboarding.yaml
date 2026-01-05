@@ -1,0 +1,89 @@
+# Trial Onboarding E2E Test
+# Verifies 7-day premium trial starts correctly on first launch
+#
+# Test Case: US-001 - Extended Free Trial Experience
+# ACs: AC-US1-01, AC-US1-02, AC-US1-03
+
+appId: com.anticry.babyincar
+name: "Trial Onboarding Flow"
+tags:
+  - freemium
+  - trial
+  - onboarding
+  - critical
+
+---
+# Step 1: Fresh app launch (simulating first install)
+- launchApp:
+    clearState: true
+
+# Step 2: Complete any onboarding screens
+- runFlow:
+    when:
+      visible: "Get Started"
+    commands:
+      - tapOn: "Get Started"
+
+- runFlow:
+    when:
+      visible: "Next"
+    commands:
+      - tapOn: "Next"
+      - tapOn: "Next"
+      - tapOn: "Done"
+
+# Step 3: Verify we're on the home screen
+- assertVisible:
+    text: ".*Welcome.*|.*Home.*|.*Library.*"
+    regex: true
+
+# Step 4: Verify trial has started - check for trial banner or indicator
+- runFlow:
+    when:
+      visible: ".*trial.*|.*Premium.*|.*days left.*"
+      regex: true
+    commands:
+      - assertVisible:
+          text: ".*trial.*|.*Premium.*"
+          regex: true
+
+# Step 5: Navigate to Settings to verify trial countdown
+- tapOn:
+    text: "Settings"
+- runFlow:
+    when:
+      visible: "Profile"
+    commands:
+      - tapOn: "Profile"
+
+# Step 6: Verify trial countdown is visible
+- assertVisible:
+    text: ".*days.*left.*|.*Premium.*trial.*"
+    regex: true
+
+# Step 7: Verify premium features are accessible during trial
+- tapOn:
+    text: "Library"
+- wait: 1000
+
+# Step 8: Try to access a premium feature (should work during trial)
+- runFlow:
+    when:
+      visible: "Classical Music"
+    commands:
+      - tapOn: "Classical Music"
+
+# Step 9: Verify content loads (not blocked by paywall during trial)
+- assertNotVisible:
+    text: "Unlock.*Premium|Subscribe.*"
+    regex: true
+    timeout: 3000
+
+# Step 10: Take screenshot of trial experience
+- takeScreenshot: "trial_onboarding_complete"
+
+# Success!
+- runScript:
+    script: |
+      console.log("Trial onboarding test passed!")
+      console.log("Verified: Trial starts on launch, countdown visible, premium access works")

@@ -1,0 +1,79 @@
+# Maestro E2E Test: Onboarding Flow
+# Tests the complete onboarding experience for new users
+#
+# Run: maestro test maestro/flows/onboarding_flow.yaml
+
+appId: com.babyincar.app
+---
+- launchApp:
+    clearState: true
+
+# Splash screen should appear and transition
+- assertVisible:
+    text: "Baby in Car"
+    optional: true
+
+# Wait for onboarding to load
+- extendedWaitUntil:
+    visible:
+      text: "Welcome"
+    timeout: 5000
+
+# Step 1: Welcome screen
+- assertVisible: "Welcome"
+- assertVisible: "Get Started"
+- takeScreenshot: "onboarding_01_welcome"
+
+- tapOn: "Get Started"
+
+# Step 2: Baby profile setup (if exists)
+- extendedWaitUntil:
+    visible:
+      text: ".*[Bb]aby.*"
+    timeout: 3000
+    optional: true
+
+# Check if we need to add baby name
+- runFlow:
+    when:
+      visible: "Add Your Baby"
+    commands:
+      - tapOn:
+          id: "babyNameField"
+      - inputText: "Emma"
+      - tapOn: "Continue"
+
+# Step 3: Category selection (if exists)
+- runFlow:
+    when:
+      visible: "Choose Categories"
+    commands:
+      - takeScreenshot: "onboarding_02_categories"
+      - tapOn: "Lullabies"
+      - tapOn: "White Noise"
+      - tapOn: "Nature"
+      - tapOn:
+          text: ".*[Dd]one.*|.*[Cc]ontinue.*"
+
+# Step 4: Permissions
+- runFlow:
+    when:
+      visible: ".*[Mm]icrophone.*"
+    commands:
+      - takeScreenshot: "onboarding_03_permissions"
+      - tapOn:
+          text: ".*[Aa]llow.*|.*[Cc]ontinue.*"
+
+# Step 5: Home screen should be visible
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*[Pp]lay.*"
+    timeout: 5000
+
+- assertVisible: ".*[Pp]lay.*"
+- takeScreenshot: "onboarding_04_home_complete"
+
+# Verify key elements on home
+- assertVisible:
+    text: ".*[Ll]ibrary.*|.*[Bb]rowse.*"
+    optional: true

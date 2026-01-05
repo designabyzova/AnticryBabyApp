@@ -235,7 +235,6 @@ class VoiceCharacteristicsAnalyzer {
         }
 
         // Downsample envelope to analyze modulation rates
-        let envelopeSampleRate = sampleRate / 256 // Assuming hop size of 256
         let downsampledEnvelope = downsample(envelope, factor: 16)
 
         guard downsampledEnvelope.count >= fftSize else {

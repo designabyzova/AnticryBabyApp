@@ -1,0 +1,17 @@
+{
+  "id": "0024-comprehensive-code-quality-audit",
+  "status": "abandoned",
+  "abandonedReason": "User prioritized voice control v2 rework over code audit",
+  "abandonedAt": "2026-01-04T18:30:00.000Z",
+  "type": "bug",
+  "priority": "P0",
+  "created": "2026-01-04T18:00:00.000Z",
+  "lastActivity": "2026-01-04T18:00:00.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "feature_id": "FS-024",
+  "epic_id": null,
+  "externalLinks": {},
+  "title": "Comprehensive Code Quality Audit & Remediation",
+  "description": "Systematic LLM-judge-powered audit of entire BabyInCarApp codebase to identify and fix P0 crashes (force unwraps, memory leaks), P1 performance issues (threading violations, main thread blocking), and P2 maintainability problems (god classes, coupling, Swift best practices violations)."
+}

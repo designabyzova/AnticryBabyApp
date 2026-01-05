@@ -1,0 +1,15 @@
+{
+  "id": "0016-smooth-audio-transitions",
+  "title": "Smooth Audio Transitions",
+  "status": "completed",
+  "createdAt": "2026-01-02T09:00:00Z",
+  "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "feature": "FS-016",
+  "priority": "high",
+  "tags": [
+    "audio",
+    "ux",
+    "transitions",
+    "fade"
+  ]
+}

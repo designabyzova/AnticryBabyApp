@@ -14,6 +14,9 @@ struct PlayerView: View {
     @StateObject private var downloadManager = AudioDownloadManager.shared
     @StateObject private var babyProfileManager = BabyProfileManager.shared
     @StateObject private var cryDetectionService = CryDetectionService.shared
+    @StateObject private var effectivenessManager = EffectivenessManager.shared
+    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    @StateObject private var playbackQueueManager = PlaybackQueueManager.shared
     @Environment(\.dismiss) var dismiss
 
     @State private var showingTimerPicker = false
@@ -21,11 +24,21 @@ struct PlayerView: View {
     @State private var showingDownloads = false
     @State private var showingQueue = false
     @State private var showingEffectivenessFeedback = false
+    @State private var showingItHelpedToast = false
+    @State private var showingCryTypePicker = false
+    @State private var showingMoreLikeThis = false
+    @State private var showingSoftPaywall = false
+    @State private var softPaywallTrack: AudioTrack?
+    @State private var relatedTracks: [SearchTrack] = []
+    @State private var isLoadingRelated = false
+    @State private var isPremiumPreview = false
+    @State private var previewTimeRemaining: TimeInterval = 10
+    @State private var previewTimer: Timer?
 
     // Track playback state for feedback prompt
     @State private var lastPlayedTrack: AudioTrack?
     @State private var playbackStartTime: Date?
-    @State private var previousPlaybackState: PlaybackState = .stopped
+    @State private var previousPlaybackState: LocalPlaybackState = .stopped
 
     // Animation states for controls
     @State private var shuffleScale: CGFloat = 1.0
@@ -45,35 +58,75 @@ struct PlayerView: View {
         GeometryReader { geometry in
             ZStack {
                 // Premium animated background
-                PlayerBackground(category: audioEngine.currentTrack?.category ?? .whiteNoise)
+                PlayerBackground(category: audioEngine.currentTrack?.category ?? .instrumental)
                     .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // Premium header with frosted glass
-                    premiumHeader
-                        .padding(.top, geometry.safeAreaInsets.top > 0 ? 0 : 20)
+                // Main scrollable content
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Premium header with frosted glass
+                        premiumHeader
+                            .padding(.top, geometry.safeAreaInsets.top > 0 ? 0 : 20)
 
-                    Spacer()
+                        // Premium preview banner
+                        if isPremiumPreview {
+                            premiumPreviewBanner
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                        }
 
-                    // Breathing artwork animation
-                    breathingArtwork
+                        // Breathing artwork animation
+                        breathingArtwork
+                            .padding(.top, 24)
 
-                    Spacer()
+                        // Track info with premium styling
+                        premiumTrackInfo
+                            .padding(.top, 16)
 
-                    // Track info with premium styling
-                    premiumTrackInfo
+                        // Progress bar with haptics
+                        premiumProgressBar
 
-                    // Progress bar with haptics
-                    premiumProgressBar
+                        // Controls with enhanced animations
+                        controls
 
-                    // Controls with enhanced animations
-                    controls
+                        // Additional controls (Queue, More, Timer)
+                        additionalControls
 
-                    // Additional controls
-                    additionalControls
+                        // Bottom safe area padding
+                        Spacer()
+                            .frame(height: max(geometry.safeAreaInsets.bottom, 20) + 80)
+                    }
+                }
 
-                    Spacer()
-                        .frame(height: max(geometry.safeAreaInsets.bottom, 20))
+                // Floating "It Helped!" button - positioned bottom right
+                // Quick tap: uses auto-detected cry type or unknown
+                // Long press: shows manual cry type picker
+                if audioEngine.currentTrack != nil && (audioEngine.playbackState.isPlaying || audioEngine.playbackState == .paused) {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            ItHelpedButton {
+                                recordItHelped()
+                            }
+                            .onLongPressGesture(minimumDuration: 0.5) {
+                                // Haptic feedback
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                showingCryTypePicker = true
+                            }
+                            .padding(.trailing, 24)
+                            .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 16)
+                        }
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+
+                // Success toast overlay
+                if showingItHelpedToast {
+                    SuccessToast(
+                        message: "Noted! We'll remember this worked",
+                        isShowing: $showingItHelpedToast
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
         }
@@ -86,8 +139,8 @@ struct PlayerView: View {
         .sheet(isPresented: $showingDownloads) {
             DownloadsManagerView()
         }
-        .sheet(isPresented: $showingQueue) {
-            QueueSheet()
+        .fullScreenCover(isPresented: $showingQueue) {
+            PlaybackQueueView(queueManager: playbackQueueManager)
         }
         .sheet(isPresented: $showingEffectivenessFeedback) {
             if let track = lastPlayedTrack {
@@ -96,6 +149,39 @@ struct PlayerView: View {
                     cryType: cryDetectionService.cryType,
                     playbackDuration: playbackStartTime.map { Date().timeIntervalSince($0) } ?? 0
                 )
+            }
+        }
+        .sheet(isPresented: $showingCryTypePicker) {
+            CryTypePickerSheet { selectedCryType in
+                recordItHelped(withCryType: selectedCryType)
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingMoreLikeThis) {
+            MoreLikeThisSheet(
+                relatedTracks: relatedTracks,
+                isLoading: isLoadingRelated,
+                currentTrack: audioEngine.currentTrack
+            )
+            .environmentObject(audioEngine)
+        }
+        .sheet(isPresented: $showingSoftPaywall) {
+            if let track = softPaywallTrack {
+                SoftPaywallSheet(
+                    track: track,
+                    onUpgrade: {
+                        // Navigate to subscription screen
+                        showingSoftPaywall = false
+                    },
+                    onDismiss: {
+                        showingSoftPaywall = false
+                        // Skip to next free track
+                        skipToNextFreeTrack()
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
         }
         .onAppear {
@@ -112,10 +198,22 @@ struct PlayerView: View {
             if newState == .playing && oldState != .playing {
                 playbackStartTime = Date()
                 lastPlayedTrack = audioEngine.currentTrack
+
+                // Record play in EffectivenessManager for analytics
+                if let track = audioEngine.currentTrack {
+                    let cryType = cryDetectionService.isMonitoring ? cryDetectionService.cryType : nil
+                    effectivenessManager.recordPlay(track: track, cryType: cryType)
+
+                    // Check if this is a premium track for free user
+                    checkAndStartPremiumPreview(for: track)
+                }
             }
 
             // Show effectiveness feedback when playback stops after significant duration
             if oldState == .playing && newState == .stopped {
+                // Stop premium preview timer
+                stopPreviewTimer()
+
                 if let startTime = playbackStartTime,
                    Date().timeIntervalSince(startTime) > 30, // At least 30 seconds
                    lastPlayedTrack != nil {
@@ -125,6 +223,20 @@ struct PlayerView: View {
                     }
                 }
             }
+        }
+        .onChange(of: audioEngine.currentTrack?.id) { _ in
+            // When track changes, reset premium preview state
+            if let track = audioEngine.currentTrack {
+                checkAndStartPremiumPreview(for: track)
+            } else {
+                stopPreviewTimer()
+                withAnimation {
+                    isPremiumPreview = false
+                }
+            }
+        }
+        .onDisappear {
+            stopPreviewTimer()
         }
     }
 
@@ -265,7 +377,7 @@ struct PlayerView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.4),
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.4),
                             Color.clear
                         ],
                         center: .center,
@@ -279,7 +391,7 @@ struct PlayerView: View {
 
             // Shadow layer
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.2))
+                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.2))
                 .frame(width: 280, height: 280)
                 .blur(radius: 40)
                 .offset(y: 20)
@@ -290,8 +402,8 @@ struct PlayerView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.1)
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
+                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.1)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -312,7 +424,7 @@ struct PlayerView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .scaleEffect(1.8)
-                        .tint(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+                        .tint(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
 
                     Text("Loading...")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
@@ -323,15 +435,15 @@ struct PlayerView: View {
                 ZStack {
                     if audioEngine.playbackState.isPlaying {
                         // Animated waveform bars
-                        WaveformVisualization(category: audioEngine.currentTrack?.category ?? .whiteNoise)
+                        WaveformVisualization(category: audioEngine.currentTrack?.category ?? .instrumental)
                     } else {
                         Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
                             .font(.system(size: 60, weight: .light))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [
-                                        Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                                        Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.6)
+                                        Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                                        Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.6)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -348,10 +460,10 @@ struct PlayerView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.1),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise)
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.1),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental)
                             ],
                             center: .center
                         ),
@@ -426,11 +538,11 @@ struct PlayerView: View {
                 }
             }
 
-            // Premium badges
+            // Track info badges
             if let track = audioEngine.currentTrack {
                 HStack(spacing: 10) {
                     // Age badge with gradient border
-                    PremiumBadge(
+                    PlayerInfoBadge(
                         icon: "person.crop.circle",
                         text: "\(track.ageRangeMin)-\(track.ageRangeMax)m",
                         color: .appPrimary
@@ -439,19 +551,19 @@ struct PlayerView: View {
                     // Source badge
                     let downloadState = downloadManager.getDownloadState(for: track.id.uuidString)
                     if downloadState.isDownloaded {
-                        PremiumBadge(
+                        PlayerInfoBadge(
                             icon: "checkmark.circle.fill",
                             text: "Offline",
                             color: .appAccentMint
                         )
                     } else if case .downloading(let progress) = downloadState {
-                        PremiumBadge(
+                        PlayerInfoBadge(
                             icon: "arrow.down.circle",
                             text: "\(Int(progress * 100))%",
                             color: .appSecondary
                         )
                     } else {
-                        PremiumBadge(
+                        PlayerInfoBadge(
                             icon: track.audioSourceType == .generated ? "waveform" : "wifi",
                             text: track.sourceDescription,
                             color: .appTextSecondary
@@ -481,8 +593,8 @@ struct PlayerView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                                    Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.7)
+                                    Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                                    Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
@@ -640,14 +752,14 @@ struct PlayerView: View {
         ZStack {
             // Shadow layer
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3))
+                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3))
                 .frame(width: 280, height: 280)
                 .blur(radius: 30)
                 .offset(y: 20)
 
             // Main circle
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.15))
+                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.15))
                 .frame(width: 260, height: 260)
 
             // Inner circle with icon
@@ -668,7 +780,7 @@ struct PlayerView: View {
             } else {
                 Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
                     .font(.system(size: 70))
-                    .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+                    .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
             }
 
             // Rotating ring animation when playing
@@ -677,9 +789,9 @@ struct PlayerView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise)
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
+                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental)
                             ],
                             center: .center
                         ),
@@ -771,15 +883,19 @@ struct PlayerView: View {
     // MARK: - Progress Bar
     private var progressBar: some View {
         VStack(spacing: 8) {
-            // Slider
+            // Slider with scrubbing state management
+            // CRITICAL FIX: Use onEditingChanged to prevent time observer from fighting with user drag
             Slider(
                 value: Binding(
                     get: { audioEngine.currentTime },
                     set: { audioEngine.seek(to: $0) }
                 ),
-                in: 0...max(1, audioEngine.duration)
+                in: 0...max(1, audioEngine.duration),
+                onEditingChanged: { editing in
+                    audioEngine.isScrubbing = editing
+                }
             )
-            .accentColor(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+            .accentColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
 
             // Time labels
             HStack {
@@ -800,45 +916,119 @@ struct PlayerView: View {
 
     // MARK: - Controls
     private var controls: some View {
-        HStack(spacing: 0) {
-            // Shuffle - Spotify-style with dot indicator
-            shuffleButton
-                .frame(maxWidth: .infinity)
+        VStack(spacing: 16) {
+            // Main playback controls row
+            HStack(spacing: 0) {
+                // Shuffle - Spotify-style with dot indicator
+                shuffleButton
+                    .frame(maxWidth: .infinity)
 
-            // Previous
-            Button {
-                impactLight.impactOccurred()
-                audioEngine.previous()
-            } label: {
-                Image(systemName: "backward.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.appText)
+                // Skip backward 15s
+                Button {
+                    impactLight.impactOccurred()
+                    audioEngine.skipBackward(seconds: 15)
+                } label: {
+                    Image(systemName: "gobackward.15")
+                        .font(.system(size: 24))
+                        .foregroundColor(.appText)
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityIdentifier("skipBackward15Button")
+
+                // Previous
+                Button {
+                    impactLight.impactOccurred()
+                    audioEngine.previous()
+                } label: {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.appText)
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityIdentifier("previousButton")
+
+                // Play/Pause - Large center button with animation
+                playPauseButton
+                    .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("playPauseButton")
+
+                // Next
+                Button {
+                    impactLight.impactOccurred()
+                    audioEngine.next()
+                } label: {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.appText)
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityIdentifier("nextButton")
+
+                // Skip forward 15s
+                Button {
+                    impactLight.impactOccurred()
+                    audioEngine.skipForward(seconds: 15)
+                } label: {
+                    Image(systemName: "goforward.15")
+                        .font(.system(size: 24))
+                        .foregroundColor(.appText)
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityIdentifier("skipForward15Button")
+
+                // Repeat - Spotify-style with mode indicator
+                repeatButton
+                    .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
-            .buttonStyle(ScaleButtonStyle())
 
-            // Play/Pause - Large center button with animation
-            playPauseButton
-                .frame(maxWidth: .infinity)
+            // Playback speed control row
+            HStack(spacing: 16) {
+                Spacer()
 
-            // Next
-            Button {
-                impactLight.impactOccurred()
-                audioEngine.next()
-            } label: {
-                Image(systemName: "forward.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.appText)
+                // Playback speed button
+                Button {
+                    selectionFeedback.selectionChanged()
+                    audioEngine.cyclePlaybackRate()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(formatPlaybackRate(audioEngine.playbackRate))
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundColor(audioEngine.playbackRate != 1.0 ? .appPrimary : .appTextSecondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(audioEngine.playbackRate != 1.0 ? Color.appPrimary.opacity(0.15) : Color.appTextSecondary.opacity(0.1))
+                    )
+                }
+                .accessibilityIdentifier("playbackSpeedButton")
+
+                Spacer()
             }
-            .frame(maxWidth: .infinity)
-            .buttonStyle(ScaleButtonStyle())
-
-            // Repeat - Spotify-style with mode indicator
-            repeatButton
-                .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 24)
         .padding(.top, 32)
+    }
+
+    private func formatPlaybackRate(_ rate: Float) -> String {
+        if rate == 1.0 {
+            return "1x"
+        } else if rate == 0.75 {
+            return "0.75x"
+        } else if rate == 1.25 {
+            return "1.25x"
+        } else if rate == 1.5 {
+            return "1.5x"
+        } else if rate == 2.0 {
+            return "2x"
+        } else {
+            return String(format: "%.2fx", rate)
+        }
     }
 
     // MARK: - Shuffle Button (Spotify-style)
@@ -869,6 +1059,7 @@ struct PlayerView: View {
         }
         .disabled(audioEngine.currentPlaylist == nil)
         .opacity(audioEngine.currentPlaylist == nil ? 0.4 : 1)
+        .accessibilityIdentifier("shuffleButton")
     }
 
     // MARK: - Play/Pause Button
@@ -885,7 +1076,14 @@ struct PlayerView: View {
             }
             if audioEngine.playbackState.isPlaying {
                 audioEngine.pause()
+            } else if audioEngine.playbackState == .paused {
+                // Resume from paused state
+                audioEngine.resume()
+            } else if let track = audioEngine.currentTrack {
+                // Stopped state with a track - replay it
+                audioEngine.play(track: track)
             } else {
+                // No track loaded, just try resume (will be no-op)
                 audioEngine.resume()
             }
         } label: {
@@ -893,15 +1091,15 @@ struct PlayerView: View {
                 // Outer glow when playing
                 if audioEngine.playbackState.isPlaying {
                     Circle()
-                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.3))
+                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3))
                         .frame(width: 82, height: 82)
                         .blur(radius: 8)
                 }
 
                 Circle()
-                    .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise))
+                    .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
                     .frame(width: 72, height: 72)
-                    .shadow(color: Color.forCategory(audioEngine.currentTrack?.category ?? .whiteNoise).opacity(0.4),
+                    .shadow(color: Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.4),
                             radius: 8, y: 4)
 
                 Image(systemName: audioEngine.playbackState.isPlaying ? "pause.fill" : "play.fill")
@@ -943,6 +1141,7 @@ struct PlayerView: View {
             }
             .scaleEffect(repeatScale)
         }
+        .accessibilityIdentifier("repeatButton")
     }
 
     // MARK: - Additional Controls
@@ -963,7 +1162,7 @@ struct PlayerView: View {
                         get: { Double(audioEngine.volume) },
                         set: { audioEngine.setVolume(Float($0)) }
                     ),
-                    in: 0...0.7
+                    in: 0...1.0
                 )
                 .accentColor(.appTextSecondary)
 
@@ -972,7 +1171,7 @@ struct PlayerView: View {
                     .foregroundColor(.appTextSecondary)
             }
 
-            // Bottom row: Queue, Timer
+            // Bottom row: Queue, More Like This, Timer
             HStack(spacing: 24) {
                 Spacer()
 
@@ -999,6 +1198,19 @@ struct PlayerView: View {
                     .foregroundColor(.appTextSecondary)
                 }
 
+                // More Like This button
+                Button {
+                    loadRelatedTracks()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16))
+                        Text("More")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.appTextSecondary)
+                }
+
                 // Sleep timer
                 Button {
                     showingTimerPicker = true
@@ -1020,6 +1232,209 @@ struct PlayerView: View {
         }
         .padding(.horizontal, 32)
         .padding(.top, 20)
+    }
+
+    // MARK: - Load Related Tracks
+
+    /// Loads tracks similar to the current playing track
+    private func loadRelatedTracks() {
+        guard let track = audioEngine.currentTrack else { return }
+
+        isLoadingRelated = true
+        showingMoreLikeThis = true
+
+        Task {
+            do {
+                let response = try await APIClient.shared.getRelatedTracks(trackId: track.id.uuidString, limit: 10)
+                await MainActor.run {
+                    relatedTracks = response.relatedTracks
+                    isLoadingRelated = false
+                }
+            } catch {
+                print("Failed to load related tracks: \(error)")
+                await MainActor.run {
+                    isLoadingRelated = false
+                }
+            }
+        }
+    }
+
+    // MARK: - It Helped! Action
+
+    /// Records that the current track helped calm the baby
+    /// - Parameter withCryType: Manually selected cry type (nil = auto-detect from service)
+    private func recordItHelped(withCryType manualCryType: CryType? = nil) {
+        guard let track = audioEngine.currentTrack else { return }
+
+        // Use manual cry type if provided, otherwise get from detection service
+        let cryType: CryType?
+        if let manual = manualCryType {
+            cryType = manual
+        } else {
+            cryType = cryDetectionService.isMonitoring ? cryDetectionService.cryType : nil
+        }
+
+        // Record in EffectivenessManager
+        effectivenessManager.recordHelped(track: track, cryType: cryType)
+
+        // Trigger engagement event for freemium upgrade prompts
+        // "Your baby loves this! Get more tracks like the ones that work"
+        EngagementTriggerService.shared.recordItHelpedFeedback()
+
+        // Show success toast
+        withAnimation(.spring(response: 0.3)) {
+            showingItHelpedToast = true
+        }
+    }
+
+    // MARK: - Premium Preview Banner
+    private var premiumPreviewBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Premium Preview")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text("\(Int(previewTimeRemaining))s remaining")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+
+            Spacer()
+
+            // Skip to free button
+            Button {
+                impactLight.impactOccurred()
+                skipToNextFreeTrack()
+            } label: {
+                Text("Skip to Free")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.appPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.white)
+                    )
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [Color.appPrimary, Color.appSecondary],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+    }
+
+    // MARK: - Premium Preview Logic
+
+    /// Checks if track is premium and starts preview timer if needed
+    private func checkAndStartPremiumPreview(for track: AudioTrack) {
+        // Don't show preview during cry detection - safety first!
+        guard !cryDetectionService.isMonitoring else {
+            withAnimation {
+                isPremiumPreview = false
+            }
+            return
+        }
+
+        // Check if this is a premium track that needs preview limiting
+        if !gatekeeper.canPlayTrack(track) {
+            // This is a premium track - start preview mode
+            startPremiumPreview()
+        } else {
+            // Free track - no preview needed
+            stopPreviewTimer()
+            withAnimation {
+                isPremiumPreview = false
+            }
+        }
+    }
+
+    /// Starts the 10-second premium preview timer
+    private func startPremiumPreview() {
+        previewTimeRemaining = 10
+        withAnimation {
+            isPremiumPreview = true
+        }
+
+        // Start countdown timer
+        previewTimer?.invalidate()
+        previewTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+            previewTimeRemaining -= 1
+
+            if previewTimeRemaining <= 0 {
+                timer.invalidate()
+                previewTimer = nil
+                endPremiumPreview()
+            }
+        }
+    }
+
+    /// Stops the preview timer
+    private func stopPreviewTimer() {
+        previewTimer?.invalidate()
+        previewTimer = nil
+    }
+
+    /// Called when preview ends - shows soft paywall
+    private func endPremiumPreview() {
+        // Pause playback
+        audioEngine.pause()
+
+        // Don't show paywall during cry detection!
+        guard !cryDetectionService.isMonitoring else {
+            skipToNextFreeTrack()
+            return
+        }
+
+        // Show soft paywall
+        softPaywallTrack = audioEngine.currentTrack
+        showingSoftPaywall = true
+
+        withAnimation {
+            isPremiumPreview = false
+        }
+    }
+
+    /// Skips to the next available free track in the playlist
+    private func skipToNextFreeTrack() {
+        withAnimation {
+            isPremiumPreview = false
+        }
+        stopPreviewTimer()
+
+        // Find next free track in current playlist
+        if let playlist = audioEngine.currentPlaylist {
+            let currentIndex = audioEngine.currentPlaylistIndex
+            let tracks = playlist.tracks
+
+            // Search from current position forward
+            for i in (currentIndex + 1)..<tracks.count {
+                if gatekeeper.canPlayTrack(tracks[i]) {
+                    audioEngine.play(playlist: playlist, startIndex: i)
+                    return
+                }
+            }
+
+            // Wrap around and search from beginning
+            for i in 0..<currentIndex {
+                if gatekeeper.canPlayTrack(tracks[i]) {
+                    audioEngine.play(playlist: playlist, startIndex: i)
+                    return
+                }
+            }
+        }
+
+        // No free tracks found, just go to next
+        audioEngine.next()
     }
 
     // MARK: - Helpers
@@ -1162,7 +1577,7 @@ struct QueueSheet: View {
                 if !audioEngine.upNextQueue.isEmpty {
                     Section {
                         ForEach(Array(audioEngine.upNextQueue.enumerated()), id: \.element.id) { index, track in
-                            QueueTrackRow(track: track, position: index + 1)
+                            SimpleQueueTrackRow(track: track, position: index + 1)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
                                         audioEngine.removeFromQueue(at: index)
@@ -1200,7 +1615,7 @@ struct QueueSheet: View {
                     if !remainingTracks.isEmpty {
                         Section {
                             ForEach(Array(remainingTracks.prefix(10).enumerated()), id: \.element.id) { index, track in
-                                QueueTrackRow(track: track, position: index + 1)
+                                SimpleQueueTrackRow(track: track, position: index + 1)
                                     .contextMenu {
                                         Button {
                                             audioEngine.playNext(track)
@@ -1316,7 +1731,9 @@ struct NowPlayingRow: View {
     }
 }
 
-struct QueueTrackRow: View {
+// MARK: - Simple Queue Track Row (for PlayerView's QueueSheet)
+/// Simple queue track row without effectiveness tracking (for up-next queue display)
+struct SimpleQueueTrackRow: View {
     let track: AudioTrack
     let position: Int
 
@@ -1382,6 +1799,7 @@ struct EffectivenessFeedbackSheet: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var babyProfileManager = BabyProfileManager.shared
     @StateObject private var analyticsCloudService = AnalyticsCloudService.shared
+    @StateObject private var effectivenessManager = EffectivenessManager.shared
 
     let track: AudioTrack
     let cryType: CryType
@@ -1389,6 +1807,7 @@ struct EffectivenessFeedbackSheet: View {
 
     @State private var selectedRating: EffectivenessRating?
     @State private var showingThankYou = false
+    @State private var showingInsights = false
 
     enum EffectivenessRating: String, CaseIterable {
         case veryEffective = "Very Effective"
@@ -1542,33 +1961,54 @@ struct EffectivenessFeedbackSheet: View {
                 .foregroundColor(.appTextSecondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                dismiss()
-            } label: {
-                Text("Done")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.appPrimary)
-                    )
+            VStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.appPrimary)
+                        )
+                }
+
+                if effectivenessManager.hasEffectivenessData {
+                    Button {
+                        showingInsights = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chart.bar.fill")
+                                .font(.system(size: 14))
+                            Text("View Insights")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.appPrimary)
+                    }
+                }
             }
             .padding(.top, 16)
+        }
+        .sheet(isPresented: $showingInsights) {
+            InsightsView()
         }
     }
 
     private func submitFeedback(rating: EffectivenessRating) {
+        // Record in EffectivenessManager (the new local effectiveness tracking system)
+        if rating.wasEffective {
+            effectivenessManager.recordHelped(track: track, cryType: cryType)
+        }
+
         // Get active baby ID from UserDefaults or BabyProfileManager
         guard let babyData = UserDefaults.standard.data(forKey: "activeBaby"),
               let baby = try? JSONDecoder().decode(Baby.self, from: babyData) else {
             // No baby configured - still show thank you
             withAnimation {
                 showingThankYou = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                dismiss()
             }
             return
         }
@@ -1598,11 +2038,6 @@ struct EffectivenessFeedbackSheet: View {
         // Show thank you
         withAnimation {
             showingThankYou = true
-        }
-
-        // Auto dismiss after delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            dismiss()
         }
     }
 
@@ -1738,10 +2173,11 @@ struct WaveformVisualization: View {
     }
 }
 
-// MARK: - Premium Badge
+// MARK: - Player Info Badge
 
-/// Reusable premium styled badge component
-struct PremiumBadge: View {
+/// Reusable info badge component for player metadata display
+/// Note: This is distinct from PremiumBadge in PremiumBadge.swift which handles freemium tier indicators
+struct PlayerInfoBadge: View {
     let icon: String
     let text: String
     let color: Color
@@ -1786,12 +2222,258 @@ struct PremiumBadge: View {
     }
 }
 
-#Preview("Premium Badge") {
+#Preview("Player Info Badge") {
     VStack(spacing: 16) {
-        PremiumBadge(icon: "person.crop.circle", text: "0-12m", color: .appPrimary)
-        PremiumBadge(icon: "checkmark.circle.fill", text: "Offline", color: .appAccentMint)
-        PremiumBadge(icon: "wifi", text: "Streaming", color: .appTextSecondary)
+        PlayerInfoBadge(icon: "person.crop.circle", text: "0-12m", color: .appPrimary)
+        PlayerInfoBadge(icon: "checkmark.circle.fill", text: "Offline", color: .appAccentMint)
+        PlayerInfoBadge(icon: "wifi", text: "Streaming", color: .appTextSecondary)
     }
     .padding()
     .background(Color.appBackground)
+}
+
+// MARK: - More Like This Sheet
+
+/// Shows related tracks similar to the currently playing track
+struct MoreLikeThisSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var audioEngine: AudioEngine
+
+    let relatedTracks: [SearchTrack]
+    let isLoading: Bool
+    let currentTrack: AudioTrack?
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if isLoading {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Finding similar tracks...")
+                            .font(.system(size: 14))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if relatedTracks.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 48))
+                            .foregroundColor(.appTextSecondary)
+
+                        Text("No similar tracks found")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.appText)
+
+                        Text("Try playing a different track")
+                            .font(.system(size: 14))
+                            .foregroundColor(.appTextSecondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            // Info about what "similar" means
+                            if let track = currentTrack {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "info.circle")
+                                        .font(.system(size: 14))
+                                    Text("Tracks similar to \"\(track.title)\"")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(.appTextSecondary)
+                                .padding(.horizontal)
+                                .padding(.top, 8)
+                            }
+
+                            // Track list
+                            ForEach(relatedTracks) { track in
+                                MoreLikeThisRow(track: track) {
+                                    playTrack(track)
+                                    dismiss()
+                                } onAddToQueue: {
+                                    addToQueue(track)
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.vertical)
+                    }
+                }
+            }
+            .navigationTitle("More Like This")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func playTrack(_ track: SearchTrack) {
+        // Convert SearchTrack to AudioTrack for playback
+        let audioTrack = AudioTrack(
+            id: UUID(uuidString: track.id) ?? UUID(),
+            title: track.title,
+            artist: track.artist,
+            category: AudioCategory(rawValue: track.category) ?? .instrumental,
+            language: Language(rawValue: track.language),
+            duration: TimeInterval(track.duration),
+            ageRangeMin: track.ageRangeMin,
+            ageRangeMax: track.ageRangeMax,
+            calmingScore: track.calmingScore,
+            audioSourceType: AudioSourceType(rawValue: track.audioSourceType) ?? .streamed,
+            streamURL: track.streamUrl,
+            serverId: track.id  // Store original server ID for API calls
+        )
+
+        // Convert all related tracks to AudioTrack array for playlist context
+        let allAudioTracks = relatedTracks.map { searchTrack in
+            AudioTrack(
+                id: UUID(uuidString: searchTrack.id) ?? UUID(),
+                title: searchTrack.title,
+                artist: searchTrack.artist,
+                category: AudioCategory(rawValue: searchTrack.category) ?? .instrumental,
+                language: Language(rawValue: searchTrack.language),
+                duration: TimeInterval(searchTrack.duration),
+                ageRangeMin: searchTrack.ageRangeMin,
+                ageRangeMax: searchTrack.ageRangeMax,
+                calmingScore: searchTrack.calmingScore,
+                audioSourceType: AudioSourceType(rawValue: searchTrack.audioSourceType) ?? .streamed,
+                streamURL: searchTrack.streamUrl,
+                serverId: searchTrack.id
+            )
+        }
+
+        // Play with AI recommendations as context for next/previous navigation
+        audioEngine.play(track: audioTrack, fromTracks: allAudioTracks, contextName: "AI Recommendations")
+    }
+
+    private func addToQueue(_ track: SearchTrack) {
+        let audioTrack = AudioTrack(
+            id: UUID(uuidString: track.id) ?? UUID(),
+            title: track.title,
+            artist: track.artist,
+            category: AudioCategory(rawValue: track.category) ?? .instrumental,
+            language: Language(rawValue: track.language),
+            duration: TimeInterval(track.duration),
+            ageRangeMin: track.ageRangeMin,
+            ageRangeMax: track.ageRangeMax,
+            calmingScore: track.calmingScore,
+            audioSourceType: AudioSourceType(rawValue: track.audioSourceType) ?? .streamed,
+            streamURL: track.streamUrl,
+            serverId: track.id  // Store original server ID for API calls
+        )
+        audioEngine.addToQueue(audioTrack)
+    }
+}
+
+// MARK: - More Like This Row
+
+struct MoreLikeThisRow: View {
+    let track: SearchTrack
+    let onPlay: () -> Void
+    let onAddToQueue: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Artwork placeholder
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(categoryColor.opacity(0.15))
+                    .frame(width: 56, height: 56)
+
+                Image(systemName: categoryIcon)
+                    .font(.system(size: 22))
+                    .foregroundColor(categoryColor)
+            }
+
+            // Track info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(track.title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.appText)
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    Text(track.artist)
+                        .font(.system(size: 13))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(1)
+
+                    Text("•")
+                        .foregroundColor(.appTextSecondary)
+
+                    Text(formatDuration(track.duration))
+                        .font(.system(size: 13))
+                        .foregroundColor(.appTextSecondary)
+                }
+
+                // Similarity indicators (themes)
+                if let themes = track.taxonomies?.theme, !themes.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(themes.prefix(2), id: \.self) { theme in
+                            Text(theme)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.appPrimary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.appPrimary.opacity(0.1))
+                                )
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Actions
+            HStack(spacing: 8) {
+                // Add to queue
+                Button {
+                    onAddToQueue()
+                } label: {
+                    Image(systemName: "text.badge.plus")
+                        .font(.system(size: 18))
+                        .foregroundColor(.appTextSecondary)
+                }
+
+                // Play button
+                Button {
+                    onPlay()
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.appPrimary)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.03), radius: 2)
+        )
+    }
+
+    private var categoryColor: Color {
+        Color.forCategory(AudioCategory(rawValue: track.category) ?? .instrumental)
+    }
+
+    private var categoryIcon: String {
+        (AudioCategory(rawValue: track.category) ?? .instrumental).icon
+    }
+
+    private func formatDuration(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        let secs = seconds % 60
+        return String(format: "%d:%02d", minutes, secs)
+    }
 }

@@ -1,0 +1,197 @@
+# Maestro E2E Test: Queue Navigation & Track Selection
+# Focused test on queue scrolling, track selection, and playback
+#
+# Run: maestro test BabyInCarApp/maestro/flows/queue_navigation_flow.yaml
+#
+# Test Coverage:
+# 1. Queue scroll performance
+# 2. Track tap-to-play
+# 3. Queue position updates
+# 4. Playback controls
+# 5. Multiple track selections
+
+appId: com.anticry.babyincar
+---
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 10000
+
+# ============================================
+# SETUP: Activate SmartQueueView
+# ============================================
+
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+- takeScreenshot: "nav_01_queue_opened"
+
+# ============================================
+# TEST 1: Verify Initial Queue State
+# ============================================
+
+- assertVisible:
+    id: "upcomingTracksList"
+
+- assertVisible:
+    id: "queueCounter"
+
+- assertVisible:
+    id: "currentTrackCard"
+
+- takeScreenshot: "nav_02_initial_state"
+
+# ============================================
+# TEST 2: Scroll Queue - Down
+# ============================================
+
+# Scroll to reveal more tracks
+- scroll:
+    direction: DOWN
+
+- wait:
+    milliseconds: 500
+
+- takeScreenshot: "nav_03_scrolled_down_1"
+
+# Continue scrolling
+- scroll:
+    direction: DOWN
+
+- wait:
+    milliseconds: 500
+
+- takeScreenshot: "nav_04_scrolled_down_2"
+
+# ============================================
+# TEST 3: Scroll Queue - Up (Back to top)
+# ============================================
+
+- scroll:
+    direction: UP
+
+- wait:
+    milliseconds: 500
+
+- scroll:
+    direction: UP
+
+- takeScreenshot: "nav_05_scrolled_back_up"
+
+# ============================================
+# TEST 4: Tap First Upcoming Track
+# ============================================
+
+- runFlow:
+    when:
+      visible:
+        id: "upcomingTrack-0"
+    commands:
+      - tapOn:
+          id: "upcomingTrack-0"
+      - wait:
+          milliseconds: 2000
+      - takeScreenshot: "nav_06_track_0_selected"
+
+# ============================================
+# TEST 5: Verify Current Track Updated
+# ============================================
+
+- assertVisible:
+    id: "currentTrackCard"
+
+- takeScreenshot: "nav_07_current_track_updated"
+
+# ============================================
+# TEST 6: Use Next Button Multiple Times
+# ============================================
+
+- tapOn:
+    id: "nextButton"
+
+- wait:
+    milliseconds: 1000
+
+- takeScreenshot: "nav_08_next_1"
+
+- tapOn:
+    id: "nextButton"
+
+- wait:
+    milliseconds: 1000
+
+- takeScreenshot: "nav_09_next_2"
+
+# ============================================
+# TEST 7: Use Previous Button
+# ============================================
+
+- tapOn:
+    id: "previousButton"
+
+- wait:
+    milliseconds: 1000
+
+- takeScreenshot: "nav_10_previous_1"
+
+# ============================================
+# TEST 8: Verify Queue Counter Changes
+# ============================================
+
+- assertVisible:
+    id: "queueCounter"
+
+- takeScreenshot: "nav_11_counter_check"
+
+# ============================================
+# TEST 9: Play/Pause Controls
+# ============================================
+
+- tapOn:
+    id: "playPauseButton"
+
+- wait:
+    milliseconds: 500
+
+- tapOn:
+    id: "playPauseButton"
+
+- takeScreenshot: "nav_12_controls_working"
+
+# ============================================
+# TEST 10: Scroll to See More Queue Items
+# ============================================
+
+- scrollUntilVisible:
+    element:
+      id: "upcomingTrack-5"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "nav_13_more_tracks"
+
+# ============================================
+# CLEANUP: Exit Queue
+# ============================================
+
+- tapOn:
+    id: "cancelEmergencyButton"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "nav_14_test_complete"
+
+# ============================================
+# TEST COMPLETE
+# ============================================
