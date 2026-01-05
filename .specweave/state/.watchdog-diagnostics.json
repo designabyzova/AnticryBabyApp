@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-12-31T09:22:02Z",
+  "timestamp": "2026-01-05T23:02:29Z",
   "severity": 0,
   "status": "healthy",
   "checks": {
-    "lock": { "severity": 0, "message": "Processor PID 6473 active (31s)" },
+    "lock": { "severity": 0, "message": "ok" },
     "zombies": { "count": 0, "message": "none" },
     "mcp": { "drops": 0, "message": "stable" },
     "orphanedJobs": { "count": 0, "message": "none" }
