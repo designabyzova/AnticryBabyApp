@@ -2,12 +2,7 @@
 .specweave/cache/
 .specweave/increments/*/logs/       # Gitignored, but structure preserved
 .specweave/increments/*/test-results/
-.specweave/state/jobs/              # Contains tokens/secrets
-.specweave/state/.processor.lock.d/
-.specweave/state/.processor.pid
-.specweave/state/.watchdog-diagnostics.json
-.specweave/state/active-session.lock
-.specweave/state/heartbeat.json
+.specweave/state/                   # Runtime state files (PIDs, locks, diagnostics)
 .specweave/docs-site-internal/      # Generated Docusaurus site for internal docs
 .claude-plugin/                     # Plugin marketplace (framework files)
 plugins/                            # Plugin implementations (framework files)
@@ -72,6 +67,12 @@ test-results/          # Playwright
 *.swp
 *.swo
 *~
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
 
 # OS
 .DS_Store
