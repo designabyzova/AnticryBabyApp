@@ -47,6 +47,30 @@ Upload screenshots to App Store Connect
 
 Submit for App Store Review
 
+### ios set_pricing
+
+```sh
+[bundle exec] fastlane ios set_pricing
+```
+
+Set pricing to FREE
+
+### ios set_privacy
+
+```sh
+[bundle exec] fastlane ios set_privacy
+```
+
+Set app privacy - no data collected
+
+### ios check_ready
+
+```sh
+[bundle exec] fastlane ios check_ready
+```
+
+Check app submission readiness
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
