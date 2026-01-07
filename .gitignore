@@ -2,7 +2,8 @@
 .specweave/cache/
 .specweave/increments/*/logs/       # Gitignored, but structure preserved
 .specweave/increments/*/test-results/
-.specweave/state/                   # Runtime state files (PIDs, locks, diagnostics)
+.specweave/state/
+BabyInCarApp/.specweave/state/
 .specweave/jobs/                    # Background job checkpoints and state
 .specweave/docs-site-internal/      # Generated Docusaurus site for internal docs
 .claude-plugin/                     # Plugin marketplace (framework files)
