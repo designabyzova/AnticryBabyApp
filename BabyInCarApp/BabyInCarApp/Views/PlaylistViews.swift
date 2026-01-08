@@ -2,7 +2,8 @@
 //  PlaylistViews.swift
 //  BabyInCarApp
 //
-//  Views for playlist management: detail view, create/edit sheet, add to playlist
+//  World-class playlist management with Spotify-like UX
+//  Features: Smart templates, live preview, swipe gestures, inline editing, drag-and-drop
 //
 
 import SwiftUI
@@ -21,6 +22,8 @@ struct PlaylistDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var isEditMode = false
+    @State private var editedName: String = ""
+    @State private var isEditingName = false
 
     // Get the latest version of the playlist
     private var currentPlaylist: Playlist {
@@ -39,11 +42,9 @@ struct PlaylistDetailView: View {
                 // Action buttons
                 actionButtons
 
-                // Tracks list
+                // Tracks list with drag-and-drop
                 tracksList
             }
-            // Extra content padding at the bottom for comfortable scrolling.
-            // The safeAreaInset in MainTabView handles the tab bar + mini player space.
             .padding(.bottom, 20)
         }
         .scrollIndicators(.visible)
@@ -56,13 +57,22 @@ struct PlaylistDetailView: View {
                         Button {
                             showingEditSheet = true
                         } label: {
-                            Label("Edit Playlist", systemImage: "pencil")
+                            Label("Edit Details", systemImage: "pencil")
                         }
 
                         Button {
                             isEditMode.toggle()
                         } label: {
                             Label(isEditMode ? "Done Editing" : "Reorder Tracks", systemImage: "arrow.up.arrow.down")
+                        }
+
+                        Divider()
+
+                        Button {
+                            let duplicate = playlistManager.duplicatePlaylist(currentPlaylist)
+                            // Show toast or feedback
+                        } label: {
+                            Label("Duplicate Playlist", systemImage: "doc.on.doc")
                         }
 
                         Divider()
@@ -89,7 +99,7 @@ struct PlaylistDetailView: View {
                 dismiss()
             }
         } message: {
-            Text("This action cannot be undone.")
+            Text("This playlist and all its tracks will be removed. This action cannot be undone.")
         }
     }
 
@@ -124,11 +134,36 @@ struct PlaylistDetailView: View {
                 .offset(x: -8, y: 8)
             }
 
-            // Info
-            Text(currentPlaylist.name)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.appText)
-                .multilineTextAlignment(.center)
+            // Inline editable title (Spotify-style)
+            if isUserPlaylist && isEditingName {
+                TextField("Playlist Name", text: $editedName)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.appText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .onSubmit {
+                        saveEditedName()
+                    }
+            } else {
+                Button {
+                    if isUserPlaylist {
+                        editedName = currentPlaylist.name
+                        isEditingName = true
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(currentPlaylist.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.appText)
+
+                        if isUserPlaylist {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12))
+                                .foregroundColor(.appTextSecondary)
+                        }
+                    }
+                }
+            }
 
             if !currentPlaylist.description.isEmpty {
                 Text(currentPlaylist.description)
@@ -149,6 +184,14 @@ struct PlaylistDetailView: View {
             }
         }
         .padding(.vertical, 24)
+    }
+
+    private func saveEditedName() {
+        let trimmed = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            playlistManager.renamePlaylist(currentPlaylist, newName: trimmed)
+        }
+        isEditingName = false
     }
 
     // MARK: - Action Buttons
@@ -196,7 +239,7 @@ struct PlaylistDetailView: View {
         .opacity(currentPlaylist.isEmpty ? 0.5 : 1)
     }
 
-    // MARK: - Tracks List
+    // MARK: - Tracks List with Drag & Drop
     private var tracksList: some View {
         VStack(alignment: .leading, spacing: 8) {
             if currentPlaylist.isEmpty {
@@ -216,6 +259,11 @@ struct PlaylistDetailView: View {
                         } : nil
                     )
                 }
+                .onMove { source, destination in
+                    if isUserPlaylist && isEditMode {
+                        playlistManager.moveTrack(in: currentPlaylist, from: source, to: destination)
+                    }
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -231,16 +279,18 @@ struct PlaylistDetailView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.appText)
 
-            Text("Add tracks from the library")
+            Text("Add tracks from the library or browse recommended content")
                 .font(.system(size: 14))
                 .foregroundColor(.appTextSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
 }
 
-// MARK: - Playlist Track Row
+// MARK: - Playlist Track Row (with Swipe Actions)
 struct PlaylistTrackRow: View {
     let track: AudioTrack
     let index: Int
@@ -252,7 +302,7 @@ struct PlaylistTrackRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Track number
+            // Drag handle or track number
             if isEditing {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 16))
@@ -344,6 +394,13 @@ struct PlaylistTrackRow: View {
                 .fill(isPlaying ? Color.appPrimary.opacity(0.05) : Color.white)
                 .shadow(color: .black.opacity(0.02), radius: 2)
         )
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if let onRemove = onRemove {
+                Button(role: .destructive, action: onRemove) {
+                    Label("Remove", systemImage: "trash")
+                }
+            }
+        }
     }
 }
 
@@ -369,13 +426,16 @@ struct StatBadge: View {
     }
 }
 
-// MARK: - Create Playlist Sheet
+// MARK: - Create Playlist Sheet (Enhanced with Templates)
 struct CreatePlaylistSheet: View {
     @StateObject private var playlistManager = PlaylistManager.shared
+    @StateObject private var contentLibrary = ContentLibraryService.shared
     @Environment(\.dismiss) var dismiss
 
     @State private var name = ""
     @State private var description = ""
+    @State private var selectedTemplate: PlaylistTemplate?
+    @State private var showTemplates = true
     var initialTracks: [AudioTrack] = []
     @FocusState private var focusedField: CreatePlaylistField?
 
@@ -385,39 +445,25 @@ struct CreatePlaylistSheet: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    TextField("Playlist Name", text: $name)
-                        .font(.system(size: 16))
-                        .focused($focusedField, equals: .name)
-                        .submitLabel(.next)
-                        .onSubmit {
-                            focusedField = .description
-                        }
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Smart Templates Section (Spotify-style)
+                    if showTemplates && initialTracks.isEmpty {
+                        smartTemplatesSection
+                    }
 
-                    TextField("Description (optional)", text: $description)
-                        .font(.system(size: 16))
-                        .focused($focusedField, equals: .description)
-                        .submitLabel(.done)
-                        .onSubmit {
-                            focusedField = nil
-                        }
-                }
+                    // Manual Creation Section
+                    manualCreationSection
 
-                if !initialTracks.isEmpty {
-                    Section {
-                        HStack {
-                            Image(systemName: "music.note.list")
-                                .foregroundColor(.appPrimary)
-                            Text("\(initialTracks.count) track(s) will be added")
-                                .font(.system(size: 14))
-                                .foregroundColor(.appTextSecondary)
-                        }
+                    // Preview section
+                    if !initialTracks.isEmpty {
+                        previewSection
                     }
                 }
+                .padding()
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("New Playlist")
+            .navigationTitle(selectedTemplate == nil ? "New Playlist" : selectedTemplate!.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -428,14 +474,10 @@ struct CreatePlaylistSheet: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
-                        let _ = playlistManager.createPlaylist(
-                            name: name,
-                            description: description,
-                            tracks: initialTracks
-                        )
-                        dismiss()
+                        createPlaylist()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canCreate)
+                    .font(.system(size: 16, weight: .semibold))
                 }
 
                 ToolbarItemGroup(placement: .keyboard) {
@@ -448,8 +490,303 @@ struct CreatePlaylistSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
     }
+
+    // MARK: - Smart Templates Section
+    private var smartTemplatesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .foregroundColor(.appPrimary)
+                Text("Quick Start")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.appText)
+            }
+
+            Text("Choose a template to get started quickly")
+                .font(.system(size: 13))
+                .foregroundColor(.appTextSecondary)
+
+            VStack(spacing: 12) {
+                ForEach(PlaylistTemplate.allTemplates) { template in
+                    PlaylistTemplateCard(
+                        template: template,
+                        isSelected: selectedTemplate?.id == template.id
+                    ) {
+                        selectTemplate(template)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Manual Creation Section
+    private var manualCreationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if selectedTemplate == nil {
+                HStack {
+                    Image(systemName: "pencil")
+                        .foregroundColor(.appPrimary)
+                    Text("Playlist Details")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.appText)
+                }
+            }
+
+            VStack(spacing: 12) {
+                // Name field
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Name")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.appTextSecondary)
+
+                    TextField("My Awesome Playlist", text: $name)
+                        .font(.system(size: 16))
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 2)
+                        )
+                        .focused($focusedField, equals: .name)
+                        .submitLabel(.next)
+                        .onSubmit {
+                            focusedField = .description
+                        }
+                }
+
+                // Description field
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Description (optional)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.appTextSecondary)
+
+                    TextField("Add a description", text: $description)
+                        .font(.system(size: 16))
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 2)
+                        )
+                        .focused($focusedField, equals: .description)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            focusedField = nil
+                        }
+                }
+            }
+        }
+    }
+
+    // MARK: - Preview Section
+    private var previewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "music.note.list")
+                    .foregroundColor(.appPrimary)
+                Text("Preview")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.appText)
+
+                Spacer()
+
+                Text("\(initialTracks.count) track\(initialTracks.count == 1 ? "" : "s")")
+                    .font(.system(size: 14))
+                    .foregroundColor(.appTextSecondary)
+            }
+
+            ForEach(initialTracks.prefix(3)) { track in
+                HStack(spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.forCategory(track.category).opacity(0.15))
+                            .frame(width: 40, height: 40)
+
+                        Image(systemName: track.category.icon)
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.forCategory(track.category))
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(track.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.appText)
+                            .lineLimit(1)
+
+                        Text(track.artist)
+                            .font(.system(size: 12))
+                            .foregroundColor(.appTextSecondary)
+                    }
+
+                    Spacer()
+                }
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.03), radius: 1)
+                )
+            }
+
+            if initialTracks.count > 3 {
+                Text("+ \(initialTracks.count - 3) more")
+                    .font(.system(size: 13))
+                    .foregroundColor(.appTextSecondary)
+            }
+        }
+    }
+
+    // MARK: - Actions
+    private func selectTemplate(_ template: PlaylistTemplate) {
+        selectedTemplate = template
+        name = template.name
+        description = template.description
+        showTemplates = false
+    }
+
+    private var canCreate: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func createPlaylist() {
+        var tracks = initialTracks
+
+        // Apply template logic if selected
+        if let template = selectedTemplate {
+            tracks = template.generateTracks(from: contentLibrary)
+        }
+
+        let _ = playlistManager.createPlaylist(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            tracks: tracks
+        )
+        dismiss()
+    }
+}
+
+// MARK: - Playlist Template Card
+struct PlaylistTemplateCard: View {
+    let template: PlaylistTemplate
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(template.color.opacity(0.15))
+                        .frame(width: 50, height: 50)
+
+                    Image(systemName: template.icon)
+                        .font(.system(size: 22))
+                        .foregroundColor(template.color)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(template.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.appText)
+
+                    Text(template.description)
+                        .font(.system(size: 12))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(.appPrimary)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.appPrimary : Color.clear, lineWidth: 2)
+                    )
+                    .shadow(color: .black.opacity(isSelected ? 0.1 : 0.05), radius: isSelected ? 4 : 2)
+            )
+        }
+    }
+}
+
+// MARK: - Playlist Template Model
+struct PlaylistTemplate: Identifiable {
+    let id: String
+    let name: String
+    let description: String
+    let icon: String
+    let color: Color
+    let generator: (ContentLibraryService) -> [AudioTrack]
+
+    func generateTracks(from library: ContentLibraryService) -> [AudioTrack] {
+        return generator(library)
+    }
+
+    static let allTemplates: [PlaylistTemplate] = [
+        PlaylistTemplate(
+            id: "bedtime",
+            name: "Bedtime Routine",
+            description: "Soft lullabies and calming sounds perfect for sleep",
+            icon: "moon.stars.fill",
+            color: .purple,
+            generator: { library in
+                var tracks = Array(library.getTracks(for: .lullabies).prefix(15))
+                let natureTracks = library.getTracks(for: .nature).filter { $0.title.contains("Ocean") || $0.title.contains("River") }
+                tracks.append(contentsOf: Array(natureTracks.prefix(5)))
+                return tracks
+            }
+        ),
+        PlaylistTemplate(
+            id: "classical",
+            name: "Classical Journey",
+            description: "Mozart, Bach, and other classical favorites",
+            icon: "music.note",
+            color: .blue,
+            generator: { library in
+                Array(library.getTracks(for: .classical).shuffled().prefix(20))
+            }
+        ),
+        PlaylistTemplate(
+            id: "nature",
+            name: "Nature Sounds",
+            description: "Gentle ocean waves, birds, and forest sounds",
+            icon: "leaf.fill",
+            color: .green,
+            generator: { library in
+                Array(library.getTracks(for: .nature).prefix(15))
+            }
+        ),
+        PlaylistTemplate(
+            id: "stories",
+            name: "Story Time",
+            description: "Engaging fairy tales and stories for little ones",
+            icon: "book.fill",
+            color: .orange,
+            generator: { library in
+                Array(library.getTracks(for: .fairyTales).shuffled().prefix(10))
+            }
+        ),
+        PlaylistTemplate(
+            id: "energy",
+            name: "Happy & Playful",
+            description: "Upbeat children's songs for active time",
+            icon: "sun.max.fill",
+            color: .yellow,
+            generator: { library in
+                Array(library.getTracks(for: .childrenSongs).prefix(12))
+            }
+        )
+    ]
 }
 
 // MARK: - Edit Playlist Sheet
@@ -669,22 +1006,36 @@ struct UserPlaylistsSection: View {
             .padding(.horizontal, 20)
 
             if playlistManager.userPlaylists.isEmpty {
-                // Empty state
+                // Empty state with smart suggestions
                 VStack(spacing: 12) {
-                    Image(systemName: "music.note.list")
+                    Image(systemName: "sparkles")
                         .font(.system(size: 36))
-                        .foregroundColor(.appTextSecondary)
+                        .foregroundColor(.appPrimary)
 
-                    Text("No playlists yet")
+                    Text("Create your first playlist")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.appText)
+
+                    Text("Use smart templates or build from scratch")
                         .font(.system(size: 14))
                         .foregroundColor(.appTextSecondary)
+                        .multilineTextAlignment(.center)
 
                     Button {
                         showingCreatePlaylist = true
                     } label: {
-                        Text("Create Playlist")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.appPrimary)
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Create Playlist")
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Color.appPrimary)
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity)
