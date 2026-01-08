@@ -726,8 +726,9 @@ struct PlaylistTemplate: Identifiable {
     let description: String
     let icon: String
     let color: Color
-    let generator: (ContentLibraryService) -> [AudioTrack]
+    let generator: @MainActor (ContentLibraryService) -> [AudioTrack]
 
+    @MainActor
     func generateTracks(from library: ContentLibraryService) -> [AudioTrack] {
         return generator(library)
     }
@@ -741,7 +742,7 @@ struct PlaylistTemplate: Identifiable {
             color: .purple,
             generator: { library in
                 var tracks = Array(library.getTracks(for: .lullabies).prefix(15))
-                let natureTracks = library.getTracks(for: .nature).filter { $0.title.contains("Ocean") || $0.title.contains("River") }
+                let natureTracks = library.getTracks(for: .natureSounds).filter { $0.title.contains("Ocean") || $0.title.contains("River") }
                 tracks.append(contentsOf: Array(natureTracks.prefix(5)))
                 return tracks
             }
@@ -753,7 +754,7 @@ struct PlaylistTemplate: Identifiable {
             icon: "music.note",
             color: .blue,
             generator: { library in
-                Array(library.getTracks(for: .classical).shuffled().prefix(20))
+                Array(library.getTracks(for: .classicalMusic).shuffled().prefix(20))
             }
         ),
         PlaylistTemplate(
@@ -763,7 +764,7 @@ struct PlaylistTemplate: Identifiable {
             icon: "leaf.fill",
             color: .green,
             generator: { library in
-                Array(library.getTracks(for: .nature).prefix(15))
+                Array(library.getTracks(for: .natureSounds).prefix(15))
             }
         ),
         PlaylistTemplate(
