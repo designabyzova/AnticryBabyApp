@@ -80,6 +80,7 @@ enum Language: String, Codable, CaseIterable, Identifiable {
     case mandarin = "Mandarin"
     case japanese = "Japanese"
     case russian = "Russian"
+    case ukrainian = "Ukrainian"
     case arabic = "Arabic"
 
     var id: String { rawValue }
@@ -95,6 +96,7 @@ enum Language: String, Codable, CaseIterable, Identifiable {
         case .mandarin: return "🇨🇳"
         case .japanese: return "🇯🇵"
         case .russian: return "🇷🇺"
+        case .ukrainian: return "🇺🇦"
         case .arabic: return "🇸🇦"
         }
     }
@@ -110,6 +112,7 @@ enum Language: String, Codable, CaseIterable, Identifiable {
         case .mandarin: return "zh"
         case .japanese: return "ja"
         case .russian: return "ru"
+        case .ukrainian: return "uk"
         case .arabic: return "ar"
         }
     }
