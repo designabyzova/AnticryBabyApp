@@ -562,6 +562,14 @@ struct Playlist: Codable, Identifiable, Equatable, Hashable {
     var artworkName: String?
     var updatedAt: Date?
 
+    // MARK: - Smart Queue Properties (Unified Player Architecture)
+    /// Enable Spotify-style auto-replenishing queue (infinite playback)
+    var isAutoReplenishing: Bool = false
+    /// Minimum tracks in queue before triggering replenishment
+    var minQueueSize: Int = 0
+    /// Generation context for smart replenishment
+    var generationContext: PlaylistGenerationMetadata?
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -572,7 +580,10 @@ struct Playlist: Codable, Identifiable, Equatable, Hashable {
         isSystemGenerated: Bool = false,
         createdAt: Date = Date(),
         artworkName: String? = nil,
-        updatedAt: Date? = nil
+        updatedAt: Date? = nil,
+        isAutoReplenishing: Bool = false,
+        minQueueSize: Int = 0,
+        generationContext: PlaylistGenerationMetadata? = nil
     ) {
         self.id = id
         self.name = name
@@ -584,6 +595,9 @@ struct Playlist: Codable, Identifiable, Equatable, Hashable {
         self.createdAt = createdAt
         self.artworkName = artworkName
         self.updatedAt = updatedAt
+        self.isAutoReplenishing = isAutoReplenishing
+        self.minQueueSize = minQueueSize
+        self.generationContext = generationContext
     }
 
     var totalDuration: TimeInterval {
@@ -754,5 +768,28 @@ struct ListeningSession: Codable, Identifiable {
         duration = endTime?.timeIntervalSince(startTime) ?? 0
         completedSuccessfully = true
         babyCalmedDown = calmedDown
+    }
+}
+
+// MARK: - Playlist Generation Metadata (Unified Architecture)
+
+/// Metadata for smart playlist auto-replenishment
+/// Stores context needed to generate more tracks when queue runs low
+struct PlaylistGenerationMetadata: Codable, Equatable, Hashable {
+    let babyAge: Int
+    let cryType: CryType?
+    let language: String
+    let allowGenerated: Bool  // Allow AI-generated sounds vs library-only
+
+    init(
+        babyAge: Int,
+        cryType: CryType? = nil,
+        language: String = "en",
+        allowGenerated: Bool = true
+    ) {
+        self.babyAge = babyAge
+        self.cryType = cryType
+        self.language = language
+        self.allowGenerated = allowGenerated
     }
 }

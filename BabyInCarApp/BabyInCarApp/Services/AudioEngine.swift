@@ -45,6 +45,11 @@ class AudioEngine: ObservableObject {
         didSet { savePlaybackSettings() }
     }
 
+    // MARK: - Unified Player Architecture
+    /// Playback context - determines UI theme and smart queue behavior
+    /// Replaces separate AudioEngine/SmartEmergencyQueue with single unified system
+    @Published var playbackContext: PlaybackContext?
+
     // Playback rate options
     enum PlaybackRate: Float, CaseIterable {
         case half = 0.5
