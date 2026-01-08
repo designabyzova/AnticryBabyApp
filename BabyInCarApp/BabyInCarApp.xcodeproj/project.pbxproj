@@ -893,7 +893,7 @@
 			files = (
 				D014D85FB2CCDBBB666BD4D3 /* MockCryDetectionService.swift in Sources */,
 				8A7EC32850D93E2313ED4B3E /* VoiceCommandLLMServiceTests.swift in Sources */,
-			);
+				A1B2C3D4E5F9 /* SmartPlaylistBuilder.swift in Sources */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A6000001 /* Sources */ = {
