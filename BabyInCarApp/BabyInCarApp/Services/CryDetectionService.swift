@@ -66,6 +66,7 @@ class CryDetectionService: ObservableObject {
     private let deepInfantClassificationInterval: TimeInterval = 3.0  // THERMAL FIX: Run every 3 seconds (was 2) - reduces ML CPU load by 33%
 
     // MEMORY FIX (Priority 4): Thread-safe buffer access
+    // NSLock is Sendable in iOS 26+
     private let bufferLock = NSLock()
 
     /// MEMORY SAFETY: Reusable ML model instances (avoid per-frame allocation)
@@ -83,11 +84,13 @@ class CryDetectionService: ObservableObject {
     private nonisolated(unsafe) static let sharedCryClassifier = CryClassifierMLModel()
     private nonisolated(unsafe) static let sharedVoiceAnalyzer = VoiceCharacteristicsAnalyzer()
     private nonisolated(unsafe) static var sharedFeatureExtractor: AdvancedFeatureExtractor?
-    private nonisolated(unsafe) static let featureExtractorLock = NSLock()
+    // NSLock is Sendable in iOS 26+, so no nonisolated(unsafe) needed
+    private static let featureExtractorLock = NSLock()
 
     // MEMORY FIX: Shared DeepInfant instance (singleton pattern)
     private nonisolated(unsafe) static var sharedDeepInfant: DeepInfantClassifierProtocol?
-    private nonisolated(unsafe) static let deepInfantLock = NSLock()
+    // NSLock is Sendable in iOS 26+, so no nonisolated(unsafe) needed
+    private static let deepInfantLock = NSLock()
 
     /// Get or create shared feature extractor for background thread (thread-safe)
     private nonisolated static func getSharedFeatureExtractor(fftSize: Int) -> AdvancedFeatureExtractor {
@@ -1087,17 +1090,20 @@ class CryDetectionService: ObservableObject {
 
         if useMLEnhancement {
             // Extract comprehensive audio features for ML
-            let features = advancedFeatureExtractor.extractFeatures(from: samples, sampleRate: sampleRate)
+            // MEMORY FIX: Use reusable instance instead of deleted lazy property
+            let features = reusableFeatureExtractor.extractFeatures(from: samples, sampleRate: sampleRate)
 
             // Run ML cry detection
-            let mlDetection = mlCryDetector.detect(features: features)
+            // MEMORY FIX: Use reusable instance instead of deleted lazy property
+            let mlDetection = reusableCryDetector.detect(features: features)
             mlCryDetected = mlDetection.isCryDetected
             mlConfidence = mlDetection.confidence
 
             // If cry detected, classify type with ML
             var classificationResult: CryClassification?
             if mlDetection.isCryDetected || mlDetection.confidence > 0.4 {
-                let classification = mlCryClassifier.classify(features: features)
+                // MEMORY FIX: Use reusable instance instead of deleted lazy property
+                let classification = reusableCryClassifier.classify(features: features)
                 classificationResult = classification
 
                 // Blend ML classification with rule-based
@@ -1107,7 +1113,8 @@ class CryDetectionService: ObservableObject {
             }
 
             // Analyze voice characteristics (tremolo, vibrato, distress)
-            let voiceChars = voiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
+            // MEMORY FIX: Use reusable instance (already correct)
+            let voiceChars = reusableVoiceAnalyzer.analyze(samples: samples, sampleRate: sampleRate)
 
             // Update pattern tracker for temporal analysis
             let timestamp = Date()
@@ -1654,7 +1661,8 @@ class CryDetectionService: ObservableObject {
 
         // Run DeepInfant classification on background queue
         let bufferCopy = deepInfantBuffer
-        let classifier = Self.getSharedDeepInfant() // Use shared singleton
+        // COMPILER FIX: Reuse 'classifier' variable from earlier in function (line 1547)
+        // let classifier = Self.getSharedDeepInfant() // REMOVED - already declared above
         Task {
             // Run classification on background thread (classify is synchronous but CPU-intensive)
             let result = await Task.detached {
