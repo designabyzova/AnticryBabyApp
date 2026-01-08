@@ -346,7 +346,7 @@ class AudioEngine: ObservableObject {
         }
     }
 
-    func play(playlist: Playlist, startIndex: Int = 0) {
+    func play(playlist: Playlist, startIndex: Int = 0, context: PlaybackContext? = nil) {
         guard !playlist.tracks.isEmpty else { return }
 
         // Store original order before any shuffle
@@ -357,11 +357,19 @@ class AudioEngine: ObservableObject {
         currentPlaylist = playlist
         currentPlaylistIndex = startIndex
 
+        // UNIFIED ARCHITECTURE: Set playback context
+        playbackContext = context
+
         // Mark the starting track as played for shuffle tracking
         shufflePlayedIndices.insert(startIndex)
 
         if currentPlaylistIndex < (currentPlaylist?.tracks.count ?? 0) {
             play(track: currentPlaylist!.tracks[currentPlaylistIndex])
+        }
+
+        // Start smart queue monitoring if auto-replenish enabled
+        if playlist.isAutoReplenishing {
+            monitorQueueForReplenishment()
         }
     }
 
@@ -495,6 +503,9 @@ class AudioEngine: ObservableObject {
             let nextTrack = upNextQueue.removeFirst()
             addToHistory(currentTrack)
             play(track: nextTrack)
+
+            // UNIFIED ARCHITECTURE: Check if we need to replenish queue
+            checkAndReplenishQueue()
             return
         }
 
@@ -518,6 +529,9 @@ class AudioEngine: ObservableObject {
                 currentPlaylistIndex = nextIndex
                 shufflePlayedIndices.insert(nextIndex)
                 play(track: playlist.tracks[nextIndex])
+
+                // UNIFIED ARCHITECTURE: Check if we need to replenish queue
+                checkAndReplenishQueue()
             } else {
                 // All tracks played in shuffle mode
                 handleEndOfPlaylist()
@@ -531,6 +545,9 @@ class AudioEngine: ObservableObject {
         if nextIndex < playlist.tracks.count {
             currentPlaylistIndex = nextIndex
             play(track: playlist.tracks[nextIndex])
+
+            // UNIFIED ARCHITECTURE: Check if we need to replenish queue
+            checkAndReplenishQueue()
         } else {
             handleEndOfPlaylist()
         }
@@ -887,6 +904,52 @@ class AudioEngine: ObservableObject {
               destination >= 0 && destination < upNextQueue.count else { return }
         let track = upNextQueue.remove(at: source)
         upNextQueue.insert(track, at: destination)
+    }
+
+    // MARK: - Smart Queue Auto-Replenishment (Unified Architecture)
+
+    /// Monitor queue and trigger replenishment when needed (Spotify-style infinite queue)
+    private func monitorQueueForReplenishment() {
+        // This is called periodically to check if we need more tracks
+        print("[AudioEngine] 🔄 Smart queue monitoring enabled")
+    }
+
+    /// Check if queue needs replenishment and add more tracks
+    private func checkAndReplenishQueue() {
+        guard let playlist = currentPlaylist,
+              playlist.isAutoReplenishing,
+              let context = playlist.generationContext else {
+            return
+        }
+
+        // Calculate how many tracks remain
+        let remainingInPlaylist = playlist.tracks.count - (currentPlaylistIndex + 1)
+        let remainingInQueue = upNextQueue.count
+        let totalRemaining = remainingInPlaylist + remainingInQueue
+
+        print("[AudioEngine] 🔍 Queue check: \(totalRemaining) tracks remaining (min: \(playlist.minQueueSize))")
+
+        // If below threshold, replenish
+        if totalRemaining < playlist.minQueueSize {
+            print("[AudioEngine] 🎵 Queue below threshold - replenishing...")
+            Task {
+                await replenishQueue(context: context, tracksNeeded: playlist.minQueueSize - totalRemaining)
+            }
+        }
+    }
+
+    /// Generate and add more tracks to the queue
+    private func replenishQueue(context: PlaylistGenerationMetadata, tracksNeeded: Int) async {
+        print("[AudioEngine] 🔄 Generating \(tracksNeeded) more tracks for smart queue")
+
+        let builder = SmartPlaylistBuilder.shared
+        let newTracks = await builder.generateMoreTracks(context: context, count: tracksNeeded)
+
+        // Add to queue
+        await MainActor.run {
+            addToQueue(newTracks)
+            print("[AudioEngine] ✅ Added \(newTracks.count) tracks to queue")
+        }
     }
 
     /// Get remaining tracks count (queue + remaining playlist)
