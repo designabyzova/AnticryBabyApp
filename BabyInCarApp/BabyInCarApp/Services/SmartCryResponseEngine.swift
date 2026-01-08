@@ -270,10 +270,11 @@ class SmartCryResponseEngine: ObservableObject {
         // 🚨 EMERGENCY MODE: Play GENERATED lullaby IMMEDIATELY
         // Generated audio starts instantly with zero latency - no file loading, no network
         // This guarantees emergency mode ALWAYS has sound, even offline
+        // CRITICAL: Use playImmediateWithoutFade() to bypass fade-in delay for instant sound!
         print("[SmartCryResponse] 🚨 Emergency mode: Playing generated lullaby (instant playback)")
 
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
-        audioEngine.play(track: defaultTrack)
+        audioEngine.playImmediateWithoutFade(track: defaultTrack)
 
         currentPhase = .primarySoothing
         adaptationMessage = "Playing soothing lullaby..."
