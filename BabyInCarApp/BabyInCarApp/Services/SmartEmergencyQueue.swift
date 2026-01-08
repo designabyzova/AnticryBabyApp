@@ -1061,6 +1061,7 @@ class SmartEmergencyQueue: ObservableObject {
     }
 
     /// Skip to specific track in queue
+    /// CRITICAL FIX: Now replenishes queue to maintain 8 items after skipping
     func skipTo(index: Int) async {
         guard index >= 0 && index < allQueueTracks.count else { return }
 
@@ -1074,6 +1075,13 @@ class SmartEmergencyQueue: ObservableObject {
 
         currentTrack = allQueueTracks[currentIndex]
         updateUpcomingTracks()
+
+        // SPOTIFY-STYLE: Replenish queue to maintain 8 upcoming tracks
+        // When user skips to track 7, we go from 8 upcoming to 1 upcoming
+        // Auto-replenish adds 7 more tracks to restore 8 upcoming
+        replenishQueueIfNeeded()
+
+        print("[SmartQueue] 🎯 Skipped to track \(index + 1), upcoming: \(upcomingTracks.count)")
 
         if let track = currentTrack {
             playbackSession.requestPlayback(track: track, from: .emergencyMode, forceImmediate: true)

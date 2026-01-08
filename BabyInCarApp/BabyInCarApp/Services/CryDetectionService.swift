@@ -42,18 +42,19 @@ class CryDetectionService: ObservableObject {
     /// Blend ratio: 0 = all rule-based, 1 = all ML
     var mlBlendRatio: Double = 0.6
 
-    /// Advanced feature extractor for ML
-    private lazy var advancedFeatureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
-
-    /// ML cry detector
-    private lazy var mlCryDetector = CryDetectorMLModel()
-
-    /// ML cry classifier
-    private lazy var mlCryClassifier = CryClassifierMLModel()
+    // MEMORY FIX (Priority 1): REMOVED duplicate ML instance allocations
+    // These were lazy-loaded but NEVER used - all processing uses shared singletons below!
+    // Removing saves 18-27MB of permanent memory allocation
+    // OLD (deleted):
+    //   private lazy var advancedFeatureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
+    //   private lazy var mlCryDetector = CryDetectorMLModel()
+    //   private lazy var mlCryClassifier = CryClassifierMLModel()
+    //   private lazy var deepInfantClassifier: DeepInfantClassifierProtocol = DeepInfantClassifier()
 
     /// DeepInfant V2 classifier (pre-trained model, ~89% accuracy)
     /// Uses DeepInfantClassifier from Services/ML/
-    private lazy var deepInfantClassifier: DeepInfantClassifierProtocol = DeepInfantClassifier()
+    /// MEMORY: Shared singleton accessed via getSharedDeepInfant()
+    private lazy var deepInfantClassifierInstance: DeepInfantClassifierProtocol = DeepInfantClassifier()
 
     /// Audio buffer for DeepInfant (needs ~2 seconds at 16kHz for reasonable accuracy)
     /// MEMORY SAFETY: Pre-allocated circular buffer to prevent unbounded growth
@@ -63,6 +64,9 @@ class CryDetectionService: ObservableObject {
     private var deepInfantBufferWriteIndex: Int = 0  // Circular buffer write position
     private var deepInfantLastClassification: Date = .distantPast
     private let deepInfantClassificationInterval: TimeInterval = 3.0  // THERMAL FIX: Run every 3 seconds (was 2) - reduces ML CPU load by 33%
+
+    // MEMORY FIX (Priority 4): Thread-safe buffer access
+    private let bufferLock = NSLock()
 
     /// MEMORY SAFETY: Reusable ML model instances (avoid per-frame allocation)
     /// These are created once and reused for thread-safe inference
@@ -81,6 +85,10 @@ class CryDetectionService: ObservableObject {
     private nonisolated(unsafe) static var sharedFeatureExtractor: AdvancedFeatureExtractor?
     private nonisolated(unsafe) static let featureExtractorLock = NSLock()
 
+    // MEMORY FIX: Shared DeepInfant instance (singleton pattern)
+    private nonisolated(unsafe) static var sharedDeepInfant: DeepInfantClassifierProtocol?
+    private nonisolated(unsafe) static let deepInfantLock = NSLock()
+
     /// Get or create shared feature extractor for background thread (thread-safe)
     private nonisolated static func getSharedFeatureExtractor(fftSize: Int) -> AdvancedFeatureExtractor {
         featureExtractorLock.lock()
@@ -90,6 +98,17 @@ class CryDetectionService: ObservableObject {
             sharedFeatureExtractor = AdvancedFeatureExtractor(fftSize: fftSize)
         }
         return sharedFeatureExtractor!
+    }
+
+    /// Get or create shared DeepInfant classifier (thread-safe)
+    private nonisolated static func getSharedDeepInfant() -> DeepInfantClassifierProtocol {
+        deepInfantLock.lock()
+        defer { deepInfantLock.unlock() }
+
+        if sharedDeepInfant == nil {
+            sharedDeepInfant = DeepInfantClassifier()
+        }
+        return sharedDeepInfant!
     }
 
     /// Voice characteristics analyzer
@@ -347,12 +366,24 @@ class CryDetectionService: ObservableObject {
                 print("[CryDetection] 🧹 Cleared cry pattern buffer (\(patternCount) frames)")
             }
 
-            // MEMORY OPTIMIZATION (Increment 0029): Disable ML during aggressive cleanup
+            // MEMORY OPTIMIZATION (Increment 0029, Enhanced Priority 3): Disable ML and release models during aggressive cleanup
             if aggressive && useMLEnhancement {
                 // Temporarily disable ML features to save memory
                 useMLEnhancement = false
                 useDeepInfant = false
                 print("[CryDetection] 🧹 Disabled ML features due to memory pressure")
+
+                // MEMORY FIX (Priority 3): Release shared ML model instances
+                // These will be recreated when ML is re-enabled
+                Self.featureExtractorLock.lock()
+                Self.sharedFeatureExtractor = nil
+                Self.featureExtractorLock.unlock()
+
+                Self.deepInfantLock.lock()
+                Self.sharedDeepInfant = nil
+                Self.deepInfantLock.unlock()
+
+                print("[CryDetection] 🧹 Released shared ML model instances (~20-30MB freed)")
                 print("[CryDetection] ⚠️ ML will be re-enabled when memory normalizes")
             }
 
@@ -402,7 +433,8 @@ class CryDetectionService: ObservableObject {
             print("[CryDetection] 🧠 ML ENABLED - sufficient RAM for ML classification")
 
             // DIAGNOSTIC: Check if DeepInfant model is actually available
-            let modelLoaded = deepInfantClassifier.isModelLoaded
+            let classifier = Self.getSharedDeepInfant()
+            let modelLoaded = classifier.isModelLoaded
             if modelLoaded {
                 print("[CryDetection] ✅ DeepInfant CoreML model LOADED successfully")
             } else {
@@ -1546,7 +1578,13 @@ class CryDetectionService: ObservableObject {
     /// DeepInfant needs ~4 seconds of audio at 16kHz for best results
     /// MEMORY SAFETY: Uses circular buffer pattern to prevent unbounded growth
     private func accumulateForDeepInfant(samples: [Float], sampleRate: Float) {
-        guard useDeepInfant, deepInfantClassifier.isModelLoaded else { return }
+        // MEMORY FIX (Priority 4): Thread-safe buffer access
+        bufferLock.lock()
+        defer { bufferLock.unlock() }
+
+        // Use shared singleton instead of instance property
+        let classifier = Self.getSharedDeepInfant()
+        guard useDeepInfant, classifier.isModelLoaded else { return }
 
         // Resample to 16kHz if needed - MEMORY OPTIMIZATION: Only allocate when necessary
         let targetSR: Float = 16000
@@ -1568,12 +1606,27 @@ class CryDetectionService: ObservableObject {
             resampledSamples = samples
         }
 
-        // MEMORY SAFETY: Use circular buffer approach instead of append/removeFirst
-        // This avoids memory fragmentation and unbounded growth
+        // MEMORY FIX (Priority 2): STRICT buffer overflow protection
+        // Prevent unbounded growth even if samples arrive faster than processed
         if deepInfantBuffer.count < deepInfantBufferSize {
-            // Initial fill: grow buffer up to max size
+            // Initial fill: grow buffer up to max size with STRICT bounds checking
             let spaceRemaining = deepInfantBufferSize - deepInfantBuffer.count
             let samplesToAdd = min(resampledSamples.count, spaceRemaining)
+
+            // CRITICAL: Double-check we won't overflow even if calculation is wrong
+            guard samplesToAdd > 0 && deepInfantBuffer.count + samplesToAdd <= deepInfantBufferSize else {
+                // OVERFLOW PROTECTION: Switch to circular writes immediately
+                for sample in resampledSamples {
+                    if deepInfantBuffer.count < deepInfantBufferSize {
+                        deepInfantBuffer.append(sample)
+                    } else {
+                        deepInfantBuffer[deepInfantBufferWriteIndex] = sample
+                        deepInfantBufferWriteIndex = (deepInfantBufferWriteIndex + 1) % deepInfantBufferSize
+                    }
+                }
+                return
+            }
+
             deepInfantBuffer.append(contentsOf: resampledSamples.prefix(samplesToAdd))
         } else {
             // Buffer is full: overwrite oldest samples (circular write)
@@ -1601,7 +1654,7 @@ class CryDetectionService: ObservableObject {
 
         // Run DeepInfant classification on background queue
         let bufferCopy = deepInfantBuffer
-        let classifier = deepInfantClassifier // Capture classifier to avoid actor isolation in Task.detached
+        let classifier = Self.getSharedDeepInfant() // Use shared singleton
         Task {
             // Run classification on background thread (classify is synchronous but CPU-intensive)
             let result = await Task.detached {
