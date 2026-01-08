@@ -13,5 +13,9 @@
     <array>
         <string>$(AppIdentifierPrefix)com.babyincar</string>
     </array>
+
+    <!-- Siri capability for voice control -->
+    <key>com.apple.developer.siri</key>
+    <true/>
 </dict>
 </plist>

@@ -99,6 +99,62 @@ class SmartEmergencyQueue: ObservableObject {
         "generated",            // BANNED: AI generated sounds
     ]
 
+    // MARK: - Smart Rotation State
+    /// Track which first tracks have been used recently (for rotation)
+    private static var recentFirstTracks: [UUID] = []
+    private static let maxRecentFirstTracks = 5
+
+    /// Track session count for rotation decisions
+    private static var sessionCount: Int = 0
+
+    /// Generated tracks for rotation (Piano Moment alternatives)
+    private static let generatedFirstTrackOptions: [GeneratorType] = [
+        .lullaby,       // Default - gentle lullaby melody
+        .musicBox,      // Alternative - classic music box
+        .softPiano,     // Alternative - gentle piano
+        .heartbeat,     // For very young babies
+        .ocean,         // Nature option - rhythmic waves
+    ]
+
+    // MARK: - Playlist Mode Strategies
+
+    /// Different playlist modes have different selection strategies
+    enum PlaylistMode {
+        /// Emergency mode: Baby is crying NOW - need immediate, proven calming
+        /// - First track: Proven effective OR instant-start generated (NO loading delay!)
+        /// - Queue priority: Comfort sounds, high calming scores
+        /// - Variety: Lower priority - effectiveness is key
+        case emergency
+
+        /// Ambient mode: Continuous background music for monitoring
+        /// - First track: High-quality library track with smooth start
+        /// - Queue priority: Variety, long-form content
+        /// - Variety: High priority - prevent repetition
+        case ambient
+
+        /// AI Detection mode: Cry detected by ML, proactive response
+        /// - First track: Balance of instant-start AND effectiveness
+        /// - Queue priority: Balanced between calming and exploration
+        /// - Variety: Medium - try new things while ensuring safety
+        case aiDetection
+
+        /// Manual selection: User chose a category
+        /// - First track: Top track from selected category
+        /// - Queue priority: Category-focused with variety
+        /// - Variety: High within category
+        case manualCategory
+    }
+
+    /// Current playlist mode (affects selection strategy)
+    private(set) var currentPlaylistMode: PlaylistMode = .emergency
+
+    /// Set the playlist mode for the next queue build
+    /// Use this to indicate how the queue should prioritize tracks
+    func setPlaylistMode(_ mode: PlaylistMode) {
+        self.currentPlaylistMode = mode
+        print("[SmartQueue] 🎯 Playlist mode set to: \(mode)")
+    }
+
     private init() {
         setupObservers()
         // Ensure initial state is synced with actual playback
@@ -110,6 +166,9 @@ class SmartEmergencyQueue: ObservableObject {
     func syncPlaybackState() {
         let actuallyPlaying = audioEngine.playbackState == .playing
         let hasActiveTrack = audioEngine.currentTrack != nil
+        let engineState = audioEngine.playbackState
+
+        print("[SmartQueue] 🔧 Sync check: isActive=\(isActive), isPlaying=\(isPlaying), hasTrack=\(currentTrack != nil), enginePlaying=\(actuallyPlaying), engineTrack=\(hasActiveTrack), state=\(engineState)")
 
         // If we think we're playing but AudioEngine isn't, correct our state
         if isPlaying && !actuallyPlaying {
@@ -117,10 +176,25 @@ class SmartEmergencyQueue: ObservableObject {
             isPlaying = false
         }
 
-        // If queue is "active" but there's no track and no audio, reset active state
+        // If AudioEngine is playing but we're not, and we have a current track, update our state
+        if !isPlaying && actuallyPlaying && isActive && currentTrack != nil {
+            print("[SmartQueue] 🔧 Fixing state mismatch: AudioEngine playing but queue.isPlaying=false")
+            isPlaying = true
+        }
+
+        // If queue is "active" but there's no track anywhere, reset active state
         if isActive && !hasActiveTrack && currentTrack == nil && allQueueTracks.isEmpty {
             print("[SmartQueue] 🔧 Fixing stale active state: isActive=true but no tracks")
             isActive = false
+            isPlaying = false
+        }
+
+        // If we think we have a track but AudioEngine has stopped completely, clear our track
+        if currentTrack != nil && !hasActiveTrack && engineState == .stopped && upcomingTracks.isEmpty {
+            print("[SmartQueue] 🔧 Fixing stale track state: queue has track but engine stopped")
+            // Keep the queue active but mark as not playing
+            // This allows the user to see the player card but shows paused state
+            isPlaying = false
         }
     }
 
@@ -156,27 +230,48 @@ class SmartEmergencyQueue: ObservableObject {
         self.babyAge = babyAge
         self.isAmbientMode = false
 
+        // Set playlist mode based on context
+        if let categories = preferredCategories, !categories.isEmpty {
+            self.currentPlaylistMode = .manualCategory
+        } else {
+            // Default to emergency mode for cry response
+            self.currentPlaylistMode = .emergency
+        }
+
+        // Increment session counter for rotation
+        SmartEmergencyQueue.sessionCount += 1
+
         // Get ONLY real melodic tracks from library - NO generated sounds!
         var melodicTracks = await getMelodicTracksForCryType(
             cryType: cryType,
             babyAge: babyAge,
             language: language,
-            maxCount: maxTracks - 1,  // Reserve 1 slot for Piano Moment
+            maxCount: maxTracks - 1,  // Reserve 1 slot for first track
             preferredCategories: preferredCategories
         )
 
-        // CRITICAL FIX: ALWAYS prepend Piano Moment as FIRST track!
-        // This ensures INSTANT playback since it's bundled (no network required).
-        // Streamed tracks may take time to buffer, causing "no sound" on start.
-        let pianoMoment = AudioTrack.defaultEmergencyTrack()
+        // SMART FIRST TRACK SELECTION with rotation!
+        // Instead of always using the same track, intelligently select based on:
+        // 1. What worked best for this baby (effectiveness data)
+        // 2. What hasn't been played recently (rotation)
+        // 3. Cry type (urgent cries need proven tracks)
+        // 4. Baby age (younger babies may prefer womb sounds)
+        let smartFirstTrack = selectSmartFirstTrack(
+            cryType: cryType,
+            babyAge: babyAge,
+            melodicTracks: melodicTracks
+        )
 
-        // Remove Piano Moment if it's already in the list (avoid duplicates)
-        melodicTracks.removeAll { $0.title.lowercased().contains("piano moment") }
+        // Remove the selected first track from the list if it exists
+        melodicTracks.removeAll { $0.id == smartFirstTrack.id }
 
-        // Prepend Piano Moment as the FIRST track for instant playback
-        melodicTracks.insert(pianoMoment, at: 0)
+        // Prepend smart first track for instant playback
+        melodicTracks.insert(smartFirstTrack, at: 0)
 
-        print("[SmartQueue] 🎹 Piano Moment added as FIRST track for INSTANT playback!")
+        // Track this first track for rotation
+        recordFirstTrackUsed(smartFirstTrack.id)
+
+        print("[SmartQueue] 🎵 Smart first track: \(smartFirstTrack.title) (session #\(SmartEmergencyQueue.sessionCount))")
         print("[SmartQueue] 🎵 Built queue with \(melodicTracks.count) MELODIC tracks (no white noise!)")
 
         // Set queue metadata
@@ -190,6 +285,195 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         return melodicTracks
+    }
+
+    // MARK: - Smart First Track Selection (Intelligent Rotation!)
+
+    /// Intelligently select the first track based on multiple factors
+    /// This provides VARIETY while still prioritizing what WORKS
+    /// Selection strategy varies by playlist mode:
+    /// - Emergency: Prioritize proven effective tracks (80% proven, 20% exploration)
+    /// - AI Detection: Balance effectiveness and variety (60% proven, 40% exploration)
+    /// - Ambient: Prioritize variety and smooth starts (30% proven, 70% exploration)
+    /// - Manual: Use category-specific selection
+    private func selectSmartFirstTrack(
+        cryType: CryType,
+        babyAge: Int,
+        melodicTracks: [AudioTrack]
+    ) -> AudioTrack {
+        let effectivenessManager = EffectivenessManager.shared
+        let favoritesManager = FavoritesManager.shared
+
+        // Adjust proven track probability based on playlist mode
+        let provenTrackProbability: Double
+        let varietyWeight: Double
+
+        switch currentPlaylistMode {
+        case .emergency:
+            // Emergency: Strongly favor proven tracks - baby needs help NOW
+            provenTrackProbability = 0.80
+            varietyWeight = 0.2
+        case .aiDetection:
+            // AI Detection: Balance - we have a moment to try something new
+            provenTrackProbability = 0.60
+            varietyWeight = 0.4
+        case .ambient:
+            // Ambient: Favor variety - this is background music
+            provenTrackProbability = 0.30
+            varietyWeight = 0.7
+        case .manualCategory:
+            // Manual: User chose category, respect that but add smart selection
+            provenTrackProbability = 0.50
+            varietyWeight = 0.5
+        }
+
+        // STRATEGY 1: Check if we have a PROVEN effective track for this cry type
+        let useProvenTrack = Double.random(in: 0...1) < provenTrackProbability
+        if useProvenTrack {
+            let effectiveTracks = effectivenessManager.getTopEffectiveTracks(limit: 5, cryType: cryType)
+            for track in effectiveTracks {
+                // Skip if this was the first track in recent sessions
+                // (unless in emergency mode where effectiveness trumps variety)
+                let skipRecent = currentPlaylistMode != .emergency
+                if !skipRecent || !SmartEmergencyQueue.recentFirstTracks.contains(track.id) {
+                    print("[SmartQueue] 🧠 Using PROVEN effective track (\(currentPlaylistMode)): \(track.title)")
+                    return track
+                }
+            }
+        }
+
+        // STRATEGY 2: Check favorites that haven't been used recently
+        // (More weight in ambient/manual modes, less in emergency)
+        if Double.random(in: 0...1) < (0.3 + varietyWeight * 0.5) {
+            let favorites = favoritesManager.favoriteTracks
+            for trackId in favorites {
+                if !SmartEmergencyQueue.recentFirstTracks.contains(trackId),
+                   let track = contentLibrary.getTrack(by: trackId) {
+                    // Verify it's suitable (age-appropriate, not banned)
+                    if track.ageRangeMin <= babyAge && track.ageRangeMax >= babyAge {
+                        print("[SmartQueue] ⭐ Using FAVORITE track (\(currentPlaylistMode)): \(track.title)")
+                        return track
+                    }
+                }
+            }
+        }
+
+        // STRATEGY 3: Select from real library tracks (top rated) with rotation AND randomization
+        // More exploration in ambient mode, stricter selection in emergency
+        let librarySearchDepth = currentPlaylistMode == .ambient ? 20 : 10
+        let eligibleTracks = melodicTracks.prefix(librarySearchDepth).filter {
+            !SmartEmergencyQueue.recentFirstTracks.contains($0.id)
+        }
+
+        if !eligibleTracks.isEmpty {
+            // RANDOMIZATION: Pick randomly from top eligible tracks instead of always first
+            let randomIndex = Int.random(in: 0..<min(5, eligibleTracks.count))
+            let selectedTrack = eligibleTracks[randomIndex]
+            print("[SmartQueue] 📚 Using RANDOMIZED library track (\(currentPlaylistMode)): \(selectedTrack.title) (picked #\(randomIndex + 1) of \(eligibleTracks.count) eligible)")
+            return selectedTrack
+        }
+
+        // STRATEGY 4: Generated tracks - more likely in emergency/AI detection (instant playback)
+        // Less likely in ambient mode (prefer streamed library content)
+        if currentPlaylistMode == .emergency || currentPlaylistMode == .aiDetection {
+            let generatedTrack = selectRotatedGeneratedTrack(cryType: cryType, babyAge: babyAge)
+            print("[SmartQueue] 🎹 Using GENERATED track (\(currentPlaylistMode)): \(generatedTrack.title)")
+            return generatedTrack
+        }
+
+        // Fallback: clear recent history and pick first library track
+        SmartEmergencyQueue.recentFirstTracks.removeAll()
+        if let first = melodicTracks.first {
+            return first
+        }
+
+        // Ultimate fallback: default emergency track
+        return AudioTrack.defaultEmergencyTrack()
+    }
+
+    /// Select a generated track with smart rotation based on cry type and age
+    private func selectRotatedGeneratedTrack(cryType: CryType, babyAge: Int) -> AudioTrack {
+        // Priority order varies by cry type and age
+        var prioritizedTypes: [GeneratorType]
+
+        switch cryType {
+        case .tired:
+            // For tired: prioritize sleep-inducing sounds
+            prioritizedTypes = [.lullaby, .musicBox, .softPiano, .ocean, .heartbeat]
+        case .pain:
+            // For pain: prioritize comfort sounds
+            prioritizedTypes = babyAge < 6
+                ? [.heartbeat, .womb, .lullaby, .musicBox, .ocean]
+                : [.lullaby, .musicBox, .softPiano, .heartbeat, .ocean]
+        case .hunger:
+            // For hunger: prioritize engaging/distracting sounds
+            prioritizedTypes = [.musicBox, .lullaby, .softPiano, .ocean, .heartbeat]
+        case .attention:
+            // For attention: prioritize melodic, engaging sounds
+            prioritizedTypes = [.musicBox, .softPiano, .lullaby, .ocean, .heartbeat]
+        default:
+            // Default: use age-based selection
+            prioritizedTypes = babyAge < 6
+                ? [.heartbeat, .lullaby, .musicBox, .womb, .ocean]
+                : [.lullaby, .musicBox, .softPiano, .ocean, .heartbeat]
+        }
+
+        // Apply session-based rotation: shift the order based on session count
+        let rotationOffset = SmartEmergencyQueue.sessionCount % prioritizedTypes.count
+        if rotationOffset > 0 {
+            let rotated = Array(prioritizedTypes[rotationOffset...]) + Array(prioritizedTypes[..<rotationOffset])
+            prioritizedTypes = rotated
+        }
+
+        // Select the first type that hasn't been used recently
+        for generatorType in prioritizedTypes {
+            let track = createGeneratedTrack(for: generatorType)
+            if !SmartEmergencyQueue.recentFirstTracks.contains(track.id) {
+                return track
+            }
+        }
+
+        // Fallback: clear recent history and use default
+        SmartEmergencyQueue.recentFirstTracks.removeAll()
+        return AudioTrack.defaultEmergencyTrack()
+    }
+
+    /// Create a generated track for a specific generator type
+    private func createGeneratedTrack(for type: GeneratorType) -> AudioTrack {
+        // Use stable UUIDs based on generator type for tracking
+        let stableId = UUID(uuidString: "E7744FB8-6D21-4364-\(String(format: "%04X", type.hashValue & 0xFFFF))-000000000001") ?? UUID()
+
+        return AudioTrack(
+            id: stableId,
+            title: type.rawValue,
+            artist: "Lulla",
+            category: type.category,
+            language: nil,
+            duration: 300.0,
+            ageRangeMin: type.optimalAgeRange.lowerBound,
+            ageRangeMax: type.optimalAgeRange.upperBound,
+            optimalAgeMonths: Array(type.optimalAgeRange),
+            tempoBPM: 60,
+            calmingScore: type.calmingScore,
+            isPremium: false,
+            isDownloaded: true,
+            audioSourceType: .generated,
+            generatorType: type,
+            fileName: nil,
+            fileExtension: nil,
+            streamURL: nil,
+            serverId: "generated-\(type.rawValue.lowercased().replacingOccurrences(of: " ", with: "-"))",
+            artworkURL: nil,
+            isLocked: false
+        )
+    }
+
+    /// Record that a track was used as the first track (for rotation)
+    private func recordFirstTrackUsed(_ trackId: UUID) {
+        SmartEmergencyQueue.recentFirstTracks.insert(trackId, at: 0)
+        if SmartEmergencyQueue.recentFirstTracks.count > SmartEmergencyQueue.maxRecentFirstTracks {
+            SmartEmergencyQueue.recentFirstTracks.removeLast()
+        }
     }
 
     // MARK: - Ambient Playlist Mode (PROACTIVE - No Cry Detection Required!)
@@ -212,6 +496,7 @@ class SmartEmergencyQueue: ObservableObject {
 
         self.babyAge = babyAge
         self.isAmbientMode = true
+        self.currentPlaylistMode = .ambient  // Set mode for smart selection
         self.modeName = "Ambient Soothing"
         self.cryType = .general // Ambient mode is not cry-specific
 
@@ -637,6 +922,152 @@ class SmartEmergencyQueue: ObservableObject {
         isPlaying = true
     }
 
+    // MARK: - Dynamic Queue Reordering
+
+    /// Boost a track to play next (user indicated it might help)
+    /// This is called when user sees a suggestion and wants to try it sooner
+    func boostTrackToPlayNext(_ track: AudioTrack) {
+        guard isActive else { return }
+
+        // Find the track in upcoming and move it to position 1 (right after current)
+        if let index = upcomingTracks.firstIndex(where: { $0.id == track.id }) {
+            let boostedTrack = upcomingTracks.remove(at: index)
+            upcomingTracks.insert(boostedTrack, at: 0)
+
+            // Also update allQueueTracks
+            if let fullIndex = allQueueTracks.firstIndex(where: { $0.id == track.id }),
+               fullIndex > currentIndex + 1 {
+                let trackToMove = allQueueTracks.remove(at: fullIndex)
+                allQueueTracks.insert(trackToMove, at: currentIndex + 1)
+            }
+
+            print("[SmartQueue] ⬆️ Boosted \(track.title) to play next")
+        } else if !allQueueTracks.contains(where: { $0.id == track.id }) {
+            // Track not in queue - add it as next
+            allQueueTracks.insert(track, at: currentIndex + 1)
+            updateUpcomingTracks()
+            totalTracks = allQueueTracks.count
+            print("[SmartQueue] ➕ Added \(track.title) to play next")
+        }
+    }
+
+    /// Demote a track (skip it for now, user doesn't want it)
+    /// Moves the track to the end of the queue
+    func demoteTrack(_ track: AudioTrack) {
+        guard isActive else { return }
+
+        // Find and move to end
+        if let index = allQueueTracks.firstIndex(where: { $0.id == track.id }),
+           index > currentIndex {
+            let demotedTrack = allQueueTracks.remove(at: index)
+            allQueueTracks.append(demotedTrack)
+            updateUpcomingTracks()
+            print("[SmartQueue] ⬇️ Demoted \(track.title) to end of queue")
+        }
+    }
+
+    /// Real-time effectiveness feedback - adjust queue based on baby's response
+    /// Call this when cry detection indicates the baby is calming down or escalating
+    func adjustQueueForEffectiveness(isCalmingDown: Bool) {
+        guard isActive, let current = currentTrack else { return }
+
+        if isCalmingDown {
+            // Baby is calming! Record this track as effective
+            EffectivenessManager.shared.recordHelped(
+                track: current,
+                cryType: cryType,
+                playDuration: sessionDuration
+            )
+            print("[SmartQueue] 😊 Baby calming - recorded effectiveness for: \(current.title)")
+
+            // If we have similar tracks in the queue, boost them
+            boostSimilarTracks(to: current)
+        } else {
+            // Baby still crying - this track might not be working
+            // If we've been on this track for >45 seconds, suggest skipping
+            let trackDuration = audioEngine.currentTime
+            if trackDuration > 45 {
+                print("[SmartQueue] 😢 Track not effective after \(Int(trackDuration))s - consider trying next")
+                // Don't auto-skip, but the UI can show a suggestion
+            }
+        }
+    }
+
+    /// Boost tracks similar to an effective one
+    private func boostSimilarTracks(to effectiveTrack: AudioTrack) {
+        // Find tracks with same category or generator type
+        let similarIndices = allQueueTracks.enumerated().compactMap { index, track -> Int? in
+            guard index > currentIndex else { return nil }
+
+            // Same category
+            if track.category == effectiveTrack.category { return index }
+
+            // Same generator type
+            if let effectiveGen = effectiveTrack.generatorType,
+               let trackGen = track.generatorType,
+               effectiveGen == trackGen {
+                return index
+            }
+
+            // Same artist (for library tracks)
+            if track.artist == effectiveTrack.artist && track.artist != "Lulla" {
+                return index
+            }
+
+            return nil
+        }
+
+        // Move similar tracks closer (but not all the way to front)
+        for (offset, index) in similarIndices.prefix(2).enumerated() {
+            let targetIndex = currentIndex + 2 + offset // Put after next track
+            if index > targetIndex {
+                let track = allQueueTracks.remove(at: index)
+                allQueueTracks.insert(track, at: targetIndex)
+            }
+        }
+
+        if !similarIndices.isEmpty {
+            updateUpcomingTracks()
+            print("[SmartQueue] 🔄 Boosted \(similarIndices.count) similar tracks")
+        }
+    }
+
+    /// Get smart suggestions for the user based on current context
+    /// Returns tracks that might work better based on effectiveness data
+    func getSmartSuggestions(limit: Int = 3) -> [AudioTrack] {
+        let effectivenessManager = EffectivenessManager.shared
+
+        // Get tracks that have worked for this cry type
+        var suggestions: [AudioTrack] = []
+
+        // 1. Top effective tracks for this cry type
+        let effective = effectivenessManager.getTopEffectiveTracks(limit: 2, cryType: cryType)
+        for track in effective where track.id != currentTrack?.id {
+            suggestions.append(track)
+        }
+
+        // 2. A generated track option (for variety)
+        if suggestions.count < limit {
+            let generatedOptions: [GeneratorType] = [.lullaby, .musicBox, .softPiano, .ocean]
+            for genType in generatedOptions {
+                let genTrack = createGeneratedTrack(for: genType)
+                if genTrack.id != currentTrack?.id && !suggestions.contains(where: { $0.id == genTrack.id }) {
+                    suggestions.append(genTrack)
+                    break
+                }
+            }
+        }
+
+        // 3. Fill with top upcoming tracks
+        for track in upcomingTracks.prefix(limit - suggestions.count) {
+            if !suggestions.contains(where: { $0.id == track.id }) {
+                suggestions.append(track)
+            }
+        }
+
+        return Array(suggestions.prefix(limit))
+    }
+
     /// Stop queue and record effectiveness
     func stop(wasEffective: Bool?) async {
         // Prevent multiple stop calls
@@ -911,6 +1342,7 @@ class SmartEmergencyQueue: ObservableObject {
     }
 
     /// Apply rotation policy to mix categories and avoid monotony
+    /// NOW WITH RANDOMIZATION: Shuffles tracks within categories for variety!
     private func applyRotationPolicy(tracks: [AudioTrack], maxCount: Int) -> [AudioTrack] {
         guard tracks.count > 3 else { return Array(tracks.prefix(maxCount)) }
 
@@ -920,28 +1352,50 @@ class SmartEmergencyQueue: ObservableObject {
             byCategory[track.category, default: []].append(track)
         }
 
+        // RANDOMIZATION: Shuffle tracks within each category (keeping top 2 for quality)
+        // This ensures different tracks are selected each session!
+        for (category, categoryTracks) in byCategory {
+            if categoryTracks.count > 2 {
+                // Keep top 2 highest-scored, shuffle the rest
+                let top2 = Array(categoryTracks.prefix(2))
+                var rest = Array(categoryTracks.dropFirst(2))
+                rest.shuffle()
+                byCategory[category] = top2 + rest
+            }
+        }
+
         // Rotation order: Classical → Instrumental → Children's → Nature → Fairy Tales
-        let rotationOrder: [AudioCategory] = [
+        // RANDOMIZATION: Occasionally shuffle the rotation order for variety
+        var rotationOrder: [AudioCategory] = [
             .classicalMusic, .instrumental, .childrenSongs, .natureSounds, .fairyTales
         ]
+
+        // 30% chance to shuffle rotation order (keeps things fresh across sessions)
+        if Double.random(in: 0...1) < 0.3 {
+            rotationOrder.shuffle()
+            print("[SmartQueue] 🔀 Shuffled category rotation order for variety")
+        }
 
         var result: [AudioTrack] = []
         var categoryIndex = 0
         var usedFromCategory: [AudioCategory: Int] = [:]
 
-        // First 3 tracks: Take BEST from top categories (no rotation yet)
+        // First 3 tracks: Take from top categories with some randomization
+        // RANDOMIZATION: Pick from top 3 tracks in each category (not always the absolute best)
         for category in rotationOrder.prefix(3) {
             if let categoryTracks = byCategory[category], !categoryTracks.isEmpty {
+                // Pick randomly from top 3 tracks in category
+                let topN = min(3, categoryTracks.count)
+                let randomIdx = Int.random(in: 0..<topN)
                 let idx = usedFromCategory[category, default: 0]
-                if idx < categoryTracks.count {
-                    result.append(categoryTracks[idx])
-                    usedFromCategory[category] = idx + 1
-                }
+                let actualIdx = (idx + randomIdx) % categoryTracks.count
+                result.append(categoryTracks[actualIdx])
+                usedFromCategory[category] = actualIdx + 1
             }
             if result.count >= 3 { break }
         }
 
-        // Remaining tracks: Rotate through categories
+        // Remaining tracks: Rotate through categories with randomization
         while result.count < maxCount {
             let category = rotationOrder[categoryIndex % rotationOrder.count]
 
@@ -960,6 +1414,16 @@ class SmartEmergencyQueue: ObservableObject {
 
             // Safety: prevent infinite loop
             if categoryIndex > maxCount * 2 { break }
+        }
+
+        // FINAL SHUFFLE: Shuffle tracks after position 5 for extra variety
+        // Keeps first 5 tracks stable (best quality), randomizes the rest
+        if result.count > 5 {
+            let top5 = Array(result.prefix(5))
+            var rest = Array(result.dropFirst(5))
+            rest.shuffle()
+            result = top5 + rest
+            print("[SmartQueue] 🔀 Shuffled tracks 6+ for variety")
         }
 
         return result
@@ -1247,13 +1711,15 @@ class SmartEmergencyQueue: ObservableObject {
     // MARK: - Queue Names
 
     private func getQueueName(for cryType: CryType) -> String {
+        // Always include the cry type in the name so user knows what was detected!
         switch cryType {
-        case .tired: return "Sleep Time"
-        case .hunger: return "Comfort & Calm"
-        case .pain: return "Gentle Relief"
-        case .discomfort: return "Soothing Sounds"
-        case .attention: return "Engaging Melodies"
-        case .general, .unknown: return "Universal Calm"
+        case .tired: return "😴 Tired Baby - Sleep Time"
+        case .hunger: return "🍼 Hungry Baby - Comfort & Calm"
+        case .pain: return "😢 Pain/Discomfort - Gentle Relief"
+        case .discomfort: return "😣 Uncomfortable - Soothing Sounds"
+        case .attention: return "👋 Needs Attention - Engaging Melodies"
+        case .general: return "👶 Fussy Baby - Universal Calm"
+        case .unknown: return "🎵 Smart Soothing"
         }
     }
 
@@ -1302,12 +1768,37 @@ class SmartEmergencyQueue: ObservableObject {
                     if !self.isPlaying {
                         self.isPlaying = true
                     }
-                case .paused, .stopped:
-                    if self.isPlaying && state == .paused {
+                case .paused:
+                    if self.isPlaying {
+                        self.isPlaying = false
+                    }
+                case .stopped:
+                    // When stopped, also reset isPlaying
+                    if self.isPlaying {
                         self.isPlaying = false
                     }
                 default:
                     break
+                }
+            }
+            .store(in: &cancellables)
+
+        // CRITICAL FIX: Also observe currentTrack changes from AudioEngine
+        // This ensures the queue's currentTrack stays in sync with actual playback
+        audioEngine.$currentTrack
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] track in
+                guard let self = self, self.isActive else { return }
+
+                // If AudioEngine's track is nil but queue thinks it has a track, sync the state
+                if track == nil && self.currentTrack != nil {
+                    // Only reset if audioEngine truly stopped (not just between tracks)
+                    if self.audioEngine.playbackState == .stopped {
+                        print("[SmartQueue] 🔧 AudioEngine stopped - resetting queue state")
+                        // Don't reset isActive here - let the stop() function handle it properly
+                        // Just update the playing state
+                        self.isPlaying = false
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -1325,19 +1816,19 @@ class SmartEmergencyQueue: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // MEMORY OPTIMIZATION (Increment 0028): Clean up on memory warnings
+        // MEMORY OPTIMIZATION (Increment 0028, Enhanced 0029): Clean up on memory warnings
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                print("[SmartQueue] ⚠️ Memory warning received - cleaning up")
-                await self?.cleanup()
+                print("[SmartQueue] ⚠️ Memory warning received - aggressive cleanup")
+                await self?.cleanup(aggressive: true)
             }
         }
 
-        // MEMORY OPTIMIZATION (Increment 0028): Respond to MemoryMonitor cleanup requests
+        // MEMORY OPTIMIZATION (Increment 0028, Enhanced 0029): Respond to MemoryMonitor cleanup requests
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("MemoryCleanupRequested"),
             object: nil,
@@ -1345,8 +1836,10 @@ class SmartEmergencyQueue: ObservableObject {
         ) { [weak self] notification in
             Task { @MainActor in
                 if let level = notification.userInfo?["level"] as? String {
-                    print("[SmartQueue] 🧹 Memory cleanup requested (\(level)) - cleaning up")
-                    await self?.cleanup()
+                    // Use aggressive cleanup for critical and emergency levels
+                    let isAggressive = (level == "critical" || level == "emergency")
+                    print("[SmartQueue] 🧹 Memory cleanup requested (\(level), aggressive: \(isAggressive))")
+                    await self?.cleanup(aggressive: isAggressive)
                 }
             }
         }
@@ -1356,35 +1849,82 @@ class SmartEmergencyQueue: ObservableObject {
 
     /// Clean up resources to reduce memory footprint during memory warnings
     /// Preserves queue state but releases unnecessary cached data
-    private func cleanup() async {
-        print("[SmartQueue] 🧹 Starting memory cleanup...")
+    /// - Parameter aggressive: If true, performs more aggressive cleanup (for critical/emergency)
+    private func cleanup(aggressive: Bool = false) async {
+        print("[SmartQueue] 🧹 Starting memory cleanup (aggressive: \(aggressive))...")
 
-        // Clear played tracks history (no longer needed)
-        let playedCount = playedTracks.count
-        playedTracks.removeAll()
-        print("[SmartQueue] 🧹 Cleared \(playedCount) played tracks from history")
+        // MEMORY OPTIMIZATION (Increment 0029): Use autoreleasepool for immediate deallocation
+        autoreleasepool {
+            // Clear played tracks history (no longer needed)
+            let playedCount = playedTracks.count
+            playedTracks.removeAll()
+            if playedCount > 0 {
+                print("[SmartQueue] 🧹 Cleared \(playedCount) played tracks from history")
+            }
 
-        // Trim upcoming tracks to minimum (keep next 3)
-        let trimmedCount = max(0, upcomingTracks.count - 3)
-        if trimmedCount > 0 {
-            upcomingTracks = Array(upcomingTracks.prefix(3))
-            print("[SmartQueue] 🧹 Trimmed \(trimmedCount) upcoming tracks (kept next 3)")
+            if aggressive {
+                // AGGRESSIVE MODE: Keep only next track, clear everything else
+
+                // Trim upcoming to just 1 track
+                let trimmedCount = max(0, upcomingTracks.count - 1)
+                if trimmedCount > 0 {
+                    upcomingTracks = Array(upcomingTracks.prefix(1))
+                    print("[SmartQueue] 🧹 Aggressive trim: kept 1 upcoming track, removed \(trimmedCount)")
+                }
+
+                // Clear recently played tracking
+                let recentCount = SmartEmergencyQueue.recentlyPlayedTrackIds.count
+                SmartEmergencyQueue.recentlyPlayedTrackIds.removeAll()
+                if recentCount > 0 {
+                    print("[SmartQueue] 🧹 Cleared \(recentCount) recently played track IDs")
+                }
+
+                // Clear first track rotation history
+                let rotationCount = SmartEmergencyQueue.recentFirstTracks.count
+                SmartEmergencyQueue.recentFirstTracks.removeAll()
+                if rotationCount > 0 {
+                    print("[SmartQueue] 🧹 Cleared \(rotationCount) rotation history entries")
+                }
+
+                // Reduce loaded tracks to just 1 (the current)
+                if loadedTracks.count > 1 {
+                    let removedCount = loadedTracks.count - 1
+                    loadedTracks = Array(loadedTracks.prefix(1))
+                    print("[SmartQueue] 🧹 Reduced loaded tracks: kept 1, removed \(removedCount)")
+                }
+
+                // If queue is inactive, clear everything
+                if !isActive {
+                    let queueCount = allQueueTracks.count
+                    allQueueTracks.removeAll()
+                    loadedTracks.removeAll()
+                    queuedTrackIds.removeAll()
+                    upcomingTracks.removeAll()
+                    print("[SmartQueue] 🧹 Cleared all \(queueCount) queued tracks (queue inactive)")
+                }
+            } else {
+                // NORMAL MODE: Keep next 3 tracks
+
+                // Trim upcoming tracks to minimum (keep next 3)
+                let trimmedCount = max(0, upcomingTracks.count - 3)
+                if trimmedCount > 0 {
+                    upcomingTracks = Array(upcomingTracks.prefix(3))
+                    print("[SmartQueue] 🧹 Trimmed \(trimmedCount) upcoming tracks (kept next 3)")
+                }
+
+                // Clear all queue tracks cache if queue inactive
+                if !isActive {
+                    let queueCount = allQueueTracks.count
+                    allQueueTracks.removeAll()
+                    loadedTracks.removeAll()
+                    queuedTrackIds.removeAll()
+                    print("[SmartQueue] 🧹 Cleared \(queueCount) queued tracks (queue inactive)")
+                }
+            }
         }
 
-        // Clear all queue tracks cache if queue inactive
-        if !isActive {
-            let queueCount = allQueueTracks.count
-            allQueueTracks.removeAll()
-            loadedTracks.removeAll()
-            queuedTrackIds.removeAll()
-            print("[SmartQueue] 🧹 Cleared \(queueCount) queued tracks (queue inactive)")
-        }
-
-        // Force cancellable cleanup
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
-        setupObservers() // Re-establish observers after cleanup
-        print("[SmartQueue] 🧹 Reset Combine subscriptions")
+        // DON'T reset Combine subscriptions on every cleanup - this can cause issues
+        // Only reset if truly needed (subscriptions will be recreated naturally)
 
         print("[SmartQueue] ✅ Memory cleanup complete")
     }

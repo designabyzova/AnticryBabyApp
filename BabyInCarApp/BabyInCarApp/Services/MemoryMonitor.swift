@@ -26,10 +26,10 @@ class MemoryMonitor: ObservableObject {
     // MARK: - Memory Warning Levels
 
     enum MemoryWarningLevel: String {
-        case normal      // < 40MB  - healthy
-        case warning     // 40-45MB - approaching limit
-        case critical    // 45-48MB - cleanup needed
-        case emergency   // > 48MB  - aggressive cleanup
+        case normal      // < 150MB - healthy for modern iOS app with ML
+        case warning     // 150-180MB - approaching limit, monitor closely
+        case critical    // 180-220MB - reduce ML features
+        case emergency   // > 220MB - aggressive cleanup needed
 
         var color: Color {
             switch self {
@@ -55,12 +55,14 @@ class MemoryMonitor: ObservableObject {
     private var timer: Timer?
     private let logger = Logger(subsystem: "com.anticry.babyincar", category: "MemoryMonitor")
 
-    // Memory thresholds (in MB) - Updated for realistic iOS limits
-    // iOS typically kills apps at 150-200MB for foreground apps
-    // These thresholds provide adequate warning buffer before iOS termination
-    private let normalThreshold: Double = 80.0
-    private let warningThreshold: Double = 90.0
-    private let criticalThreshold: Double = 100.0
+    // Memory thresholds (in MB) - FIXED for realistic iOS limits
+    // iOS typically allows 150-300MB for foreground media apps with ML features
+    // Previous thresholds (80/90/100) were FAR too aggressive and disabled ML features
+    // when the app was operating perfectly normally!
+    // These thresholds match MemoryPressureMonitor.swift for consistency
+    private let normalThreshold: Double = 150.0
+    private let warningThreshold: Double = 180.0
+    private let criticalThreshold: Double = 220.0
 
     // MARK: - Initialization
 
@@ -70,21 +72,23 @@ class MemoryMonitor: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Start monitoring memory usage every 5 seconds
+    /// Start monitoring memory usage
+    /// THERMAL FIX: Increased interval from 5s to 15s - memory doesn't change that fast, saves CPU cycles
     func startMonitoring() {
         guard !isMonitoring else {
             logger.debug("MemoryMonitor already running")
             return
         }
 
-        logger.info("Starting memory monitoring (5-second intervals)")
+        logger.info("Starting memory monitoring (15-second intervals)")
         isMonitoring = true
 
         // Initial reading
         updateMemoryUsage()
 
-        // Schedule timer for 5-second intervals
-        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // THERMAL FIX: Schedule timer for 15-second intervals (was 5s)
+        // Memory changes slowly - checking every 5s was overkill and added unnecessary CPU load
+        timer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateMemoryUsage()
                 self?.checkThresholds()
@@ -137,11 +141,19 @@ class MemoryMonitor: ObservableObject {
         switch currentMemoryMB {
         case 0..<normalThreshold:
             warningLevel = .normal
+            // MEMORY OPTIMIZATION (Increment 0029): Notify when returning to normal
+            if previousLevel != .normal && previousLevel != .warning {
+                notifyMemoryNormalized()
+            }
 
         case normalThreshold..<warningThreshold:
             warningLevel = .warning
             if previousLevel != .warning {
                 logWarning()
+            }
+            // Notify if coming down from critical/emergency
+            if previousLevel == .critical || previousLevel == .emergency {
+                notifyMemoryNormalized()
             }
 
         case warningThreshold..<criticalThreshold:
@@ -156,6 +168,16 @@ class MemoryMonitor: ObservableObject {
                 triggerAggressiveCleanup()
             }
         }
+    }
+
+    /// Notify services that memory pressure has normalized
+    private func notifyMemoryNormalized() {
+        logger.info("✅ Memory pressure normalized at \(String(format: "%.1f", self.currentMemoryMB)) MB")
+        NotificationCenter.default.post(
+            name: NSNotification.Name("MemoryPressureNormalized"),
+            object: nil,
+            userInfo: ["memoryMB": currentMemoryMB]
+        )
     }
 
     private func logWarning() {

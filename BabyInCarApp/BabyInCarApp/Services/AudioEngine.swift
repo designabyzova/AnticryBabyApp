@@ -108,11 +108,17 @@ class AudioEngine: ObservableObject {
     private var playbackHistory: [AudioTrack] = []
     private let maxHistorySize = 50
 
-    // MARK: - LRU Buffer Cache (Increment 0028)
-    /// LRU cache for recently played audio buffers (max 5 entries)
+    // MARK: - LRU Buffer Cache (Increment 0028, Enhanced 0029)
+    /// LRU cache for recently played audio buffers
     /// Stores AVPlayer instances to avoid re-loading recently played tracks
+    /// MEMORY OPTIMIZATION: Reduced from 5 to 3, dynamically reduced to 1 under memory pressure
     private var recentlyPlayedBuffers: [(trackId: UUID, player: AVPlayer)] = []
-    private let maxRecentBuffers = 5
+    private var maxRecentBuffers = 3  // Dynamic - reduced under memory pressure
+    private let defaultMaxRecentBuffers = 3
+    private let emergencyMaxRecentBuffers = 1
+
+    /// Memory pressure level tracking for cache decisions
+    private var isUnderMemoryPressure: Bool = false
 
     // MARK: - Shuffle State
     /// Tracks already played in shuffle mode (to avoid repeats until all played)
@@ -153,6 +159,14 @@ class AudioEngine: ObservableObject {
     private var timeObserver: Any?
     private var noiseGenerator: NoiseGenerator?
     private var toneGenerator: ToneGenerator?
+
+    // MARK: - Crossfade State
+    /// True when actively crossfading between tracks - prevents premature cleanup of old stream
+    private var isCrossfading: Bool = false
+    /// Old stream player being faded out during crossfade
+    private var crossfadeOldStreamPlayer: AVPlayer?
+    /// Old time observer for crossfade cleanup
+    private var crossfadeOldTimeObserver: Any?
 
     // MARK: - Timers
     private var progressTimer: Timer?
@@ -196,100 +210,57 @@ class AudioEngine: ObservableObject {
     // MARK: - Audio Session Configuration
     @discardableResult
     func configureAudioSession(interruptOtherAudio: Bool = false) -> Bool {
-        do {
-            let session = AVAudioSession.sharedInstance()
+        // TECHNICAL DEBT FIX: Use centralized AudioSessionManager instead of direct session manipulation
+        // This prevents audio session conflicts with CryDetectionService and SpeechRecognitionService
+        let sessionManager = AudioSessionManager.shared
 
-            if interruptOtherAudio {
-                // Emergency mode: Interrupt and duck other audio (Spotify, YouTube, etc.)
-                // This ensures baby hears the soothing sound clearly
-                // NOTE: .defaultToSpeaker is INVALID with .playback category - removed!
-                try session.setCategory(
-                    .playback,
-                    mode: .default,
-                    options: [.duckOthers, .allowBluetooth]
-                )
-                print("[AudioEngine] 🚨 Emergency audio session configured - will interrupt other audio")
-            } else {
-                // Normal mode: Mix with other audio
-                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-                print("[AudioEngine] 🎵 Normal audio session configured - will mix with other audio")
-            }
+        // Determine priority based on context
+        let priority: AudioSessionPriority = SmartEmergencyQueue.shared.isActive ? .emergency : .playback
 
-            try session.setActive(true)
-            return true
-        } catch {
-            print("[AudioEngine] ⚠️ Failed to configure audio session: \(error)")
-            print("[AudioEngine] ⚠️ Audio may still play, but mixing behavior is undefined")
-            return false
+        let success = sessionManager.requestSession(
+            mode: .playbackOnly,
+            priority: priority,
+            serviceId: "AudioEngine"
+        )
+
+        if success {
+            print("[AudioEngine] ✅ Audio session requested via AudioSessionManager")
+        } else {
+            print("[AudioEngine] ⚠️ AudioSessionManager rejected request (circuit breaker may be open)")
         }
+
+        return success
     }
 
-    /// Enable or disable audio ducking (reduces external audio volume)
-    /// When enabled, Spotify/Apple Music/other apps will reduce volume to ~20%
-    /// while this app plays soothing sounds
+    /// Release audio session when stopping playback
+    func releaseAudioSession() {
+        AudioSessionManager.shared.releaseSession(serviceId: "AudioEngine")
+        print("[AudioEngine] 📤 Released audio session via AudioSessionManager")
+    }
+
+    /// Enable or disable audio ducking
+    /// NOTE: With exclusive playback, ducking is not needed - other apps are paused completely
+    /// This function is kept for backward compatibility but now just logs the state
     ///
     /// - Parameters:
-    ///   - enabled: true to duck external audio, false to restore normal mixing
-    ///   - emergencyMode: true for emergency (interrupt), false for normal (mix)
+    ///   - enabled: true to enable, false to disable (no actual effect with exclusive playback)
+    ///   - emergencyMode: ignored - we always use exclusive playback
     func enableDucking(_ enabled: Bool, emergencyMode: Bool = false) {
-        // Skip if user preference is disabled
-        guard Self.autoDuckExternalAudio || !enabled else {
-            print("[AudioEngine] Auto-duck disabled by user preference")
-            return
-        }
-
-        // Skip if already in desired state
+        // With exclusive playback, other apps are PAUSED completely
+        // No ducking needed - just track the state for analytics
         guard isDuckingActive != enabled else {
             return
         }
 
-        do {
-            let session = AVAudioSession.sharedInstance()
-
-            if enabled {
-                // CRITICAL: Emergency mode INTERRUPTS, normal mode MIXES
-                // NOTE: .defaultToSpeaker is INVALID with .playback category - removed!
-                let options: AVAudioSession.CategoryOptions = emergencyMode
-                    ? [.duckOthers, .allowBluetooth]  // INTERRUPT - no mixing!
-                    : [.mixWithOthers, .duckOthers, .allowBluetooth]  // MIX with ducking
-
-                try session.setCategory(
-                    .playback,
-                    mode: .default,
-                    options: options
-                )
-
-                if emergencyMode {
-                    print("[AudioEngine] 🚨 EMERGENCY Ducking ENABLED - external audio INTERRUPTED")
-                } else {
-                    print("[AudioEngine] Ducking ENABLED - external audio will be reduced")
-                }
-
-                // Track ducking activation
-                trackDuckingEvent(enabled: true)
-            } else {
-                // Disable ducking: restore normal mixing (external audio at full volume)
-                try session.setCategory(
-                    .playback,
-                    mode: .default,
-                    options: [.mixWithOthers, .allowBluetooth]
-                )
-                print("[AudioEngine] Ducking DISABLED - external audio restored")
-
-                // Track ducking deactivation
-                trackDuckingEvent(enabled: false)
-            }
-
-            // Only call setActive if audio session is not already active
-            // Optimization: Avoid unnecessary ~1ms overhead on every ducking toggle
-            if session.isOtherAudioPlaying || !enabled {
-                try session.setActive(true)
-            }
-
-            isDuckingActive = enabled
-        } catch {
-            print("[AudioEngine] Failed to \(enabled ? "enable" : "disable") ducking: \(error)")
+        if enabled {
+            print("[AudioEngine] Ducking state: ON (other apps already paused by exclusive playback)")
+            trackDuckingEvent(enabled: true)
+        } else {
+            print("[AudioEngine] Ducking state: OFF")
+            trackDuckingEvent(enabled: false)
         }
+
+        isDuckingActive = enabled
     }
 
     /// Track ducking events for analytics and effectiveness correlation
@@ -360,7 +331,7 @@ class AudioEngine: ObservableObject {
             }
         }
 
-        // MEMORY OPTIMIZATION (Increment 0022): Respond to MemoryMonitor cleanup requests
+        // MEMORY OPTIMIZATION (Increment 0022, Enhanced 0029): Respond to MemoryMonitor cleanup requests
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("MemoryCleanupRequested"),
             object: nil,
@@ -368,9 +339,22 @@ class AudioEngine: ObservableObject {
         ) { [weak self] notification in
             Task { @MainActor in
                 if let level = notification.userInfo?["level"] as? String {
-                    print("[AudioEngine] 🧹 Memory cleanup requested (\(level)) - cleaning up")
-                    self?.cleanup()
+                    // Use aggressive cleanup for critical and emergency levels
+                    let isAggressive = (level == "critical" || level == "emergency")
+                    print("[AudioEngine] 🧹 Memory cleanup requested (\(level), aggressive: \(isAggressive))")
+                    self?.cleanup(aggressive: isAggressive)
                 }
+            }
+        }
+
+        // MEMORY OPTIMIZATION (Increment 0029): Restore normal limits when memory stabilizes
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("MemoryPressureNormalized"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.restoreNormalCacheLimits()
             }
         }
     }
@@ -430,6 +414,9 @@ class AudioEngine: ObservableObject {
 
         // Track recently played
         PlaylistManager.shared.addToRecentlyPlayed(track)
+
+        // Update Now Playing info for Control Center / Lock Screen / CarPlay
+        NowPlayingService.shared.updateNowPlayingInfo(track: track)
 
         switch track.audioSourceType {
         case .generated:
@@ -524,6 +511,9 @@ class AudioEngine: ObservableObject {
         playbackState = .paused
         stopProgressTimer()
 
+        // Update Now Playing for Control Center / Lock Screen
+        NowPlayingService.shared.updatePlaybackRate(isPlaying: false)
+
         // Report pause event
         if let track = currentTrack {
             Task {
@@ -544,6 +534,9 @@ class AudioEngine: ObservableObject {
         }
         playbackState = .playing
         startProgressTimer()
+
+        // Update Now Playing for Control Center / Lock Screen
+        NowPlayingService.shared.updatePlaybackRate(isPlaying: true)
 
         // Report resume event
         if let track = currentTrack {
@@ -575,6 +568,9 @@ class AudioEngine: ObservableObject {
         playbackState = .stopped
         isBuffering = false
         bufferProgress = 0
+
+        // Clear Now Playing for Control Center / Lock Screen
+        NowPlayingService.shared.clearNowPlayingInfo()
     }
 
     func next() {
@@ -719,24 +715,48 @@ class AudioEngine: ObservableObject {
         // For generated audio, we don't actually seek - just update display
         audioPlayer?.currentTime = currentTime
 
-        // Seek in stream player
+        // Seek in stream player with proper tolerances for reliable seeking
         if let player = streamPlayer {
+            // CRITICAL FIX: Use seek with tolerances for reliable seeking,
+            // especially important immediately after playback starts.
+            // Zero tolerance ensures frame-accurate seeking.
             let cmTime = CMTime(seconds: currentTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+
+            // Check if player is ready to seek (has valid duration and loaded time ranges)
+            guard let currentItem = player.currentItem,
+                  currentItem.status == .readyToPlay else {
+                print("[AudioEngine] ⚠️ Seek requested but player not ready, deferring...")
+                // Player not ready - store the seek target and apply when ready
+                pendingSeekTime = currentTime
+                return
+            }
+
             // Capture track before entering non-MainActor closure
             let trackToReport = currentTrack
-            player.seek(to: cmTime) { _ in
+            let targetTime = currentTime
+
+            // Use zero tolerance for precise seeking, with completion handler
+            player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+                guard finished else {
+                    print("[AudioEngine] ⚠️ Seek to \(targetTime)s was cancelled or failed")
+                    return
+                }
+
                 // Report seek event
                 if let track = trackToReport {
                     Task {
                         try? await APIClient.shared.reportPlayback(
                             trackId: track.id.uuidString,
-                            event: .seeked(position: time)
+                            event: .seeked(position: targetTime)
                         )
                     }
                 }
             }
         }
     }
+
+    /// Pending seek time when player wasn't ready - will be applied when player becomes ready
+    private var pendingSeekTime: TimeInterval?
 
     func setVolume(_ newVolume: Float) {
         // Enforce safety limit
@@ -769,22 +789,35 @@ class AudioEngine: ObservableObject {
     }
 
     // MARK: - Fast Forward / Rewind with Speed
+
+    /// Timer for continuous seeking (retained to prevent leaks)
+    private var seekTimer: Timer?
+
     /// Start fast forward/rewind at a given speed multiplier
+    /// TECHNICAL DEBT FIX: Uses stored timer instead of untracked timer
+    /// and DispatchQueue.main.async instead of Task to reduce allocations
     func startSeek(forward: Bool, speed: Int = 2) {
+        // Stop any existing seek timer first
+        seekTimer?.invalidate()
+
         isSeeking = true
         seekSpeed = speed
         let seekInterval: TimeInterval = 0.1 // Update every 100ms
         let seekAmount = TimeInterval(speed) * seekInterval
 
         // Start a timer for continuous seeking
-        Timer.scheduledTimer(withTimeInterval: seekInterval, repeats: true) { [weak self] timer in
-            Task { @MainActor in
+        // TECHNICAL DEBT FIX: Store timer reference and use DispatchQueue instead of Task
+        seekTimer = Timer.scheduledTimer(withTimeInterval: seekInterval, repeats: true) { [weak self] timer in
+            // Use DispatchQueue.main.async instead of Task { @MainActor in }
+            // This reduces Task allocation overhead during rapid seeking
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     timer.invalidate()
                     return
                 }
                 guard self.isSeeking else {
                     timer.invalidate()
+                    self.seekTimer = nil
                     return
                 }
                 if forward {
@@ -807,6 +840,8 @@ class AudioEngine: ObservableObject {
     func stopSeek() {
         isSeeking = false
         seekSpeed = 1
+        seekTimer?.invalidate()
+        seekTimer = nil
     }
 
     /// Skip forward by a fixed amount (default 15 seconds)
@@ -984,10 +1019,25 @@ class AudioEngine: ObservableObject {
         }
 
         print("[AudioEngine] 🎛️ Starting generated audio: \(generatorType.rawValue)")
-        print("[AudioEngine] 📢 Volume: \(volume), Muted: \(isMuted)")
+        print("[AudioEngine] 📢 Volume: \(volume), Muted: \(isMuted), Crossfading: \(isCrossfading)")
 
-        // Stop any existing noise generator
-        if noiseGenerator != nil {
+        // CRITICAL FIX: Ensure audio session is active BEFORE creating NoiseGenerator
+        // This fixes emergency mode not producing sound when audio session was inactive
+        do {
+            let session = AVAudioSession.sharedInstance()
+            if session.category != .playback {
+                try session.setCategory(.playback, mode: .default, options: [])
+                print("[AudioEngine] 🔧 Audio session category set to playback for generated audio")
+            }
+            try session.setActive(true)
+            print("[AudioEngine] ✅ Audio session activated for generated audio")
+        } catch {
+            print("[AudioEngine] ⚠️ Failed to configure audio session: \(error)")
+            // Continue anyway - the NoiseGenerator.start() will also try to activate
+        }
+
+        // Stop any existing noise generator (but not during crossfade - old one is managed separately)
+        if noiseGenerator != nil && !isCrossfading {
             print("[AudioEngine] 🛑 Stopping existing noise generator")
             noiseGenerator?.stop()
         }
@@ -995,7 +1045,9 @@ class AudioEngine: ObservableObject {
         // Create and start new noise generator
         print("[AudioEngine] 🔨 Creating new NoiseGenerator for \(generatorType.rawValue)")
         noiseGenerator = NoiseGenerator(type: generatorType)
-        let actualVolume = isMuted ? 0 : volume
+
+        // During crossfade, start at volume 0 for smooth fade-in
+        let actualVolume: Float = isCrossfading ? 0 : (isMuted ? 0 : volume)
         print("[AudioEngine] 🔊 Setting volume to \(actualVolume)")
         noiseGenerator?.setVolume(actualVolume)
         print("[AudioEngine] ▶️ Starting NoiseGenerator...")
@@ -1088,7 +1140,9 @@ class AudioEngine: ObservableObject {
 
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayer?.volume = isMuted ? 0 : volume
+            // During crossfade, start at volume 0 for smooth fade-in
+            let initialVolume: Float = isCrossfading ? 0 : (isMuted ? 0 : volume)
+            audioPlayer?.volume = initialVolume
             audioPlayer?.delegate = AudioPlayerDelegate.shared
             audioPlayer?.enableRate = true
             audioPlayer?.rate = playbackRate
@@ -1098,7 +1152,7 @@ class AudioEngine: ObservableObject {
             duration = audioPlayer?.duration ?? track.duration
             playbackState = .playing
             startProgressTimer()
-            print("Playing bundled audio: \(audioURL.lastPathComponent)")
+            print("Playing bundled audio: \(audioURL.lastPathComponent), volume: \(initialVolume)")
         } catch {
             print("Failed to play audio: \(error)")
             playbackState = .error("Failed to play audio: \(error.localizedDescription)")
@@ -1156,11 +1210,18 @@ class AudioEngine: ObservableObject {
 
     /// Play audio using AVPlayer for progressive streaming
     private func playProgressiveStream(url: URL, track: AudioTrack) {
-        // Clean up existing stream player
-        cleanupStreamPlayer()
+        // During crossfade, DON'T clean up - the old stream is managed separately
+        // Only clean up if NOT crossfading
+        if !isCrossfading {
+            cleanupStreamPlayer()
+        }
 
         isBuffering = true
         bufferProgress = 0
+
+        // During crossfade, start at volume 0 for smooth fade-in
+        // Otherwise use normal volume
+        let initialVolume: Float = isCrossfading ? 0 : (isMuted ? 0 : volume)
 
         // MEMORY OPTIMIZATION (Increment 0028): Check LRU cache first
         let playerItem: AVPlayerItem
@@ -1169,13 +1230,13 @@ class AudioEngine: ObservableObject {
             playerItem = AVPlayerItem(url: url)
             cachedPlayer.replaceCurrentItem(with: playerItem)
             streamPlayer = cachedPlayer
-            streamPlayer?.volume = isMuted ? 0 : volume
+            streamPlayer?.volume = initialVolume
             print("[AudioEngine] 🚀 Reusing cached AVPlayer for track \(track.title)")
         } else {
             // Create new player and cache it
             playerItem = AVPlayerItem(url: url)
             let newPlayer = AVPlayer(playerItem: playerItem)
-            newPlayer.volume = isMuted ? 0 : volume
+            newPlayer.volume = initialVolume
             streamPlayer = newPlayer
 
             // Add to LRU cache
@@ -1191,9 +1252,30 @@ class AudioEngine: ObservableObject {
                 case .readyToPlay:
                     self.isBuffering = false
                     self.duration = item.duration.seconds.isNaN ? track.duration : item.duration.seconds
+
+                    // CRITICAL FIX: If stream became ready AFTER crossfade completed,
+                    // ensure volume is set to the user's desired level before playing
+                    // During crossfade, the crossfade timer handles volume fading
+                    if !self.isCrossfading {
+                        // Crossfade is done - apply final volume
+                        let targetVolume = self.isMuted ? 0 : self.volume
+                        self.streamPlayer?.volume = targetVolume
+                        print("[AudioEngine] 🔊 Stream ready (post-crossfade) - applied volume: \(targetVolume)")
+                    } else {
+                        // Crossfade in progress - crossfade timer will handle volume
+                        print("[AudioEngine] 🎶 Stream ready during crossfade - volume controlled by crossfade timer")
+                    }
+
                     self.streamPlayer?.play()
                     self.playbackState = .playing
                     self.setupStreamTimeObserver()
+
+                    // Apply any pending seek that was requested before player was ready
+                    if let pendingTime = self.pendingSeekTime {
+                        self.pendingSeekTime = nil
+                        print("[AudioEngine] ⏩ Applying deferred seek to \(pendingTime)s")
+                        self.seek(to: pendingTime)
+                    }
 
                     // Report playback started
                     Task {
@@ -1269,7 +1351,9 @@ class AudioEngine: ObservableObject {
     private func playCachedAudio(url: URL, track: AudioTrack) {
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.volume = isMuted ? 0 : volume
+            // During crossfade, start at volume 0 for smooth fade-in
+            let initialVolume: Float = isCrossfading ? 0 : (isMuted ? 0 : volume)
+            audioPlayer?.volume = initialVolume
             audioPlayer?.delegate = AudioPlayerDelegate.shared
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
@@ -1283,7 +1367,7 @@ class AudioEngine: ObservableObject {
                 try? await APIClient.shared.reportPlayback(trackId: track.id.uuidString, event: .started)
             }
 
-            print("Playing cached audio: \(url.lastPathComponent)")
+            print("Playing cached audio: \(url.lastPathComponent), volume: \(initialVolume)")
         } catch {
             print("Failed to play cached audio: \(error)")
             // Try streaming instead
@@ -1360,6 +1444,9 @@ class AudioEngine: ObservableObject {
                         self.handleTrackEnd()
                     }
                 }
+
+                // Update Now Playing time for Control Center / Lock Screen scrubber
+                NowPlayingService.shared.updatePlaybackTime()
             }
         }
     }
@@ -1383,6 +1470,9 @@ class AudioEngine: ObservableObject {
         noiseGenerator?.stop()
         noiseGenerator = nil
         currentTime = 0
+
+        // Clear any pending seek when stopping playback
+        pendingSeekTime = nil
     }
 
     // MARK: - Memory Optimization (Increment 0022)
@@ -1402,31 +1492,68 @@ class AudioEngine: ObservableObject {
 
     /// Clean up inactive audio resources to reduce memory usage
     /// Should be called periodically or on memory warnings
-    func cleanup() {
-        // Release player node if not playing
-        if playbackState != .playing, let player = playerNode {
-            releaseBuffer(for: player)
-            playerNode = nil
-            print("[AudioEngine] 🧹 Cleaned up inactive player node")
-        }
+    /// - Parameter aggressive: If true, performs more aggressive cleanup (for critical/emergency memory)
+    func cleanup(aggressive: Bool = false) {
+        print("[AudioEngine] 🧹 Starting cleanup (aggressive: \(aggressive))")
 
-        // Clear cached audio player if not in use
-        if audioPlayer?.isPlaying == false {
-            audioPlayer = nil
-            print("[AudioEngine] 🧹 Cleared inactive audio player")
-        }
+        // MEMORY OPTIMIZATION (Increment 0029): Use autoreleasepool for immediate deallocation
+        autoreleasepool {
+            // Release player node if not playing AND not paused (allow resume from pause)
+            if playbackState != .playing && playbackState != .paused, let player = playerNode {
+                releaseBuffer(for: player)
+                playerNode = nil
+                print("[AudioEngine] 🧹 Cleaned up inactive player node")
+            }
 
-        // Clean up stream player if stopped
-        if streamPlayer?.rate == 0 {
-            cleanupStreamPlayer()
-            print("[AudioEngine] 🧹 Cleaned up inactive stream player")
-        }
+            // Clear cached audio player if not in use AND not paused
+            if audioPlayer?.isPlaying == false && playbackState != .paused {
+                audioPlayer = nil
+                print("[AudioEngine] 🧹 Cleared inactive audio player")
+            }
 
-        // MEMORY OPTIMIZATION (Increment 0028): Clear LRU buffer cache
-        clearBufferCache()
+            // Clean up stream player if stopped (NOT if paused - need to resume!)
+            // CRITICAL FIX: Don't clean up streamPlayer when paused, otherwise resume() won't work
+            if streamPlayer?.rate == 0 && playbackState != .paused {
+                cleanupStreamPlayer()
+                print("[AudioEngine] 🧹 Cleaned up inactive stream player")
+            }
+
+            // MEMORY OPTIMIZATION (Increment 0029): Aggressive cache cleanup
+            if aggressive {
+                // Under memory pressure - reduce cache limit and clear aggressively
+                isUnderMemoryPressure = true
+                maxRecentBuffers = emergencyMaxRecentBuffers
+                clearBufferCacheAggressive(keepCurrent: true)
+
+                // Clear playback history to free memory
+                let historyCount = playbackHistory.count
+                playbackHistory.removeAll()
+                print("[AudioEngine] 🧹 Cleared playback history (\(historyCount) entries)")
+
+                // Clear up next queue if not actively playing
+                if playbackState != .playing {
+                    let queueCount = upNextQueue.count
+                    upNextQueue.removeAll()
+                    print("[AudioEngine] 🧹 Cleared up-next queue (\(queueCount) tracks)")
+                }
+            } else {
+                // Normal cleanup - just clear the buffer cache
+                clearBufferCache()
+            }
+        }
 
         // Listen for memory warnings and clean up automatically
         NotificationCenter.default.post(name: NSNotification.Name("AudioEngineDidCleanup"), object: nil)
+        print("[AudioEngine] ✅ Cleanup complete")
+    }
+
+    /// Restore normal cache limits after memory pressure resolves
+    func restoreNormalCacheLimits() {
+        if isUnderMemoryPressure {
+            isUnderMemoryPressure = false
+            maxRecentBuffers = defaultMaxRecentBuffers
+            print("[AudioEngine] ✅ Restored normal cache limits (max: \(maxRecentBuffers))")
+        }
     }
 
     // MARK: - LRU Buffer Cache (Increment 0028)
@@ -1451,6 +1578,12 @@ class AudioEngine: ObservableObject {
     ///   - trackId: Track UUID
     ///   - player: AVPlayer instance
     private func cacheBuffer(trackId: UUID, player: AVPlayer) {
+        // MEMORY OPTIMIZATION (Increment 0029): Skip caching during memory pressure
+        if isUnderMemoryPressure {
+            print("[AudioEngine] ⏭️ Skipping cache - under memory pressure")
+            return
+        }
+
         // Remove if already exists (to update position)
         if let index = recentlyPlayedBuffers.firstIndex(where: { $0.trackId == trackId }) {
             recentlyPlayedBuffers.remove(at: index)
@@ -1459,27 +1592,77 @@ class AudioEngine: ObservableObject {
         // Add to end (most recent)
         recentlyPlayedBuffers.append((trackId: trackId, player: player))
 
-        // Evict oldest if over limit
-        if recentlyPlayedBuffers.count > maxRecentBuffers {
-            let evicted = recentlyPlayedBuffers.removeFirst()
-            // Clean up evicted player
-            evicted.player.pause()
-            evicted.player.replaceCurrentItem(with: nil)
-            print("[AudioEngine] 🗑️ LRU cache EVICTED oldest track \(evicted.trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
-        } else {
-            print("[AudioEngine] 💾 LRU cache STORED track \(trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
+        // Evict oldest if over limit (use autoreleasepool for immediate deallocation)
+        autoreleasepool {
+            while recentlyPlayedBuffers.count > maxRecentBuffers {
+                let evicted = recentlyPlayedBuffers.removeFirst()
+                // Clean up evicted player thoroughly
+                evicted.player.pause()
+                if let currentItem = evicted.player.currentItem {
+                    // Remove all observers before releasing
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: currentItem)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemPlaybackStalled, object: currentItem)
+                }
+                evicted.player.replaceCurrentItem(with: nil)
+                print("[AudioEngine] 🗑️ LRU cache EVICTED track \(evicted.trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
+            }
         }
+
+        print("[AudioEngine] 💾 LRU cache STORED track \(trackId) (cache size: \(recentlyPlayedBuffers.count)/\(maxRecentBuffers))")
     }
 
     /// Clear the entire LRU cache (called during memory cleanup)
     private func clearBufferCache() {
+        guard !recentlyPlayedBuffers.isEmpty else { return }
+
         let count = recentlyPlayedBuffers.count
-        for cached in recentlyPlayedBuffers {
-            cached.player.pause()
-            cached.player.replaceCurrentItem(with: nil)
+        autoreleasepool {
+            for cached in recentlyPlayedBuffers {
+                cached.player.pause()
+                if let currentItem = cached.player.currentItem {
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: currentItem)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemPlaybackStalled, object: currentItem)
+                }
+                cached.player.replaceCurrentItem(with: nil)
+            }
+            recentlyPlayedBuffers.removeAll()
         }
-        recentlyPlayedBuffers.removeAll()
         print("[AudioEngine] 🧹 Cleared LRU buffer cache (\(count) buffers released)")
+    }
+
+    /// Aggressive cache cleanup - keeps only current playing track's buffer
+    /// - Parameter keepCurrent: If true, preserves the currently playing track's buffer
+    private func clearBufferCacheAggressive(keepCurrent: Bool) {
+        guard !recentlyPlayedBuffers.isEmpty else { return }
+
+        let currentTrackId = currentTrack?.id
+        var keptCount = 0
+        var clearedCount = 0
+
+        autoreleasepool {
+            var buffersToKeep: [(trackId: UUID, player: AVPlayer)] = []
+
+            for cached in recentlyPlayedBuffers {
+                if keepCurrent && cached.trackId == currentTrackId {
+                    // Keep the current track's buffer
+                    buffersToKeep.append(cached)
+                    keptCount += 1
+                } else {
+                    // Release this buffer
+                    cached.player.pause()
+                    if let currentItem = cached.player.currentItem {
+                        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: currentItem)
+                        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemPlaybackStalled, object: currentItem)
+                    }
+                    cached.player.replaceCurrentItem(with: nil)
+                    clearedCount += 1
+                }
+            }
+
+            recentlyPlayedBuffers = buffersToKeep
+        }
+
+        print("[AudioEngine] 🧹 Aggressive cache cleanup: cleared \(clearedCount), kept \(keptCount)")
     }
 
     private func handleTrackEnd() {
@@ -1614,6 +1797,8 @@ class AudioEngine: ObservableObject {
         var currentStep = 0
         let initialVolume = volume
 
+        print("[AudioEngine] 🎶 Starting crossfade to '\(newTrack.title)' over \(duration)s")
+
         // CRITICAL FIX: Configure audio session before crossfade
         // This ensures audio works after emergency mode stops
         // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
@@ -1626,19 +1811,33 @@ class AudioEngine: ObservableObject {
             print("[AudioEngine] 🚨 Emergency mode active - preserving emergency audio session (crossfade)")
         }
 
-        // Store old playback components
+        // Store old playback components BEFORE setting crossfade flag
         var oldPlayer = audioPlayer
         var oldPlayerNode = playerNode
-        var oldStreamPlayer = streamPlayer
         var oldNoiseGenerator = noiseGenerator
+
+        // CRITICAL: For stream players, store separately and keep playing during crossfade
+        // The cleanupStreamPlayer() will check isCrossfading flag and skip cleanup
+        if let oldStream = streamPlayer {
+            crossfadeOldStreamPlayer = oldStream
+            crossfadeOldTimeObserver = timeObserver
+            timeObserver = nil  // Clear so new track gets its own observer
+            streamPlayer = nil  // Clear so new track creates fresh player
+        }
+
+        // Set crossfade flag AFTER storing old components
+        isCrossfading = true
 
         // Prepare new track (but don't start yet)
         currentTrack = newTrack
         self.duration = newTrack.duration
+
+        // Update Now Playing info for Control Center / Lock Screen / CarPlay
+        NowPlayingService.shared.updateNowPlayingInfo(track: newTrack)
         playbackState = .loading
 
-        // Start new track at zero volume
-        setVolume(0)
+        // DON'T set volume to 0 here - let each player type handle its own initial volume
+        // The new player will be created at 0 volume and faded in
 
         switch newTrack.audioSourceType {
         case .generated:
@@ -1663,35 +1862,58 @@ class AudioEngine: ObservableObject {
                 currentStep += 1
                 let progress = Float(currentStep) / Float(fadeSteps)
 
-                // Fade out old track (quadratic ease-out)
+                // Fade out old track (quadratic ease-out for smooth decay)
                 let fadeOutCurve = 1.0 - pow(progress, 2)
-                oldPlayer?.volume = initialVolume * fadeOutCurve
-                oldPlayerNode?.volume = initialVolume * fadeOutCurve
-                oldStreamPlayer?.volume = initialVolume * fadeOutCurve
+                let fadeOutVolume = initialVolume * fadeOutCurve
+                oldPlayer?.volume = fadeOutVolume
+                oldPlayerNode?.volume = fadeOutVolume
+                self.crossfadeOldStreamPlayer?.volume = fadeOutVolume
 
-                // Fade in new track (quadratic ease-in)
+                // Fade in new track (quadratic ease-in for smooth rise)
                 let fadeInCurve = pow(progress, 2)
-                self.setVolume(initialVolume * fadeInCurve)
+                let fadeInVolume = initialVolume * fadeInCurve
+
+                // Apply fade-in to current players
+                // NOTE: We set volume on each player individually, NOT on self.volume
+                // self.volume represents the user's desired level and should NOT change during crossfade
+                self.audioPlayer?.volume = fadeInVolume
+                self.playerNode?.volume = fadeInVolume
+                self.streamPlayer?.volume = fadeInVolume
+                self.noiseGenerator?.setVolume(fadeInVolume)
 
                 if currentStep >= fadeSteps {
                     timer.invalidate()
                     self.fadeTimer = nil
+                    self.isCrossfading = false
 
                     // Stop old playback (AVPlayer uses pause, not stop)
                     oldPlayer?.pause()
+                    oldPlayer?.stop()
                     oldPlayerNode?.stop()
-                    oldStreamPlayer?.pause()
                     oldNoiseGenerator?.stop()
+
+                    // Clean up old stream player that was being faded out
+                    if let oldStreamObserver = self.crossfadeOldTimeObserver {
+                        self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
+                    }
+                    self.crossfadeOldStreamPlayer?.pause()
+                    self.crossfadeOldStreamPlayer = nil
+                    self.crossfadeOldTimeObserver = nil
 
                     // CRITICAL FIX: Nullify old players to prevent audio overlap
                     // This ensures progress timer and audio engine don't access stale players
                     oldPlayer = nil
-                    oldStreamPlayer = nil
                     oldPlayerNode = nil
                     oldNoiseGenerator = nil
 
                     // Restore full volume
-                    self.setVolume(initialVolume)
+                    self.volume = initialVolume
+                    self.audioPlayer?.volume = initialVolume
+                    self.playerNode?.volume = initialVolume
+                    self.streamPlayer?.volume = initialVolume
+                    self.noiseGenerator?.setVolume(initialVolume)
+
+                    print("[AudioEngine] ✅ Crossfade complete to '\(newTrack.title)'")
                 }
             }
         }
@@ -1786,9 +2008,48 @@ class AudioEngine: ObservableObject {
             return
         }
 
-        // Pause if headphones/speaker disconnected
-        if reason == .oldDeviceUnavailable {
+        // Log the route change for debugging
+        let session = AVAudioSession.sharedInstance()
+        let currentRoute = session.currentRoute
+        let outputs = currentRoute.outputs.map { "\($0.portName) (\($0.portType.rawValue))" }.joined(separator: ", ")
+
+        switch reason {
+        case .unknown:
+            print("[AudioEngine] ❓ Route change with unknown reason. Route: \(outputs)")
+
+        case .newDeviceAvailable:
+            // New device connected (e.g., Bluetooth headphones, AirPods)
+            // DO NOT pause - continue playing to the new device
+            print("[AudioEngine] 🎧 New audio device connected: \(outputs)")
+
+        case .oldDeviceUnavailable:
+            // Device disconnected (e.g., AirPods removed)
+            // Pause playback - this is standard iOS behavior
+            print("[AudioEngine] 🔌 Audio device disconnected. Pausing. New route: \(outputs)")
             pause()
+
+        case .categoryChange:
+            // Another app changed the audio category
+            print("[AudioEngine] 📱 Audio category changed. Route: \(outputs)")
+
+        case .override:
+            // Route was overridden (e.g., speaker button pressed during call)
+            print("[AudioEngine] 🔊 Audio route overridden. Route: \(outputs)")
+
+        case .wakeFromSleep:
+            // Device woke from sleep
+            print("[AudioEngine] 😴 Device woke from sleep. Route: \(outputs)")
+
+        case .noSuitableRouteForCategory:
+            // No suitable route for the current category
+            print("[AudioEngine] ⚠️ No suitable audio route available")
+
+        case .routeConfigurationChange:
+            // Route configuration changed (e.g., Bluetooth codec changed)
+            print("[AudioEngine] 🔄 Route configuration changed: \(outputs)")
+
+        @unknown default:
+            print("[AudioEngine] ❓ Future route change reason: \(reasonValue). Route: \(outputs)")
         }
     }
 }
@@ -2261,13 +2522,38 @@ class NoiseGenerator: @unchecked Sendable {
         }
 
         do {
+            // CRITICAL FIX: Ensure audio session is active before starting engine
+            // The NoiseGenerator uses its own AVAudioEngine instance, which requires
+            // an active audio session to produce sound
+            let session = AVAudioSession.sharedInstance()
+            let currentRoute = session.currentRoute
+            let outputs = currentRoute.outputs.map { "\($0.portName) (\($0.portType.rawValue))" }.joined(separator: ", ")
+            print("[NoiseGenerator] 📱 Audio route before start: \(outputs.isEmpty ? "None" : outputs)")
+
+            // Ensure category is set for playback
+            if session.category != .playback {
+                print("[NoiseGenerator] 🔧 Setting audio session category to playback")
+                try session.setCategory(.playback, mode: .default, options: [])
+            }
+
+            // Ensure session is active
+            if !session.isOtherAudioPlaying {
+                try session.setActive(true)
+                print("[NoiseGenerator] ✅ Audio session activated")
+            }
+
             print("[NoiseGenerator] 🎵 Starting audio engine for \(type.rawValue)")
             print("[NoiseGenerator] 📊 Volume: \(volume), Connections: \(engine.attachedNodes.count) nodes")
             try engine.start()
             isRunning = true
-            print("[NoiseGenerator] ✅ Audio engine STARTED successfully - sound should now play!")
+
+            // Verify audio route after start
+            let newRoute = session.currentRoute
+            let newOutputs = newRoute.outputs.map { "\($0.portName) (\($0.portType.rawValue))" }.joined(separator: ", ")
+            print("[NoiseGenerator] ✅ Audio engine STARTED - Route: \(newOutputs.isEmpty ? "None" : newOutputs)")
         } catch {
             print("[NoiseGenerator] ❌ Failed to start noise generator: \(error)")
+            print("[NoiseGenerator] ❌ Error details: \(error.localizedDescription)")
         }
     }
 

@@ -106,5 +106,38 @@
     <!-- Now Playing Info -->
     <key>MPNowPlayingInfoPropertyIsLiveStream</key>
     <false/>
+
+    <!-- Siri Integration -->
+    <key>NSSiriUsageDescription</key>
+    <string>Lulla uses Siri so you can control playback hands-free by saying things like "Hey Siri, play lullabies in Lulla".</string>
+
+    <!-- Siri Intents Supported -->
+    <key>INIntentsSupported</key>
+    <array>
+        <string>INPlayMediaIntent</string>
+        <string>INSearchForMediaIntent</string>
+        <string>INAddMediaIntent</string>
+    </array>
+
+    <!-- Alternative App Names for Siri Recognition -->
+    <key>INAlternativeAppNames</key>
+    <array>
+        <dict>
+            <key>INAlternativeAppName</key>
+            <string>Lulla Baby</string>
+        </dict>
+        <dict>
+            <key>INAlternativeAppName</key>
+            <string>Lulla Music</string>
+        </dict>
+        <dict>
+            <key>INAlternativeAppName</key>
+            <string>Baby Soother</string>
+        </dict>
+        <dict>
+            <key>INAlternativeAppName</key>
+            <string>Baby Cry Soother</string>
+        </dict>
+    </array>
 </dict>
 </plist>

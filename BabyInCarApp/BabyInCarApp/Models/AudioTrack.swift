@@ -252,29 +252,58 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
     }
 
     // MARK: - Default Emergency Track
-    /// Returns the default bundled emergency track (Piano Moment)
-    /// This is the ONLY track bundled with the app for instant emergency playback
+    /// Returns the default emergency track - uses GENERATED lullaby for instant, reliable playback
+    /// Generated audio starts immediately with no file loading delays or network issues
+    /// This guarantees emergency mode ALWAYS has sound, even offline
     static func defaultEmergencyTrack() -> AudioTrack {
         return AudioTrack(
             id: UUID(uuidString: "E7744FB8-6D21-4364-A000-000000000001") ?? UUID(),
-            title: "Piano Moment",
-            artist: "Bensound",
-            category: .classicalMusic,
+            title: "Soothing Lullaby",
+            artist: "Lulla",
+            category: .lullabies,
             language: nil,
-            duration: 157.0,  // ~2.5 minutes
+            duration: 300.0,  // 5 minutes of continuous lullaby
             ageRangeMin: 0,
             ageRangeMax: 36,
             optimalAgeMonths: Array(0...36),
             tempoBPM: 60,
             calmingScore: 0.95,  // Very high calming score
             isPremium: false,
-            isDownloaded: true,  // Already bundled!
-            audioSourceType: .bundled,
-            generatorType: nil,
-            fileName: "bensound_pianomoment",  // Without extension - AudioEngine adds .mp3
-            fileExtension: "mp3",
+            isDownloaded: true,  // Generated locally - always available!
+            audioSourceType: .generated,  // CRITICAL: Use generated audio for reliability
+            generatorType: .lullaby,  // Gentle lullaby melody
+            fileName: nil,
+            fileExtension: nil,
             streamURL: nil,
-            serverId: "default-emergency",
+            serverId: "default-emergency-generated",
+            artworkURL: nil,
+            isLocked: false
+        )
+    }
+
+    /// Alternative emergency track using Music Box sound
+    /// Can be used if lullaby doesn't suit the baby's preference
+    static func alternativeEmergencyTrack() -> AudioTrack {
+        return AudioTrack(
+            id: UUID(uuidString: "E7744FB8-6D21-4364-A000-000000000002") ?? UUID(),
+            title: "Music Box",
+            artist: "Lulla",
+            category: .lullabies,
+            language: nil,
+            duration: 300.0,
+            ageRangeMin: 0,
+            ageRangeMax: 36,
+            optimalAgeMonths: Array(0...36),
+            tempoBPM: 50,
+            calmingScore: 0.92,
+            isPremium: false,
+            isDownloaded: true,
+            audioSourceType: .generated,
+            generatorType: .musicBox,
+            fileName: nil,
+            fileExtension: nil,
+            streamURL: nil,
+            serverId: "default-emergency-musicbox",
             artworkURL: nil,
             isLocked: false
         )

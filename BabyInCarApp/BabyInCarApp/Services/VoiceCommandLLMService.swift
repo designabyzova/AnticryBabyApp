@@ -2,8 +2,20 @@
 //  VoiceCommandLLMService.swift
 //  BabyInCarApp
 //
-//  LLM-powered voice command parsing for intelligent control.
-//  Uses local inference with Ollama or falls back to cloud API.
+//  ⚠️ DEPRECATED - This custom voice control system does NOT work for CarPlay.
+//
+//  WHY IT DOESN'T WORK:
+//  1. CarPlay uses Siri for voice commands, not custom SFSpeechRecognizer
+//  2. Custom speech recognition requires app's microphone - unavailable in CarPlay
+//  3. This system only works when app is in foreground with microphone permission
+//
+//  PROPER CARPLAY VOICE INTEGRATION (TODO):
+//  1. Implement SiriKit Intents (INPlayMediaIntent, INPauseMediaIntent, etc.)
+//  2. Create Intents.intentdefinition in Xcode
+//  3. Handle intents in IntentHandler extension
+//  4. User says "Hey Siri, play lullabies in Lulla" -> Siri routes to app
+//
+//  See: https://developer.apple.com/documentation/sirikit/media
 //
 
 import Foundation
@@ -104,17 +116,18 @@ class VoiceCommandLLMService: ObservableObject {
 
     // MARK: - Configuration
 
-    /// Enable LLM-based parsing (more intelligent but requires API)
-    @Published var useLLMParsing: Bool = true
+    /// DISABLED: LLM parsing is not available on iOS (Ollama requires desktop)
+    /// The VoiceIntentClassifier using Apple's NaturalLanguage framework is used instead
+    @Published var useLLMParsing: Bool = false
 
-    /// Ollama endpoint for local inference
+    /// DEPRECATED: Ollama endpoint - not used on iOS
     var ollamaEndpoint: String = "http://localhost:11434/api/generate"
 
-    /// Cloud API fallback
+    /// DEPRECATED: Cloud API - not configured
     var cloudAPIEndpoint: String?
     var cloudAPIKey: String?
 
-    /// Model to use for local inference
+    /// DEPRECATED: Ollama model name
     var ollamaModel: String = "llama3.2"
 
     // MARK: - Dependencies
@@ -122,63 +135,137 @@ class VoiceCommandLLMService: ObservableObject {
     private let contentLibrary = ContentLibraryService.shared
 
     private init() {
-        // Load configuration from UserDefaults or environment
-        loadConfiguration()
-    }
-
-    private func loadConfiguration() {
-        if let endpoint = ProcessInfo.processInfo.environment["OLLAMA_ENDPOINT"] {
-            ollamaEndpoint = endpoint
-        }
-        if let model = ProcessInfo.processInfo.environment["OLLAMA_MODEL"] {
-            ollamaModel = model
-        }
-        if let cloudEndpoint = ProcessInfo.processInfo.environment["VOICE_LLM_ENDPOINT"] {
-            cloudAPIEndpoint = cloudEndpoint
-        }
-        if let apiKey = ProcessInfo.processInfo.environment["VOICE_LLM_API_KEY"] {
-            cloudAPIKey = apiKey
-        }
+        print("🎯 VoiceCommandLLMService: Using simple keyword matching")
     }
 
     // MARK: - Main Parsing
 
-    /// Parse voice command using LLM or fallback to rule-based
+    /// Parse voice command using SIMPLE keyword matching
+    /// No ML, no LLM, no complex stuff - just works
     func parseCommand(_ text: String) async -> ParsedVoiceCommand {
         // Normalize: lowercase, trim whitespace, and remove trailing punctuation
         var normalizedText = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         // Remove common trailing punctuation from speech recognition
-        while let lastChar = normalizedText.last,
-              ".!?,;:".contains(lastChar) {
+        while let lastChar = normalizedText.last, ".!?,;:".contains(lastChar) {
             normalizedText.removeLast()
         }
         normalizedText = normalizedText.trimmingCharacters(in: .whitespaces)
 
-        print("🎯 VoiceCommandLLM: Parsing '\(text)' → normalized: '\(normalizedText)'")
+        print("🎯 Voice: '\(text)' → '\(normalizedText)'")
 
-        // First, try enhanced rule-based parsing (fast, no API needed)
-        let ruleBasedResult = parseWithEnhancedRules(normalizedText)
+        // SIMPLE keyword matching - no ML, no LLM, just works
+        let result = parseSimple(normalizedText)
+        print("🎯 Voice result: \(result.intent) (\(Int(result.confidence * 100))%)")
+        return result
+    }
 
-        print("🎯 VoiceCommandLLM: Rule-based result: \(ruleBasedResult.intent) (confidence: \(ruleBasedResult.confidence))")
+    // MARK: - Simple Keyword Matching
 
-        // If high confidence from rules, use it
-        if ruleBasedResult.confidence >= 0.8 {
-            print("🎯 VoiceCommandLLM: High confidence, using rule-based result")
-            return ruleBasedResult
+    /// Dead simple keyword matching that actually works
+    private func parseSimple(_ text: String) -> ParsedVoiceCommand {
+        // PLAYBACK CONTROL - most common
+        if text == "play" || text == "start" || text == "resume" || text == "go" ||
+           text.hasPrefix("play music") || text.hasPrefix("play something") ||
+           text.hasPrefix("play anything") || text.hasPrefix("start playing") {
+            return ParsedVoiceCommand(originalText: text, intent: .play, confidence: 0.95, parameters: [:], alternativeIntents: [])
         }
 
-        // Try LLM parsing if enabled and rule-based is uncertain
-        if useLLMParsing {
-            if let llmResult = await parseWithLLM(normalizedText) {
-                // If LLM is more confident, use it
-                if llmResult.confidence > ruleBasedResult.confidence {
-                    return llmResult
-                }
-            }
+        if text == "pause" || text == "stop" || text.contains("pause") || text.contains("stop") {
+            return ParsedVoiceCommand(originalText: text, intent: .pause, confidence: 0.95, parameters: [:], alternativeIntents: [])
         }
 
-        // Fall back to rule-based result
-        return ruleBasedResult
+        if text == "next" || text == "skip" || text.contains("next") || text.contains("skip") {
+            return ParsedVoiceCommand(originalText: text, intent: .next, confidence: 0.95, parameters: [:], alternativeIntents: [])
+        }
+
+        if text == "previous" || text == "back" || text.contains("previous") || text.contains("go back") || text.contains("last track") {
+            return ParsedVoiceCommand(originalText: text, intent: .previous, confidence: 0.95, parameters: [:], alternativeIntents: [])
+        }
+
+        // VOLUME
+        if text.contains("louder") || text.contains("volume up") || text.contains("turn up") {
+            return ParsedVoiceCommand(originalText: text, intent: .volumeUp, confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("quieter") || text.contains("softer") || text.contains("volume down") || text.contains("turn down") {
+            return ParsedVoiceCommand(originalText: text, intent: .volumeDown, confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("mute") || text == "quiet" || text == "silence" {
+            return ParsedVoiceCommand(originalText: text, intent: .mute, confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        // CATEGORIES - check these before generic play
+        if text.contains("classical") || text.contains("mozart") || text.contains("beethoven") || text.contains("bach") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.classicalMusic), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("lullaby") || text.contains("lullabies") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.lullabies), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("fairy tale") || text.contains("story") || text.contains("stories") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.fairyTales), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("nature") || text.contains("ocean") || text.contains("waves") || text.contains("forest") || text.contains("birds") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.natureSounds), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("ambient") || text.contains("womb") || text.contains("heartbeat") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.ambient), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("instrumental") || text.contains("piano") || text.contains("guitar") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.instrumental), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("children") || text.contains("kids") || text.contains("nursery") {
+            return ParsedVoiceCommand(originalText: text, intent: .playCategory(.childrenSongs), confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        // MOODS
+        if text.contains("sleepy") || text.contains("sleep") || text.contains("bedtime") || text.contains("tired") {
+            return ParsedVoiceCommand(originalText: text, intent: .playMood(.sleepy), confidence: 0.85, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("crying") || text.contains("upset") || text.contains("calm down") {
+            return ParsedVoiceCommand(originalText: text, intent: .playMood(.crying), confidence: 0.85, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("playful") || text.contains("happy") || text.contains("awake") {
+            return ParsedVoiceCommand(originalText: text, intent: .playMood(.playful), confidence: 0.85, parameters: [:], alternativeIntents: [])
+        }
+
+        // EMERGENCY - includes "cry again" to re-trigger emergency mode
+        if text.contains("emergency") || text.contains("help") || text.contains("baby crying") ||
+           text.contains("cry again") || text.contains("crying again") || text.contains("baby cry") {
+            return ParsedVoiceCommand(originalText: text, intent: .emergency, confidence: 0.95, parameters: [:], alternativeIntents: [])
+        }
+
+        // SHUFFLE/REPEAT
+        if text.contains("shuffle") {
+            let intent: VoiceCommandIntent = text.contains("off") ? .shuffleOff : .shuffleOn
+            return ParsedVoiceCommand(originalText: text, intent: intent, confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        if text.contains("repeat") {
+            let intent: VoiceCommandIntent = text.contains("off") ? .repeatOff : (text.contains("one") || text.contains("this") ? .repeatOne : .repeatAll)
+            return ParsedVoiceCommand(originalText: text, intent: intent, confidence: 0.9, parameters: [:], alternativeIntents: [])
+        }
+
+        // QUIT
+        if text.contains("quit") || text.contains("exit") || text.contains("close") {
+            return ParsedVoiceCommand(originalText: text, intent: .quit, confidence: 0.85, parameters: [:], alternativeIntents: [])
+        }
+
+        // If text starts with "play " and we haven't matched a category, treat as generic play
+        if text.hasPrefix("play ") {
+            return ParsedVoiceCommand(originalText: text, intent: .play, confidence: 0.8, parameters: [:], alternativeIntents: [])
+        }
+
+        // UNKNOWN - nothing matched
+        return ParsedVoiceCommand(originalText: text, intent: .unknown(text: text), confidence: 0.0, parameters: [:], alternativeIntents: [])
     }
 
     // MARK: - Enhanced Rule-Based Parsing
@@ -252,23 +339,10 @@ class VoiceCommandLLMService: ObservableObject {
             return (.previous, 0.9)
         }
 
-        // Play commands - exclude "go back" which should be previous
-        let playPatterns = ["play", "start", "resume", "continue", "begin"]
-        for pattern in playPatterns {
-            if text == pattern || (text.hasPrefix("\(pattern) ") && !containsContentKeywords(text)) {
-                return (.play, pattern == "play" ? 0.95 : 0.85)
-            }
-        }
-
-        // Special case: bare "go" (not "go back") can mean play
-        if text == "go" {
-            return (.play, 0.85)
-        }
-
-        // Pause/Stop commands
+        // Pause/Stop commands - check BEFORE play to avoid "stop" matching "start"
         let pausePatterns = ["pause", "stop", "halt", "wait", "hold"]
         for pattern in pausePatterns {
-            if text.contains(pattern) {
+            if text.contains(pattern) && !text.contains("don't stop") {
                 return (pattern == "stop" ? .stop : .pause, 0.9)
             }
         }
@@ -281,23 +355,56 @@ class VoiceCommandLLMService: ObservableObject {
             }
         }
 
+        // 🔧 FIX: Generic play commands (with or without "music", "something", etc.)
+        // "play", "play music", "play something", "play anything" -> all should trigger .play
+        let playPatterns = ["play", "start", "resume", "continue", "begin"]
+        for pattern in playPatterns {
+            // Exact match: "play"
+            if text == pattern {
+                return (.play, 0.95)
+            }
+
+            // Play with generic content: "play music", "play something", "play anything"
+            if text.hasPrefix("\(pattern) ") {
+                let rest = String(text.dropFirst(pattern.count + 1))
+                let genericKeywords = ["music", "something", "anything", "audio", "sound", "songs", "it"]
+                if genericKeywords.contains(rest) || genericKeywords.contains(where: { rest.contains($0) && !containsSpecificContentKeyword(rest) }) {
+                    return (.play, 0.9)
+                }
+
+                // If it contains specific content keywords, it will be handled by category/mood parsers
+                // Don't return nil here - let it fall through
+            }
+        }
+
+        // Special case: bare "go" (not "go back") can mean play
+        if text == "go" {
+            return (.play, 0.85)
+        }
+
         return nil
     }
 
-    private func containsContentKeywords(_ text: String) -> Bool {
-        let contentKeywords = [
-            // Categories (NO white noise!)
-            "music", "song", "track", "playlist", "tale", "story", "sound",
-            "piano", "classical", "lullaby", "fairy", "nature", "instrumental",
-            "children", "podcast", "ambient", "womb", "heartbeat",
+    /// Check if text contains SPECIFIC content keywords (not generic ones like "music")
+    private func containsSpecificContentKeyword(_ text: String) -> Bool {
+        let specificKeywords = [
+            // Specific categories
+            "classical", "lullaby", "lullabies", "fairy", "tale", "tales", "story", "stories",
+            "nature", "ambient", "instrumental", "womb", "heartbeat",
             // Artists/composers
             "mozart", "beethoven", "bach", "chopin", "debussy",
-            // Nature sounds (ONLY gentle - NO rain/thunder/storm/wind!)
-            "ocean", "waves", "forest", "birds", "river", "water",
+            // Nature specifics
+            "ocean", "waves", "forest", "birds", "river",
             // Mood-related
-            "sleepy", "calm", "crying", "fussy", "playful"
+            "sleepy", "bedtime", "calm", "crying", "fussy", "playful"
         ]
-        return contentKeywords.contains { text.contains($0) }
+        return specificKeywords.contains { text.contains($0) }
+    }
+
+    /// DEPRECATED: Old containsContentKeywords - too aggressive, blocks valid "play music" commands
+    private func containsContentKeywords(_ text: String) -> Bool {
+        // Now only returns true for SPECIFIC content that should route to category/mood
+        return containsSpecificContentKeyword(text)
     }
 
     // MARK: - Volume Command Parsing
@@ -533,8 +640,9 @@ class VoiceCommandLLMService: ObservableObject {
     // MARK: - Special Command Parsing
 
     private func parseSpecialCommand(_ text: String) -> (intent: VoiceCommandIntent, confidence: Double)? {
-        // Emergency
-        let emergencyPatterns = ["emergency", "cry stop", "help", "baby crying", "calm baby", "soothe", "urgent"]
+        // Emergency - includes "cry again" to re-trigger emergency mode
+        let emergencyPatterns = ["emergency", "cry stop", "help", "baby crying", "calm baby", "soothe", "urgent",
+                                 "cry again", "crying again", "baby cry"]
         for pattern in emergencyPatterns {
             if text.contains(pattern) {
                 return (.emergency, pattern == "emergency" ? 0.95 : 0.85)

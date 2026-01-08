@@ -8,9 +8,39 @@
 
 import SwiftUI
 import UserNotifications
+import Intents
+
+// MARK: - App Delegate for Siri Integration
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // NOTE: Siri authorization is NOT requested on launch to avoid threading issues.
+        // iOS automatically prompts for Siri authorization when the user first invokes
+        // a Siri intent for this app (e.g., "Hey Siri, play lullabies in Lulla").
+        // Requesting it proactively can cause crashes due to MainActor isolation.
+        return true
+    }
+
+    /// Handle Siri intents when app is launched via Siri
+    func application(_ application: UIApplication, handlerFor intent: INIntent) -> Any? {
+        // Route all supported media intents to SiriIntentHandler
+        switch intent {
+        case is INPlayMediaIntent:
+            return SiriIntentHandler.shared
+        case is INSearchForMediaIntent:
+            return SiriIntentHandler.shared
+        case is INAddMediaIntent:
+            return SiriIntentHandler.shared
+        default:
+            return nil
+        }
+    }
+}
 
 @main
 struct BabyInCarApp: App {
+    // Connect AppDelegate for Siri support
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     @StateObject private var appState = AppState()
     @StateObject private var audioEngine = AudioEngine.shared
     @StateObject private var subscriptionManager = SubscriptionManager.shared
@@ -70,6 +100,10 @@ struct BabyInCarApp: App {
         // MEMORY SAFETY: Start memory monitoring early
         setupMemoryMonitoring()
 
+        // CRITICAL: Load user data FIRST before checking conditions
+        // This ensures isOnboardingComplete and currentBaby are loaded from UserDefaults
+        appState.loadUserData()
+
         // 🔧 FIX: Configure VoiceCommandHandler with AppState
         // This was missing - voice commands weren't executing because handler had no state!
         VoiceCommandHandler.shared.configure(with: appState)
@@ -81,10 +115,15 @@ struct BabyInCarApp: App {
             _ = await NotificationService.shared.requestAuthorization()
 
             // AUTO-ENABLE CRY MONITORING (Default: ON for parent safety)
-            // Only auto-start if:
-            // 1. User hasn't disabled auto-monitoring in settings
-            // 2. Onboarding is complete (baby is configured)
-            // 3. We have a baby profile
+            // Now data is loaded, so conditions will check actual saved values
+            // Condition 1: User hasn't disabled auto-monitoring in settings
+            // Condition 2: Onboarding is complete (baby is configured)
+            // Condition 3: We have a baby profile
+            print("[BabyInCarApp] 🔍 Checking cry monitoring conditions:")
+            print("[BabyInCarApp]   - autoCryMonitoringEnabled: \(appState.autoCryMonitoringEnabled)")
+            print("[BabyInCarApp]   - isOnboardingComplete: \(appState.isOnboardingComplete)")
+            print("[BabyInCarApp]   - currentBaby: \(appState.currentBaby?.name ?? "nil")")
+
             if appState.autoCryMonitoringEnabled &&
                appState.isOnboardingComplete &&
                appState.currentBaby != nil {
@@ -94,14 +133,61 @@ struct BabyInCarApp: App {
                 } catch {
                     print("[BabyInCarApp] ⚠️ Failed to auto-enable cry monitoring: \(error)")
                 }
+            } else {
+                print("[BabyInCarApp] ⚠️ Cry monitoring NOT auto-enabled - conditions not met")
             }
         }
 
-        // Load cached data
-        appState.loadUserData()
-
         // Initialize audio session
         audioEngine.configureAudioSession()
+
+        // Initialize default playlist so player is always visible (but NOT auto-playing)
+        // Playback only starts on cry detection or manual user action
+        Task {
+            await initializeDefaultPlaylist()
+        }
+    }
+
+    /// Initialize a default classical playlist so the player is always visible and ready
+    /// Player shows the track but stays SILENT until cry detection or user taps Play
+    private func initializeDefaultPlaylist() async {
+        // Wait a brief moment for ContentLibraryService to load
+        try? await Task.sleep(nanoseconds: 500_000_000)  // 500ms
+
+        // Get classical music tracks for default queue (high calming scores first)
+        let library = ContentLibraryService.shared
+        let classicalTracks = library.allTracks
+            .filter { $0.category == .classicalMusic }
+            .sorted { $0.calmingScore > $1.calmingScore }
+
+        // Use top 20 classical tracks or fallback to emergency track
+        let selectedTracks = Array(classicalTracks.prefix(20))
+
+        guard !selectedTracks.isEmpty else {
+            // Fallback: use generated emergency track if no classical tracks
+            await MainActor.run {
+                audioEngine.currentTrack = AudioTrack.defaultEmergencyTrack()
+            }
+            return
+        }
+
+        await MainActor.run {
+            // Set first track as current (for player display) but DON'T play
+            let defaultTrack = selectedTracks.first!
+            audioEngine.currentTrack = defaultTrack
+
+            // Queue remaining tracks for up-next
+            audioEngine.upNextQueue = Array(selectedTracks.dropFirst())
+
+            // Ensure playback is stopped - player visible but silent
+            // Playback starts ONLY on cry detection or manual Play tap
+            if audioEngine.playbackState.isPlaying {
+                audioEngine.pause()
+            }
+
+            print("[BabyInCarApp] 🎵 Default playlist initialized with \(selectedTracks.count) classical tracks")
+            print("[BabyInCarApp] 🎵 First track: \(defaultTrack.title) - player visible, waiting for cry detection or user action")
+        }
     }
 
     /// Setup memory pressure monitoring to prevent iOS from killing the app

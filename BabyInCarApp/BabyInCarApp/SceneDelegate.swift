@@ -2,7 +2,7 @@
 //  SceneDelegate.swift
 //  BabyInCarApp
 //
-//  Main app scene delegate
+//  Main app scene delegate with Siri Shortcuts support
 //
 
 #if canImport(UIKit)
@@ -35,6 +35,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = UIHostingController(rootView: contentView)
         self.window = window
         window.makeKeyAndVisible()
+
+        // Handle any user activities from Siri Shortcuts (cold launch)
+        for userActivity in connectionOptions.userActivities {
+            handleUserActivity(userActivity)
+        }
+
+        // Donate common shortcuts to Siri
+        Task { @MainActor in
+            SiriShortcutsService.shared.donateAllShortcuts()
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -55,6 +65,29 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidEnterBackground(_ scene: UIScene) {
         // Save any data and release shared resources
+    }
+
+    // MARK: - Siri Shortcuts / NSUserActivity Handling
+
+    /// Handle NSUserActivity when app is continued via Siri Shortcuts (warm launch)
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        handleUserActivity(userActivity)
+    }
+
+    /// Process a user activity (from Siri Shortcut or Handoff)
+    private func handleUserActivity(_ userActivity: NSUserActivity) {
+        let activityType = userActivity.activityType
+        let userInfo = userActivity.userInfo
+
+        print("[SceneDelegate] Handling user activity: \(activityType)")
+
+        // Delegate to SiriShortcutsService
+        Task { @MainActor in
+            SiriShortcutsService.shared.handleShortcut(
+                activityType: activityType,
+                userInfo: userInfo
+            )
+        }
     }
 }
 #endif

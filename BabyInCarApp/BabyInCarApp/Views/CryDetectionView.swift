@@ -107,8 +107,14 @@ struct CryDetectionView: View {
                             .font(.headline)
                             .fontWeight(.semibold)
 
-                        // Show accuracy badge if we have enough data
-                        if accuracyTracker.totalPredictions >= 5 {
+                        // Show detected cry type prominently when cry is detected
+                        if cryDetection.isCryDetected || emergencyService.isEmergencyModeActive {
+                            DetectedCryTypeBadge(
+                                cryType: emergencyService.detectedCryType,
+                                confidence: cryDetection.confidenceLevel
+                            )
+                        } else if accuracyTracker.totalPredictions >= 5 {
+                            // Show accuracy badge when not detecting
                             AIAccuracyBadge(tracker: accuracyTracker)
                         }
                     }
@@ -147,12 +153,12 @@ struct CryDetectionView: View {
                     breatheAnimation = true
                 }
             }
-            .onDisappear {
-                if cryDetection.isMonitoring && !isAnyEmergencyActive {
-                    cryDetection.stopMonitoring()
-                    emergencyService.disableAIMonitoring()
-                }
-            }
+            // CRITICAL FIX: Do NOT stop monitoring when view disappears!
+            // Cry detection should continue in the background for baby safety.
+            // The old code was stopping monitoring whenever user navigated away,
+            // which completely broke the feature. Monitoring should only stop
+            // when explicitly disabled by the user via toggleMonitoring().
+            // .onDisappear { ... } - REMOVED
         }
     }
 
@@ -357,29 +363,35 @@ struct CryDetectionView: View {
     // MARK: - Cry Detected Card
     private var cryDetectedCard: some View {
         VStack(spacing: 14) {
-            // Header with cry type
+            // Header with cry type - PROMINENTLY showing detected type!
             HStack(spacing: 12) {
-                // Icon
+                // Icon with cry-type-specific color
                 ZStack {
                     Circle()
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(cryTypeColor(for: emergencyService.detectedCryType).opacity(0.15))
                         .frame(width: 44, height: 44)
 
                     Image(systemName: emergencyService.detectedCryType.iconName)
                         .font(.system(size: 18))
-                        .foregroundColor(.orange)
+                        .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
                 }
 
-                // Cry info
+                // Cry info - use displayName NOT rawValue!
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(emergencyService.detectedCryType.rawValue)
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                    HStack(spacing: 6) {
+                        Text("Detected:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(emergencyService.detectedCryType.displayName)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
+                    }
 
                     Text(emergencyService.detectedCryType.suggestedAction)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
 
                 Spacer()
@@ -389,8 +401,8 @@ struct CryDetectionView: View {
                     Text("\(Int(cryDetection.confidenceLevel * 100))%")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                    Text("match")
+                        .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
+                    Text("confidence")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -706,8 +718,103 @@ struct CryDetectionView: View {
                     reportSuccess()
                 }
             }
+
+            // DEBUG: Manual cry trigger button (only in debug builds)
+            #if DEBUG
+            HStack(spacing: 12) {
+                // Simulate Cry button - triggers emergency mode as if cry was detected
+                QuickActionButton(
+                    icon: "waveform.badge.exclamationmark",
+                    title: "Simulate Cry",
+                    subtitle: "Test trigger",
+                    color: .red,
+                    isDisabled: isAnyEmergencyActive
+                ) {
+                    simulateCryDetection()
+                }
+
+                // Cry Again button - re-triggers emergency mode
+                QuickActionButton(
+                    icon: "arrow.clockwise",
+                    title: "Cry Again",
+                    subtitle: "Re-trigger",
+                    color: .red,
+                    isDisabled: false
+                ) {
+                    simulateCryDetection()
+                }
+
+                Spacer()
+            }
+            #endif
         }
     }
+
+    // MARK: - Debug Actions
+    #if DEBUG
+    /// Simulate cry detection for testing - triggers emergency mode
+    private func simulateCryDetection() {
+        print("[DEBUG] 🧪 Simulating cry detection...")
+
+        // Ensure we have a baby profile
+        guard let baby = baby else {
+            print("[DEBUG] ⚠️ No baby profile - creating default")
+            let defaultBaby = Baby(name: "Test Baby", birthDate: Calendar.current.date(byAdding: .month, value: -6, to: Date())!)
+            self.baby = defaultBaby
+
+            Task {
+                // Enable monitoring first if not enabled
+                if !emergencyService.isAIMonitoringEnabled {
+                    try? await emergencyService.enableAIMonitoring(for: defaultBaby)
+                }
+
+                // Trigger emergency mode
+                triggerEmergencyResponse(for: defaultBaby)
+            }
+            return
+        }
+
+        Task {
+            // Enable monitoring first if not enabled
+            if !emergencyService.isAIMonitoringEnabled {
+                try? await emergencyService.enableAIMonitoring(for: baby)
+            }
+
+            // Trigger emergency mode
+            triggerEmergencyResponse(for: baby)
+        }
+    }
+
+    /// Trigger emergency response with simulated cry
+    private func triggerEmergencyResponse(for baby: Baby) {
+        print("[DEBUG] 🔴 Triggering emergency response for \(baby.name)")
+
+        // Set a random cry type for testing variety
+        let cryTypes: [CryType] = [.hunger, .tired, .discomfort, .attention, .pain]
+        let randomType = cryTypes.randomElement() ?? .general
+
+        Task {
+            // Build and start emergency queue
+            let tracks = await smartQueue.buildQueue(
+                for: randomType,
+                babyAge: baby.ageInMonths,
+                language: Locale.current.language.languageCode?.identifier ?? "en",
+                maxTracks: 20
+            )
+
+            if !tracks.isEmpty {
+                await smartQueue.startQueue(tracks: tracks)
+                emergencyStartTime = Date()
+                print("[DEBUG] ✅ Emergency queue started with \(tracks.count) tracks for \(randomType.rawValue) cry")
+            } else {
+                // Fallback to ambient mode
+                await smartQueue.startAmbientMode(babyAge: baby.ageInMonths, language: "en")
+                emergencyStartTime = Date()
+                print("[DEBUG] ✅ Fallback to ambient mode")
+            }
+        }
+    }
+    #endif
 
     // MARK: - Info Sections (Collapsible)
     private var infoSections: some View {
@@ -821,6 +928,26 @@ struct CryDetectionView: View {
         return .green
     }
 
+    /// Color for cry type - makes each cry type visually distinct
+    private func cryTypeColor(for cryType: CryType) -> Color {
+        switch cryType {
+        case .hunger:
+            return .orange
+        case .tired:
+            return .purple
+        case .pain:
+            return .red
+        case .discomfort:
+            return .yellow
+        case .attention:
+            return .blue
+        case .general:
+            return .teal
+        case .unknown:
+            return .gray
+        }
+    }
+
     private func barHeight(for index: Int) -> CGFloat {
         let threshold = Float(index) / 24.0
         // CRITICAL FIX: Better audio level scaling for visualization
@@ -904,6 +1031,10 @@ struct CryDetectionView: View {
             let babyAge = baby.ageInMonths
             let preferredLanguage = Locale.current.language.languageCode?.identifier ?? "en"
 
+            // Log the cry type being used for playlist selection
+            print("[CryDetectionView] 🎵 Building playlist for cry type: \(detectedCryType.displayName) (raw: \(detectedCryType.rawValue))")
+            print("[CryDetectionView] 📊 Detection confidence: \(Int(cryDetection.confidenceLevel * 100))%, Intensity: \(Int(cryDetection.cryIntensity * 100))%")
+
             let tracks = await smartQueue.buildQueue(
                 for: detectedCryType,
                 babyAge: babyAge,
@@ -912,9 +1043,11 @@ struct CryDetectionView: View {
             )
 
             if !tracks.isEmpty {
+                print("[CryDetectionView] ✅ Starting cry-specific playlist with \(tracks.count) tracks for '\(detectedCryType.displayName)'")
                 await smartQueue.startQueue(tracks: tracks)
                 emergencyStartTime = Date()
             } else {
+                print("[CryDetectionView] ⚠️ No cry-specific tracks found, falling back to ambient mode")
                 await smartQueue.startAmbientMode(babyAge: babyAge, language: preferredLanguage)
                 emergencyStartTime = Date()
             }
@@ -1319,9 +1452,9 @@ struct AIAccuracyBadge: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "chart.line.uptrend.xyaxis")
+            Image(systemName: "brain")
                 .font(.system(size: 10))
-            Text("\(Int(tracker.overallAccuracy))%")
+            Text("AI Accuracy: \(Int(tracker.overallAccuracy))%")
                 .font(.caption2)
                 .fontWeight(.medium)
         }
@@ -1332,6 +1465,49 @@ struct AIAccuracyBadge: View {
             Capsule()
                 .fill((tracker.overallAccuracy >= 75 ? Color.green : Color.orange).opacity(0.15))
         )
+    }
+}
+
+/// Shows detected cry type prominently when a cry is detected
+struct DetectedCryTypeBadge: View {
+    let cryType: CryType
+    let confidence: Double
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: cryType.iconName)
+                .font(.system(size: 11, weight: .semibold))
+            Text("\(cryType.displayName)")
+                .font(.caption)
+                .fontWeight(.semibold)
+            Text("(\(Int(confidence * 100))%)")
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(cryTypeColor)
+        )
+    }
+
+    private var cryTypeColor: Color {
+        switch cryType {
+        case .hunger:
+            return .orange
+        case .tired:
+            return .purple
+        case .pain:
+            return .red
+        case .discomfort:
+            return .yellow.opacity(0.8)
+        case .attention:
+            return .blue
+        case .general, .unknown:
+            return .gray
+        }
     }
 }
 

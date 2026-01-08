@@ -127,6 +127,11 @@
 		A1000104 /* SmartEmergencyQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000104 /* SmartEmergencyQueue.swift */; };
 		A1000105 /* SmartQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000105 /* SmartQueueView.swift */; };
 		A1000200 /* VoiceCommandLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000200 /* VoiceCommandLLMService.swift */; };
+		A1000210 /* SiriIntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000210 /* SiriIntentHandler.swift */; };
+		A1000300 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000300 /* AudioSessionManager.swift */; };
+		A1000311 /* SiriShortcutsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000311 /* SiriShortcutsService.swift */; };
+		A1000312 /* NowPlayingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000312 /* NowPlayingService.swift */; };
+		A1000313 /* AppIntentVocabulary.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2000313 /* AppIntentVocabulary.plist */; };
 		C318B073148ACC7E8A068F15 /* DebugMemoryOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */; };
 		CF68B8E0F2DF4D3BD3EA95D7 /* PlaybackQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */; };
 		CFEEA0B45A301958F2F7875D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB48B79C6512CFA0D678E6ED /* Foundation.framework */; };
@@ -293,6 +298,11 @@
 		A2000104 /* SmartEmergencyQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartEmergencyQueue.swift; sourceTree = "<group>"; };
 		A2000105 /* SmartQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartQueueView.swift; sourceTree = "<group>"; };
 		A2000200 /* VoiceCommandLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandLLMService.swift; sourceTree = "<group>"; };
+		A2000210 /* SiriIntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriIntentHandler.swift; sourceTree = "<group>"; };
+		A2000300 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
+		A2000311 /* SiriShortcutsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriShortcutsService.swift; sourceTree = "<group>"; };
+		A2000312 /* NowPlayingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingService.swift; sourceTree = "<group>"; };
+		A2000313 /* AppIntentVocabulary.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = AppIntentVocabulary.plist; sourceTree = "<group>"; };
 		A3000000 /* BabyInCarApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		B2B4790E8DF1B874FE993ECB /* MemoryProfilingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryProfilingTests.swift; sourceTree = "<group>"; };
@@ -499,6 +509,7 @@
 				A2000022 /* ContentLibraryService.swift */,
 				A2000023 /* SpeechRecognitionService.swift */,
 				A2000200 /* VoiceCommandLLMService.swift */,
+				A2000210 /* SiriIntentHandler.swift */,
 				A2000024 /* SubscriptionManager.swift */,
 				A2000025 /* APIClient.swift */,
 				A2000026 /* AudioDownloadManager.swift */,
@@ -534,6 +545,9 @@
 				A20000F9 /* PlaylistSelector.swift */,
 				A2000103 /* UltraSmartPlaylistSelector.swift */,
 				A2000104 /* SmartEmergencyQueue.swift */,
+				A2000300 /* AudioSessionManager.swift */,
+				A2000311 /* SiriShortcutsService.swift */,
+				A2000312 /* NowPlayingService.swift */,
 				5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */,
 				B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */,
 				809D3AE027D797A8F9914D8E /* CryPredictionAccuracyTracker.swift */,
@@ -653,6 +667,7 @@
 				A2000061 /* LaunchScreen.storyboard */,
 				A2000070 /* Info.plist */,
 				A2000071 /* BabyInCarApp.entitlements */,
+				A2000313 /* AppIntentVocabulary.plist */,
 				A2000080 /* Audio */,
 			);
 			name = Resources;
@@ -867,6 +882,7 @@
 				A1000060 /* Assets.xcassets in Resources */,
 				A1000061 /* LaunchScreen.storyboard in Resources */,
 				A1000080 /* Audio in Resources */,
+				A1000313 /* AppIntentVocabulary.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -899,6 +915,10 @@
 				A1000022 /* ContentLibraryService.swift in Sources */,
 				A1000023 /* SpeechRecognitionService.swift in Sources */,
 				A1000200 /* VoiceCommandLLMService.swift in Sources */,
+				A1000210 /* SiriIntentHandler.swift in Sources */,
+				A1000300 /* AudioSessionManager.swift in Sources */,
+				A1000311 /* SiriShortcutsService.swift in Sources */,
+				A1000312 /* NowPlayingService.swift in Sources */,
 				A1000024 /* SubscriptionManager.swift in Sources */,
 				A1000025 /* APIClient.swift in Sources */,
 				A1000026 /* AudioDownloadManager.swift in Sources */,

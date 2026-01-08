@@ -5,6 +5,11 @@
 //  Monitors memory usage and triggers cleanup when approaching limits
 //  Prevents iOS from killing the app due to excessive memory usage
 //
+//  NOTE (Increment 0029): This monitor is SECONDARY to MemoryMonitor.swift
+//  MemoryMonitor is the PRIMARY source of truth for memory management.
+//  This class is kept for backward compatibility and additional iOS memory warning handling.
+//  Consider consolidating fully in a future refactor.
+//
 
 import Foundation
 import UIKit
@@ -13,13 +18,14 @@ import os.log
 /// Memory pressure levels based on available memory
 enum MemoryPressureLevel: String {
     case normal = "Normal"
-    case warning = "Warning"      // > 80MB - start reducing
-    case critical = "Critical"    // > 100MB - aggressive cleanup
-    case emergency = "Emergency"  // > 130MB - iOS will kill VERY soon!
+    case warning = "Warning"      // > 150MB - start monitoring
+    case critical = "Critical"    // > 180MB - reduce ML features
+    case emergency = "Emergency"  // > 220MB - aggressive cleanup
 }
 
 /// Monitors app memory usage and triggers cleanup actions
 /// Use this to prevent iOS from killing the app due to memory pressure
+/// NOTE: MemoryMonitor.swift is the PRIMARY monitor. This class provides iOS memory warning integration.
 @MainActor
 class MemoryPressureMonitor: ObservableObject {
     static let shared = MemoryPressureMonitor()
@@ -65,10 +71,13 @@ class MemoryPressureMonitor: ObservableObject {
 
     // MARK: - Monitoring Control
     /// Start periodic memory monitoring
-    func startMonitoring(interval: TimeInterval = 5.0) {
+    /// THERMAL FIX: Default interval increased from 5s to 15s - reduces CPU overhead significantly
+    /// NOTE: This monitor duplicates MemoryMonitor.swift - consider consolidating in future refactor
+    func startMonitoring(interval: TimeInterval = 15.0) {
         guard !isMonitoring else { return }
 
         isMonitoring = true
+        // THERMAL FIX: Reduced frequency from 5s to 15s (same as MemoryMonitor)
         monitoringTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             // FIX: Use DispatchQueue.main.async to prevent "Publishing changes from within view updates"
             DispatchQueue.main.async {
@@ -78,7 +87,7 @@ class MemoryPressureMonitor: ObservableObject {
 
         // Initial check
         checkMemoryUsage()
-        logger.info("Memory monitoring started")
+        logger.info("Memory monitoring started (interval: \(Int(interval))s)")
     }
 
     /// Stop periodic memory monitoring
@@ -167,11 +176,19 @@ class MemoryPressureMonitor: ObservableObject {
         // Trigger emergency cleanup
         onEmergencyLevel?()
 
-        // Post notification for other components
+        // Post notification for other components (legacy)
         NotificationCenter.default.post(
             name: Notification.Name("MemoryPressureEmergency"),
             object: nil,
             userInfo: ["memoryMB": memoryMB]
+        )
+
+        // MEMORY OPTIMIZATION (Increment 0029): Also post to centralized cleanup system
+        // This ensures all services receive the emergency cleanup request
+        NotificationCenter.default.post(
+            name: NSNotification.Name("MemoryCleanupRequested"),
+            object: nil,
+            userInfo: ["level": "emergency", "memoryMB": memoryMB, "source": "SystemWarning"]
         )
     }
 

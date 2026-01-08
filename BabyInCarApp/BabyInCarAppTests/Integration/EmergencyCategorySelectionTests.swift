@@ -17,28 +17,28 @@ struct EmergencyCategorySelectionTests {
 
     // MARK: - Default Track Tests
 
-    @Test("Default emergency track is Piano Moment")
-    func defaultEmergencyTrackIsPianoMoment() {
+    @Test("Default emergency track is Soothing Lullaby")
+    func defaultEmergencyTrackIsSoothingLullaby() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
 
-        #expect(defaultTrack.title == "Piano Moment",
-               "Default emergency track title should be 'Piano Moment'")
-        #expect(defaultTrack.artist == "Bensound",
-               "Default emergency track artist should be 'Bensound'")
-        #expect(defaultTrack.category == .classicalMusic,
-               "Default emergency track should be classical music")
+        #expect(defaultTrack.title == "Soothing Lullaby",
+               "Default emergency track title should be 'Soothing Lullaby'")
+        #expect(defaultTrack.artist == "Lulla",
+               "Default emergency track artist should be 'Lulla'")
+        #expect(defaultTrack.category == .lullabies,
+               "Default emergency track should be lullabies category")
     }
 
-    @Test("Default emergency track is bundled")
-    func defaultEmergencyTrackIsBundled() {
+    @Test("Default emergency track is generated for instant playback")
+    func defaultEmergencyTrackIsGenerated() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
 
-        #expect(defaultTrack.audioSourceType == .bundled,
-               "Default emergency track should be bundled with app")
+        #expect(defaultTrack.audioSourceType == .generated,
+               "Default emergency track should be generated (not bundled) for instant playback")
         #expect(defaultTrack.isDownloaded == true,
-               "Default emergency track should be marked as downloaded")
-        #expect(defaultTrack.fileName == "bensound_pianomoment",
-               "Default emergency track should have correct file name (without extension)")
+               "Default emergency track should be marked as downloaded (locally generated)")
+        #expect(defaultTrack.generatorType == .lullaby,
+               "Default emergency track should use lullaby generator")
     }
 
     @Test("Default emergency track has high calming score")
@@ -256,7 +256,8 @@ final class EmergencyCategorySelectionXCTests: XCTestCase {
     func testDefaultTrackCanBeCreated() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
         XCTAssertNotNil(defaultTrack)
-        XCTAssertEqual(defaultTrack.title, "Piano Moment")
+        XCTAssertEqual(defaultTrack.title, "Soothing Lullaby")
+        XCTAssertEqual(defaultTrack.audioSourceType, .generated)
     }
 
     @MainActor

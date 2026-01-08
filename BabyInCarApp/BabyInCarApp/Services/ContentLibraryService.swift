@@ -422,6 +422,7 @@ class ContentLibraryService: ObservableObject {
         // Instrumental & Acoustic
         case "acoustic": return .instrumental
         case "instrumental": return .instrumental
+        case "modern_piano": return .instrumental
 
         // Podcasts & Stories
         case "podcasts", "podcast": return .podcasts

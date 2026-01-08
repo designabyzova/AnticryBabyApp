@@ -34,10 +34,10 @@ struct MainTabView: View {
 
     // Calculate the total height of bottom overlay for proper insets
     // Tab bar: ~60pt (8 top padding + 44 content + 6 bottom padding)
-    // Mini player: 72 when visible
+    // Mini player: ALWAYS 72 (always visible now, ready for cry detection playback)
     private var bottomOverlayHeight: CGFloat {
         let tabBarHeight: CGFloat = 60 // Tab bar content height (not including safe area)
-        let miniPlayerHeight: CGFloat = audioEngine.currentTrack != nil ? 72 : 0
+        let miniPlayerHeight: CGFloat = 72 // Always visible - default playlist loaded on app start
         return tabBarHeight + miniPlayerHeight
     }
 
@@ -62,19 +62,18 @@ struct MainTabView: View {
         // This ensures content never overlaps with the tab bar
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                // Mini Player - floats above tab bar
-                if audioEngine.currentTrack != nil {
-                    MiniPlayerView()
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .opacity),
-                            removal: .move(edge: .bottom).combined(with: .opacity)
-                        ))
-                }
+                // Mini Player - ALWAYS visible (floats above tab bar)
+                // Default playlist is loaded on app start, player ready for cry detection or manual play
+                MiniPlayerView()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .bottom).combined(with: .opacity)
+                    ))
 
                 // Premium Tab Bar - pinned to very bottom
                 CustomTabBar(selectedTab: $selectedTab)
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: audioEngine.currentTrack != nil)
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: audioEngine.playbackState)
         }
         .ignoresSafeArea(.keyboard)
         .onAppear {
@@ -372,16 +371,23 @@ struct PremiumTabBarButton: View {
 // MARK: - Premium Mini Player View
 
 /// Floating pill-style mini player with progress ring and fluid animations
+/// ALWAYS visible - displays default playlist track ready for cry detection or manual play
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var showingFullPlayer = false
     @State private var dragOffset: CGFloat = 0
     @State private var playButtonScale: CGFloat = 1.0
-    @State private var isPressed = false
+    @State private var isDragging = false
+    @State private var isTransitioning = false // Track when opening full player
 
     // Haptic feedback
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
     private let impactMedium = UIImpactFeedbackGenerator(style: .medium)
+
+    // Display track - uses current track or a default fallback for always-visible player
+    private var displayTrack: AudioTrack {
+        audioEngine.currentTrack ?? AudioTrack.defaultEmergencyTrack()
+    }
 
     // Calculate progress for ring animation
     private var progress: Double {
@@ -391,12 +397,14 @@ struct MiniPlayerView: View {
 
     var body: some View {
         ZStack {
-            // Floating pill container
             miniPlayerContent
                 .offset(y: dragOffset)
+                .opacity(isTransitioning ? 0.7 : 1.0)
+                .scaleEffect(isTransitioning ? 0.98 : 1.0)
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 10)
                         .onChanged { value in
+                            isDragging = true
                             // Allow dragging down to dismiss
                             if value.translation.height > 0 {
                                 dragOffset = value.translation.height * 0.5
@@ -406,25 +414,68 @@ struct MiniPlayerView: View {
                             }
                         }
                         .onEnded { value in
+                            isDragging = false
                             if value.translation.height < -50 {
                                 // Swipe up - open full player
-                                impactMedium.impactOccurred()
-                                showingFullPlayer = true
+                                openFullPlayer()
                             }
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 dragOffset = 0
                             }
                         }
                 )
+
+            // Loading overlay when transitioning to full player
+            if isTransitioning {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(.white)
+                    Text("Opening...")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.7))
+                )
+                .transition(.opacity.combined(with: .scale))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: isTransitioning)
         .onAppear {
             impactLight.prepare()
             impactMedium.prepare()
         }
-        .fullScreenCover(isPresented: $showingFullPlayer) {
+        .fullScreenCover(isPresented: $showingFullPlayer, onDismiss: {
+            // Reset transition state when dismissed
+            isTransitioning = false
+        }) {
             PlayerView()
                 .environmentObject(audioEngine)
                 .interactiveDismissDisabled(false)
+                .onAppear {
+                    // Player appeared, clear transition state
+                    isTransitioning = false
+                }
+        }
+    }
+
+    /// Opens full player with guard against double-presentation
+    private func openFullPlayer() {
+        guard !showingFullPlayer, !isTransitioning else { return }
+        impactMedium.impactOccurred()
+
+        // Show loading state briefly before presenting
+        withAnimation {
+            isTransitioning = true
+        }
+
+        // Small delay to show the loading feedback, then present
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            showingFullPlayer = true
         }
     }
 
@@ -442,8 +493,7 @@ struct MiniPlayerView: View {
             .highPriorityGesture(
                 TapGesture()
                     .onEnded {
-                        impactMedium.impactOccurred()
-                        showingFullPlayer = true
+                        openFullPlayer()
                     }
             )
 
@@ -457,8 +507,7 @@ struct MiniPlayerView: View {
         .padding(.vertical, 8)
         .background(miniPlayerBackground)
         .padding(.horizontal, 12)
-        .scaleEffect(isPressed ? 0.98 : 1.0)
-        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+        .accessibilityIdentifier("miniPlayer")
     }
 
     // MARK: - Artwork with Progress Ring
@@ -466,21 +515,35 @@ struct MiniPlayerView: View {
         ZStack {
             // Background circle with category color
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.15))
+                .fill(Color.forCategory(displayTrack.category).opacity(0.15))
                 .frame(width: 52, height: 52)
 
-            // Progress ring
+            // Progress ring (shows playback progress OR buffer progress when loading)
             Circle()
                 .stroke(Color.appTextSecondary.opacity(0.2), lineWidth: 3)
                 .frame(width: 52, height: 52)
 
+            // Buffer progress ring (shows when buffering)
+            if audioEngine.isBuffering && audioEngine.bufferProgress > 0 {
+                Circle()
+                    .trim(from: 0, to: CGFloat(audioEngine.bufferProgress))
+                    .stroke(
+                        Color.appTextSecondary.opacity(0.4),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    )
+                    .frame(width: 52, height: 52)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.2), value: audioEngine.bufferProgress)
+            }
+
+            // Playback progress ring
             Circle()
                 .trim(from: 0, to: CGFloat(progress))
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
+                            Color.forCategory(displayTrack.category),
+                            Color.forCategory(displayTrack.category).opacity(0.7)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -491,22 +554,28 @@ struct MiniPlayerView: View {
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 0.3), value: progress)
 
-            // Category icon
-            Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            // Category icon OR loading spinner
+            if audioEngine.isBuffering {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .tint(Color.forCategory(displayTrack.category))
+            } else {
+                Image(systemName: displayTrack.category.icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color.forCategory(displayTrack.category),
+                                Color.forCategory(displayTrack.category).opacity(0.7)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
+            }
 
             // Playing indicator animation
-            if audioEngine.playbackState.isPlaying {
+            if audioEngine.playbackState.isPlaying && !audioEngine.isBuffering {
                 MiniEqualizerView()
                     .frame(width: 16, height: 12)
                     .offset(y: 18)
@@ -517,20 +586,28 @@ struct MiniPlayerView: View {
     // MARK: - Track Info
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(audioEngine.currentTrack?.title ?? "Unknown")
+            Text(displayTrack.title)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(.appText)
                 .lineLimit(1)
 
             HStack(spacing: 4) {
-                Text(audioEngine.currentTrack?.artist ?? "")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(.appTextSecondary)
-                    .lineLimit(1)
+                // Show "Loading..." when buffering, otherwise show artist
+                if audioEngine.isBuffering {
+                    Text("Loading...")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.appPrimary)
+                        .lineLimit(1)
+                } else {
+                    Text(displayTrack.artist)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(1)
 
-                if let language = audioEngine.currentTrack?.language {
-                    Text(language.flag)
-                        .font(.system(size: 11))
+                    if let language = displayTrack.language {
+                        Text(language.flag)
+                            .font(.system(size: 11))
+                    }
                 }
             }
         }
@@ -555,11 +632,9 @@ struct MiniPlayerView: View {
                     audioEngine.pause()
                 } else if audioEngine.playbackState == .paused {
                     audioEngine.resume()
-                } else if let track = audioEngine.currentTrack {
-                    // Stopped state with a track - replay it
-                    audioEngine.play(track: track)
                 } else {
-                    audioEngine.resume()
+                    // Stopped state - play the display track (current or default)
+                    audioEngine.play(track: displayTrack)
                 }
             } label: {
                 ZStack {

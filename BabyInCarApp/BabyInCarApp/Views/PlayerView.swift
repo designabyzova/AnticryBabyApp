@@ -10,25 +10,42 @@ import UIKit
 
 struct PlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var favoritesManager = FavoritesManager.shared
-    @StateObject private var downloadManager = AudioDownloadManager.shared
-    @StateObject private var babyProfileManager = BabyProfileManager.shared
-    @StateObject private var cryDetectionService = CryDetectionService.shared
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
-    @StateObject private var playbackQueueManager = PlaybackQueueManager.shared
+    // Use ObservedObject for shared singletons - faster initialization than StateObject
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @ObservedObject private var downloadManager = AudioDownloadManager.shared
+    @ObservedObject private var babyProfileManager = BabyProfileManager.shared
+    @ObservedObject private var cryDetectionService = CryDetectionService.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
+    @ObservedObject private var playbackQueueManager = PlaybackQueueManager.shared
     @Environment(\.dismiss) var dismiss
 
-    @State private var showingTimerPicker = false
-    @State private var showingPlaylist = false
-    @State private var showingDownloads = false
-    @State private var showingQueue = false
-    @State private var showingEffectivenessFeedback = false
+    // Consolidated sheet state - prevents SwiftUI issues with multiple sheet modifiers
+    enum PlayerSheet: Identifiable {
+        case timer
+        case playlist
+        case downloads
+        case effectivenessFeedback(track: AudioTrack, cryType: CryType, duration: TimeInterval)
+        case cryTypePicker
+        case moreLikeThis
+        case softPaywall(track: AudioTrack)
+
+        var id: String {
+            switch self {
+            case .timer: return "timer"
+            case .playlist: return "playlist"
+            case .downloads: return "downloads"
+            case .effectivenessFeedback: return "effectivenessFeedback"
+            case .cryTypePicker: return "cryTypePicker"
+            case .moreLikeThis: return "moreLikeThis"
+            case .softPaywall: return "softPaywall"
+            }
+        }
+    }
+
+    @State private var activeSheet: PlayerSheet?
+    @State private var showingQueue = false // Keep separate as fullScreenCover
     @State private var showingItHelpedToast = false
-    @State private var showingCryTypePicker = false
-    @State private var showingMoreLikeThis = false
-    @State private var showingSoftPaywall = false
-    @State private var softPaywallTrack: AudioTrack?
     @State private var relatedTracks: [SearchTrack] = []
     @State private var isLoadingRelated = false
     @State private var isPremiumPreview = false
@@ -111,7 +128,7 @@ struct PlayerView: View {
                             .onLongPressGesture(minimumDuration: 0.5) {
                                 // Haptic feedback
                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                showingCryTypePicker = true
+                                activeSheet = .cryTypePicker
                             }
                             .padding(.trailing, 24)
                             .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 16)
@@ -130,59 +147,12 @@ struct PlayerView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingTimerPicker) {
-            TimerPickerSheet()
-        }
-        .sheet(isPresented: $showingPlaylist) {
-            PlaylistSheet()
-        }
-        .sheet(isPresented: $showingDownloads) {
-            DownloadsManagerView()
+        // Consolidated sheet - single modifier for all sheets
+        .sheet(item: $activeSheet) { sheet in
+            sheetContent(for: sheet)
         }
         .fullScreenCover(isPresented: $showingQueue) {
             PlaybackQueueView(queueManager: playbackQueueManager)
-        }
-        .sheet(isPresented: $showingEffectivenessFeedback) {
-            if let track = lastPlayedTrack {
-                EffectivenessFeedbackSheet(
-                    track: track,
-                    cryType: cryDetectionService.cryType,
-                    playbackDuration: playbackStartTime.map { Date().timeIntervalSince($0) } ?? 0
-                )
-            }
-        }
-        .sheet(isPresented: $showingCryTypePicker) {
-            CryTypePickerSheet { selectedCryType in
-                recordItHelped(withCryType: selectedCryType)
-            }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showingMoreLikeThis) {
-            MoreLikeThisSheet(
-                relatedTracks: relatedTracks,
-                isLoading: isLoadingRelated,
-                currentTrack: audioEngine.currentTrack
-            )
-            .environmentObject(audioEngine)
-        }
-        .sheet(isPresented: $showingSoftPaywall) {
-            if let track = softPaywallTrack {
-                SoftPaywallSheet(
-                    track: track,
-                    onUpgrade: {
-                        // Navigate to subscription screen
-                        showingSoftPaywall = false
-                    },
-                    onDismiss: {
-                        showingSoftPaywall = false
-                        // Skip to next free track
-                        skipToNextFreeTrack()
-                    }
-                )
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-            }
         }
         .onAppear {
             // Prepare haptics
@@ -216,10 +186,12 @@ struct PlayerView: View {
 
                 if let startTime = playbackStartTime,
                    Date().timeIntervalSince(startTime) > 30, // At least 30 seconds
-                   lastPlayedTrack != nil {
+                   let track = lastPlayedTrack {
                     // Delay slightly to let UI settle
+                    let duration = Date().timeIntervalSince(startTime)
+                    let cryType = cryDetectionService.cryType ?? .unknown
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showingEffectivenessFeedback = true
+                        activeSheet = .effectivenessFeedback(track: track, cryType: cryType, duration: duration)
                     }
                 }
             }
@@ -309,7 +281,7 @@ struct PlayerView: View {
                 // More options menu
                 Menu {
                     Button {
-                        showingPlaylist = true
+                        activeSheet = .playlist
                     } label: {
                         Label("View Playlist", systemImage: "list.bullet")
                     }
@@ -323,7 +295,7 @@ struct PlayerView: View {
                     Divider()
 
                     Button {
-                        showingTimerPicker = true
+                        activeSheet = .timer
                     } label: {
                         Label("Sleep Timer", systemImage: "moon.zzz")
                     }
@@ -348,7 +320,7 @@ struct PlayerView: View {
                     }
 
                     Button {
-                        showingDownloads = true
+                        activeSheet = .downloads
                     } label: {
                         Label("Manage Downloads", systemImage: "arrow.down.circle.fill")
                     }
@@ -687,7 +659,7 @@ struct PlayerView: View {
 
             Menu {
                 Button {
-                    showingPlaylist = true
+                    activeSheet = .playlist
                 } label: {
                     Label("View Playlist", systemImage: "list.bullet")
                 }
@@ -705,7 +677,7 @@ struct PlayerView: View {
                 }
 
                 Button {
-                    showingTimerPicker = true
+                    activeSheet = .timer
                 } label: {
                     Label("Sleep Timer", systemImage: "timer")
                 }
@@ -732,7 +704,7 @@ struct PlayerView: View {
                 }
 
                 Button {
-                    showingDownloads = true
+                    activeSheet = .downloads
                 } label: {
                     Label("Manage Downloads", systemImage: "arrow.down.circle.fill")
                 }
@@ -1213,7 +1185,7 @@ struct PlayerView: View {
 
                 // Sleep timer
                 Button {
-                    showingTimerPicker = true
+                    activeSheet = .timer
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "moon.zzz")
@@ -1241,7 +1213,7 @@ struct PlayerView: View {
         guard let track = audioEngine.currentTrack else { return }
 
         isLoadingRelated = true
-        showingMoreLikeThis = true
+        activeSheet = .moreLikeThis
 
         Task {
             do {
@@ -1396,8 +1368,9 @@ struct PlayerView: View {
         }
 
         // Show soft paywall
-        softPaywallTrack = audioEngine.currentTrack
-        showingSoftPaywall = true
+        if let track = audioEngine.currentTrack {
+            activeSheet = .softPaywall(track: track)
+        }
 
         withAnimation {
             isPremiumPreview = false
@@ -1435,6 +1408,53 @@ struct PlayerView: View {
 
         // No free tracks found, just go to next
         audioEngine.next()
+    }
+
+    // MARK: - Sheet Content Builder
+    @ViewBuilder
+    private func sheetContent(for sheet: PlayerSheet) -> some View {
+        switch sheet {
+        case .timer:
+            TimerPickerSheet()
+        case .playlist:
+            PlaylistSheet()
+        case .downloads:
+            DownloadsManagerView()
+        case .effectivenessFeedback(let track, let cryType, let duration):
+            EffectivenessFeedbackSheet(
+                track: track,
+                cryType: cryType,
+                playbackDuration: duration
+            )
+        case .cryTypePicker:
+            CryTypePickerSheet { selectedCryType in
+                recordItHelped(withCryType: selectedCryType)
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        case .moreLikeThis:
+            MoreLikeThisSheet(
+                relatedTracks: relatedTracks,
+                isLoading: isLoadingRelated,
+                currentTrack: audioEngine.currentTrack
+            )
+            .environmentObject(audioEngine)
+        case .softPaywall(let track):
+            SoftPaywallSheet(
+                track: track,
+                onUpgrade: {
+                    // Navigate to subscription screen
+                    activeSheet = nil
+                },
+                onDismiss: {
+                    activeSheet = nil
+                    // Skip to next free track
+                    skipToNextFreeTrack()
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     // MARK: - Helpers

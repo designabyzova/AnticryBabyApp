@@ -85,7 +85,7 @@ class AdaptiveFeedbackLoop: ObservableObject {
 
     private var monitoringTimer: Timer?
     private var intensityHistory: [Double] = []
-    private let intensityHistorySize = 60 // 1 minute at 1Hz
+    private let intensityHistorySize = 30 // THERMAL FIX: Reduced from 60 to 30 (1 min at 0.5Hz instead of 1Hz)
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Learning Parameters
@@ -177,7 +177,10 @@ class AdaptiveFeedbackLoop: ObservableObject {
     // MARK: - Real-time Monitoring
 
     private func startMonitoringLoop() {
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        // THERMAL FIX: Increased interval from 1s to 2s
+        // Cry intensity changes slowly enough that 2s sampling is sufficient
+        // This reduces CPU cycles by 50% during active soothing sessions
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.monitoringTick()
             }

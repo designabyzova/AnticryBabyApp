@@ -2,7 +2,13 @@
 //  SpeechRecognitionService.swift
 //  BabyInCarApp
 //
-//  Voice input service for hands-free control
+//  ⚠️ DEPRECATED - Custom voice control does NOT work for CarPlay.
+//
+//  This service uses SFSpeechRecognizer which requires:
+//  - Microphone permission (not available in CarPlay context)
+//  - App in foreground with active audio session
+//
+//  FOR CARPLAY VOICE: Use Siri Intents instead (see VoiceCommandLLMService.swift)
 //
 
 import Foundation
@@ -65,10 +71,19 @@ class SpeechRecognitionService: ObservableObject {
         stopListening()
 
         do {
-            // Configure audio session for recording
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            // TECHNICAL DEBT FIX: Use centralized AudioSessionManager instead of direct session manipulation
+            // This prevents audio session conflicts with CryDetectionService and AudioEngine
+            let sessionManager = AudioSessionManager.shared
+            let success = sessionManager.requestSession(
+                mode: .recordOnly,
+                priority: .recording,  // Highest priority - voice commands need immediate response
+                serviceId: "SpeechRecognitionService"
+            )
+
+            guard success else {
+                errorMessage = "Audio session unavailable - please try again"
+                return
+            }
 
             audioEngine = AVAudioEngine()
             guard let audioEngine = audioEngine else { return }
@@ -132,9 +147,11 @@ class SpeechRecognitionService: ObservableObject {
         recognitionTask = nil
         isListening = false
 
-        // Restore audio session for playback - MUST match AudioEngine's configuration
-        // Using .mixWithOthers to allow background audio to continue
-        restorePlaybackSession()
+        // TECHNICAL DEBT FIX: Release audio session through centralized manager
+        // The manager will automatically switch to the next highest priority request
+        AudioSessionManager.shared.releaseSession(serviceId: "SpeechRecognitionService")
+
+        // NOTE: restorePlaybackSession() is no longer needed - AudioSessionManager handles transitions
     }
 
     /// Restore audio session for playback after speech recognition
@@ -514,6 +531,11 @@ class VoiceCommandHandler: ObservableObject {
     private let aiEngine = AIRecommendationEngine.shared
     private let emergencyService = EmergencyCryStopService.shared
 
+    /// CRITICAL: Store observer tokens to prevent immediate deallocation
+    /// NotificationCenter.addObserver(forName:) returns a token that MUST be retained
+    /// Otherwise observers are deallocated and never receive notifications
+    private var notificationObservers: [Any] = []
+
     private init() {
         setupNotificationObservers()
     }
@@ -535,263 +557,309 @@ class VoiceCommandHandler: ObservableObject {
     private func setupNotificationObservers() {
         print("🔔 VoiceCommandHandler: Setting up notification observers")
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandPlay,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            print("🔔 VoiceCommandHandler: Received Play notification")
-            Task { @MainActor in
-                self?.handlePlay()
-                self?.postCommandExecuted(command: "play", success: true, message: "Playing audio")
-            }
-        }
+        // CRITICAL FIX: Store observer tokens to prevent deallocation
+        // NotificationCenter.addObserver(forName:) returns an object that MUST be retained
+        // Without storing these, observers are immediately deallocated and never fire!
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandPause,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            print("🔔 VoiceCommandHandler: Received Pause notification")
-            Task { @MainActor in
-                self?.handlePause()
-                self?.postCommandExecuted(command: "pause", success: true, message: "Audio paused")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandNext,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            print("🔔 VoiceCommandHandler: Received Next notification")
-            Task { @MainActor in
-                self?.audioEngine.next()
-                self?.postCommandExecuted(command: "next", success: true, message: "Skipped to next track")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandPrevious,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.audioEngine.previous()
-                self?.postCommandExecuted(command: "previous", success: true, message: "Back to previous track")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandEmergency,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.handleEmergency()
-                self?.postCommandExecuted(command: "emergency", success: true, message: "Emergency mode activated")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandVolumeUp,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                let currentVolume = self?.audioEngine.volume ?? 0.5
-                let newVolume = min(1.0, currentVolume + 0.15)
-                self?.audioEngine.setVolume(newVolume)
-                let percent = Int(newVolume * 100)
-                self?.postCommandExecuted(command: "volume up", success: true, message: "Volume: \(percent)%")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandVolumeDown,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                let currentVolume = self?.audioEngine.volume ?? 0.5
-                let newVolume = max(0, currentVolume - 0.15)
-                self?.audioEngine.setVolume(newVolume)
-                let percent = Int(newVolume * 100)
-                self?.postCommandExecuted(command: "volume down", success: true, message: "Volume: \(percent)%")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandMute,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.audioEngine.toggleMute()
-                let isMuted = self?.audioEngine.isMuted ?? false
-                self?.postCommandExecuted(command: "mute", success: true, message: isMuted ? "Audio muted" : "Audio unmuted")
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandCategory,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let category = notification.userInfo?["category"] as? AudioCategory {
-                    await self?.handleCategoryCommand(category)
-                    self?.postCommandExecuted(command: "category", success: true, message: "Playing \(category.rawValue)")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandPlay,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                print("🔔 VoiceCommandHandler: Received Play notification")
+                Task { @MainActor in
+                    self?.handlePlay()
+                    self?.postCommandExecuted(command: "play", success: true, message: "Playing audio")
                 }
             }
-        }
+        )
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandMood,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let mood = notification.userInfo?["mood"] as? AIRecommendationEngine.Mood {
-                    await self?.handleMoodCommand(mood)
-                    self?.postCommandExecuted(command: "mood", success: true, message: "Playing \(mood.rawValue) playlist")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandPause,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                print("🔔 VoiceCommandHandler: Received Pause notification")
+                Task { @MainActor in
+                    self?.handlePause()
+                    self?.postCommandExecuted(command: "pause", success: true, message: "Audio paused")
                 }
             }
-        }
+        )
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceAgeRecognized,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let age = notification.userInfo?["age"] as? Int {
-                    self?.handleAgeRecognized(age)
-                    self?.postCommandExecuted(command: "age", success: true, message: "Baby age set to \(age) months")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandNext,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                print("🔔 VoiceCommandHandler: Received Next notification")
+                Task { @MainActor in
+                    self?.audioEngine.next()
+                    self?.postCommandExecuted(command: "next", success: true, message: "Skipped to next track")
                 }
             }
-        }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandPrevious,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.audioEngine.previous()
+                    self?.postCommandExecuted(command: "previous", success: true, message: "Back to previous track")
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandEmergency,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.handleEmergency()
+                    self?.postCommandExecuted(command: "emergency", success: true, message: "Emergency mode activated")
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandVolumeUp,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    let currentVolume = self?.audioEngine.volume ?? 0.5
+                    let newVolume = min(1.0, currentVolume + 0.15)
+                    self?.audioEngine.setVolume(newVolume)
+                    let percent = Int(newVolume * 100)
+                    self?.postCommandExecuted(command: "volume up", success: true, message: "Volume: \(percent)%")
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandVolumeDown,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    let currentVolume = self?.audioEngine.volume ?? 0.5
+                    let newVolume = max(0, currentVolume - 0.15)
+                    self?.audioEngine.setVolume(newVolume)
+                    let percent = Int(newVolume * 100)
+                    self?.postCommandExecuted(command: "volume down", success: true, message: "Volume: \(percent)%")
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandMute,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.audioEngine.toggleMute()
+                    let isMuted = self?.audioEngine.isMuted ?? false
+                    self?.postCommandExecuted(command: "mute", success: true, message: isMuted ? "Audio muted" : "Audio unmuted")
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandCategory,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let category = notification.userInfo?["category"] as? AudioCategory {
+                        await self?.handleCategoryCommand(category)
+                        self?.postCommandExecuted(command: "category", success: true, message: "Playing \(category.rawValue)")
+                    }
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandMood,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let mood = notification.userInfo?["mood"] as? AIRecommendationEngine.Mood {
+                        await self?.handleMoodCommand(mood)
+                        self?.postCommandExecuted(command: "mood", success: true, message: "Playing \(mood.rawValue) playlist")
+                    }
+                }
+            }
+        )
+
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceAgeRecognized,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let age = notification.userInfo?["age"] as? Int {
+                        self?.handleAgeRecognized(age)
+                        self?.postCommandExecuted(command: "age", success: true, message: "Baby age set to \(age) months")
+                    }
+                }
+            }
+        )
 
         // Track search/play
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandPlayTrack,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let trackTitle = notification.userInfo?["trackTitle"] as? String {
-                    await self?.handlePlayTrack(trackTitle)
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandPlayTrack,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let trackTitle = notification.userInfo?["trackTitle"] as? String {
+                        await self?.handlePlayTrack(trackTitle)
+                    }
                 }
             }
-        }
+        )
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandSearchTrack,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let query = notification.userInfo?["query"] as? String {
-                    await self?.handleSearchTrack(query)
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandSearchTrack,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let query = notification.userInfo?["query"] as? String {
+                        await self?.handleSearchTrack(query)
+                    }
                 }
             }
-        }
+        )
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandPlayPlaylist,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let playlistName = notification.userInfo?["playlistName"] as? String {
-                    await self?.handlePlayPlaylist(playlistName)
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandPlayPlaylist,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let playlistName = notification.userInfo?["playlistName"] as? String {
+                        await self?.handlePlayPlaylist(playlistName)
+                    }
                 }
             }
-        }
+        )
 
         // Volume control
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandSetVolume,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let level = notification.userInfo?["level"] as? Float {
-                    self?.audioEngine.setVolume(level / 100.0)
-                    self?.postCommandExecuted(command: "set volume", success: true, message: "Volume set to \(Int(level))%")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandSetVolume,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let level = notification.userInfo?["level"] as? Float {
+                        self?.audioEngine.setVolume(level / 100.0)
+                        self?.postCommandExecuted(command: "set volume", success: true, message: "Volume set to \(Int(level))%")
+                    }
                 }
             }
-        }
+        )
 
         // Shuffle controls
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandShuffleOn,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.audioEngine.isShuffleEnabled = true
-                self?.postCommandExecuted(command: "shuffle", success: true, message: "Shuffle enabled")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandShuffleOn,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.audioEngine.isShuffleEnabled = true
+                    self?.postCommandExecuted(command: "shuffle", success: true, message: "Shuffle enabled")
+                }
             }
-        }
+        )
 
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandShuffleOff,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.audioEngine.isShuffleEnabled = false
-                self?.postCommandExecuted(command: "shuffle", success: true, message: "Shuffle disabled")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandShuffleOff,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.audioEngine.isShuffleEnabled = false
+                    self?.postCommandExecuted(command: "shuffle", success: true, message: "Shuffle disabled")
+                }
             }
-        }
+        )
 
         // Repeat mode
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandRepeatMode,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let mode = notification.userInfo?["mode"] as? AudioEngine.RepeatMode {
-                    self?.audioEngine.setRepeatMode(mode)
-                    let modeText = switch mode {
-                    case .off: "Repeat off"
-                    case .one: "Repeat one"
-                    case .all: "Repeat all"
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandRepeatMode,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let mode = notification.userInfo?["mode"] as? AudioEngine.RepeatMode {
+                        self?.audioEngine.setRepeatMode(mode)
+                        let modeText = switch mode {
+                        case .off: "Repeat off"
+                        case .one: "Repeat one"
+                        case .all: "Repeat all"
+                        }
+                        self?.postCommandExecuted(command: "repeat", success: true, message: modeText)
                     }
-                    self?.postCommandExecuted(command: "repeat", success: true, message: modeText)
                 }
             }
-        }
+        )
 
         // Sleep timer
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandSleepTimer,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                if let minutes = notification.userInfo?["minutes"] as? Int {
-                    // Convert minutes to SleepTimer enum, use closest match or default to .thirtyMinutes
-                    let timer: SleepTimer = SleepTimer(rawValue: minutes) ?? .thirtyMinutes
-                    self?.audioEngine.setSleepTimer(timer)
-                    self?.postCommandExecuted(command: "sleep timer", success: true, message: "Sleep timer set for \(minutes) minutes")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandSleepTimer,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                Task { @MainActor in
+                    if let minutes = notification.userInfo?["minutes"] as? Int {
+                        // Convert minutes to SleepTimer enum, use closest match or default to .thirtyMinutes
+                        let timer: SleepTimer = SleepTimer(rawValue: minutes) ?? .thirtyMinutes
+                        self?.audioEngine.setSleepTimer(timer)
+                        self?.postCommandExecuted(command: "sleep timer", success: true, message: "Sleep timer set for \(minutes) minutes")
+                    }
                 }
             }
-        }
+        )
 
         // Quit command
-        NotificationCenter.default.addObserver(
-            forName: .voiceCommandQuit,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.audioEngine.stop()
-                self?.postCommandExecuted(command: "quit", success: true, message: "Playback stopped")
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .voiceCommandQuit,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.audioEngine.stop()
+                    self?.postCommandExecuted(command: "quit", success: true, message: "Playback stopped")
+                }
             }
-        }
+        )
+
+        print("🔔 VoiceCommandHandler: Registered \(notificationObservers.count) observers")
     }
 
     private func handlePlay() {

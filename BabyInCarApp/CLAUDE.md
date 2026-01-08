@@ -1,10 +1,10 @@
-<!-- SW:META template="claude" version="1.0.88" sections="header,start,autodetect,metarule,rules,workflow,context,lsp,structure,taskformat,secrets,syncing,mapping,testing,api,limits,troubleshooting,principles,linking,mcp,autoexecute,auto,docs" -->
+<!-- SW:META template="claude" version="1.0.104" sections="header,start,autodetect,metarule,rules,workflow,reflect,context,lsp,structure,taskformat,secrets,syncing,mapping,testing,api,limits,troubleshooting,principles,linking,mcp,autoexecute,auto,docs" -->
 
-<!-- SW:SECTION:header version="1.0.88" -->
+<!-- SW:SECTION:header version="1.0.104" -->
 **Framework**: SpecWeave | **Truth**: `spec.md` + `tasks.md`
 <!-- SW:END:header -->
 
-<!-- SW:SECTION:start version="1.0.88" -->
+<!-- SW:SECTION:start version="1.0.104" -->
 ## Getting Started
 
 **Initial increment**: `0001-project-setup` (auto-created by `specweave init`)
@@ -14,7 +14,7 @@
 2. **Customize**: Edit spec.md and use for setup tasks
 <!-- SW:END:start -->
 
-<!-- SW:SECTION:autodetect version="1.0.88" -->
+<!-- SW:SECTION:autodetect version="1.0.104" -->
 ## Auto-Detection
 
 SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
@@ -24,7 +24,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 **Opt-out phrases**: "Just brainstorm first" | "Don't plan yet" | "Quick discussion" | "Let's explore ideas"
 <!-- SW:END:autodetect -->
 
-<!-- SW:SECTION:metarule version="1.0.88" -->
+<!-- SW:SECTION:metarule version="1.0.104" -->
 ## Meta-Rule: Think-Before-Act
 
 **Satisfy dependencies BEFORE dependent operations.**
@@ -35,7 +35,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 ```
 <!-- SW:END:metarule -->
 
-<!-- SW:SECTION:rules version="1.0.88" -->
+<!-- SW:SECTION:rules version="1.0.104" -->
 ## Rules
 
 1. **Files** → `.specweave/increments/####-name/` (spec.md, plan.md, tasks.md at root; reports/, scripts/, logs/ subfolders)
@@ -44,9 +44,11 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 4. **Emergency**: "emergency mode" → 1 edit, 50 lines max, no agents
 5. **Root clean**: NEVER create .md/reports/scripts in project root → use increment folders
 6. **⛔ Increment cleanliness**: ONLY 4 files at increment root (metadata.json, spec.md, plan.md, tasks.md). ALL other .md files → `reports/`, logs → `logs/`, scripts → `scripts/`
+7. **⛔ Initialization guard**: `.specweave/` folders MUST ONLY exist where `specweave init` was run. NEVER create `.specweave/` in parent, nested, or unrelated directories. Check `config.json` exists before creating ANY `.specweave/` subfolders.
+8. **⛔ Marketplace refresh**: ALWAYS use `specweave refresh-marketplace` CLI command. NEVER suggest `scripts/refresh-marketplace.sh` - end users don't have the scripts folder (npm global install).
 <!-- SW:END:rules -->
 
-<!-- SW:SECTION:workflow version="1.0.88" -->
+<!-- SW:SECTION:workflow version="1.0.104" -->
 ## Workflow
 
 `/sw:increment "X"` → `/sw:do` → `/sw:progress` → `/sw:done 0001`
@@ -57,7 +59,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 | `/sw:do` | Execute tasks |
 | `/sw:auto` | Autonomous execution |
 | `/sw:auto-status` | Check auto session |
-| `/sw:cancel-auto` | Cancel auto session |
+| `/sw:cancel-auto` | ⚠️ EMERGENCY ONLY manual cancel |
 | `/sw:validate` | Quality check |
 | `/sw:done` | Close |
 | `/sw-github:sync` | GitHub sync |
@@ -66,7 +68,51 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 **Natural language**: "Let's build X" → `/sw:increment` | "What's status?" → `/sw:progress` | "We're done" → `/sw:done` | "Ship while sleeping" → `/sw:auto`
 <!-- SW:END:workflow -->
 
-<!-- SW:SECTION:context version="1.0.88" -->
+<!-- SW:SECTION:reflect version="1.0.104" -->
+## Self-Improving Skills (Reflect)
+
+**Learn once, never repeat.** Claude learns from corrections and patterns across sessions.
+
+| Cmd | Action |
+|-----|--------|
+| `/sw:reflect` | Analyze session, extract learnings |
+| `/sw:reflect-on` | Enable auto-reflection on session end |
+| `/sw:reflect-off` | Disable auto-reflection |
+| `/sw:reflect-status` | Show memory status |
+
+**How it works**:
+1. User corrects Claude → Reflect captures learning
+2. Learning saved to centralized memory files (by category)
+3. Future sessions apply learned patterns automatically
+
+**CRITICAL - Memory Loading**: Before starting work, **check centralized memory** for learned patterns:
+```bash
+# Check if memory exists and read relevant categories
+ls .specweave/memory/*.md 2>/dev/null && cat .specweave/memory/*.md
+# Also check global memory
+ls ~/.specweave/memory/*.md 2>/dev/null
+```
+
+**Centralized Memory Files** (no skill copies needed!):
+```
+.specweave/memory/                  # Project learnings
+├── component-usage.md              # UI patterns
+├── api-patterns.md                 # API patterns
+├── testing.md                      # Test patterns
+├── deployment.md                   # Deploy patterns
+└── general.md                      # Misc patterns
+
+~/.specweave/memory/                # Global learnings (all projects)
+```
+
+**Signals detected**:
+- **Corrections** (high confidence): "No, use X instead", "Wrong, always do Y"
+- **Approvals** (medium confidence): "Perfect!", "That's exactly right"
+
+**Enable auto-learning**: `/sw:reflect-on` → Stop hook analyzes sessions automatically
+<!-- SW:END:reflect -->
+
+<!-- SW:SECTION:context version="1.0.104" -->
 ## Living Docs Context
 
 **Before implementing features**: Check existing docs for patterns and decisions.
@@ -86,7 +132,7 @@ grep -ril "keyword" .specweave/docs/internal/
 **Use `/sw:context <topic>`** to load relevant living docs into conversation.
 <!-- SW:END:context -->
 
-<!-- SW:SECTION:lsp version="1.0.88" -->
+<!-- SW:SECTION:lsp version="1.0.104" -->
 ## LSP-Enhanced Exploration
 
 **USE LSP ACTIVELY** for semantic code understanding (100x faster than grep).
@@ -103,7 +149,7 @@ go install golang.org/x/tools/gopls@latest  # Go
 **Best Practices**: ALWAYS use `findReferences` before refactoring | Use `goToDefinition` instead of grep | Combine with Explore agent
 <!-- SW:END:lsp -->
 
-<!-- SW:SECTION:structure version="1.0.88" -->
+<!-- SW:SECTION:structure version="1.0.104" -->
 ## Structure
 
 ```
@@ -173,7 +219,7 @@ my-project/
 ```
 <!-- SW:END:structure -->
 
-<!-- SW:SECTION:taskformat version="1.0.88" -->
+<!-- SW:SECTION:taskformat version="1.0.104" -->
 ## Task Format
 
 ```markdown
@@ -183,7 +229,7 @@ my-project/
 ```
 <!-- SW:END:taskformat -->
 
-<!-- SW:SECTION:secrets version="1.0.88" -->
+<!-- SW:SECTION:secrets version="1.0.104" -->
 ## Secrets Check
 
 **BEFORE CLI tools**: Check existing config first!
@@ -194,7 +240,7 @@ gh auth status
 ```
 <!-- SW:END:secrets -->
 
-<!-- SW:SECTION:syncing version="1.0.88" -->
+<!-- SW:SECTION:syncing version="1.0.104" -->
 ## External Sync (GitHub/JIRA/ADO)
 
 **After increment creation**: Run `/sw-github:sync {id}` to create issues!
@@ -222,7 +268,7 @@ Living docs sync ≠ External sync. They are separate:
 **Verify tokens**: `grep GITHUB_TOKEN .env` | `gh auth status`
 <!-- SW:END:syncing -->
 
-<!-- SW:SECTION:mapping version="1.0.88" -->
+<!-- SW:SECTION:mapping version="1.0.104" -->
 ## GitHub Mapping
 
 | SpecWeave | GitHub |
@@ -232,7 +278,7 @@ Living docs sync ≠ External sync. They are separate:
 | Task T-XXX | Checkbox |
 <!-- SW:END:mapping -->
 
-<!-- SW:SECTION:testing version="1.0.88" -->
+<!-- SW:SECTION:testing version="1.0.104" -->
 ## Testing
 
 BDD in tasks.md | Unit >80% | `.test.ts` (Vitest)
@@ -244,306 +290,7 @@ vi.mock('fs', () => ({ readFile: vi.fn() }));
 ```
 <!-- SW:END:testing -->
 
-## Emergency System Architecture
-
-**Canonical System**: SmartQueue (SmartEmergencyQueue + SmartQueueView)
-
-The emergency cry response uses a single system:
-- `SmartEmergencyQueue.swift` - AI-powered queue management
-- `SmartQueueView.swift` - Spotify-like queue UI
-
-Legacy files (EmergencyQueueManager, EmergencyQueueView) are deprecated.
-See ADR-0126 for details.
-
-## Voice Control (DEPRECATED)
-
-**Status**: Custom voice control is DEPRECATED and does NOT work for CarPlay.
-
-### Why Current Implementation Doesn't Work
-
-The custom voice control system (SpeechRecognitionService + VoiceCommandLLMService) has fundamental limitations:
-
-1. **CarPlay uses Siri** - CarPlay routes voice through Siri Intents, not custom speech recognition
-2. **Microphone unavailable** - Custom SFSpeechRecognizer requires app's microphone permission, unavailable in CarPlay
-3. **Foreground only** - Custom speech recognition only works when app is active in foreground
-
-### Deprecated Files (DO NOT USE)
-
-- `VoiceCommandLLMService.swift` - Custom command parsing (broken)
-- `VoiceCommandMLService.swift` - CoreML classifier (never worked, not compiled)
-- `SpeechRecognitionService.swift` - Custom speech recognition (CarPlay incompatible)
-
-### Proper CarPlay Voice Integration (TODO)
-
-For voice control to work in CarPlay, implement **SiriKit Media Intents**:
-
-#### Required Implementation
-
-1. **Add Intents Extension** to Xcode project
-2. **Create Intents.intentdefinition** with supported intents
-3. **Implement IntentHandler** for each intent
-4. **Configure Info.plist** with supported intents
-
-#### Supported Media Intents
-
-| Intent | User Says | Handler |
-|--------|-----------|---------|
-| `INPlayMediaIntent` | "Hey Siri, play lullabies in Lulla" | Start playback |
-| `INPauseMediaIntent` | "Hey Siri, pause Lulla" | Pause playback |
-| `INSearchForMediaIntent` | "Hey Siri, find Mozart in Lulla" | Search tracks |
-| `INAddMediaIntent` | "Hey Siri, add this to favorites" | Add to playlist |
-
-#### Example IntentHandler
-
-```swift
-import Intents
-
-class IntentHandler: INExtension, INPlayMediaIntentHandling {
-    func handle(intent: INPlayMediaIntent) async -> INPlayMediaIntentResponse {
-        // Parse mediaSearch for category/mood/track
-        if let mediaItems = intent.mediaItems {
-            // Route to AudioEngine
-        }
-        return INPlayMediaIntentResponse(code: .success, userActivity: nil)
-    }
-}
-```
-
-#### Info.plist Configuration
-
-```xml
-<key>INIntentsSupported</key>
-<array>
-    <string>INPlayMediaIntent</string>
-    <string>INPauseMediaIntent</string>
-    <string>INSearchForMediaIntent</string>
-</array>
-```
-
-### Resources
-
-- [SiriKit Media Documentation](https://developer.apple.com/documentation/sirikit/media)
-- [INPlayMediaIntent](https://developer.apple.com/documentation/sirikit/inplaymediaintent)
-- [WWDC 2019: Introducing SiriKit Media Intents](https://developer.apple.com/videos/play/wwdc2019/207/)
-
-## iOS Testing (BabyInCarApp)
-
-This project uses a comprehensive iOS testing stack optimized for SwiftUI apps.
-
-### Testing Stack Overview
-
-| Layer | Tool | Purpose |
-|-------|------|---------|
-| **Unit Tests** | Swift Testing + XCTest | Service/Model logic testing |
-| **Snapshot Tests** | swift-snapshot-testing | UI visual regression testing |
-| **Performance Tests** | XCTest Metrics | Audio/ML latency benchmarks |
-| **E2E Tests** | Maestro | Full user journey testing |
-
-### Running Tests
-
-```bash
-# Unit Tests (Xcode)
-xcodebuild test \
-  -project BabyInCarApp/BabyInCarApp.xcodeproj \
-  -scheme BabyInCarApp \
-  -destination 'platform=iOS Simulator,name=iPhone 15'
-
-# E2E Tests (Maestro - install first)
-curl -fsSL "https://get.maestro.mobile.dev" | bash
-~/.maestro/bin/maestro test maestro/flows/
-
-# Run specific E2E flow
-~/.maestro/bin/maestro test maestro/flows/cry_detection_flow.yaml
-
-# Record E2E flow (for debugging)
-~/.maestro/bin/maestro record maestro/flows/onboarding_flow.yaml
-```
-
-### Test Directory Structure
-
-```
-BabyInCarApp/BabyInCarAppTests/
-├── AudioEngineTests.swift      # Existing shuffle/repeat tests
-├── PlayerViewTests.swift       # Player UI logic tests
-├── Fixtures/                   # Test audio files (.gitkeep placeholder)
-├── Mocks/
-│   └── MockCryDetectionService.swift  # Mock service with test helpers
-├── Performance/
-│   └── PerformanceTests.swift  # FFT, ML inference benchmarks
-├── Services/
-│   └── CryDetectionServiceTests.swift  # Cry detection unit tests
-└── Snapshots/
-    └── ViewSnapshotTests.swift # UI snapshot tests
-
-maestro/flows/
-├── onboarding_flow.yaml        # New user onboarding E2E
-├── playback_flow.yaml          # Audio playback E2E
-├── cry_detection_flow.yaml     # Cry monitoring E2E
-├── library_navigation_flow.yaml # Library browsing E2E
-└── playlist_flow.yaml          # Playlist management E2E
-```
-
-### Writing New Tests
-
-**Swift Testing (Modern - Preferred)**
-```swift
-import Testing
-@testable import BabyInCarApp
-
-@Suite("Cry Detection")
-@MainActor
-struct CryDetectionTests {
-    @Test("Detects hunger cry correctly")
-    func detectsHungerCry() async {
-        let mock = MockCryDetectionService()
-        mock.simulateCryDetection(type: .hunger, confidence: 0.9)
-        #expect(mock.cryType == .hunger)
-    }
-}
-```
-
-**XCTest (For Performance/UI)**
-```swift
-func testMLInferencePerformance() throws {
-    measure(metrics: [XCTClockMetric()]) {
-        _ = detector.detect(features: features)
-    }
-}
-```
-
-**Maestro E2E**
-```yaml
-appId: com.anticry.babyincar
----
-- launchApp
-- tapOn: "Cry Detection"
-- assertVisible: "Listening..."
-- takeScreenshot: "cry_detection_active"
-```
-
-### Mock Service Usage
-
-```swift
-// Create mock in specific state
-let detected = MockCryDetectionService.detected(type: .tired, confidence: 0.85)
-let monitoring = MockCryDetectionService.monitoring()
-let idle = MockCryDetectionService.idle()
-
-// Simulate events
-mock.simulateCryDetection(type: .pain, confidence: 0.95)
-mock.simulateCryEnded()
-
-// Verify calls
-#expect(mock.startMonitoringCallCount == 1)
-```
-
-### Performance Baselines
-
-| Operation | Max Time | Why |
-|-----------|----------|-----|
-| FFT Processing | < 20ms | Real-time audio buffer |
-| ML Inference | < 50ms | Detection latency |
-| Full Pipeline | < 100ms | End-to-end response |
-
-### Adding Accessibility Identifiers (for UI/E2E Tests)
-
-```swift
-Button("Play") { }
-    .accessibilityIdentifier("playButton")
-
-Toggle("Enable Monitoring", isOn: $isMonitoring)
-    .accessibilityIdentifier("cryMonitoringToggle")
-```
-
-### Test Coverage Targets
-
-| Area | Target | Current |
-|------|--------|---------|
-| CryDetectionService | 80% | ~30% |
-| AudioEngine | 80% | ~40% |
-| ML Models | 70% | ~20% |
-| Views (Snapshots) | 60% | ~10% |
-| E2E Critical Paths | 100% | 5 flows |
-
-## Audio Content Guidelines (CRITICAL)
-
-**App Size Optimization**: Target app size < 50MB. All audio content streams from Cloudflare R2.
-
-### Emergency Mode Audio (ZERO LATENCY)
-Emergency mode uses **GENERATED audio** (not bundled files) for instant, reliable playback:
-- `AudioTrack.defaultEmergencyTrack()` → Generated lullaby melody
-- `AudioTrack.alternativeEmergencyTrack()` → Generated music box
-- **Why generated?** Zero file loading, zero network latency, works offline
-
-### Streaming-First Architecture
-All library audio content is streamed from R2:
-```
-┌─────────────────────────────────────────────────────────────┐
-│  App Bundle (< 50MB)                                        │
-│  └── NO bundled audio files (all generated or streamed)     │
-├─────────────────────────────────────────────────────────────┤
-│  Generated Audio (instant, offline)                         │
-│  └── Lullaby, Music Box, Ocean, Heartbeat, etc.            │
-├─────────────────────────────────────────────────────────────┤
-│  Cloudflare R2 (all audio content)                          │
-│  └── Progressive streaming via CDN                          │
-├─────────────────────────────────────────────────────────────┤
-│  Local Cache (~500MB max)                                   │
-│  └── Downloaded favorites + emergency playlist              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Audio Session Configuration (CRITICAL)
-**Exclusive Playback**: App uses ONE audio channel - stops Spotify/YouTube when playing
-- Use `.playback` category with **NO** `.mixWithOthers` option
-- No mixing = exclusive control (like Spotify, Apple Music)
-- When Lulla plays, other audio apps stop
-
-**Bluetooth/AirPods**:
-- Use `.playback` category with **NO** `.allowBluetooth` option
-- `.allowBluetooth` forces HFP (mono, low quality) instead of A2DP (stereo, high quality)
-- iOS automatically routes to Bluetooth A2DP when available with `.playback` category
-
-### FORBIDDEN Audio Types (NEVER download or generate)
-
-**CLEANED: 35 forbidden tracks removed from tracks.json (2026-01-04)**
-
-| Type | Examples | Reason | Removed |
-|------|----------|--------|---------|
-| **Weather Sounds** | Rain, thunder, storm, wind | Too noisy, scary for babies | 14 tracks |
-| **Mechanical/Harsh Sounds** | Vacuum cleaner, hair dryer, washing machine, car engine, fan | Too harsh for baby calming | 15 tracks |
-| **Travel/City Sounds** | Train, airplane cabin, city ambience | Stimulating, not soothing | 0 tracks |
-| **Synthetic Noise** | White noise, pink noise, brown noise (all whitenoise category) | User feedback: SCARY for babies | 13 tracks |
-| **Other Loud Sounds** | Fanfare, loud music | Too stimulating | 3 tracks |
-
-### ALLOWED Audio Types (343 tracks remaining)
-
-| Category | Count | Examples | Source |
-|----------|-------|----------|--------|
-| **Classical Music** | 117 | Mozart, Bach, Brahms, Chopin | Stream from R2 |
-| **Nature Sounds (gentle)** | 56 | Ocean waves, birds, river (NO rain/thunder/wind) | Stream from R2 |
-| **Fairy Tales (EN)** | 44 | English stories | Stream from R2 |
-| **Ambient** | 42 | Gentle background music | Stream from R2 |
-| **Fairy Tales (RU)** | 38 | Russian folk tales | Stream from R2 |
-| **Lullabies** | 30 | Brahms Lullaby, real recordings | Stream from R2 |
-| **Children's Songs** | 14 | Age-appropriate gentle songs | Stream from R2 |
-| **Acoustic** | 2 | Guitar, ukulele | Stream from R2 |
-
-### Generated Sounds (OK - Internal Audio Engine)
-These are OK because they're generated in real-time, not downloaded:
-- Womb sounds (synthesized)
-- Heartbeat (synthesized)
-- Gentle shushing (synthesized)
-
-### Content Addition Checklist
-Before adding any new audio content:
-1. ✅ Is it soothing for babies? (no harsh/mechanical sounds)
-2. ✅ Does it stream from R2? (not bundled in app)
-3. ✅ Is metadata in tracks.json? (with streamURL)
-4. ✅ Is file size reasonable? (prefer < 10MB per track)
-5. ❌ NEVER bundle large audio files in the app
-
-<!-- SW:SECTION:api version="1.0.88" -->
+<!-- SW:SECTION:api version="1.0.104" -->
 ## API Development (OpenAPI-First)
 
 **For API projects only.** OpenAPI = source of truth → Postman derived from it.
@@ -562,18 +309,19 @@ Before adding any new audio content:
 **Import**: Postman → Import collection + env → Fill secrets → Select env
 <!-- SW:END:api -->
 
-<!-- SW:SECTION:limits version="1.0.88" -->
+<!-- SW:SECTION:limits version="1.0.104" -->
 ## Limits
 
 **Max 1500 lines/file** — extract before adding
 <!-- SW:END:limits -->
 
-<!-- SW:SECTION:troubleshooting version="1.0.88" -->
+<!-- SW:SECTION:troubleshooting version="1.0.104" -->
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | Skills missing | Restart Claude Code |
+| Plugins outdated | `specweave refresh-marketplace` (NEVER use `scripts/refresh-marketplace.sh` - that's for contributors only!) |
 | Commands gone | `/plugin list --installed` |
 | Out of sync | `/sw:sync-tasks` |
 | Find increment | `/sw:status` |
@@ -587,7 +335,7 @@ Before adding any new audio content:
 | Path patterns not working | `//path` = absolute, `/path` = relative to settings file, `additionalDirectories` for explicit working dirs |
 <!-- SW:END:troubleshooting -->
 
-<!-- SW:SECTION:principles version="1.0.88" -->
+<!-- SW:SECTION:principles version="1.0.104" -->
 ## Principles
 
 1. **Spec-first**: `/sw:increment` before coding
@@ -597,7 +345,7 @@ Before adding any new audio content:
 5. **Clean**: All files in increment folders
 <!-- SW:END:principles -->
 
-<!-- SW:SECTION:linking version="1.0.88" -->
+<!-- SW:SECTION:linking version="1.0.104" -->
 ## Bidirectional Linking
 
 Tasks ↔ User Stories auto-linked via AC-IDs: `AC-US1-01` → `US-001`
@@ -605,7 +353,7 @@ Tasks ↔ User Stories auto-linked via AC-IDs: `AC-US1-01` → `US-001`
 Task format: `**AC**: AC-US1-01, AC-US1-02` (CRITICAL for linking)
 <!-- SW:END:linking -->
 
-<!-- SW:SECTION:mcp version="1.0.88" -->
+<!-- SW:SECTION:mcp version="1.0.104" -->
 ## External Service Connection
 
 **Priority**: MCP Server → REST API → CLI → Direct Connection
@@ -629,7 +377,7 @@ wrangler whoami 2>/dev/null
 ```
 <!-- SW:END:mcp -->
 
-<!-- SW:SECTION:autoexecute version="1.0.88" -->
+<!-- SW:SECTION:autoexecute version="1.0.104" -->
 ## Auto-Execute Rule
 
 **NEVER** output "Manual Step Required" when credentials exist. **EXECUTE DIRECTLY.**
@@ -643,7 +391,7 @@ wrangler whoami 2>/dev/null && gh auth status 2>/dev/null
 ```
 <!-- SW:END:autoexecute -->
 
-<!-- SW:SECTION:auto version="1.0.88" -->
+<!-- SW:SECTION:auto version="1.0.104" -->
 ## Auto Mode (Autonomous Execution)
 
 **Continuous execution until all tasks complete.**
@@ -709,14 +457,18 @@ wrangler whoami 2>/dev/null && gh auth status 2>/dev/null
 
 ### Implementation
 
-**Claude Code**: `/sw:do` (continues till done) | `/sw:auto-status` (progress) | `/sw:cancel-auto` (stop)
+**Claude Code**: `/sw:auto` (autonomous mode) | `/sw:auto-status` (progress)
+
+**To pause**: Just close Claude Code session, resume with `/sw:do`
+
+**Emergency cancel**: `/sw:cancel-auto` (rarely needed - prefer closing session)
 
 **Other AI**: Loop check tasks.md `[x]` status → Max 100 iter → Human gates for: publish, force-push, prod deploy, migrations
 
 **Circuit Breaker**: External API fails 3x? Queue & continue
 <!-- SW:END:auto -->
 
-<!-- SW:SECTION:docs version="1.0.88" -->
+<!-- SW:SECTION:docs version="1.0.104" -->
 ## Docs
 
 [spec-weave.com](https://spec-weave.com) | `.specweave/docs/internal/`

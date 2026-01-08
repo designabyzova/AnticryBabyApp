@@ -269,16 +269,16 @@ class SmartCryResponseEngine: ObservableObject {
             }
         }
 
-        // 🚨 EMERGENCY MODE: Play bundled default track (Piano Moment) IMMEDIATELY
-        // This ensures instant playback with NO file loading delays or streaming issues
-        // The default track is the ONLY audio file bundled with the app
-        print("[SmartCryResponse] 🚨 Emergency mode: Playing bundled default track (Piano Moment)")
+        // 🚨 EMERGENCY MODE: Play GENERATED lullaby IMMEDIATELY
+        // Generated audio starts instantly with zero latency - no file loading, no network
+        // This guarantees emergency mode ALWAYS has sound, even offline
+        print("[SmartCryResponse] 🚨 Emergency mode: Playing generated lullaby (instant playback)")
 
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
         audioEngine.play(track: defaultTrack)
 
         currentPhase = .primarySoothing
-        adaptationMessage = "Playing calming music..."
+        adaptationMessage = "Playing soothing lullaby..."
 
         // Start monitoring for baby's response
         startMonitoringLoop()
@@ -1105,7 +1105,9 @@ class SmartCryResponseEngine: ObservableObject {
         currentPhase = .monitoring
         adaptationMessage = "Monitoring baby's state..."
 
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // THERMAL FIX: Increased from 5s to 8s - reduces monitoring overhead
+        // Cry state changes slowly; 8s is still responsive enough for good UX
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.monitoringCheck()
             }
@@ -1114,6 +1116,15 @@ class SmartCryResponseEngine: ObservableObject {
 
     private func monitoringCheck() async {
         evaluateEffectiveness()
+
+        // Provide real-time feedback to SmartEmergencyQueue for dynamic reordering
+        if isEmergencyMode && smartEmergencyQueue.isActive {
+            let isCalmingDown = !cryDetectionService.isCryDetected ||
+                                effectiveness == .partiallyEffective ||
+                                effectiveness == .highlyEffective
+
+            smartEmergencyQueue.adjustQueueForEffectiveness(isCalmingDown: isCalmingDown)
+        }
 
         if !cryDetectionService.isCryDetected {
             await transitionToSuccess()
@@ -1232,12 +1243,18 @@ class SmartCryResponseEngine: ObservableObject {
         if let multiCategories = preferredCategories, !multiCategories.isEmpty {
             categoriesToUse = multiCategories
             print("[SmartCryResponse] 🎯 Multi-category mode: \(multiCategories.map { $0.rawValue })")
+            // Set manual category mode for user-selected categories
+            smartEmergencyQueue.setPlaylistMode(.manualCategory)
         } else if let singleCategory = preferredCategory {
             categoriesToUse = [singleCategory]
             print("[SmartCryResponse] 🎯 Single category mode: \(singleCategory.rawValue)")
+            smartEmergencyQueue.setPlaylistMode(.manualCategory)
         } else {
             categoriesToUse = nil
             print("[SmartCryResponse] 🎯 AI default mode")
+            // Use AI detection mode when cry was detected by ML (not manual emergency)
+            // This balances effectiveness with exploration for variety
+            smartEmergencyQueue.setPlaylistMode(.aiDetection)
         }
 
         // Build smart queue using REAL library tracks + generated sounds
@@ -1252,12 +1269,12 @@ class SmartCryResponseEngine: ObservableObject {
         )
 
         guard !queueTracks.isEmpty else {
-            print("[SmartCryResponse] ⚠️ No library tracks found, using default emergency track")
-            // Use the bundled Piano Moment as a single-track queue
+            print("[SmartCryResponse] ⚠️ No library tracks found, using generated lullaby")
+            // Use the generated lullaby as a single-track queue (instant, reliable)
             let defaultTrack = AudioTrack.defaultEmergencyTrack()
             await smartEmergencyQueue.startQueue(tracks: [defaultTrack])
             currentPhase = .primarySoothing
-            adaptationMessage = "Playing: Piano Moment"
+            adaptationMessage = "Playing: Soothing Lullaby"
             currentSession = ResponseSession(
                 babyId: baby.id,
                 babyAgeMonths: baby.ageInMonths,
@@ -1461,8 +1478,9 @@ class SmartCryResponseEngine: ObservableObject {
     private func startBabyMIMMonitoring(for baby: Baby) {
         currentPhase = .monitoring
 
-        // Monitor more frequently with BabyMIM (every 3 seconds)
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+        // THERMAL FIX: Increased from 3s to 5s - reduces BabyMIM monitoring overhead by 40%
+        // ML-based adaptation doesn't need 3s precision; 5s is sufficient for good UX
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.babyMIMMonitoringCheck(for: baby)
             }

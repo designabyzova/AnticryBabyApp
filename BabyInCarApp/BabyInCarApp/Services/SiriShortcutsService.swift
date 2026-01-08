@@ -1,0 +1,289 @@
+//
+//  SiriShortcutsService.swift
+//  BabyInCarApp
+//
+//  Manages Siri Shortcuts for custom voice commands like
+//  "calm baby", "cry again", "play lullabies".
+//
+//  These shortcuts allow users to create custom Siri phrases
+//  that trigger specific app actions.
+//
+
+import Foundation
+import Intents
+import CoreSpotlight
+
+/// Service for managing Siri Shortcuts and NSUserActivity donations
+@MainActor
+class SiriShortcutsService: ObservableObject {
+    static let shared = SiriShortcutsService()
+
+    // MARK: - Activity Types
+
+    /// Activity type identifiers for Siri Shortcuts
+    enum ActivityType: String {
+        case playLullabies = "com.lulla.playLullabies"
+        case playClassical = "com.lulla.playClassical"
+        case playFairyTales = "com.lulla.playFairyTales"
+        case playNature = "com.lulla.playNature"
+        case emergencyMode = "com.lulla.emergencyMode"
+        case calmBaby = "com.lulla.calmBaby"
+        case cryAgain = "com.lulla.cryAgain"
+        case pausePlayback = "com.lulla.pausePlayback"
+        case resumePlayback = "com.lulla.resumePlayback"
+
+        var title: String {
+            switch self {
+            case .playLullabies: return "Play Lullabies in Lulla"
+            case .playClassical: return "Play Classical Music in Lulla"
+            case .playFairyTales: return "Play Fairy Tales in Lulla"
+            case .playNature: return "Play Nature Sounds in Lulla"
+            case .emergencyMode: return "Emergency Mode in Lulla"
+            case .calmBaby: return "Calm Baby Now"
+            case .cryAgain: return "Baby Crying Again"
+            case .pausePlayback: return "Pause Lulla"
+            case .resumePlayback: return "Resume Lulla"
+            }
+        }
+
+        var suggestedPhrase: String {
+            switch self {
+            case .playLullabies: return "Play lullabies"
+            case .playClassical: return "Play classical for baby"
+            case .playFairyTales: return "Play bedtime stories"
+            case .playNature: return "Play nature sounds"
+            case .emergencyMode: return "Baby emergency"
+            case .calmBaby: return "Calm baby"
+            case .cryAgain: return "Cry again"
+            case .pausePlayback: return "Pause baby music"
+            case .resumePlayback: return "Resume baby music"
+            }
+        }
+
+        var category: AudioCategory? {
+            switch self {
+            case .playLullabies: return .lullabies
+            case .playClassical: return .classicalMusic
+            case .playFairyTales: return .fairyTales
+            case .playNature: return .natureSounds
+            default: return nil
+            }
+        }
+
+        var isEmergency: Bool {
+            switch self {
+            case .emergencyMode, .calmBaby, .cryAgain:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    private init() {}
+
+    // MARK: - Donate Shortcuts
+
+    /// Donate all common shortcuts to Siri for suggestions
+    func donateAllShortcuts() {
+        print("[SiriShortcuts] Donating all shortcuts to Siri")
+
+        // Category shortcuts
+        donateShortcut(.playLullabies)
+        donateShortcut(.playClassical)
+        donateShortcut(.playFairyTales)
+        donateShortcut(.playNature)
+
+        // Emergency shortcuts
+        donateShortcut(.emergencyMode)
+        donateShortcut(.calmBaby)
+        donateShortcut(.cryAgain)
+
+        // Control shortcuts
+        donateShortcut(.pausePlayback)
+        donateShortcut(.resumePlayback)
+    }
+
+    /// Donate a specific shortcut to Siri
+    func donateShortcut(_ type: ActivityType) {
+        let activity = createActivity(for: type)
+        activity.becomeCurrent()
+
+        print("[SiriShortcuts] Donated shortcut: \(type.title)")
+    }
+
+    /// Donate a category playback shortcut when user plays that category
+    func donatePlaybackShortcut(for category: AudioCategory) {
+        let activityType: ActivityType?
+        switch category {
+        case .lullabies: activityType = .playLullabies
+        case .classicalMusic: activityType = .playClassical
+        case .fairyTales: activityType = .playFairyTales
+        case .natureSounds: activityType = .playNature
+        default: activityType = nil
+        }
+
+        if let type = activityType {
+            donateShortcut(type)
+        }
+    }
+
+    // MARK: - Create Activity
+
+    /// Create an NSUserActivity for a shortcut type
+    private func createActivity(for type: ActivityType) -> NSUserActivity {
+        let activity = NSUserActivity(activityType: type.rawValue)
+
+        activity.title = type.title
+        activity.suggestedInvocationPhrase = type.suggestedPhrase
+        activity.isEligibleForSearch = true
+        activity.isEligibleForPrediction = true
+        activity.persistentIdentifier = NSUserActivityPersistentIdentifier(type.rawValue)
+
+        // Set user info based on type
+        var userInfo: [String: Any] = ["activityType": type.rawValue]
+
+        if let category = type.category {
+            userInfo["category"] = category.rawValue
+        }
+
+        if type.isEmergency {
+            userInfo["isEmergency"] = true
+        }
+
+        switch type {
+        case .pausePlayback:
+            userInfo["action"] = "pause"
+        case .resumePlayback:
+            userInfo["action"] = "resume"
+        default:
+            userInfo["action"] = "play"
+        }
+
+        activity.userInfo = userInfo
+
+        // Add search attributes for Spotlight
+        let attributes = CSSearchableItemAttributeSet(contentType: .content)
+        attributes.title = type.title
+        attributes.contentDescription = "Control Lulla with Siri"
+        activity.contentAttributeSet = attributes
+
+        return activity
+    }
+
+    // MARK: - Handle Shortcut Activation
+
+    /// Handle when a Siri Shortcut is activated
+    func handleShortcut(activityType: String, userInfo: [AnyHashable: Any]?) {
+        print("[SiriShortcuts] Handling shortcut: \(activityType)")
+
+        guard let type = ActivityType(rawValue: activityType) else {
+            print("[SiriShortcuts] Unknown activity type: \(activityType)")
+            return
+        }
+
+        Task { @MainActor in
+            switch type {
+            case .playLullabies:
+                playCategory(.lullabies)
+            case .playClassical:
+                playCategory(.classicalMusic)
+            case .playFairyTales:
+                playCategory(.fairyTales)
+            case .playNature:
+                playCategory(.natureSounds)
+            case .emergencyMode, .calmBaby, .cryAgain:
+                triggerEmergencyMode()
+            case .pausePlayback:
+                AudioEngine.shared.pause()
+            case .resumePlayback:
+                AudioEngine.shared.resume()
+            }
+        }
+    }
+
+    // MARK: - Playback Actions
+
+    /// Play a specific category
+    private func playCategory(_ category: AudioCategory) {
+        print("[SiriShortcuts] Playing category: \(category.rawValue)")
+
+        let contentLibrary = ContentLibraryService.shared
+        let tracks = contentLibrary.getTracks(for: category)
+
+        guard !tracks.isEmpty else {
+            print("[SiriShortcuts] No tracks for category: \(category.rawValue)")
+            // Fallback to default content - play highest calming score tracks
+            playDefaultContent()
+            return
+        }
+
+        let playlist = Playlist(
+            id: UUID(),
+            name: "Siri: \(category.rawValue)",
+            tracks: Array(tracks.shuffled().prefix(20)),
+            createdAt: Date()
+        )
+
+        AudioEngine.shared.play(playlist: playlist)
+    }
+
+    /// Play default content as fallback
+    private func playDefaultContent() {
+        let contentLibrary = ContentLibraryService.shared
+        let tracks = contentLibrary.allTracks
+            .sorted { $0.calmingScore > $1.calmingScore }
+
+        guard !tracks.isEmpty else {
+            AudioEngine.shared.play(track: AudioTrack.defaultEmergencyTrack())
+            return
+        }
+
+        let playlist = Playlist(
+            id: UUID(),
+            name: "Siri: Lulla Music",
+            tracks: Array(tracks.prefix(20)),
+            createdAt: Date()
+        )
+        AudioEngine.shared.play(playlist: playlist)
+    }
+
+    /// Trigger emergency mode via SmartEmergencyQueue
+    private func triggerEmergencyMode() {
+        print("[SiriShortcuts] Triggering emergency mode")
+
+        let smartQueue = SmartEmergencyQueue.shared
+
+        Task { @MainActor in
+            // Get baby age from current profile or use default (12 months)
+            let babyAge = 12
+            let language = Locale.current.language.languageCode?.identifier ?? "en"
+
+            // Build emergency queue
+            let tracks = await smartQueue.buildQueue(
+                for: .general,
+                babyAge: babyAge,
+                language: language,
+                maxTracks: 20
+            )
+
+            if !tracks.isEmpty {
+                await smartQueue.startQueue(tracks: tracks)
+                print("[SiriShortcuts] Emergency queue started with \(tracks.count) tracks")
+            } else {
+                // Fallback to ambient mode
+                await smartQueue.startAmbientMode(babyAge: babyAge, language: language)
+                print("[SiriShortcuts] Started ambient mode as emergency fallback")
+            }
+        }
+    }
+
+    // MARK: - Delete Shortcuts
+
+    /// Delete all donated shortcuts (useful for logout/reset)
+    func deleteAllShortcuts() {
+        NSUserActivity.deleteAllSavedUserActivities {
+            print("[SiriShortcuts] Deleted all shortcuts")
+        }
+    }
+}
