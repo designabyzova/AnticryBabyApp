@@ -67,6 +67,56 @@ enum AudioCategory: String, Codable, CaseIterable, Identifiable {
             return "Gentle ambient music for relaxation"
         }
     }
+
+    var displayName: String {
+        rawValue
+    }
+
+    var iconName: String {
+        icon
+    }
+
+    var gradientStart: Color {
+        switch self {
+        case .classicalMusic:
+            return Color(red: 0.4, green: 0.2, blue: 0.8) // Purple
+        case .fairyTales:
+            return Color(red: 1.0, green: 0.4, blue: 0.6) // Pink
+        case .natureSounds:
+            return Color(red: 0.2, green: 0.7, blue: 0.4) // Green
+        case .instrumental:
+            return Color(red: 0.9, green: 0.5, blue: 0.2) // Orange
+        case .childrenSongs:
+            return Color(red: 0.3, green: 0.6, blue: 0.9) // Blue
+        case .podcasts:
+            return Color(red: 0.7, green: 0.3, blue: 0.5) // Magenta
+        case .lullabies:
+            return Color(red: 0.5, green: 0.3, blue: 0.8) // Violet
+        case .ambient:
+            return Color(red: 0.2, green: 0.5, blue: 0.7) // Teal
+        }
+    }
+
+    var gradientEnd: Color {
+        switch self {
+        case .classicalMusic:
+            return Color(red: 0.6, green: 0.3, blue: 0.9)
+        case .fairyTales:
+            return Color(red: 1.0, green: 0.6, blue: 0.8)
+        case .natureSounds:
+            return Color(red: 0.4, green: 0.9, blue: 0.6)
+        case .instrumental:
+            return Color(red: 1.0, green: 0.7, blue: 0.4)
+        case .childrenSongs:
+            return Color(red: 0.5, green: 0.8, blue: 1.0)
+        case .podcasts:
+            return Color(red: 0.9, green: 0.5, blue: 0.7)
+        case .lullabies:
+            return Color(red: 0.7, green: 0.5, blue: 1.0)
+        case .ambient:
+            return Color(red: 0.4, green: 0.7, blue: 0.9)
+        }
+    }
 }
 
 // MARK: - Language
