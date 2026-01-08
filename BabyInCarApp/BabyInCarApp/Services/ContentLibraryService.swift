@@ -477,7 +477,8 @@ class ContentLibraryService: ObservableObject {
         guard let url = Bundle.main.url(forResource: fileName, withExtension: "json", subdirectory: "Audio"),
               let data = try? Data(contentsOf: url),
               let podcastArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            print("Could not load \(fileName).json metadata")
+            // Podcast metadata files not bundled - this is EXPECTED (no podcast content by design)
+            // Silently return empty array without logging warning
             return tracks
         }
 

@@ -117,10 +117,8 @@ class CryClassifierMLModel {
                 model = nil
             }
         } else {
-            if !Self.didLogModelNotFound {
-                print("CryClassifierMLModel: Model file not found, using rule-based fallback")
-                Self.didLogModelNotFound = true
-            }
+            // Model file not bundled - this is EXPECTED (we use DeepInfant_V2 instead)
+            // Silently fall back to rule-based classification without logging warning
             model = nil
         }
     }

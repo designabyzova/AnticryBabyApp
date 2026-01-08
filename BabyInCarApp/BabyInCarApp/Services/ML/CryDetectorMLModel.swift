@@ -101,10 +101,8 @@ class CryDetectorMLModel {
                 model = nil
             }
         } else {
-            if !Self.didLogModelNotFound {
-                print("CryDetectorMLModel: Model file not found, using rule-based fallback")
-                Self.didLogModelNotFound = true
-            }
+            // Model file not bundled - this is EXPECTED (we use DeepInfant_V2 instead)
+            // Silently fall back to rule-based detection without logging warning
             model = nil
         }
     }
