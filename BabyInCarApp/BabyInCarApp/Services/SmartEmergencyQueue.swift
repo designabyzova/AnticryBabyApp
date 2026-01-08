@@ -1107,11 +1107,21 @@ class SmartEmergencyQueue: ObservableObject {
         }
     }
 
-    /// Play a specific track immediately (for quick suggestions)
-    /// Used when user taps on a suggested track like "Piano Moment" or "Brahms Lullaby"
+    /// Play a specific track immediately (for quick suggestions or queue selection)
+    /// Used when user taps on a suggested track or selects a track from the queue
+    /// CRITICAL FIX: Now maintains full 8-item queue after selection
     func playTrackImmediately(_ track: AudioTrack) async {
         print("[SmartQueue] Playing track immediately: \(track.title)")
 
+        // Check if this track is in the existing queue
+        if let trackIndex = allQueueTracks.firstIndex(where: { $0.id == track.id }) {
+            // Track is in queue - skip to it (maintains full queue)
+            print("[SmartQueue] 🎯 Track found in queue at position \(trackIndex + 1), skipping to it")
+            await skipTo(index: trackIndex)
+            return
+        }
+
+        // Track is NOT in queue (e.g., from quick suggestions)
         // Add current to played if exists
         if let current = currentTrack {
             playedTracks.append(current)
@@ -1119,6 +1129,19 @@ class SmartEmergencyQueue: ObservableObject {
 
         // Insert the new track at current position
         currentTrack = track
+
+        // If queue is active, insert track into allQueueTracks and update upcoming
+        if isActive && !allQueueTracks.isEmpty {
+            // Insert at current position + 1
+            allQueueTracks.insert(track, at: currentIndex + 1)
+            // Update index to point to new track
+            currentIndex += 1
+            // Update upcoming tracks display
+            updateUpcomingTracks()
+            // Replenish to maintain 8 items
+            replenishQueueIfNeeded()
+            print("[SmartQueue] ✅ Inserted track into queue, upcoming: \(upcomingTracks.count)")
+        }
 
         // Play through session manager with emergency priority
         // Use forceImmediate for instant playback in emergency situations

@@ -31,13 +31,13 @@ class CryDetectionService: ObservableObject {
 
     // MARK: - ML Integration
     /// Whether to use ML-enhanced detection
-    /// MEMORY SAFETY: DISABLED BY DEFAULT - app crashed at 150-200MB with ML enabled!
-    /// Rule-based detection works fine, ML can be enabled manually on newer devices
-    var useMLEnhancement: Bool = false  // CRITICAL: changed from true to prevent crash
+    /// MEMORY SAFETY: Auto-detected based on device RAM (4GB+ = enabled)
+    /// Configured in configureMLBasedOnDeviceCapability() during init
+    var useMLEnhancement: Bool = true  // FIXED: Auto-detect in init, default to true for modern devices
 
     /// Whether to use DeepInfant pre-trained model (more accurate but heavier)
-    /// MEMORY SAFETY: DISABLED BY DEFAULT
-    var useDeepInfant: Bool = false  // CRITICAL: changed from true to prevent crash
+    /// MEMORY SAFETY: Auto-detected based on device RAM (4GB+ = enabled)
+    var useDeepInfant: Bool = true  // FIXED: Auto-detect in init, default to true for modern devices
 
     /// Blend ratio: 0 = all rule-based, 1 = all ML
     var mlBlendRatio: Double = 0.6
@@ -389,25 +389,32 @@ class CryDetectionService: ObservableObject {
         let totalRAM = ProcessInfo.processInfo.physicalMemory
         let totalRAMGB = Double(totalRAM) / (1024 * 1024 * 1024)
 
+        // DIAGNOSTIC: Always log device info for troubleshooting
+        let device = UIDevice.current
+        print("[CryDetection] 📱 Device: \(device.model), iOS \(device.systemVersion)")
+        print("[CryDetection] 💾 RAM: \(String(format: "%.1f", totalRAMGB))GB")
+
         // Enable ML features only on devices with 4GB+ RAM
         // iPhone 11 and newer have 4GB+, older devices have 2-3GB
         if totalRAMGB >= 4.0 {
             useMLEnhancement = true
             useDeepInfant = true
-            print("[CryDetection] 🧠 ML enabled - device has \(String(format: "%.1f", totalRAMGB))GB RAM")
+            print("[CryDetection] 🧠 ML ENABLED - sufficient RAM for ML classification")
 
             // DIAGNOSTIC: Check if DeepInfant model is actually available
             let modelLoaded = deepInfantClassifier.isModelLoaded
             if modelLoaded {
-                print("[CryDetection] ✅ DeepInfant CoreML model loaded successfully")
+                print("[CryDetection] ✅ DeepInfant CoreML model LOADED successfully")
             } else {
-                print("[CryDetection] ⚠️ DeepInfant model NOT loaded - falling back to rule-based classification")
-                print("[CryDetection]    (This is normal if DeepInfant_V2.mlmodel is not in the bundle)")
+                print("[CryDetection] ⚠️ DeepInfant model NOT loaded - will use standard ML classifier only")
+                print("[CryDetection]    Check if DeepInfant_V2.mlmodel is in the Xcode project")
+                // Still keep ML enabled for the standard classifier
             }
         } else {
             useMLEnhancement = false
             useDeepInfant = false
-            print("[CryDetection] ⚡ ML disabled - device has \(String(format: "%.1f", totalRAMGB))GB RAM (rule-based detection active)")
+            print("[CryDetection] ⚡ ML DISABLED - low RAM device (\(String(format: "%.1f", totalRAMGB))GB < 4GB threshold)")
+            print("[CryDetection]    Using rule-based detection only")
         }
     }
 
