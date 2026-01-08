@@ -200,17 +200,6 @@ struct ProfileView: View {
                 .accessibilityIdentifier("smoothTransitionsToggle")
 
                 SettingsToggleRow(
-                    icon: "speaker.wave.2.fill",
-                    title: "Auto-Duck External Audio",
-                    subtitle: "Reduce Spotify/Music volume when baby cries",
-                    isOn: Binding(
-                        get: { AudioEngine.autoDuckExternalAudio },
-                        set: { AudioEngine.autoDuckExternalAudio = $0 }
-                    )
-                )
-                .accessibilityIdentifier("autoDuckExternalAudioToggle")
-
-                SettingsToggleRow(
                     icon: "car.fill",
                     title: "CarPlay",
                     isOn: .constant(true)

@@ -563,10 +563,16 @@ class EmergencyCryStopService: ObservableObject {
     }
 
     private func handleCryDetectionChange(_ detected: Bool) {
-        print("[EmergencyCryStop] handleCryDetectionChange: detected=\(detected), isAIMonitoringEnabled=\(isAIMonitoringEnabled), isEmergencyModeActive=\(isEmergencyModeActive)")
+        // Only log when actually detecting a cry (reduces noise during startup/idle)
+        if detected {
+            print("[EmergencyCryStop] handleCryDetectionChange: detected=\(detected), isAIMonitoringEnabled=\(isAIMonitoringEnabled), isEmergencyModeActive=\(isEmergencyModeActive)")
+        }
 
         guard isAIMonitoringEnabled, let baby = currentBaby else {
-            print("[EmergencyCryStop] ⚠️ Skipping - AI monitoring not enabled or no baby set")
+            // Only warn when cry is detected but we can't respond (not during routine false->false transitions)
+            if detected {
+                print("[EmergencyCryStop] ⚠️ Cry detected but AI monitoring not enabled or no baby set")
+            }
             return
         }
 

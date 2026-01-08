@@ -196,17 +196,6 @@ struct EmergencyCategorySelectionTests {
                "Emergency audio session configuration should succeed")
     }
 
-    @Test("Emergency mode enables ducking correctly")
-    func emergencyModeEnablesDucking() {
-        let audioEngine = AudioEngine.shared
-
-        // Enable emergency ducking (should interrupt, not mix)
-        audioEngine.enableDucking(true, emergencyMode: true)
-
-        // Should not throw error (test passes if no crash)
-        #expect(true, "Emergency ducking should enable without errors")
-    }
-
     // MARK: - Category Availability Tests
 
     @Test("All audio categories are available for emergency selection")

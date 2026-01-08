@@ -61,14 +61,15 @@ enum AudioSessionMode: Equatable {
     var options: AVAudioSession.CategoryOptions {
         switch self {
         case .playbackOnly, .emergencyPlayback:
-            // Exclusive playback - pauses other apps
+            // Exclusive playback - pauses other apps (like Spotify, YouTube)
             return []
         case .playAndRecord:
-            // Allow simultaneous play and record with speaker output
-            return [.defaultToSpeaker, .mixWithOthers]
+            // Exclusive playback during monitoring - pauses other apps
+            // Use speaker output for cry detection while playing
+            return [.defaultToSpeaker]
         case .recordOnly:
-            // Duck other audio while recording
-            return [.duckOthers]
+            // Exclusive recording - pauses other apps
+            return []
         case .inactive:
             return []
         }
@@ -180,6 +181,93 @@ final class AudioSessionManager: ObservableObject {
             } catch {
                 print("[AudioSessionManager] ⚠️ Force deactivate failed: \(error)")
             }
+        }
+    }
+
+    /// Synchronously activate session for a specific mode (bypasses debounce)
+    /// Use this when you need the session ready IMMEDIATELY before accessing audio hardware
+    /// Returns true if activation succeeded
+    /// - Parameters:
+    ///   - mode: The audio session mode to activate
+    ///   - serviceId: Unique identifier for the requesting service
+    ///   - priority: Priority level for this request
+    @discardableResult
+    func activateSessionSync(
+        mode: AudioSessionMode,
+        priority: AudioSessionPriority,
+        serviceId: String
+    ) throws -> Bool {
+        guard !isCircuitBreakerOpen else {
+            print("[AudioSessionManager] ⚠️ Circuit breaker OPEN - rejecting sync request from \(serviceId)")
+            throw AudioSessionError.circuitBreakerOpen
+        }
+
+        // Register the request
+        requestLock.lock()
+        activeRequests[serviceId] = (mode: mode, priority: priority)
+        requestLock.unlock()
+
+        print("[AudioSessionManager] 🔒 Sync activation from \(serviceId): \(mode) @ priority \(priority.rawValue)")
+
+        // Activate synchronously on current thread (NOT on sessionQueue to avoid deadlock)
+        let session = AVAudioSession.sharedInstance()
+
+        do {
+            try session.setCategory(
+                mode.category,
+                mode: mode.mode,
+                options: mode.options
+            )
+            try session.setActive(true)
+
+            // Update state
+            currentMode = mode
+            isSessionActive = true
+            lastError = nil
+            consecutiveFailures = 0
+
+            let route = session.currentRoute
+            let outputs = route.outputs.map { $0.portName }.joined(separator: ", ")
+            print("[AudioSessionManager] ✅ Sync session active: \(mode), route: \(outputs)")
+
+            return true
+        } catch {
+            handleSessionError(error)
+            throw error
+        }
+    }
+
+    /// Async version of activateSessionSync for use in async contexts
+    /// Waits for session to be ready before returning
+    func activateSessionAsync(
+        mode: AudioSessionMode,
+        priority: AudioSessionPriority,
+        serviceId: String
+    ) async throws {
+        guard !isCircuitBreakerOpen else {
+            print("[AudioSessionManager] ⚠️ Circuit breaker OPEN - rejecting async request from \(serviceId)")
+            throw AudioSessionError.circuitBreakerOpen
+        }
+
+        // Register the request
+        requestLock.lock()
+        activeRequests[serviceId] = (mode: mode, priority: priority)
+        requestLock.unlock()
+
+        print("[AudioSessionManager] 🔄 Async activation from \(serviceId): \(mode) @ priority \(priority.rawValue)")
+
+        // Cancel any pending debounced change
+        pendingSessionChange?.cancel()
+
+        // Activate the session
+        await activateSession(mode: mode)
+
+        // Verify activation succeeded
+        guard isSessionActive && currentMode == mode else {
+            if let error = lastError {
+                throw error
+            }
+            throw AudioSessionError.activationFailed
         }
     }
 
@@ -429,4 +517,23 @@ extension Notification.Name {
     static let audioSessionResumed = Notification.Name("audioSessionResumed")
     static let audioRouteDeviceDisconnected = Notification.Name("audioRouteDeviceDisconnected")
     static let audioRouteDeviceConnected = Notification.Name("audioRouteDeviceConnected")
+}
+
+// MARK: - Audio Session Errors
+
+enum AudioSessionError: Error, LocalizedError {
+    case circuitBreakerOpen
+    case activationFailed
+    case modeConflict(requested: AudioSessionMode, current: AudioSessionMode)
+
+    var errorDescription: String? {
+        switch self {
+        case .circuitBreakerOpen:
+            return "Audio session circuit breaker is open due to repeated failures"
+        case .activationFailed:
+            return "Failed to activate audio session"
+        case .modeConflict(let requested, let current):
+            return "Audio session mode conflict: requested \(requested), current \(current)"
+        }
+    }
 }

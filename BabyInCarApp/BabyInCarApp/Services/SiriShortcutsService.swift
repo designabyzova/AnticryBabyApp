@@ -259,22 +259,15 @@ class SiriShortcutsService: ObservableObject {
             let babyAge = 12
             let language = Locale.current.language.languageCode?.identifier ?? "en"
 
-            // Build emergency queue
-            let tracks = await smartQueue.buildQueue(
-                for: .general,
+            // Start SPOTIFY-STYLE emergency queue
+            // - Smart selection based on cry stop success, favorites, play counts
+            // - Maintains 8 tracks at all times with auto-replenishment
+            await smartQueue.startSpotifyMode(
+                cryType: .general,
                 babyAge: babyAge,
-                language: language,
-                maxTracks: 20
+                language: language
             )
-
-            if !tracks.isEmpty {
-                await smartQueue.startQueue(tracks: tracks)
-                print("[SiriShortcuts] Emergency queue started with \(tracks.count) tracks")
-            } else {
-                // Fallback to ambient mode
-                await smartQueue.startAmbientMode(babyAge: babyAge, language: language)
-                print("[SiriShortcuts] Started ambient mode as emergency fallback")
-            }
+            print("[SiriShortcuts] SPOTIFY-STYLE emergency queue started")
         }
     }
 

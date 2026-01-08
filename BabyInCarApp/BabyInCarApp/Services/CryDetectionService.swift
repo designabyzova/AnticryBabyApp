@@ -504,19 +504,16 @@ class CryDetectionService: ObservableObject {
             throw CryDetectionError.engineSetupFailed
         }
 
-        // CRITICAL FIX: Configure audio session DIRECTLY here, not via async AudioSessionManager
-        // The AudioSessionManager's debounced/async approach causes a race condition where
-        // inputNode.outputFormat() is called before the session is ready, causing crash:
-        // "required condition is false: IsFormatSampleRateAndChannelCountValid(format)"
-        let session = AVAudioSession.sharedInstance()
+        // Use centralized AudioSessionManager for session configuration
+        // This prevents conflicts with AudioEngine and other audio services
+        // activateSessionSync bypasses debounce to ensure session is ready BEFORE accessing inputNode
         do {
-            try session.setCategory(
-                .playAndRecord,
-                mode: .measurement,
-                options: [.defaultToSpeaker, .mixWithOthers]
+            try AudioSessionManager.shared.activateSessionSync(
+                mode: .playAndRecord,
+                priority: .monitoring,
+                serviceId: "CryDetectionService"
             )
-            try session.setActive(true)
-            print("[CryDetection] ✅ Audio session configured for monitoring")
+            print("[CryDetection] ✅ Audio session configured via AudioSessionManager")
         } catch {
             print("[CryDetection] ❌ Audio session setup failed: \(error)")
             throw CryDetectionError.engineSetupFailed

@@ -160,10 +160,10 @@ class SpeechRecognitionService: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             do {
                 let session = AVAudioSession.sharedInstance()
-                // Match AudioEngine's configuration exactly
-                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+                // Exclusive playback - pauses other apps (like Spotify, YouTube)
+                try session.setCategory(.playback, mode: .default, options: [])
                 try session.setActive(true)
-                print("🎙️ Audio session restored to playback mode")
+                print("🎙️ Audio session restored to exclusive playback mode")
 
                 // Notify AudioEngine to reconfigure if needed
                 NotificationCenter.default.post(name: .audioSessionRestored, object: nil)

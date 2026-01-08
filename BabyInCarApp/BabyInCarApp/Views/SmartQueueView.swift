@@ -535,8 +535,9 @@ struct SmartQueueView: View {
         // Get the preferred language from user's locale
         let language = Locale.current.language.languageCode?.identifier ?? "en"
 
-        // Switch to cry-specific mode
-        await queue.switchToCrySpecificMode(
+        // Switch to SPOTIFY-STYLE cry-specific mode
+        // This uses smart recommendations + auto-replenishment
+        await queue.switchToSpotifyMode(
             cryType: detectedType,
             babyAge: queue.babyAge,
             language: language

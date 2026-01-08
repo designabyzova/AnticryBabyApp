@@ -494,15 +494,58 @@ All library audio content is streamed from R2:
 ```
 
 ### Audio Session Configuration (CRITICAL)
-**Exclusive Playback**: App uses ONE audio channel - stops Spotify/YouTube when playing
-- Use `.playback` category with **NO** `.mixWithOthers` option
-- No mixing = exclusive control (like Spotify, Apple Music)
-- When Lulla plays, other audio apps stop
 
-**Bluetooth/AirPods**:
-- Use `.playback` category with **NO** `.allowBluetooth` option
-- `.allowBluetooth` forces HFP (mono, low quality) instead of A2DP (stereo, high quality)
-- iOS automatically routes to Bluetooth A2DP when available with `.playback` category
+**Exclusive Playback ONLY** - The app MUST pause other audio apps (Spotify, YouTube, Apple Music, etc.)
+
+#### Implementation Rules
+
+1. **ALWAYS use `.playback` category with empty options `[]`**
+   ```swift
+   try session.setCategory(.playback, mode: .default, options: [])
+   ```
+
+2. **NEVER use `.mixWithOthers` option** (would allow simultaneous playback)
+   - ❌ WRONG: `options: [.mixWithOthers]` - allows mixing with Spotify
+   - ✅ CORRECT: `options: []` - pauses Spotify completely
+
+3. **NEVER use `.duckOthers` option** (deprecated, not needed)
+   - Ducking reduces other app volume to ~20%
+   - We want COMPLETE pause, not volume reduction
+   - ❌ WRONG: `options: [.duckOthers]`
+   - ✅ CORRECT: `options: []`
+
+4. **playAndRecord mode** (for cry detection while playing)
+   ```swift
+   try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
+   ```
+   - Use `.defaultToSpeaker` to route audio to speaker (not earpiece)
+   - NO `.mixWithOthers` - still pauses other apps
+
+#### Bluetooth/AirPods Configuration
+
+**NEVER use `.allowBluetooth` option** - it degrades audio quality:
+- ❌ WRONG: `options: [.allowBluetooth]` - forces HFP (mono, phone quality)
+- ✅ CORRECT: `options: []` - uses A2DP (stereo, music quality)
+
+iOS automatically routes to Bluetooth A2DP when using `.playback` category.
+
+#### Why Exclusive Playback?
+
+1. **Baby safety** - Soothing sounds must be heard clearly without competing audio
+2. **Parent expectation** - Like Spotify/Apple Music (stops other apps when playing)
+3. **CarPlay UX** - Standard behavior for media apps in cars
+
+#### AudioSessionManager Modes
+
+| Mode | Category | Options | Use Case |
+|------|----------|---------|----------|
+| `playbackOnly` | `.playback` | `[]` | Normal music playback (pauses Spotify) |
+| `emergencyPlayback` | `.playback` | `[]` | Cry response (pauses Spotify) |
+| `playAndRecord` | `.playAndRecord` | `[.defaultToSpeaker]` | Cry monitoring + playback (pauses Spotify) |
+| `recordOnly` | `.record` | `[]` | Voice commands (pauses Spotify) |
+| `inactive` | `.ambient` | `[]` | No audio activity |
+
+All modes use **exclusive playback** - no `.mixWithOthers`, no `.duckOthers`.
 
 ### FORBIDDEN Audio Types (NEVER download or generate)
 

@@ -55,6 +55,13 @@ class SmartEmergencyQueue: ObservableObject {
     private let playbackSession = PlaybackSessionManager.shared
     private let contentLibrary = ContentLibraryService.shared
     private let ultraSmartSelector = UltraSmartPlaylistSelector.shared
+    private let spotifyEngine = SpotifyQueueEngine.shared
+
+    // MARK: - Spotify-like Queue State
+    /// Pool of candidate tracks for replenishment
+    private var candidatePool: [AudioTrack] = []
+    /// Whether Spotify-like auto-replenishment is enabled
+    private var autoReplenishEnabled: Bool = true
 
     // MARK: - Memory Optimization (Increment 0022, Enhanced in 0028)
     /// Maximum tracks loaded in memory concurrently (prevents 30MB buffer allocation)
@@ -163,12 +170,16 @@ class SmartEmergencyQueue: ObservableObject {
 
     /// Sync queue state with actual AudioEngine state
     /// Call this to fix "ghost playing" issues where UI shows playing but no audio is active
-    func syncPlaybackState() {
+    /// - Parameter verbose: If true, log diagnostic info (default: false to reduce startup noise)
+    func syncPlaybackState(verbose: Bool = false) {
         let actuallyPlaying = audioEngine.playbackState == .playing
         let hasActiveTrack = audioEngine.currentTrack != nil
         let engineState = audioEngine.playbackState
 
-        print("[SmartQueue] 🔧 Sync check: isActive=\(isActive), isPlaying=\(isPlaying), hasTrack=\(currentTrack != nil), enginePlaying=\(actuallyPlaying), engineTrack=\(hasActiveTrack), state=\(engineState)")
+        // Only log when verbose OR when we're actually active (reduces startup noise)
+        if verbose || isActive {
+            print("[SmartQueue] 🔧 Sync check: isActive=\(isActive), isPlaying=\(isPlaying), hasTrack=\(currentTrack != nil), enginePlaying=\(actuallyPlaying), engineTrack=\(hasActiveTrack), state=\(engineState)")
+        }
 
         // If we think we're playing but AudioEngine isn't, correct our state
         if isPlaying && !actuallyPlaying {
@@ -285,6 +296,100 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         return melodicTracks
+    }
+
+    // MARK: - Spotify-like Queue Building (NEW!)
+
+    /// Build queue using Spotify-like recommendation algorithm
+    /// Uses SpotifyQueueEngine for smart track selection based on:
+    /// - Cry stop success history
+    /// - Favorites
+    /// - Play counts
+    /// - Rotation policy to prevent repetition
+    ///
+    /// Maintains exactly 8 upcoming tracks (Spotify radio behavior)
+    func buildSpotifyQueue(
+        for cryType: CryType,
+        babyAge: Int,
+        language: String = "en",
+        preferredCategories: Set<AudioCategory>? = nil
+    ) async -> [AudioTrack] {
+        print("[SmartQueue] 🎧 Building SPOTIFY-STYLE queue for \(cryType.rawValue)")
+
+        // Set context for scoring
+        spotifyEngine.setContext(
+            cryType: cryType,
+            babyAge: babyAge,
+            preferredCategories: preferredCategories
+        )
+
+        // Get all eligible candidate tracks
+        candidatePool = await getMelodicTracksForCryType(
+            cryType: cryType,
+            babyAge: babyAge,
+            language: language,
+            maxCount: 100, // Large pool for variety
+            preferredCategories: preferredCategories
+        )
+
+        print("[SmartQueue] 🎧 Candidate pool: \(candidatePool.count) tracks")
+
+        // Use Spotify engine to build initial queue (8 tracks)
+        let selectedTracks = spotifyEngine.buildInitialQueue(from: candidatePool)
+
+        // Log the selections with their scores
+        print("[SmartQueue] 🎧 Spotify-selected \(selectedTracks.count) tracks:")
+        for (index, track) in selectedTracks.enumerated() {
+            let score = spotifyEngine.getScoreBreakdown(for: track)
+            print("  \(index + 1). \(track.title) (score: \(score.scorePercentage)%)")
+        }
+
+        // Set metadata
+        self.cryType = cryType
+        self.babyAge = babyAge
+        self.isAmbientMode = false
+        self.modeName = "Spotify Smart Mix"
+        self.queueName = "🎧 Your Baby's Mix"
+        self.queueDescription = "AI-curated based on what works for your baby"
+        self.autoReplenishEnabled = true
+
+        return selectedTracks
+    }
+
+    /// Replenish queue to maintain 8 upcoming tracks
+    /// Called automatically when a track finishes (Spotify radio behavior)
+    private func replenishQueueIfNeeded() {
+        guard autoReplenishEnabled else { return }
+        guard isActive else { return }
+
+        let currentQueueSize = upcomingTracks.count
+        let needed = SpotifyQueueEngine.targetQueueSize - currentQueueSize
+
+        guard needed > 0 else { return }
+
+        print("[SmartQueue] 🔄 Replenishing queue: \(currentQueueSize) → \(SpotifyQueueEngine.targetQueueSize)")
+
+        // Get new tracks from Spotify engine
+        let newTracks = spotifyEngine.replenishQueue(
+            currentQueue: upcomingTracks,
+            from: candidatePool
+        )
+
+        // Add to upcoming
+        for track in newTracks {
+            upcomingTracks.append(track)
+            allQueueTracks.append(track)
+        }
+
+        totalTracks = allQueueTracks.count
+
+        print("[SmartQueue] 🔄 Added \(newTracks.count) tracks. Queue now: \(upcomingTracks.count) upcoming")
+
+        // Log new tracks
+        for track in newTracks {
+            let score = spotifyEngine.getScoreBreakdown(for: track)
+            print("  + \(track.title) (score: \(score.scorePercentage)%)")
+        }
     }
 
     // MARK: - Smart First Track Selection (Intelligent Rotation!)
@@ -718,6 +823,95 @@ class SmartEmergencyQueue: ObservableObject {
         print("[SmartQueue] ✅ Switched to cry-specific mode: \(cryType.rawValue)")
     }
 
+    // MARK: - Spotify-Style Queue Start (Main Entry Point!)
+
+    /// Start a Spotify-style smart queue - the main entry point for smart playback!
+    /// This uses the SpotifyQueueEngine algorithm:
+    /// - Starts with 8 tracks selected based on cry stop success, favorites, play counts
+    /// - Automatically replenishes to 8 when tracks finish (7→8)
+    /// - Uses rotation policy to prevent repetition
+    ///
+    /// USAGE: Call this instead of `startAmbientMode` or `switchToCrySpecificMode` for
+    /// the full Spotify-like experience.
+    func startSpotifyMode(
+        cryType: CryType,
+        babyAge: Int,
+        language: String = "en",
+        preferredCategories: Set<AudioCategory>? = nil
+    ) async {
+        print("[SmartQueue] 🎧 Starting SPOTIFY MODE for \(cryType.rawValue)!")
+
+        // Build smart queue using Spotify algorithm
+        let tracks = await buildSpotifyQueue(
+            for: cryType,
+            babyAge: babyAge,
+            language: language,
+            preferredCategories: preferredCategories
+        )
+
+        guard !tracks.isEmpty else {
+            print("[SmartQueue] ⚠️ No tracks for Spotify mode, falling back to standard queue")
+            // Fallback to standard queue
+            let fallbackTracks = await buildQueue(
+                for: cryType,
+                babyAge: babyAge,
+                language: language,
+                maxTracks: 20
+            )
+            await startQueue(tracks: fallbackTracks)
+            return
+        }
+
+        // Enable Spotify-style replenishment
+        autoReplenishEnabled = true
+
+        // Start playback
+        await startQueue(tracks: tracks)
+
+        print("[SmartQueue] 🎧 Spotify mode active!")
+        print("  - \(tracks.count) initial tracks")
+        print("  - Auto-replenish: ON (maintains 8 upcoming)")
+        print("  - Candidate pool: \(candidatePool.count) tracks")
+    }
+
+    /// Switch to Spotify mode from any current state
+    /// Stops current playback and starts fresh Spotify-style queue
+    func switchToSpotifyMode(cryType: CryType, babyAge: Int, language: String = "en") async {
+        print("[SmartQueue] 🔄 Switching to SPOTIFY MODE")
+
+        // Stop current if playing
+        if isActive {
+            audioEngine.stop()
+            isPlaying = false
+        }
+
+        // Reset state
+        allQueueTracks.removeAll()
+        upcomingTracks.removeAll()
+        playedTracks.removeAll()
+        currentTrack = nil
+        currentIndex = 0
+
+        // Start Spotify mode
+        await startSpotifyMode(cryType: cryType, babyAge: babyAge, language: language)
+    }
+
+    /// Get the current Spotify engine score for a track (for UI display)
+    func getTrackScore(_ track: AudioTrack) -> TrackScore {
+        return spotifyEngine.getScoreBreakdown(for: track)
+    }
+
+    /// Get top recommended tracks based on current scoring (for UI suggestions)
+    func getTopRecommendations(limit: Int = 5) -> [TrackScore] {
+        guard !candidatePool.isEmpty else { return [] }
+
+        // Exclude already queued tracks
+        let queuedIds = Set(allQueueTracks.map { $0.id })
+        let available = candidatePool.filter { !queuedIds.contains($0.id) }
+
+        return spotifyEngine.getTopScoredTracks(from: available, limit: limit)
+    }
+
     /// Start emergency queue playback
     /// MEMORY OPTIMIZATION: Only loads first 3 tracks, queues the rest
     func startQueue(tracks: [AudioTrack]) async {
@@ -760,11 +954,18 @@ class SmartEmergencyQueue: ObservableObject {
 
     /// Advance to next track
     /// MEMORY OPTIMIZATION: Rotates loaded tracks (remove finished, load next)
+    /// SPOTIFY-STYLE: Records play for scoring, replenishes queue to maintain 8 tracks
     func next() async {
         // Guard against calling next() when queue is already stopped/inactive
         guard isActive else {
             print("[SmartQueue] ⚠️ Ignoring next() - queue not active")
             return
+        }
+
+        // SPOTIFY-STYLE: Record completed track for scoring algorithm
+        if let completedTrack = currentTrack {
+            spotifyEngine.recordTrackPlayed(completedTrack)
+            print("[SmartQueue] 🎧 Recorded play: \(completedTrack.title)")
         }
 
         // Guard against empty queue or reaching end
@@ -787,6 +988,10 @@ class SmartEmergencyQueue: ObservableObject {
         currentTrack = allQueueTracks[currentIndex]
         updateUpcomingTracks()
 
+        // SPOTIFY-STYLE: Replenish queue to maintain 8 upcoming tracks
+        // When we go from 8 to 7, add 1 more track
+        replenishQueueIfNeeded()
+
         // Crossfade to next
         if let next = currentTrack {
             do {
@@ -802,7 +1007,7 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         print("[SmartQueue] Advanced to track \(currentIndex + 1)/\(totalTracks): \(currentTrack?.title ?? "Unknown")")
-        print("[SmartQueue] 🧠 Loaded: \(loadedTracks.count), Queued: \(queuedTrackIds.count)")
+        print("[SmartQueue] 🧠 Loaded: \(loadedTracks.count), Queued: \(queuedTrackIds.count), Upcoming: \(upcomingTracks.count)")
     }
 
     /// Handle track completion: remove finished track, load next from queue

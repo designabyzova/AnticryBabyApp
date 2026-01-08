@@ -134,10 +134,6 @@
             <key>INAlternativeAppName</key>
             <string>Baby Soother</string>
         </dict>
-        <dict>
-            <key>INAlternativeAppName</key>
-            <string>Baby Cry Soother</string>
-        </dict>
     </array>
 </dict>
 </plist>

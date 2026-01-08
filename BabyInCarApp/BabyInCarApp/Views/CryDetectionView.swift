@@ -37,6 +37,9 @@ struct CryDetectionView: View {
     @State private var showHowItWorks = false
     @State private var showScience = false
 
+    // Full player presentation
+    @State private var showingFullPlayer = false
+
     // FS-017: Check if any emergency mode is active
     private var isAnyEmergencyActive: Bool {
         smartQueue.isActive || emergencyService.isEmergencyModeActive
@@ -139,6 +142,10 @@ struct CryDetectionView: View {
             }
             .sheet(isPresented: $showingHistory) {
                 CryDetectionHistoryView()
+            }
+            .fullScreenCover(isPresented: $showingFullPlayer) {
+                PlayerView()
+                    .environmentObject(audioEngine)
             }
             .alert("Error", isPresented: $showError) {
                 Button("OK", role: .cancel) {}
@@ -542,138 +549,224 @@ struct CryDetectionView: View {
 
     // MARK: - Compact Now Playing Card
     private func nowPlayingCompactCard(track: AudioTrack) -> some View {
-        VStack(spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: "music.note")
-                    .foregroundColor(.purple)
-                Text("Now Playing")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-
-                // Stop button
-                Button {
-                    Task {
-                        await smartQueue.stop(wasEffective: nil)
-                        emergencyService.disableAIMonitoring()
-                    }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // Track info row
-            HStack(spacing: 14) {
-                // Album art placeholder
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.purple.opacity(0.15))
-                        .frame(width: 50, height: 50)
-
-                    Image(systemName: track.category.icon)
-                        .font(.system(size: 20))
+        Button {
+            // Navigate to Emergency tab to see full player
+            // The Emergency tab shows SmartQueueView with full controls
+        } label: {
+            VStack(spacing: 12) {
+                // Header
+                HStack {
+                    Image(systemName: "music.note")
                         .foregroundColor(.purple)
-                }
-
-                // Track info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(track.title)
+                    Text("Now Playing")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .lineLimit(1)
 
-                    Text(track.artist)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    Spacer()
+
+                    // Tap to expand hint
+                    HStack(spacing: 4) {
+                        Text("Tap to expand")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Image(systemName: "chevron.up.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.purple.opacity(0.6))
+                    }
+
+                    // Stop button
+                    Button {
+                        Task {
+                            await smartQueue.stop(wasEffective: nil)
+                            emergencyService.disableAIMonitoring()
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(PlainButtonStyle()) // Prevent parent button from triggering
                 }
 
-                Spacer()
+                // Track info row
+                HStack(spacing: 14) {
+                    // Album art placeholder
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.purple.opacity(0.15))
+                            .frame(width: 50, height: 50)
 
-                // Playback controls
-                HStack(spacing: 16) {
-                    Button {
-                        Task { await smartQueue.previous() }
-                    } label: {
-                        Image(systemName: "backward.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(smartQueue.hasPrevious ? .primary : .secondary.opacity(0.5))
-                    }
-                    .disabled(!smartQueue.hasPrevious)
-
-                    Button {
-                        smartQueue.togglePlayPause()
-                    } label: {
-                        Image(systemName: smartQueue.isPlaying ? "pause.fill" : "play.fill")
+                        Image(systemName: track.category.icon)
                             .font(.system(size: 20))
                             .foregroundColor(.purple)
                     }
 
-                    Button {
-                        Task { await smartQueue.next() }
-                    } label: {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(smartQueue.hasNext ? .primary : .secondary.opacity(0.5))
+                    // Track info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(track.title)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .foregroundColor(.primary)
+
+                        Text(track.artist)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
                     }
-                    .disabled(!smartQueue.hasNext)
+
+                    Spacer()
+
+                    // Playback controls
+                    HStack(spacing: 16) {
+                        Button {
+                            Task { await smartQueue.previous() }
+                        } label: {
+                            Image(systemName: "backward.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(smartQueue.hasPrevious ? .primary : .secondary.opacity(0.5))
+                        }
+                        .disabled(!smartQueue.hasPrevious)
+                        .buttonStyle(PlainButtonStyle()) // Prevent parent button from triggering
+
+                        Button {
+                            smartQueue.togglePlayPause()
+                        } label: {
+                            Image(systemName: smartQueue.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.purple)
+                        }
+                        .buttonStyle(PlainButtonStyle()) // Prevent parent button from triggering
+
+                        Button {
+                            Task { await smartQueue.next() }
+                        } label: {
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(smartQueue.hasNext ? .primary : .secondary.opacity(0.5))
+                        }
+                        .disabled(!smartQueue.hasNext)
+                        .buttonStyle(PlainButtonStyle()) // Prevent parent button from triggering
+                    }
+                }
+
+                // Interactive progress bar with scrubbing
+                interactiveProgressBar
+                    .frame(height: 24)
+
+                // Queue info
+                HStack {
+                    Text("Track \(smartQueue.currentIndex + 1) of \(smartQueue.totalTracks)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    if smartQueue.isAmbientMode {
+                        HStack(spacing: 4) {
+                            Image(systemName: "leaf.fill")
+                                .font(.caption2)
+                            Text("Ambient Mode")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.green)
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: smartQueue.cryType.iconName)
+                                .font(.caption2)
+                            Text(smartQueue.cryType.rawValue)
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.orange)
+                    }
                 }
             }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.purple.opacity(0.3), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 
-            // Progress bar
-            GeometryReader { geometry in
+    // MARK: - Interactive Progress Bar with Scrubbing
+    private var interactiveProgressBar: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 4) {
+                // Progress bar with scrubber
                 ZStack(alignment: .leading) {
+                    // Background track
                     Capsule()
                         .fill(Color.gray.opacity(0.2))
+                        .frame(height: 6)
 
+                    // Progress fill
                     Capsule()
-                        .fill(Color.purple)
-                        .frame(width: geometry.size.width * smartQueue.progress)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.purple, Color.purple.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: progressWidth(in: geometry, progress: smartQueue.progress), height: 6)
+
+                    // Scrubber knob
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 14, height: 14)
+                        .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+                        .offset(x: progressWidth(in: geometry, progress: smartQueue.progress) - 7)
                 }
-            }
-            .frame(height: 4)
+                .frame(height: 14)
+                .contentShape(Rectangle()) // Make entire bar tappable
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                            // Seek in AudioEngine
+                            let time = progress * audioEngine.duration
+                            audioEngine.seek(to: time)
+                            selectionFeedback.selectionChanged()
+                        }
+                )
 
-            // Queue info
-            HStack {
-                Text("Track \(smartQueue.currentIndex + 1) of \(smartQueue.totalTracks)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                // Time labels
+                HStack {
+                    Text(formatTime(audioEngine.currentTime))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.secondary)
 
-                Spacer()
+                    Spacer()
 
-                if smartQueue.isAmbientMode {
-                    HStack(spacing: 4) {
-                        Image(systemName: "leaf.fill")
-                            .font(.caption2)
-                        Text("Ambient Mode")
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.green)
-                } else {
-                    HStack(spacing: 4) {
-                        Image(systemName: smartQueue.cryType.iconName)
-                            .font(.caption2)
-                        Text(smartQueue.cryType.rawValue)
-                            .font(.caption2)
-                    }
-                    .foregroundColor(.orange)
+                    Text("-\(formatTime(audioEngine.duration - audioEngine.currentTime))")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.secondary)
                 }
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 3)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.purple.opacity(0.2), lineWidth: 1)
-        )
     }
+
+    // MARK: - Helper Methods
+
+    private func progressWidth(in geometry: GeometryProxy, progress: Double) -> CGFloat {
+        return geometry.size.width * CGFloat(progress)
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    // Haptic feedback generator
+    private let selectionFeedback = UISelectionFeedbackGenerator()
 
     // MARK: - Quick Actions Grid
     private var quickActionsGrid: some View {
@@ -794,24 +887,14 @@ struct CryDetectionView: View {
         let randomType = cryTypes.randomElement() ?? .general
 
         Task {
-            // Build and start emergency queue
-            let tracks = await smartQueue.buildQueue(
-                for: randomType,
+            // Start SPOTIFY-STYLE queue (smart recommendations + auto-replenish)
+            await smartQueue.startSpotifyMode(
+                cryType: randomType,
                 babyAge: baby.ageInMonths,
-                language: Locale.current.language.languageCode?.identifier ?? "en",
-                maxTracks: 20
+                language: Locale.current.language.languageCode?.identifier ?? "en"
             )
-
-            if !tracks.isEmpty {
-                await smartQueue.startQueue(tracks: tracks)
-                emergencyStartTime = Date()
-                print("[DEBUG] ✅ Emergency queue started with \(tracks.count) tracks for \(randomType.rawValue) cry")
-            } else {
-                // Fallback to ambient mode
-                await smartQueue.startAmbientMode(babyAge: baby.ageInMonths, language: "en")
-                emergencyStartTime = Date()
-                print("[DEBUG] ✅ Fallback to ambient mode")
-            }
+            emergencyStartTime = Date()
+            print("[DEBUG] ✅ SPOTIFY-STYLE queue started for \(randomType.rawValue) cry")
         }
     }
     #endif
@@ -1032,32 +1115,34 @@ struct CryDetectionView: View {
             let preferredLanguage = Locale.current.language.languageCode?.identifier ?? "en"
 
             // Log the cry type being used for playlist selection
-            print("[CryDetectionView] 🎵 Building playlist for cry type: \(detectedCryType.displayName) (raw: \(detectedCryType.rawValue))")
+            print("[CryDetectionView] 🎧 Starting SPOTIFY-STYLE queue for cry type: \(detectedCryType.displayName)")
             print("[CryDetectionView] 📊 Detection confidence: \(Int(cryDetection.confidenceLevel * 100))%, Intensity: \(Int(cryDetection.cryIntensity * 100))%")
 
-            let tracks = await smartQueue.buildQueue(
-                for: detectedCryType,
+            // Start SPOTIFY-STYLE queue:
+            // - Smart track selection based on cry stop success, favorites, play counts
+            // - Maintains 8 upcoming tracks at all times
+            // - Auto-replenishes when tracks finish (7→8)
+            await smartQueue.startSpotifyMode(
+                cryType: detectedCryType,
                 babyAge: babyAge,
-                language: preferredLanguage,
-                maxTracks: 20
+                language: preferredLanguage
             )
+            emergencyStartTime = Date()
 
-            if !tracks.isEmpty {
-                print("[CryDetectionView] ✅ Starting cry-specific playlist with \(tracks.count) tracks for '\(detectedCryType.displayName)'")
-                await smartQueue.startQueue(tracks: tracks)
-                emergencyStartTime = Date()
-            } else {
-                print("[CryDetectionView] ⚠️ No cry-specific tracks found, falling back to ambient mode")
-                await smartQueue.startAmbientMode(babyAge: babyAge, language: preferredLanguage)
-                emergencyStartTime = Date()
-            }
+            print("[CryDetectionView] ✅ Spotify-style queue active for '\(detectedCryType.displayName)'")
         }
     }
 
     private func startSmartQueueFallback() async {
         guard let baby = baby else { return }
         let preferredLanguage = Locale.current.language.languageCode?.identifier ?? "en"
-        await smartQueue.startAmbientMode(babyAge: baby.ageInMonths, language: preferredLanguage)
+
+        // Start SPOTIFY-STYLE queue with general cry type as fallback
+        await smartQueue.startSpotifyMode(
+            cryType: .general,
+            babyAge: baby.ageInMonths,
+            language: preferredLanguage
+        )
         emergencyStartTime = Date()
     }
 

@@ -119,9 +119,9 @@ class EnvironmentSoundDetector: ObservableObject {
             self?.processAudioBuffer(buffer)
         }
 
-        // Configure audio session to mix with existing
+        // Configure audio session - exclusive playback (pauses other apps)
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers])
+        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
         try session.setActive(true)
 
         try engine.start()

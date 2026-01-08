@@ -39,35 +39,6 @@ class AudioEngine: ObservableObject {
         didSet { applyPlaybackRate() }
     }
 
-    // MARK: - Audio Ducking (Auto-duck external audio when cry detected)
-    /// Whether ducking is currently active (external audio volume reduced)
-    @Published private(set) var isDuckingActive: Bool = false
-
-    /// User preference: auto-duck external audio when cry response activates
-    /// Default: true (enabled) - Reduces Spotify/Apple Music volume when baby cries
-    static var autoDuckExternalAudio: Bool {
-        get {
-            // Default to true if not set
-            if UserDefaults.standard.object(forKey: "audioEngine.autoDuckExternalAudio") == nil {
-                return true
-            }
-            return UserDefaults.standard.bool(forKey: "audioEngine.autoDuckExternalAudio")
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "audioEngine.autoDuckExternalAudio")
-        }
-    }
-
-    // MARK: - Ducking Telemetry
-    /// Tracks ducking activation count for analytics
-    private(set) var duckingActivationCount: Int = 0
-    /// Last ducking activation timestamp
-    private(set) var lastDuckingActivation: Date?
-    /// Total time spent with ducking active (for effectiveness correlation)
-    private(set) var totalDuckingDuration: TimeInterval = 0
-    /// Ducking start time for duration tracking
-    private var duckingStartTime: Date?
-
     /// Smooth audio transitions with crossfade (synced with AppState)
     /// Default: true - provides seamless track transitions
     @Published var smoothTransitionsEnabled: Bool = true {
@@ -236,66 +207,6 @@ class AudioEngine: ObservableObject {
     func releaseAudioSession() {
         AudioSessionManager.shared.releaseSession(serviceId: "AudioEngine")
         print("[AudioEngine] 📤 Released audio session via AudioSessionManager")
-    }
-
-    /// Enable or disable audio ducking
-    /// NOTE: With exclusive playback, ducking is not needed - other apps are paused completely
-    /// This function is kept for backward compatibility but now just logs the state
-    ///
-    /// - Parameters:
-    ///   - enabled: true to enable, false to disable (no actual effect with exclusive playback)
-    ///   - emergencyMode: ignored - we always use exclusive playback
-    func enableDucking(_ enabled: Bool, emergencyMode: Bool = false) {
-        // With exclusive playback, other apps are PAUSED completely
-        // No ducking needed - just track the state for analytics
-        guard isDuckingActive != enabled else {
-            return
-        }
-
-        if enabled {
-            print("[AudioEngine] Ducking state: ON (other apps already paused by exclusive playback)")
-            trackDuckingEvent(enabled: true)
-        } else {
-            print("[AudioEngine] Ducking state: OFF")
-            trackDuckingEvent(enabled: false)
-        }
-
-        isDuckingActive = enabled
-    }
-
-    /// Track ducking events for analytics and effectiveness correlation
-    private func trackDuckingEvent(enabled: Bool) {
-        if enabled {
-            // Ducking activated
-            duckingActivationCount += 1
-            lastDuckingActivation = Date()
-            duckingStartTime = Date()
-
-            print("[AudioEngine Telemetry] Ducking activation #\(duckingActivationCount)")
-        } else {
-            // Ducking deactivated - calculate duration
-            if let startTime = duckingStartTime {
-                let duration = Date().timeIntervalSince(startTime)
-                totalDuckingDuration += duration
-                duckingStartTime = nil
-
-                print("[AudioEngine Telemetry] Ducking deactivated. Duration: \(String(format: "%.1f", duration))s, Total: \(String(format: "%.1f", totalDuckingDuration))s")
-            }
-        }
-    }
-
-    /// Get ducking telemetry for effectiveness correlation
-    /// Returns: (activationCount, totalDuration, lastActivation)
-    func getDuckingTelemetry() -> (activations: Int, totalDuration: TimeInterval, lastActivation: Date?) {
-        return (duckingActivationCount, totalDuckingDuration, lastDuckingActivation)
-    }
-
-    /// Reset ducking telemetry (for testing or session boundaries)
-    func resetDuckingTelemetry() {
-        duckingActivationCount = 0
-        totalDuckingDuration = 0
-        lastDuckingActivation = nil
-        duckingStartTime = nil
     }
 
     private func setupNotifications() {

@@ -109,7 +109,8 @@ struct BabyInCarApp: App {
         VoiceCommandHandler.shared.configure(with: appState)
         print("[BabyInCarApp] ✅ VoiceCommandHandler configured with AppState")
 
-        // Request necessary permissions
+        // Request necessary permissions and setup audio services
+        // CRITICAL: All audio session operations are sequenced to prevent conflicts
         Task {
             await SpeechRecognitionService.shared.requestAuthorization()
             _ = await NotificationService.shared.requestAuthorization()
@@ -136,14 +137,14 @@ struct BabyInCarApp: App {
             } else {
                 print("[BabyInCarApp] ⚠️ Cry monitoring NOT auto-enabled - conditions not met")
             }
-        }
 
-        // Initialize audio session
-        audioEngine.configureAudioSession()
+            // Initialize audio session AFTER cry monitoring setup completes
+            // This prevents race conditions between CryDetection and AudioEngine
+            // AudioSessionManager now coordinates all session requests by priority
+            audioEngine.configureAudioSession()
 
-        // Initialize default playlist so player is always visible (but NOT auto-playing)
-        // Playback only starts on cry detection or manual user action
-        Task {
+            // Initialize default playlist so player is always visible (but NOT auto-playing)
+            // Playback only starts on cry detection or manual user action
             await initializeDefaultPlaylist()
         }
     }

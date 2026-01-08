@@ -228,9 +228,9 @@ class BabyAudioAnalyzer: ObservableObject {
             throw AnalysisError.microphoneAccessDenied
         }
 
-        // Configure audio session
+        // Configure audio session - exclusive playback (pauses other apps)
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers])
+        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
         try session.setActive(true)
 
         // Install tap on input node

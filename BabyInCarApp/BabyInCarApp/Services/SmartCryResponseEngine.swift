@@ -221,10 +221,8 @@ class SmartCryResponseEngine: ObservableObject {
 
         // CRITICAL: Configure audio session to INTERRUPT other audio (Spotify, YouTube, etc.)
         // This ensures the soothing sound plays loudly and clearly for the baby
+        // Exclusive playback mode automatically pauses other apps
         audioEngine.configureAudioSession(interruptOtherAudio: true)
-
-        // Enable EMERGENCY ducking - INTERRUPTS (not mixes) external audio
-        audioEngine.enableDucking(true, emergencyMode: true)
 
         // Initialize new session
         currentSession = ResponseSession(
@@ -336,13 +334,9 @@ class SmartCryResponseEngine: ObservableObject {
             playbackSession.stopPlayback(from: .singleSound)
         }
 
-        // CRITICAL: Restore normal audio session FIRST (allow mixing again)
-        // This allows Spotify/YouTube to resume normal playback
+        // CRITICAL: Restore normal audio session
+        // This allows Spotify/YouTube to resume when we stop playing
         audioEngine.configureAudioSession(interruptOtherAudio: false)
-
-        // Disable audio ducking - restores external audio (Spotify/Apple Music) to full volume
-        // This allows parents to continue listening to their music after baby calms down
-        audioEngine.enableDucking(false, emergencyMode: false)
 
         isActive = false
         currentPhase = .idle
@@ -363,12 +357,7 @@ class SmartCryResponseEngine: ObservableObject {
             session.finalPhase = currentPhase
             session.wasSuccessful = effectiveness == .effective || effectiveness == .highlyEffective
 
-            // Add ducking telemetry for effectiveness correlation
-            let duckingTelemetry = audioEngine.getDuckingTelemetry()
-            print("[SmartCryResponse] Session effectiveness: \(effectiveness.rawValue), Ducking activations: \(duckingTelemetry.activations), Total ducking time: \(String(format: "%.1f", duckingTelemetry.totalDuration))s")
-
-            // Future: Store ducking telemetry in session for ML correlation analysis
-            // This allows us to analyze if ducking external audio correlates with better baby calming outcomes
+            print("[SmartCryResponse] Session effectiveness: \(effectiveness.rawValue)")
 
             sessionHistory.append(session)
             saveSessionHistory()
@@ -1210,11 +1199,8 @@ class SmartCryResponseEngine: ObservableObject {
 
         // CRITICAL: Configure audio session to INTERRUPT other audio (Spotify, YouTube, etc.)
         // This ensures the soothing sound plays loudly and clearly for the baby
+        // Exclusive playback mode automatically pauses other apps
         audioEngine.configureAudioSession(interruptOtherAudio: true)
-
-        // Enable EMERGENCY ducking - INTERRUPTS (not mixes) external audio
-        // This ensures baby hears the calming audio clearly without competing music
-        audioEngine.enableDucking(true, emergencyMode: true)
 
         // Wait for ML classification
         var cryType = cryDetectionService.cryType
@@ -1257,19 +1243,27 @@ class SmartCryResponseEngine: ObservableObject {
             smartEmergencyQueue.setPlaylistMode(.aiDetection)
         }
 
-        // Build smart queue using REAL library tracks + generated sounds
-        // This uses UltraSmartPlaylistSelector which BANS rain and other scary sounds
-        // If user selected categories, filter tracks to those categories
-        let queueTracks = await smartEmergencyQueue.buildQueue(
-            for: cryType,
+        // Start SPOTIFY-STYLE queue using smart recommendation algorithm
+        // This uses SpotifyQueueEngine which scores tracks based on:
+        // - Cry stop success history (35%)
+        // - Favorites (25%)
+        // - Play counts (20%)
+        // - Calming score (15%)
+        // - Category match (5%)
+        // Plus rotation policy to prevent repetition
+        //
+        // KEY FEATURE: Maintains 8 upcoming tracks at all times!
+        // When a track finishes (7 remaining), auto-adds 1 more to replenish to 8
+        await smartEmergencyQueue.startSpotifyMode(
+            cryType: cryType,
             babyAge: baby.ageInMonths,
             language: language,
-            maxTracks: 20,  // Increased from 15 for multi-category playlists
             preferredCategories: categoriesToUse
         )
 
-        guard !queueTracks.isEmpty else {
-            print("[SmartCryResponse] ⚠️ No library tracks found, using generated lullaby")
+        // Check if queue started successfully
+        guard smartEmergencyQueue.isActive else {
+            print("[SmartCryResponse] ⚠️ Spotify queue failed, using generated lullaby")
             // Use the generated lullaby as a single-track queue (instant, reliable)
             let defaultTrack = AudioTrack.defaultEmergencyTrack()
             await smartEmergencyQueue.startQueue(tracks: [defaultTrack])
@@ -1283,11 +1277,8 @@ class SmartCryResponseEngine: ObservableObject {
             return
         }
 
-        print("[SmartCryResponse] 🎵 Queue built: \(queueTracks.count) tracks")
-        print("[SmartCryResponse] 📋 First 5: \(queueTracks.prefix(5).map { $0.title })")
-
-        // Start the Spotify-like queue
-        await smartEmergencyQueue.startQueue(tracks: queueTracks)
+        print("[SmartCryResponse] 🎧 SPOTIFY-STYLE queue started!")
+        print("[SmartCryResponse] 📋 First 5: \(smartEmergencyQueue.upcomingTracks.prefix(5).map { $0.title })")
 
         currentPhase = .primarySoothing
         adaptationMessage = "Playing: \(smartEmergencyQueue.queueName)"
