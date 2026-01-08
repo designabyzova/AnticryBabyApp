@@ -78,10 +78,9 @@ struct CryDetectionView: View {
                             }
                         }
 
-                        // Compact Now Playing Card (when emergency playback is active)
-                        if smartQueue.isActive, let currentTrack = smartQueue.currentTrack {
-                            nowPlayingCompactCard(track: currentTrack)
-                        }
+                        // REMOVED: Duplicate player card - use unified bottom mini player instead
+                        // The unified mini player shows across all screens automatically
+                        // No need for a separate player UI on this screen
 
                         // Quick Actions
                         quickActionsGrid
@@ -373,16 +372,17 @@ struct CryDetectionView: View {
     private var cryDetectedCard: some View {
         VStack(spacing: 14) {
             // Header with cry type - PROMINENTLY showing detected type!
+            // FIXED: Use cryDetection.cryType directly for real-time ML classification
             HStack(spacing: 12) {
                 // Icon with cry-type-specific color
                 ZStack {
                     Circle()
-                        .fill(cryTypeColor(for: emergencyService.detectedCryType).opacity(0.15))
+                        .fill(cryTypeColor(for: cryDetection.cryType).opacity(0.15))
                         .frame(width: 44, height: 44)
 
-                    Image(systemName: emergencyService.detectedCryType.iconName)
+                    Image(systemName: cryDetection.cryType.iconName)
                         .font(.system(size: 18))
-                        .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
+                        .foregroundColor(cryTypeColor(for: cryDetection.cryType))
                 }
 
                 // Cry info - use displayName NOT rawValue!
@@ -391,13 +391,13 @@ struct CryDetectionView: View {
                         Text("Detected:")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Text(emergencyService.detectedCryType.displayName)
+                        Text(cryDetection.cryType.displayName)
                             .font(.headline)
                             .fontWeight(.bold)
-                            .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
+                            .foregroundColor(cryTypeColor(for: cryDetection.cryType))
                     }
 
-                    Text(emergencyService.detectedCryType.suggestedAction)
+                    Text(cryDetection.cryType.suggestedAction)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(2)
@@ -410,7 +410,7 @@ struct CryDetectionView: View {
                     Text("\(Int(cryDetection.confidenceLevel * 100))%")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(cryTypeColor(for: emergencyService.detectedCryType))
+                        .foregroundColor(cryTypeColor(for: cryDetection.cryType))
                     Text("confidence")
                         .font(.caption2)
                         .foregroundColor(.secondary)
@@ -463,7 +463,7 @@ struct CryDetectionView: View {
     // MARK: - AI Classification Section
     private var aiClassificationSection: some View {
         CryClassificationCard(
-            detectedType: emergencyService.detectedCryType,
+            detectedType: cryDetection.cryType,  // FIXED: Use direct cry type from ML detection
             confidence: Float(cryDetection.confidenceLevel),
             classificationBreakdown: generateClassificationBreakdown()
         )
@@ -496,7 +496,7 @@ struct CryDetectionView: View {
         }
 
         // FALLBACK: Generate simulated breakdown when ML isn't available
-        let detected = emergencyService.detectedCryType
+        let detected = cryDetection.cryType  // FIXED: Use direct cry type
         let confidence = cryDetection.confidenceLevel
 
         // Primary detected type gets the confidence level
