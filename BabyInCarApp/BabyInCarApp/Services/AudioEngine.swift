@@ -1891,31 +1891,30 @@ class AudioEngine: ObservableObject {
                 oldPlayer?.pause()
                 oldPlayer?.stop()
                 oldPlayerNode?.stop()
-                    oldNoiseGenerator?.stop()
+                oldNoiseGenerator?.stop()
 
-                    // Clean up old stream player that was being faded out
-                    if let oldStreamObserver = self.crossfadeOldTimeObserver {
-                        self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
-                    }
-                    self.crossfadeOldStreamPlayer?.pause()
-                    self.crossfadeOldStreamPlayer = nil
-                    self.crossfadeOldTimeObserver = nil
-
-                    // CRITICAL FIX: Nullify old players to prevent audio overlap
-                    // This ensures progress timer and audio engine don't access stale players
-                    oldPlayer = nil
-                    oldPlayerNode = nil
-                    oldNoiseGenerator = nil
-
-                    // Restore full volume
-                    self.volume = initialVolume
-                    self.audioPlayer?.volume = initialVolume
-                    self.playerNode?.volume = initialVolume
-                    self.streamPlayer?.volume = initialVolume
-                    self.noiseGenerator?.setVolume(initialVolume)
-
-                    print("[AudioEngine] ✅ Crossfade complete to '\(newTrack.title)'")
+                // Clean up old stream player that was being faded out
+                if let oldStreamObserver = self.crossfadeOldTimeObserver {
+                    self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
                 }
+                self.crossfadeOldStreamPlayer?.pause()
+                self.crossfadeOldStreamPlayer = nil
+                self.crossfadeOldTimeObserver = nil
+
+                // CRITICAL FIX: Nullify old players to prevent audio overlap
+                // This ensures progress timer and audio engine don't access stale players
+                oldPlayer = nil
+                oldPlayerNode = nil
+                oldNoiseGenerator = nil
+
+                // Restore full volume
+                self.volume = initialVolume
+                self.audioPlayer?.volume = initialVolume
+                self.playerNode?.volume = initialVolume
+                self.streamPlayer?.volume = initialVolume
+                self.noiseGenerator?.setVolume(initialVolume)
+
+                print("[AudioEngine] ✅ Crossfade complete to '\(newTrack.title)'")
             }
         }
 
@@ -1963,7 +1962,7 @@ class AudioEngine: ObservableObject {
 
         // Fade in
         fadeTimer?.invalidate()
-        fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
+        let newTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
             // PERFORMANCE FIX: Removed Task { @MainActor } wrapper
             // Timer callback is already on main RunLoop - no need for async Task!
             // This eliminates Task allocation overhead and reduces memory churn
@@ -1985,9 +1984,8 @@ class AudioEngine: ObservableObject {
         }
 
         // PERFORMANCE FIX: Add timer to RunLoop.common mode for smooth UI
-        if let timer = fadeTimer {
-            RunLoop.main.add(timer, forMode: .common)
-        }
+        RunLoop.main.add(newTimer, forMode: .common)
+        fadeTimer = newTimer
     }
 
     // MARK: - Interruption Handling
