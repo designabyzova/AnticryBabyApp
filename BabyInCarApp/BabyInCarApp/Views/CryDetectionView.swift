@@ -144,7 +144,9 @@ struct CryDetectionView: View {
                 CryDetectionHistoryView()
             }
             .fullScreenCover(isPresented: $showingFullPlayer) {
-                SmartQueueView(queue: smartQueue)
+                // UNIFIED ARCHITECTURE: Use PlayerView for both emergency and library playback
+                // PlayerView automatically adapts UI based on audioEngine.playbackContext
+                PlayerView()
                     .environmentObject(audioEngine)
             }
             .alert("Error", isPresented: $showError) {

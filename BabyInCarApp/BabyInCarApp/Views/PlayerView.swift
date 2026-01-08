@@ -74,9 +74,12 @@ struct PlayerView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Premium animated background
-                PlayerBackground(category: audioEngine.currentTrack?.category ?? .instrumental)
-                    .ignoresSafeArea()
+                // Premium animated background - UNIFIED ARCHITECTURE: context-aware
+                PlayerBackground(
+                    category: audioEngine.currentTrack?.category ?? .instrumental,
+                    theme: audioEngine.playbackContext?.theme
+                )
+                .ignoresSafeArea()
 
                 // Main scrollable content
                 ScrollView(.vertical, showsIndicators: false) {
@@ -2076,13 +2079,19 @@ struct EffectivenessFeedbackSheet: View {
 /// Animated background for the player with category-specific colors
 struct PlayerBackground: View {
     let category: AudioCategory
+    let theme: PlayerTheme?  // UNIFIED ARCHITECTURE: Context-aware theming
 
     @State private var animateGradient = false
     @State private var floatingParticles: [FloatingParticle] = []
 
+    init(category: AudioCategory, theme: PlayerTheme? = nil) {
+        self.category = category
+        self.theme = theme
+    }
+
     var body: some View {
         ZStack {
-            // Base gradient
+            // Base gradient - uses theme if available, otherwise category color
             LinearGradient(
                 colors: backgroundColors,
                 startPoint: animateGradient ? .topLeading : .bottomTrailing,
@@ -2115,13 +2124,24 @@ struct PlayerBackground: View {
     }
 
     private var backgroundColors: [Color] {
-        let baseColor = Color.forCategory(category)
-        return [
-            Color.appBackground,
-            baseColor.opacity(0.15),
-            Color.appBackground,
-            baseColor.opacity(0.1)
-        ]
+        // UNIFIED ARCHITECTURE: Use theme colors if available, otherwise category colors
+        if let theme = theme {
+            let gradient = theme.gradientColors
+            return [
+                Color.appBackground,
+                gradient[0],
+                Color.appBackground,
+                gradient[1]
+            ]
+        } else {
+            let baseColor = Color.forCategory(category)
+            return [
+                Color.appBackground,
+                baseColor.opacity(0.15),
+                Color.appBackground,
+                baseColor.opacity(0.1)
+            ]
+        }
     }
 
     private func generateParticles() {

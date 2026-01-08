@@ -454,25 +454,17 @@ struct MiniPlayerView: View {
             // Reset transition state when dismissed
             isTransitioning = false
         }) {
-            // CONSOLIDATED PLAYER LOGIC: Show SmartQueueView when emergency is active, otherwise PlayerView
-            if smartQueue.isActive {
-                // Emergency mode active - show SmartQueueView with purple interface
-                SmartQueueView(queue: smartQueue)
-                    .environmentObject(audioEngine)
-                    .interactiveDismissDisabled(false)
-                    .onAppear {
-                        isTransitioning = false
-                    }
-            } else {
-                // Normal library playback - show green PlayerView
-                PlayerView()
-                    .environmentObject(audioEngine)
-                    .interactiveDismissDisabled(false)
-                    .onAppear {
-                        // Player appeared, clear transition state
-                        isTransitioning = false
-                    }
-            }
+            // UNIFIED ARCHITECTURE: Single PlayerView for all playback types
+            // UI automatically adapts based on audioEngine.playbackContext
+            // - Purple theme for emergency mode (.emergencyCry)
+            // - Green theme for library mode (.library)
+            // - Blue theme for ambient mode (.ambientMonitoring)
+            PlayerView()
+                .environmentObject(audioEngine)
+                .interactiveDismissDisabled(false)
+                .onAppear {
+                    isTransitioning = false
+                }
         }
     }
 
