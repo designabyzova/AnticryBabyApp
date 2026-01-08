@@ -144,7 +144,7 @@ struct CryDetectionView: View {
                 CryDetectionHistoryView()
             }
             .fullScreenCover(isPresented: $showingFullPlayer) {
-                PlayerView()
+                SmartQueueView(queue: smartQueue)
                     .environmentObject(audioEngine)
             }
             .alert("Error", isPresented: $showError) {
@@ -550,8 +550,8 @@ struct CryDetectionView: View {
     // MARK: - Compact Now Playing Card
     private func nowPlayingCompactCard(track: AudioTrack) -> some View {
         Button {
-            // Navigate to Emergency tab to see full player
-            // The Emergency tab shows SmartQueueView with full controls
+            // Open full SmartQueueView for emergency playback
+            showingFullPlayer = true
         } label: {
             VStack(spacing: 12) {
                 // Header

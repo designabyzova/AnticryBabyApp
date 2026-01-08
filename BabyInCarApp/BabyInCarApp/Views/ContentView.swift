@@ -374,6 +374,7 @@ struct PremiumTabBarButton: View {
 /// ALWAYS visible - displays default playlist track ready for cry detection or manual play
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
+    @ObservedObject private var smartQueue = SmartEmergencyQueue.shared
     @State private var showingFullPlayer = false
     @State private var dragOffset: CGFloat = 0
     @State private var playButtonScale: CGFloat = 1.0
@@ -453,13 +454,25 @@ struct MiniPlayerView: View {
             // Reset transition state when dismissed
             isTransitioning = false
         }) {
-            PlayerView()
-                .environmentObject(audioEngine)
-                .interactiveDismissDisabled(false)
-                .onAppear {
-                    // Player appeared, clear transition state
-                    isTransitioning = false
-                }
+            // CONSOLIDATED PLAYER LOGIC: Show SmartQueueView when emergency is active, otherwise PlayerView
+            if smartQueue.isActive {
+                // Emergency mode active - show SmartQueueView with purple interface
+                SmartQueueView(queue: smartQueue)
+                    .environmentObject(audioEngine)
+                    .interactiveDismissDisabled(false)
+                    .onAppear {
+                        isTransitioning = false
+                    }
+            } else {
+                // Normal library playback - show green PlayerView
+                PlayerView()
+                    .environmentObject(audioEngine)
+                    .interactiveDismissDisabled(false)
+                    .onAppear {
+                        // Player appeared, clear transition state
+                        isTransitioning = false
+                    }
+            }
         }
     }
 

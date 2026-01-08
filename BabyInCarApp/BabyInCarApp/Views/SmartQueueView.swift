@@ -115,6 +115,16 @@ struct SmartQueueView: View {
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                 animateNowPlaying = true
             }
+
+            // CRITICAL FIX: Sync playback state when view appears
+            // This ensures audio is actually playing if queue shows it's playing
+            queue.syncPlaybackState(verbose: true)
+
+            // If queue thinks it's playing but no audio, start playback
+            if queue.isPlaying && !audioEngine.playbackState.isPlaying {
+                print("[SmartQueueView] 🔧 Detected state mismatch on appear - resuming playback")
+                queue.togglePlayPause() // This will resume/start playback
+            }
         }
     }
 
