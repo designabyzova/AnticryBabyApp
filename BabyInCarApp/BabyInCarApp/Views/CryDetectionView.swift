@@ -661,23 +661,13 @@ struct CryDetectionView: View {
 
                     Spacer()
 
-                    if smartQueue.isAmbientMode {
-                        HStack(spacing: 4) {
-                            Image(systemName: "leaf.fill")
-                                .font(.caption2)
-                            Text("Ambient Mode")
-                                .font(.caption2)
-                        }
-                        .foregroundColor(.green)
-                    } else {
-                        HStack(spacing: 4) {
-                            Image(systemName: smartQueue.cryType.iconName)
-                                .font(.caption2)
-                            Text(smartQueue.cryType.rawValue)
-                                .font(.caption2)
-                        }
-                        .foregroundColor(.orange)
+                    HStack(spacing: 4) {
+                        Image(systemName: smartQueue.cryType.iconName)
+                            .font(.caption2)
+                        Text(smartQueue.cryType.rawValue)
+                            .font(.caption2)
                     }
+                    .foregroundColor(.orange)
                 }
             }
             .padding(16)
@@ -1078,10 +1068,6 @@ struct CryDetectionView: View {
     private func toggleMonitoring() {
         if emergencyService.isAIMonitoringEnabled {
             emergencyService.disableAIMonitoring()
-
-            if smartQueue.isActive && smartQueue.isAmbientMode {
-                Task { await smartQueue.stop(wasEffective: nil) }
-            }
         } else {
             guard let baby = baby else {
                 errorMessage = "Please set up a baby profile first"
@@ -1092,11 +1078,6 @@ struct CryDetectionView: View {
             Task {
                 do {
                     try await emergencyService.enableAIMonitoring(for: baby)
-
-                    if enableAmbientPlaylist {
-                        let preferredLanguage = Locale.current.language.languageCode?.identifier ?? "en"
-                        await smartQueue.startAmbientMode(babyAge: baby.ageInMonths, language: preferredLanguage)
-                    }
                 } catch {
                     errorMessage = error.localizedDescription
                     showError = true
@@ -1345,29 +1326,10 @@ struct CryDetectionSettingsView: View {
     @AppStorage("useSmartResponse") private var useSmartResponse = true
     @AppStorage("autoActivateOnCry") private var autoActivateOnCry = true
     @AppStorage("sensitivityLevel") private var sensitivityLevel = 0.5
-    @AppStorage("enableAmbientPlaylist") private var enableAmbientPlaylist = false
 
     var body: some View {
         NavigationView {
             Form {
-                // Ambient Playlist Section
-                Section {
-                    Toggle("Start Playlist Immediately", isOn: $enableAmbientPlaylist)
-
-                    if enableAmbientPlaylist {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SettingInfoRow(icon: "checkmark.circle.fill", text: "Plays calming music when monitoring starts", color: .green)
-                            SettingInfoRow(icon: "music.note.list", text: "Uses real music: classical, lullabies, instrumental", color: .purple)
-                            SettingInfoRow(icon: "waveform.slash", text: "No synthetic noise - only real recordings", color: .orange)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                } header: {
-                    Label("Ambient Playlist", systemImage: "music.note")
-                } footer: {
-                    Text("Proactive soothing - plays calming music before baby starts crying.")
-                }
-
                 Section("AI Response") {
                     Toggle("Use Smart AI Response", isOn: $useSmartResponse)
                     Toggle("Auto-Activate on Cry", isOn: $autoActivateOnCry)
