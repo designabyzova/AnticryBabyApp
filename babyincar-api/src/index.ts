@@ -21,6 +21,7 @@ import preferences from './routes/preferences';
 
 // Import services
 import { handleScheduledCuration } from './services/audio-curator';
+import { scrapeAudioContent } from './cron/audio-scraper';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -93,30 +94,16 @@ export default {
   // HTTP request handler
   fetch: app.fetch,
 
-  // Scheduled cron handler for automated audio curation
-  // Runs hourly to discover and download new content automatically
-  async scheduled(
-    controller: ScheduledController,
-    env: Env,
-    ctx: ExecutionContext
-  ): Promise<void> {
-    console.log('[Scheduled] Cron trigger fired:', controller.cron);
+  // Cron job handler - runs every 6 hours
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    console.log('[Cron] 🕐 Cron trigger fired at:', new Date(event.scheduledTime).toISOString());
 
-    switch (controller.cron) {
-      case '0 3 * * *': // Daily at 3 AM UTC - Full curation with AI analysis
-        console.log('[Scheduled] Running FULL daily curation...');
-        ctx.waitUntil(handleScheduledCuration(env));
-        break;
+    // Run 24/7 audio scraping (every 6 hours)
+    console.log('[Cron] Running 24/7 audio scraping...');
+    ctx.waitUntil(scrapeAudioContent(env));
 
-      case '0 * * * *': // Every hour - Quick discovery and download
-        console.log('[Scheduled] Running HOURLY quick curation...');
-        ctx.waitUntil(handleScheduledCuration(env));
-        break;
-
-      default:
-        // Handle any cron pattern - run curation
-        console.log('[Scheduled] Running curation for pattern:', controller.cron);
-        ctx.waitUntil(handleScheduledCuration(env));
-    }
+    // Also run legacy audio curation
+    console.log('[Cron] Running audio curation...');
+    ctx.waitUntil(handleScheduledCuration(env));
   },
 };

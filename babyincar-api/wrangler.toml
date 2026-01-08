@@ -54,9 +54,9 @@ bucket_name = "anticrybaby"
 
 # Scheduled triggers for automated audio curation
 # Free tier limit: 5 cron triggers per account
-# Disabled - using GitHub Actions or external cron instead
-# [triggers]
-# crons = ["0 3 * * *"]
+# Runs every 6 hours: 0:00, 6:00, 12:00, 18:00 UTC
+[triggers]
+crons = ["0 */6 * * *"]
 
 # Production environment
 [env.production]

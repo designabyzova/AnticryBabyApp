@@ -30,9 +30,6 @@ struct CryDetectionView: View {
     @State private var showCancelConfirmation = false
     @State private var emergencyStartTime: Date?
 
-    // FS-017: Ambient Playlist Mode
-    @AppStorage("enableAmbientPlaylist") private var enableAmbientPlaylist = true
-
     // Section expansion states
     @State private var showHowItWorks = false
     @State private var showScience = false
@@ -1348,7 +1345,7 @@ struct CryDetectionSettingsView: View {
     @AppStorage("useSmartResponse") private var useSmartResponse = true
     @AppStorage("autoActivateOnCry") private var autoActivateOnCry = true
     @AppStorage("sensitivityLevel") private var sensitivityLevel = 0.5
-    @AppStorage("enableAmbientPlaylist") private var enableAmbientPlaylist = true
+    @AppStorage("enableAmbientPlaylist") private var enableAmbientPlaylist = false
 
     var body: some View {
         NavigationView {
