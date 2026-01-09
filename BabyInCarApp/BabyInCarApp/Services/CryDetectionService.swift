@@ -221,7 +221,7 @@ class CryDetectionService: ObservableObject {
     // Speech vs cry differentiation
     // Human speech typically has rapid spectral changes, cries are more monotonic
     private var spectralVarianceHistory: [Float] = []
-    private let speechVarianceThreshold: Float = 0.4 // High variance = likely speech
+    private let speechVarianceThreshold: Float = 0.6 // High variance = likely speech (increased from 0.4 to reduce false positives)
 
     // Adaptive thresholds - CONSERVATIVE defaults to prevent false positives
     private var ambientNoiseLevel: Float = 0.02  // Will be calibrated on start (RMS scale: 0-1)
@@ -1528,7 +1528,8 @@ class CryDetectionService: ObservableObject {
         let confVariance = confidences.map { pow($0 - confMean, 2) }.reduce(0, +) / Float(confidences.count)
 
         // Speech: high spectral variance OR high confidence variance
-        let isSpeech = avgVariance > speechVarianceThreshold || confVariance > 0.04
+        // FIXED: Increased confidence variance threshold from 0.04 to 0.08 to reduce false speech detection
+        let isSpeech = avgVariance > speechVarianceThreshold || confVariance > 0.08
 
         if isSpeech && frames.filter({ $0.isCryLike }).count > 5 {
             print("[CryDetection] 🗣️ Speech detected (var: \(String(format: "%.3f", avgVariance)), confVar: \(String(format: "%.3f", confVariance))) - NOT a baby cry")

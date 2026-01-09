@@ -580,27 +580,26 @@ class EmergencyCryStopService: ObservableObject {
             print("[EmergencyCryStop] 🔴 CRY DETECTED - Starting confirmation period for \(baby.displayName)")
             currentPhase = .detected
             Task {
-                // CRITICAL: Wait 4 seconds to confirm it's actually crying
-                // This prevents false positives from brief noises, talking, or ambient sounds
-                // User feedback: Previous 0.5s was too short, triggered from just talking!
-                let confirmationSeconds: UInt64 = 4
-                print("[EmergencyCryStop] ⏳ Confirming cry for \(confirmationSeconds) seconds...")
+                // FIXED: Reduced from 4s to 1.5s - speech detection now filters false positives
+                // 1.5s is enough to filter brief noises while being responsive to real cries
+                let confirmationDuration: Double = 1.5
+                print("[EmergencyCryStop] ⏳ Confirming cry for \(String(format: "%.1f", confirmationDuration))s...")
 
-                // Check every second for 4 seconds
-                for second in 1...Int(confirmationSeconds) {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                // Check every 0.5 seconds for 1.5 seconds (3 checks total)
+                for check in 1...3 {
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
                     // If cry stopped during confirmation, it was a false positive
                     if !cryDetectionService.isCryDetected {
-                        print("[EmergencyCryStop] ℹ️ False positive at second \(second) - cry stopped before confirmation")
+                        print("[EmergencyCryStop] ℹ️ False positive at check \(check)/3 - cry stopped before confirmation")
                         currentPhase = isAIMonitoringEnabled ? .listening : .idle
                         return
                     }
-                    print("[EmergencyCryStop] ⏳ Cry still detected at second \(second)/\(confirmationSeconds)...")
+                    print("[EmergencyCryStop] ⏳ Cry still detected at check \(check)/3...")
                 }
 
                 // Cry persisted for full confirmation period
-                print("[EmergencyCryStop] 🎵 Confirmed cry after \(confirmationSeconds)s - activating SmartCryResponseEngine")
+                print("[EmergencyCryStop] 🎵 Confirmed cry after \(String(format: "%.1f", confirmationDuration))s - activating SmartCryResponseEngine")
                 if useSmartResponse {
                     await smartResponseEngine.activate(for: baby)
                     isEmergencyModeActive = true
