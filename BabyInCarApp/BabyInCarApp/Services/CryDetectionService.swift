@@ -663,7 +663,16 @@ class CryDetectionService: ObservableObject {
 
         // Skip rule-based DETECTION if too quiet (likely just ambient noise)
         // BUT still update audio level for UI visualization AND accumulate for ML
-        guard rms > ambientNoiseLevel * 1.5 else {
+        let quietThreshold = ambientNoiseLevel * 1.5
+        guard rms > quietThreshold else {
+            // DIAGNOSTIC: Log when audio is too quiet (throttled to reduce spam)
+            static var lastQuietLog = Date.distantPast
+            let now = Date()
+            if now.timeIntervalSince(lastQuietLog) > 5.0 {
+                print("[CryDetection] 🔇 Audio too quiet: RMS=\(String(format: "%.4f", rms)) < threshold=\(String(format: "%.4f", quietThreshold)) (ambient=\(String(format: "%.4f", ambientNoiseLevel)))")
+                lastQuietLog = now
+            }
+
             // MEMORY FIX: Combined update - audio level + quiet frame handling in single Task
             // CRITICAL FIX: Still accumulate for DeepInfant - ML can detect patterns rule-based misses
             Task { @MainActor [weak self] in
@@ -675,6 +684,14 @@ class CryDetectionService: ObservableObject {
                 }
             }
             return
+        }
+
+        // DIAGNOSTIC: Log when audio is being analyzed (throttled)
+        static var lastAnalysisLog = Date.distantPast
+        let now = Date()
+        if now.timeIntervalSince(lastAnalysisLog) > 3.0 {
+            print("[CryDetection] 🎤 Analyzing audio: RMS=\(String(format: "%.4f", rms)), ambient=\(String(format: "%.4f", ambientNoiseLevel)), ML=\(useMLEnhancement)")
+            lastAnalysisLog = now
         }
 
         // 2. Apply window function
