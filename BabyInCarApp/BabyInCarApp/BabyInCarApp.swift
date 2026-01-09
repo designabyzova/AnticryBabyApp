@@ -61,6 +61,17 @@ struct BabyInCarApp: App {
                     .onAppear {
                         setupApp()
                     }
+                    // SIRI INTENT HANDLING
+                    // Handle user activities from Intents Extension
+                    .onContinueUserActivity("com.lulla.playMedia") { userActivity in
+                        handlePlayMediaActivity(userActivity)
+                    }
+                    .onContinueUserActivity("com.lulla.searchMedia") { userActivity in
+                        handleSearchMediaActivity(userActivity)
+                    }
+                    .onContinueUserActivity("com.lulla.addToFavorites") { userActivity in
+                        handleAddToFavoritesActivity(userActivity)
+                    }
 
                 // Animated splash screen overlay
                 if showSplash {
@@ -237,6 +248,177 @@ struct BabyInCarApp: App {
         // Start monitoring (check every 2 seconds for faster response)
         // CRITICAL: Must catch memory issues BEFORE iOS decides to kill
         memoryMonitor.startMonitoring(interval: 2.0)
+    }
+
+    // MARK: - Siri Intent Handlers
+
+    /// Handle play media activity from Intents Extension
+    private func handlePlayMediaActivity(_ userActivity: NSUserActivity) {
+        guard let userInfo = userActivity.userInfo,
+              let action = userInfo["action"] as? String else {
+            print("🎤 [App] Invalid play media activity")
+            return
+        }
+
+        print("🎤 [App] Received play media activity: \(action)")
+
+        switch action {
+        case "emergency":
+            // Trigger emergency mode via SmartEmergencyQueue
+            Task { @MainActor in
+                let babyAge = appState.currentBaby?.ageInMonths ?? 12
+                let language = Locale.current.language.languageCode?.identifier ?? "en"
+
+                await SmartEmergencyQueue.shared.startSpotifyMode(
+                    cryType: .general,
+                    babyAge: babyAge,
+                    language: language
+                )
+                print("🎤 [App] Emergency queue started")
+            }
+
+        case "playCategory":
+            guard let categoryString = userInfo["category"] as? String else { return }
+            playCategory(categoryString)
+
+        case "search":
+            guard let searchText = userInfo["searchText"] as? String else { return }
+            playSearch(searchText)
+
+        default:
+            print("🎤 [App] Unknown action: \(action)")
+        }
+    }
+
+    /// Handle search media activity from Intents Extension
+    private func handleSearchMediaActivity(_ userActivity: NSUserActivity) {
+        guard let userInfo = userActivity.userInfo,
+              let searchTerm = userInfo["searchTerm"] as? String else {
+            print("🎤 [App] Invalid search media activity")
+            return
+        }
+
+        print("🎤 [App] Searching for: \(searchTerm)")
+        playSearch(searchTerm)
+    }
+
+    /// Handle add to favorites activity from Intents Extension
+    private func handleAddToFavoritesActivity(_ userActivity: NSUserActivity) {
+        guard let userInfo = userActivity.userInfo,
+              let trackIdString = userInfo["trackId"] as? String else {
+            print("🎤 [App] Invalid add to favorites activity")
+            return
+        }
+
+        print("🎤 [App] Adding to favorites: \(trackIdString)")
+
+        Task { @MainActor in
+            // If "current", use currently playing track
+            if trackIdString == "current" {
+                if let currentTrack = audioEngine.currentTrack {
+                    if !FavoritesManager.shared.isFavorite(track: currentTrack) {
+                        FavoritesManager.shared.toggleFavorite(track: currentTrack)
+                    }
+                    print("🎤 [App] Added current track to favorites: \(currentTrack.title)")
+                }
+            } else if let trackId = UUID(uuidString: trackIdString) {
+                // Find specific track by ID
+                let track = ContentLibraryService.shared.allTracks.first { $0.id == trackId }
+                if let track = track {
+                    if !FavoritesManager.shared.isFavorite(track: track) {
+                        FavoritesManager.shared.toggleFavorite(track: track)
+                    }
+                    print("🎤 [App] Added track to favorites: \(track.title)")
+                }
+            }
+        }
+    }
+
+    /// Play a specific category
+    private func playCategory(_ categoryString: String) {
+        // Map category identifier to AudioCategory
+        let category: AudioCategory?
+        switch categoryString {
+        case "lullabies": category = .lullabies
+        case "classicalMusic": category = .classicalMusic
+        case "fairyTales": category = .fairyTales
+        case "natureSounds": category = .natureSounds
+        case "ambient": category = .ambient
+        case "instrumental": category = .instrumental
+        case "childrenSongs": category = .childrenSongs
+        default: category = nil
+        }
+
+        guard let category = category else {
+            print("🎤 [App] Unknown category: \(categoryString)")
+            playDefault()
+            return
+        }
+
+        print("🎤 [App] Playing category: \(category.rawValue)")
+
+        let tracks = ContentLibraryService.shared.getTracks(for: category)
+        guard !tracks.isEmpty else {
+            print("🎤 [App] No tracks for category: \(category.rawValue)")
+            playDefault()
+            return
+        }
+
+        let playlist = Playlist(
+            id: UUID(),
+            name: "Siri: \(category.rawValue)",
+            tracks: Array(tracks.shuffled().prefix(20)),
+            createdAt: Date()
+        )
+
+        audioEngine.play(playlist: playlist)
+
+        // Donate shortcut for this category
+        SiriShortcutsService.shared.donatePlaybackShortcut(for: category)
+    }
+
+    /// Search and play matching tracks
+    private func playSearch(_ searchTerm: String) {
+        print("🎤 [App] Searching for: \(searchTerm)")
+
+        let matches = ContentLibraryService.shared.allTracks.filter { track in
+            track.title.lowercased().contains(searchTerm.lowercased()) ||
+            track.artist.lowercased().contains(searchTerm.lowercased())
+        }
+
+        if !matches.isEmpty {
+            let playlist = Playlist(
+                id: UUID(),
+                name: "Siri: \(searchTerm)",
+                tracks: Array(matches.prefix(20)),
+                createdAt: Date()
+            )
+            audioEngine.play(playlist: playlist)
+        } else {
+            print("🎤 [App] No matches for search: \(searchTerm)")
+            playDefault()
+        }
+    }
+
+    /// Play default content as fallback
+    private func playDefault() {
+        print("🎤 [App] Playing default content")
+
+        let tracks = ContentLibraryService.shared.allTracks
+            .sorted { $0.calmingScore > $1.calmingScore }
+
+        guard !tracks.isEmpty else {
+            audioEngine.play(track: AudioTrack.defaultEmergencyTrack())
+            return
+        }
+
+        let playlist = Playlist(
+            id: UUID(),
+            name: "Siri: Lulla Music",
+            tracks: Array(tracks.prefix(20)),
+            createdAt: Date()
+        )
+        audioEngine.play(playlist: playlist)
     }
 }
 

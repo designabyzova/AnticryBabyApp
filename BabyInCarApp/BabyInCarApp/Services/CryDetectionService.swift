@@ -209,16 +209,16 @@ class CryDetectionService: ObservableObject {
     private var cryPatternBuffer: [CryFrame] = []
     private let patternBufferSize = 30 // THERMAL FIX: Reduced from 60 to 30 (~1s at 30fps) - less memory, same accuracy
     private var consecutiveCryFrames: Int = 0
-    // OPTIMIZED: Reduced from 45 frames (~1.5s) to 30 frames (~1s) for faster detection
-    // User requested ~3 second total detection time
-    private let minCryFramesForDetection = 30 // ~1 second of consistent cry pattern
+    // ULTRA-RESPONSIVE: Reduced from 30 to 15 frames (~0.5s) for faster detection
+    // With lower FFT thresholds, we can afford faster detection without false positives
+    private let minCryFramesForDetection = 15 // ~0.5 second of consistent cry pattern
 
     // CRITICAL FIX: Require sustained cry detection to prevent false positives
     // Baby cries are SUSTAINED sounds (3-5+ seconds), not brief vocalizations
     private var sustainedCryStartTime: Date?
-    // OPTIMIZED: Reduced from 2.0s to 1.5s for faster response
-    // Combined with frame detection (~1s) gives ~2.5-3s total detection time
-    private let minSustainedCryDuration: TimeInterval = 1.5 // Require 1.5 seconds of sustained cry
+    // ULTRA-RESPONSIVE: Reduced from 1.5s to 1.0s for faster response
+    // With better FFT detection, we can respond faster without false positives
+    private let minSustainedCryDuration: TimeInterval = 1.0 // Require 1.0 second of sustained cry
 
     // Speech vs cry differentiation
     // Human speech typically has rapid spectral changes, cries are more monotonic
@@ -230,8 +230,9 @@ class CryDetectionService: ObservableObject {
     private var adaptiveThreshold: Float = 0.18  // RMS threshold for detection (0-1 scale)
     // CRITICAL FIX: FFT power threshold is much smaller than RMS!
     // FFT magnitudes after 2/N scaling are typically 0.001-0.05 for loud audio
-    // This was the ROOT CAUSE of cry detection not working - threshold 100x too high!
-    private var fftPowerThreshold: Float = 0.003 // FFT power threshold (will be calibrated)
+    // ULTRA-SENSITIVE: Lowered from 0.003 to 0.0005 to catch quiet baby cries
+    // Real baby cries can be as low as 0.0007-0.001 FFT power in normal environments
+    private var fftPowerThreshold: Float = 0.0005 // FFT power threshold (will be calibrated)
     // OPTIMIZED: Lowered from 60% to 50% for more responsive detection
     // False positives are filtered by sustained duration + speech detection anyway
     private let minCryConfidence: Double = 0.50  // 50% confidence minimum
@@ -1432,8 +1433,9 @@ class CryDetectionService: ObservableObject {
         // Check for speech-like patterns (high spectral variance = likely speech)
         let isSpeechLike = checkIfSpeechLike(frames: Array(recentFrames))
 
-        // OPTIMIZED: Reduced minimum frames from 10 to 8 for faster detection
-        if cryLikeFrames.count >= 8 && cryFrameRatio > 0.6 && !isSpeechLike {
+        // ULTRA-RESPONSIVE: Reduced minimum frames from 8 to 4 for faster detection
+        // Reduced ratio from 60% to 40% to handle intermittent cry detection
+        if cryLikeFrames.count >= 4 && cryFrameRatio > 0.4 && !isSpeechLike {
             consecutiveCryFrames += 1
         } else {
             consecutiveCryFrames = max(0, consecutiveCryFrames - 2) // Decay faster
@@ -1455,8 +1457,9 @@ class CryDetectionService: ObservableObject {
         // CRITICAL FIX: Sustained cry detection
         // Track how long we've been detecting cry-like sounds
         let now = Date()
-        // OPTIMIZED: Reduced minimum frames from 10 to 8 for faster detection
-        if cryLikeFrames.count >= 8 && !isSpeechLike {
+        // ULTRA-RESPONSIVE: Reduced minimum frames from 8 to 4 for faster sustained timer start
+        // With lower FFT threshold (0.0005), we get more consistent cry-like frames
+        if cryLikeFrames.count >= 4 && !isSpeechLike {
             if sustainedCryStartTime == nil {
                 sustainedCryStartTime = now
             }
@@ -1588,9 +1591,9 @@ class CryDetectionService: ObservableObject {
             // CRITICAL FIX: Set FFT power threshold (separate from RMS threshold!)
             // FFT magnitudes after 2/N scaling are ~100x smaller than RMS values
             // Use RMS-to-FFT ratio approximation: FFT power ≈ RMS / 30-50
-            // For a quiet room (RMS ~0.02), FFT threshold should be ~0.001
-            // For louder environments, scale proportionally
-            self.fftPowerThreshold = max(0.001, self.ambientNoiseLevel / 20.0)
+            // ULTRA-SENSITIVE: Lowered minimum from 0.001 to 0.0005 for quiet baby cries
+            // Real-world testing shows baby cries can be 0.0007-0.001 FFT power
+            self.fftPowerThreshold = max(0.0005, self.ambientNoiseLevel / 30.0)
             self.isCalibrated = true
 
             print("[CryDetection] Calibration complete: ambient=\(self.ambientNoiseLevel), rmsThreshold=\(self.adaptiveThreshold), fftThreshold=\(self.fftPowerThreshold)")

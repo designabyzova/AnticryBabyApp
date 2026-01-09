@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Extension Configuration -->
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>XPC!</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <!-- Extension Point -->
+    <key>NSExtension</key>
+    <dict>
+        <!-- Identifies this as an Intents Extension -->
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.intents-service</string>
+
+        <!-- Entry point class -->
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).IntentHandler</string>
+
+        <!-- Supported Intents -->
+        <key>IntentsSupported</key>
+        <array>
+            <string>INPlayMediaIntent</string>
+            <string>INSearchForMediaIntent</string>
+            <string>INAddMediaIntent</string>
+        </array>
+
+        <!-- Optional: Intents that can be restricted -->
+        <key>IntentsRestrictedWhileLocked</key>
+        <array>
+            <!-- All media intents are safe to use while locked -->
+        </array>
+    </dict>
+</dict>
+</plist>
