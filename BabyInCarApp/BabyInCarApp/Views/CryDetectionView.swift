@@ -109,7 +109,7 @@ struct CryDetectionView: View {
                         // Show detected cry type prominently when cry is detected
                         if cryDetection.isCryDetected || emergencyService.isEmergencyModeActive {
                             DetectedCryTypeBadge(
-                                cryType: emergencyService.detectedCryType,
+                                cryType: cryDetection.cryType,  // FIXED: Use real-time ML classification from CryDetectionService
                                 confidence: cryDetection.confidenceLevel
                             )
                         } else if accuracyTracker.totalPredictions >= 5 {

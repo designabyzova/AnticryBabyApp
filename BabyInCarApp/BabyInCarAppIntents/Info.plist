@@ -27,19 +27,23 @@
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).IntentHandler</string>
 
-        <!-- Supported Intents -->
-        <key>IntentsSupported</key>
-        <array>
-            <string>INPlayMediaIntent</string>
-            <string>INSearchForMediaIntent</string>
-            <string>INAddMediaIntent</string>
-        </array>
+        <!-- Extension Attributes -->
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <!-- Supported Intents -->
+            <key>IntentsSupported</key>
+            <array>
+                <string>INPlayMediaIntent</string>
+                <string>INSearchForMediaIntent</string>
+                <string>INAddMediaIntent</string>
+            </array>
 
-        <!-- Optional: Intents that can be restricted -->
-        <key>IntentsRestrictedWhileLocked</key>
-        <array>
-            <!-- All media intents are safe to use while locked -->
-        </array>
+            <!-- Optional: Intents that can be restricted -->
+            <key>IntentsRestrictedWhileLocked</key>
+            <array>
+                <!-- All media intents are safe to use while locked -->
+            </array>
+        </dict>
     </dict>
 </dict>
 </plist>
