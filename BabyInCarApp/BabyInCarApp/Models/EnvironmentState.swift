@@ -126,7 +126,7 @@ enum RoadNoiseType: String, Codable {
 
 // MARK: - Environment State
 
-struct EnvironmentState: Codable {
+struct EnvironmentState {
     let id: UUID
     let timestamp: Date
 
@@ -235,26 +235,83 @@ struct EnvironmentState: Codable {
     }
 }
 
-// MARK: - CMAcceleration Codable Extension
-
-extension CMAcceleration: Codable {
+// MARK: - EnvironmentState Codable Conformance
+extension EnvironmentState: Codable {
     enum CodingKeys: String, CodingKey {
-        case x, y, z
+        case id, timestamp, engineSoundLevel, roadNoiseLevel, cabinNoiseLevel
+        case engineCategory, roadNoiseCategory, motionType, soothingScore
+        case lowFrequencyPower, midFrequencyPower, highFrequencyPower, spectralConsistency
+        case speed, acceleration, recommendedMusicVolumeMultiplier
     }
 
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let x = try container.decode(Double.self, forKey: .x)
-        let y = try container.decode(Double.self, forKey: .y)
-        let z = try container.decode(Double.self, forKey: .z)
-        self.init(x: x, y: y, z: z)
+        id = try container.decode(UUID.self, forKey: .id)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        engineSoundLevel = try container.decode(Float.self, forKey: .engineSoundLevel)
+        roadNoiseLevel = try container.decode(Float.self, forKey: .roadNoiseLevel)
+        cabinNoiseLevel = try container.decode(Float.self, forKey: .cabinNoiseLevel)
+        engineCategory = try container.decode(EngineSoundLevel.self, forKey: .engineCategory)
+        roadNoiseCategory = try container.decode(RoadNoiseType.self, forKey: .roadNoiseCategory)
+        motionType = try container.decode(MotionType.self, forKey: .motionType)
+        soothingScore = try container.decode(Double.self, forKey: .soothingScore)
+        lowFrequencyPower = try container.decode(Float.self, forKey: .lowFrequencyPower)
+        midFrequencyPower = try container.decode(Float.self, forKey: .midFrequencyPower)
+        highFrequencyPower = try container.decode(Float.self, forKey: .highFrequencyPower)
+        spectralConsistency = try container.decode(Float.self, forKey: .spectralConsistency)
+        speed = try container.decodeIfPresent(Double.self, forKey: .speed)
+        recommendedMusicVolumeMultiplier = try container.decode(Float.self, forKey: .recommendedMusicVolumeMultiplier)
+
+        // Decode CMAcceleration using wrapper
+        if let codableAccel = try container.decodeIfPresent(CodableCMAcceleration.self, forKey: .acceleration) {
+            acceleration = codableAccel.toCMAcceleration()
+        } else {
+            acceleration = nil
+        }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(x, forKey: .x)
-        try container.encode(y, forKey: .y)
-        try container.encode(z, forKey: .z)
+        try container.encode(id, forKey: .id)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(engineSoundLevel, forKey: .engineSoundLevel)
+        try container.encode(roadNoiseLevel, forKey: .roadNoiseLevel)
+        try container.encode(cabinNoiseLevel, forKey: .cabinNoiseLevel)
+        try container.encode(engineCategory, forKey: .engineCategory)
+        try container.encode(roadNoiseCategory, forKey: .roadNoiseCategory)
+        try container.encode(motionType, forKey: .motionType)
+        try container.encode(soothingScore, forKey: .soothingScore)
+        try container.encode(lowFrequencyPower, forKey: .lowFrequencyPower)
+        try container.encode(midFrequencyPower, forKey: .midFrequencyPower)
+        try container.encode(highFrequencyPower, forKey: .highFrequencyPower)
+        try container.encode(spectralConsistency, forKey: .spectralConsistency)
+        try container.encodeIfPresent(speed, forKey: .speed)
+        try container.encode(recommendedMusicVolumeMultiplier, forKey: .recommendedMusicVolumeMultiplier)
+
+        // Encode CMAcceleration using wrapper
+        if let accel = acceleration {
+            try container.encode(CodableCMAcceleration(accel), forKey: .acceleration)
+        }
+    }
+}
+
+// MARK: - CMAcceleration Codable Wrapper
+// We can't extend CMAcceleration (C struct) to conform to protocols directly
+// Instead, we create a codable wrapper and provide conversion helpers
+
+struct CodableCMAcceleration: Codable {
+    let x: Double
+    let y: Double
+    let z: Double
+
+    init(_ acceleration: CMAcceleration) {
+        self.x = acceleration.x
+        self.y = acceleration.y
+        self.z = acceleration.z
+    }
+
+    func toCMAcceleration() -> CMAcceleration {
+        return CMAcceleration(x: x, y: y, z: z)
     }
 }
 

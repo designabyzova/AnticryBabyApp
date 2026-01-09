@@ -84,13 +84,11 @@ class CryDetectionService: ObservableObject {
     private nonisolated(unsafe) static let sharedCryClassifier = CryClassifierMLModel()
     private nonisolated(unsafe) static let sharedVoiceAnalyzer = VoiceCharacteristicsAnalyzer()
     private nonisolated(unsafe) static var sharedFeatureExtractor: AdvancedFeatureExtractor?
-    // NSLock is Sendable in iOS 26+, so no nonisolated(unsafe) needed
-    private static let featureExtractorLock = NSLock()
+    private nonisolated(unsafe) static let featureExtractorLock = NSLock()
 
     // MEMORY FIX: Shared DeepInfant instance (singleton pattern)
     private nonisolated(unsafe) static var sharedDeepInfant: DeepInfantClassifierProtocol?
-    // NSLock is Sendable in iOS 26+, so no nonisolated(unsafe) needed
-    private static let deepInfantLock = NSLock()
+    private nonisolated(unsafe) static let deepInfantLock = NSLock()
 
     /// Get or create shared feature extractor for background thread (thread-safe)
     private nonisolated static func getSharedFeatureExtractor(fftSize: Int) -> AdvancedFeatureExtractor {
@@ -144,6 +142,10 @@ class CryDetectionService: ObservableObject {
 
     /// Throttled confidence for UI (updated at 5Hz max)
     @Published var throttledConfidence: Double = 0
+
+    // MARK: - Diagnostic Logging Throttling
+    private nonisolated(unsafe) var lastQuietLog = Date.distantPast
+    private nonisolated(unsafe) var lastAnalysisLog = Date.distantPast
 
     // MARK: - Audio Frame Throttling (THERMAL FIX)
     // Skip 50% of audio frames to reduce CPU usage - cry detection still works at 10Hz
@@ -666,7 +668,6 @@ class CryDetectionService: ObservableObject {
         let quietThreshold = ambientNoiseLevel * 1.5
         guard rms > quietThreshold else {
             // DIAGNOSTIC: Log when audio is too quiet (throttled to reduce spam)
-            static var lastQuietLog = Date.distantPast
             let now = Date()
             if now.timeIntervalSince(lastQuietLog) > 5.0 {
                 print("[CryDetection] 🔇 Audio too quiet: RMS=\(String(format: "%.4f", rms)) < threshold=\(String(format: "%.4f", quietThreshold)) (ambient=\(String(format: "%.4f", ambientNoiseLevel)))")
@@ -687,7 +688,6 @@ class CryDetectionService: ObservableObject {
         }
 
         // DIAGNOSTIC: Log when audio is being analyzed (throttled)
-        static var lastAnalysisLog = Date.distantPast
         let now = Date()
         if now.timeIntervalSince(lastAnalysisLog) > 3.0 {
             print("[CryDetection] 🎤 Analyzing audio: RMS=\(String(format: "%.4f", rms)), ambient=\(String(format: "%.4f", ambientNoiseLevel)), ML=\(useMLEnhancement)")
