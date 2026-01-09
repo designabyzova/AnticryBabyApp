@@ -206,8 +206,11 @@ class SpeechRecognitionService: ObservableObject {
         switch command.intent {
         // Basic playback
         case .play:
-            print("✅ Play command recognized")
+            print("✅ Play command recognized - POSTING NOTIFICATION")
+            print("🔔 Posting to notification: .voiceCommandPlay")
+            print("🔔 Main thread? \(Thread.isMainThread)")
             NotificationCenter.default.post(name: .voiceCommandPlay, object: nil)
+            print("🔔 Notification POSTED! Waiting for observers...")
 
         case .pause, .stop:
             print("✅ Pause/Stop command recognized")
@@ -536,13 +539,20 @@ class VoiceCommandHandler: ObservableObject {
     /// Otherwise observers are deallocated and never receive notifications
     private var notificationObservers: [Any] = []
 
+    /// Public property to check if handler is configured with AppState
+    var isConfigured: Bool {
+        return appState != nil
+    }
+
     private init() {
         setupNotificationObservers()
+        print("🔔 VoiceCommandHandler: Initialized with \(notificationObservers.count) observers")
     }
 
     func configure(with appState: AppState) {
-        print("🔔 VoiceCommandHandler: Configured with AppState")
+        print("🔔 VoiceCommandHandler: Configuring with AppState")
         self.appState = appState
+        print("🔔 VoiceCommandHandler: Configured! isConfigured = \(isConfigured)")
     }
 
     private func postCommandExecuted(command: String, success: Bool, message: String) {
@@ -556,24 +566,28 @@ class VoiceCommandHandler: ObservableObject {
 
     private func setupNotificationObservers() {
         print("🔔 VoiceCommandHandler: Setting up notification observers")
+        print("🔔 VoiceCommandHandler: Main thread = \(Thread.isMainThread)")
 
         // CRITICAL FIX: Store observer tokens to prevent deallocation
         // NotificationCenter.addObserver(forName:) returns an object that MUST be retained
         // Without storing these, observers are immediately deallocated and never fire!
 
-        notificationObservers.append(
-            NotificationCenter.default.addObserver(
-                forName: .voiceCommandPlay,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                print("🔔 VoiceCommandHandler: Received Play notification")
-                Task { @MainActor in
-                    self?.handlePlay()
-                    self?.postCommandExecuted(command: "play", success: true, message: "Playing audio")
-                }
+        let playObserver = NotificationCenter.default.addObserver(
+            forName: .voiceCommandPlay,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            print("🔔🔔🔔 VoiceCommandHandler: ✅ RECEIVED Play notification!")
+            print("🔔 Notification object: \(String(describing: notification.object))")
+            print("🔔 Self is nil? \(self == nil)")
+            Task { @MainActor in
+                self?.handlePlay()
+                self?.postCommandExecuted(command: "play", success: true, message: "Playing audio")
             }
-        )
+        }
+
+        notificationObservers.append(playObserver)
+        print("🔔 VoiceCommandHandler: Registered Play observer (token: \(playObserver))")
 
         notificationObservers.append(
             NotificationCenter.default.addObserver(
@@ -859,7 +873,9 @@ class VoiceCommandHandler: ObservableObject {
             }
         )
 
-        print("🔔 VoiceCommandHandler: Registered \(notificationObservers.count) observers")
+        print("🔔 VoiceCommandHandler: ✅ Registered \(notificationObservers.count) observers")
+        print("🔔 VoiceCommandHandler: Observer tokens stored in array to prevent deallocation")
+        print("🔔 VoiceCommandHandler: Ready to receive notifications!")
     }
 
     private func handlePlay() {

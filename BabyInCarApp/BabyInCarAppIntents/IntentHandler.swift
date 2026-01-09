@@ -221,7 +221,7 @@ class AddMediaIntentHandler: NSObject, INAddMediaIntentHandling {
         }
 
         // Open app to add favorite
-        let response = INAddMediaIntentResponse(code: .continueInApp, userActivity: userActivity)
+        let response = INAddMediaIntentResponse(code: .success, userActivity: userActivity)
         completion(response)
     }
 
