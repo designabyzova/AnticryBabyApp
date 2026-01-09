@@ -485,7 +485,7 @@ enum BabyMood: String, Codable, CaseIterable {
         case .content: return "face.smiling"
         case .sleepy: return "moon.zzz"
         case .alert: return "eye"
-        case .fussy: return "cloud.ocean"
+        case .fussy: return "cloud.aquarium"
         case .hungry: return "fork.knife"
         case .playful: return "hands.sparkles"
         case .uncomfortable: return "thermometer"

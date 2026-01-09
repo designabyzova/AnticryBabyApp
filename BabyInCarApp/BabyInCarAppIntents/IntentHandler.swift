@@ -56,7 +56,9 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
     // Emergency phrases that trigger SmartEmergencyQueue
     private let emergencyPhrases = [
         "emergency", "calm baby", "baby crying", "soothe",
-        "help baby", "cry again", "crying again", "urgent"
+        "help baby", "cry again", "crying again", "urgent",
+        "won't stop", "can't calm", "need help", "fussy",
+        "inconsolable", "won't sleep", "help me", "calm down"
     ]
 
     /// Main handler - executes when user says "play X in Lulla"
@@ -67,10 +69,10 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
         let mediaSearch = intent.mediaSearch
         let searchText = (mediaSearch?.mediaName ?? "").lowercased()
 
-        print("🎤 [Extension] Search text: '\(searchText)'")
+        print("🎤 [Extension] Processing play request")
 
         // Create user activity to hand off to main app
-        let userActivity = NSUserActivity(activityType: "com.lulla.playMedia")
+        let userActivity = NSUserActivity(activityType: IntentActivityType.playMedia)
 
         // Check for emergency mode
         let isEmergency = emergencyPhrases.contains(where: { searchText.contains($0) })
@@ -78,7 +80,7 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
         if isEmergency {
             print("🎤 [Extension] Emergency mode detected")
             userActivity.userInfo = [
-                "action": "emergency",
+                "action": IntentAction.emergency.rawValue,
                 "searchText": searchText
             ]
         } else {
@@ -88,14 +90,14 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
             if let category = category {
                 print("🎤 [Extension] Parsed category: \(category)")
                 userActivity.userInfo = [
-                    "action": "playCategory",
+                    "action": IntentAction.playCategory.rawValue,
                     "category": category,
                     "searchText": searchText
                 ]
             } else {
-                print("🎤 [Extension] Search mode: '\(searchText)'")
+                print("🎤 [Extension] Search mode")
                 userActivity.userInfo = [
-                    "action": "search",
+                    "action": IntentAction.search.rawValue,
                     "searchText": searchText
                 ]
             }
@@ -103,6 +105,14 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
 
         // Tell iOS to open the main app and continue this activity
         let response = INPlayMediaIntentResponse(code: .continueInApp, userActivity: userActivity)
+
+        // Provide spoken feedback to user
+        if isEmergency {
+            response.userActivity = userActivity
+        } else if let category = parseCategory(from: searchText) {
+            response.userActivity = userActivity
+        }
+
         completion(response)
     }
 
@@ -144,21 +154,21 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
         }
     }
 
-    /// Parse category from search text
+    /// Parse category from search text using shared constants
     private func parseCategory(from searchText: String) -> String? {
-        let categoryMappings: [(keywords: [String], category: String)] = [
-            (["lullaby", "lullabies", "bedtime song"], "lullabies"),
-            (["classical", "mozart", "beethoven", "bach", "piano"], "classicalMusic"),
-            (["fairy tale", "story", "stories", "bedtime story"], "fairyTales"),
-            (["nature", "ocean", "waves", "forest", "birds"], "natureSounds"),
-            (["ambient", "womb", "heartbeat"], "ambient"),
-            (["instrumental", "guitar", "ukulele"], "instrumental"),
-            (["children", "kids", "nursery", "nursery rhyme"], "childrenSongs"),
+        let categoryMappings: [(keywords: [String], category: IntentAudioCategory)] = [
+            (["lullaby", "lullabies", "bedtime song"], .lullabies),
+            (["classical", "mozart", "beethoven", "bach", "piano"], .classicalMusic),
+            (["fairy tale", "story", "stories", "bedtime story"], .fairyTales),
+            (["nature", "ocean", "waves", "forest", "birds"], .natureSounds),
+            (["ambient", "womb", "heartbeat"], .ambient),
+            (["instrumental", "guitar", "ukulele"], .instrumental),
+            (["children", "kids", "nursery", "nursery rhyme"], .childrenSongs),
         ]
 
         for (keywords, category) in categoryMappings {
             if keywords.contains(where: { searchText.contains($0) }) {
-                return category
+                return category.identifier
             }
         }
 
@@ -179,12 +189,12 @@ class SearchForMediaIntentHandler: NSObject, INSearchForMediaIntentHandling {
             return
         }
 
-        print("🎤 [Extension] Search term: '\(searchTerm)'")
+        print("🎤 [Extension] Processing search request")
 
         // Create user activity to hand off to main app
-        let userActivity = NSUserActivity(activityType: "com.lulla.searchMedia")
+        let userActivity = NSUserActivity(activityType: IntentActivityType.searchMedia)
         userActivity.userInfo = [
-            "action": "search",
+            "action": IntentAction.search.rawValue,
             "searchTerm": searchTerm
         ]
 
@@ -206,16 +216,16 @@ class AddMediaIntentHandler: NSObject, INAddMediaIntentHandling {
         let trackId = intent.mediaItems?.first?.identifier
 
         // Create user activity to hand off to main app
-        let userActivity = NSUserActivity(activityType: "com.lulla.addToFavorites")
+        let userActivity = NSUserActivity(activityType: IntentActivityType.addToFavorites)
 
         if let trackId = trackId {
             userActivity.userInfo = [
-                "action": "addToFavorites",
+                "action": IntentAction.addToFavorites.rawValue,
                 "trackId": trackId
             ]
         } else {
             userActivity.userInfo = [
-                "action": "addToFavorites",
+                "action": IntentAction.addToFavorites.rawValue,
                 "trackId": "current" // Signal to use current track
             ]
         }

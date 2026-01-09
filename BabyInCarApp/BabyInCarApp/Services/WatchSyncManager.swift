@@ -29,11 +29,41 @@ final class WatchSyncManager: NSObject, ObservableObject {
     // Storage limit for watch (50MB)
     private let maxWatchStorage: Int64 = 50 * 1024 * 1024
 
+    // MARK: - Throttling (prevents Watch command flooding)
+
+    /// Last time each command type was processed
+    private var lastCommandTime: [String: Date] = [:]
+
+    /// Minimum interval between same command types (300ms)
+    private let commandThrottleInterval: TimeInterval = 0.3
+
+    /// Track if a playback operation is in progress to prevent race conditions
+    private var isPlaybackOperationInProgress = false
+
     // MARK: - Initialization
 
     private override init() {
         super.init()
         setupSession()
+        observeFavorites()
+    }
+
+    /// Observe favorites changes and auto-sync to Watch
+    private func observeFavorites() {
+        FavoritesManager.shared.$favoriteTracks
+            .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncFavoritesFromManager()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Sync current favorites to Watch
+    func syncFavoritesFromManager() {
+        let favorites = FavoritesManager.shared.getFavoriteTracks()
+        let watchTracks = favorites.map { $0.toWatchTrack() }
+        syncFavorites(watchTracks)
+        print("[WatchSync] Auto-synced \(watchTracks.count) favorites to Watch")
     }
 
     private func setupSession() {
@@ -176,69 +206,378 @@ final class WatchSyncManager: NSObject, ObservableObject {
     // MARK: - Command Handling
 
     func handleCommand(_ command: WatchCommand) {
+        // THROTTLE: Prevent command flooding from Watch
+        let commandKey = String(describing: command)
+        let now = Date()
+
+        if let lastTime = lastCommandTime[commandKey],
+           now.timeIntervalSince(lastTime) < commandThrottleInterval {
+            print("[WatchSync] ⏱️ Throttled duplicate command: \(commandKey)")
+            return
+        }
+        lastCommandTime[commandKey] = now
+
         print("[WatchSync] Received command from watch: \(command)")
 
         Task { @MainActor in
             switch command {
             case .play:
-                AudioEngine.shared.resume()
+                // If nothing is loaded, start a default playlist
+                if AudioEngine.shared.currentTrack == nil {
+                    startDefaultPlayback()
+                } else {
+                    AudioEngine.shared.resume()
+                }
 
             case .pause:
                 AudioEngine.shared.pause()
 
             case .togglePlayPause:
-                if AudioEngine.shared.isPlaying {
+                if AudioEngine.shared.playbackState == .playing {
                     AudioEngine.shared.pause()
+                } else if AudioEngine.shared.currentTrack == nil {
+                    // Nothing loaded - start default playback
+                    startDefaultPlayback()
                 } else {
                     AudioEngine.shared.resume()
                 }
 
             case .skipNext:
-                AudioEngine.shared.skipToNext()
+                AudioEngine.shared.next()
 
             case .skipPrevious:
-                AudioEngine.shared.skipToPrevious()
+                AudioEngine.shared.previous()
 
             case .setVolume(let volume):
                 AudioEngine.shared.volume = volume
 
             case .setSleepTimer(let minutes):
-                AudioEngine.shared.setSleepTimer(minutes: minutes)
+                // Convert minutes to SleepTimer enum
+                let timer: SleepTimer
+                switch minutes {
+                case 0: timer = .off
+                case 15: timer = .fifteenMinutes
+                case 30: timer = .thirtyMinutes
+                case 45: timer = .fortyFiveMinutes
+                case 60: timer = .oneHour
+                case 120: timer = .twoHours
+                default: timer = .thirtyMinutes  // Default if unsupported value
+                }
+                AudioEngine.shared.setSleepTimer(timer)
 
             case .cancelSleepTimer:
-                AudioEngine.shared.cancelSleepTimer()
+                AudioEngine.shared.setSleepTimer(.off)
 
             case .startSoothingMusic(let playlistId):
                 // Start appropriate soothing playlist
                 if let playlistId = playlistId {
                     // Load specific playlist
                     print("[WatchSync] Starting playlist: \(playlistId)")
+                    playCategory(categoryId: playlistId)
                 } else {
                     // Start default soothing music
                     print("[WatchSync] Starting default soothing music")
+                    startDefaultPlayback()
                 }
 
             case .requestStateSync:
                 sendCurrentState()
+                syncLibraryState()
 
             case .playTrack(let trackId):
                 // Find and play specific track
                 print("[WatchSync] Playing track: \(trackId)")
+                if let track = ContentLibraryService.shared.getTrack(byId: trackId) {
+                    AudioEngine.shared.play(track: track)
+                    sendCurrentState()
+                }
+
+            case .playCategory(let categoryId):
+                playCategory(categoryId: categoryId)
+
+            case .startEmergencyMode:
+                startEmergencyMode()
+
+            case .startEmergencyModeWithCryDetection:
+                startEmergencyModeWithCryDetection()
+
+            case .stopEmergencyMode:
+                stopEmergencyMode()
+
+            case .requestLibrarySync:
+                syncLibraryState()
             }
         }
     }
 
+    // MARK: - Library Sync
+
+    /// Last time library was synced (throttle to once per 2 seconds)
+    private var lastLibrarySyncTime: Date?
+    private let librarySyncThrottleInterval: TimeInterval = 2.0
+
+    /// Sync library categories and tracks to Watch
+    func syncLibraryState() {
+        // THROTTLE: Prevent excessive library syncs
+        let now = Date()
+        if let lastSync = lastLibrarySyncTime,
+           now.timeIntervalSince(lastSync) < librarySyncThrottleInterval {
+            // Skip - synced recently
+            return
+        }
+        lastLibrarySyncTime = now
+
+        guard let session = session, session.activationState == .activated else {
+            print("[WatchSync] Cannot sync library - session not activated")
+            return
+        }
+
+        let library = ContentLibraryService.shared
+
+        // Build categories with track counts
+        let categories = AudioCategory.allCases.map { category in
+            WatchCategory(
+                id: category.rawValue,
+                name: category.displayName,
+                icon: category.iconName,
+                trackCount: library.getTracks(for: category).count,
+                description: category.description
+            )
+        }.filter { $0.trackCount > 0 }
+
+        // Get top calming tracks (limit to 10 for Watch)
+        let topCalming = library.getTopCalmingTracks(limit: 10).map { $0.toWatchTrack() }
+
+        let libraryState = WatchLibraryState(
+            categories: categories,
+            recentTracks: [], // Could be populated from listening history
+            topCalmingTracks: topCalming,
+            timestamp: Date()
+        )
+
+        do {
+            let data = try JSONEncoder().encode(libraryState)
+            let context: [String: Any] = [
+                WatchMessage.libraryState.rawValue: data
+            ]
+
+            try session.updateApplicationContext(context)
+            print("[WatchSync] Library state synced (\(categories.count) categories)")
+        } catch {
+            print("[WatchSync] Failed to sync library state: \(error)")
+        }
+    }
+
+    // MARK: - Default Playback
+
+    /// Start default playback when nothing is loaded
+    /// Uses SmartEmergencyQueue for proper audio session activation
+    private func startDefaultPlayback() {
+        // GUARD: Prevent concurrent playback operations
+        guard !isPlaybackOperationInProgress else {
+            print("[WatchSync] ⏱️ Playback operation already in progress - skipping")
+            return
+        }
+        isPlaybackOperationInProgress = true
+
+        print("[WatchSync] 🎵 Starting default playback from Watch")
+
+        Task { @MainActor [weak self] in
+            defer { self?.isPlaybackOperationInProgress = false }
+
+            let smartQueue = SmartEmergencyQueue.shared
+
+            // Build ambient playlist using SmartQueue's AI selection
+            let tracks = await smartQueue.buildQueue(
+                for: .general,
+                babyAge: 12,
+                language: Locale.current.language.languageCode?.identifier ?? "en",
+                maxTracks: 20
+            )
+
+            if tracks.isEmpty {
+                print("[WatchSync] ⚠️ No tracks available - using fallback")
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                await smartQueue.startQueue(tracks: [fallbackTrack])
+            } else {
+                print("[WatchSync] 🎵 Starting queue with \(tracks.count) tracks")
+                await smartQueue.startQueue(tracks: tracks)
+            }
+
+            self?.sendCurrentState()
+        }
+    }
+
+    /// Play tracks from a specific category
+    /// Uses SmartEmergencyQueue for proper audio session activation
+    private func playCategory(categoryId: String) {
+        // GUARD: Prevent concurrent playback operations
+        guard !isPlaybackOperationInProgress else {
+            print("[WatchSync] ⏱️ Playback operation already in progress - skipping category: \(categoryId)")
+            return
+        }
+        isPlaybackOperationInProgress = true
+
+        print("[WatchSync] 🎵 Playing category from Watch: \(categoryId)")
+
+        Task { @MainActor [weak self] in
+            defer { self?.isPlaybackOperationInProgress = false }
+
+            let library = ContentLibraryService.shared
+            let category = AudioCategory.fromJSONKey(categoryId)
+            let tracks = library.getTracks(for: category)
+
+            guard !tracks.isEmpty else {
+                print("[WatchSync] ⚠️ No tracks in category: \(categoryId)")
+                return
+            }
+
+            let smartQueue = SmartEmergencyQueue.shared
+
+            // Use SmartQueue for proper audio session activation
+            await smartQueue.startQueue(tracks: tracks.shuffled())
+            self?.sendCurrentState()
+            print("[WatchSync] ✅ Started playing category: \(category.rawValue)")
+        }
+    }
+
+    // MARK: - Emergency Mode
+
+    private func startEmergencyMode() {
+        print("[WatchSync] 🚨 Starting emergency mode from Watch")
+
+        Task { @MainActor in
+            // Use SmartEmergencyQueue - the canonical emergency system
+            // This properly activates audio session and uses AI-powered track selection
+            let smartQueue = SmartEmergencyQueue.shared
+
+            // Build emergency playlist using SmartQueue's AI selection
+            // Uses default cry type (general) since Watch doesn't detect specific cry type
+            let emergencyTracks = await smartQueue.buildQueue(
+                for: .general,
+                babyAge: 12,  // Default age - TODO: sync from iPhone profile
+                language: Locale.current.language.languageCode?.identifier ?? "en",
+                maxTracks: 15
+            )
+
+            if emergencyTracks.isEmpty {
+                print("[WatchSync] ⚠️ No emergency tracks available - using default")
+                // Fallback to generated emergency track
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                await smartQueue.startQueue(tracks: [fallbackTrack])
+            } else {
+                print("[WatchSync] 🎵 Starting emergency queue with \(emergencyTracks.count) tracks")
+                await smartQueue.startQueue(tracks: emergencyTracks)
+            }
+
+            // Send current state to Watch
+            sendCurrentState()
+
+            // Send emergency state to Watch
+            sendEmergencyState(isActive: true)
+        }
+    }
+
+    /// Start emergency mode WITH cry detection monitoring enabled
+    /// This is the full emergency experience - plays soothing music AND listens for baby cries
+    private func startEmergencyModeWithCryDetection() {
+        print("[WatchSync] 🚨🎤 Starting emergency mode WITH cry detection from Watch")
+
+        Task { @MainActor in
+            // 1. Start cry detection monitoring FIRST
+            let cryDetection = CryDetectionService.shared
+            if !cryDetection.isMonitoring {
+                do {
+                    try await cryDetection.startMonitoring()
+                    print("[WatchSync] ✅ Cry detection monitoring started from Watch request")
+                } catch {
+                    print("[WatchSync] ⚠️ Failed to start cry detection: \(error)")
+                    // Continue anyway - at least play music
+                }
+            } else {
+                print("[WatchSync] ℹ️ Cry detection already monitoring")
+            }
+
+            // 2. Start emergency music playback
+            let smartQueue = SmartEmergencyQueue.shared
+
+            let emergencyTracks = await smartQueue.buildQueue(
+                for: .general,
+                babyAge: 12,
+                language: Locale.current.language.languageCode?.identifier ?? "en",
+                maxTracks: 15
+            )
+
+            if emergencyTracks.isEmpty {
+                print("[WatchSync] ⚠️ No emergency tracks available - using default")
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                await smartQueue.startQueue(tracks: [fallbackTrack])
+            } else {
+                print("[WatchSync] 🎵 Starting emergency queue with \(emergencyTracks.count) tracks")
+                await smartQueue.startQueue(tracks: emergencyTracks)
+            }
+
+            // Send current state to Watch
+            sendCurrentState()
+
+            // Send emergency state to Watch
+            sendEmergencyState(isActive: true)
+        }
+    }
+
+    private func stopEmergencyMode() {
+        print("[WatchSync] 🛑 Stopping emergency mode from Watch")
+
+        Task { @MainActor in
+            // Stop SmartEmergencyQueue properly
+            let smartQueue = SmartEmergencyQueue.shared
+            await smartQueue.stop(wasEffective: nil)  // nil = unknown effectiveness from Watch
+
+            sendEmergencyState(isActive: false)
+            sendCurrentState()
+        }
+    }
+
+    private func sendEmergencyState(isActive: Bool) {
+        guard let session = session, session.isReachable else { return }
+
+        let message: [String: Any] = [
+            WatchMessage.emergencyState.rawValue: isActive
+        ]
+
+        session.sendMessage(message, replyHandler: nil, errorHandler: { error in
+            print("[WatchSync] Failed to send emergency state: \(error)")
+        })
+    }
+
     // MARK: - Private Helpers
 
+    /// Last time state was synced (throttle to once per 500ms)
+    private var lastStateSyncTime: Date?
+    private let stateSyncThrottleInterval: TimeInterval = 0.5
+
     private func sendCurrentState() {
+        // THROTTLE: Prevent excessive state syncs
+        let now = Date()
+        if let lastSync = lastStateSyncTime,
+           now.timeIntervalSince(lastSync) < stateSyncThrottleInterval {
+            return // Skip - synced recently
+        }
+        lastStateSyncTime = now
+
+        let engine = AudioEngine.shared
+        // Calculate progress as ratio of currentTime/duration
+        let progress = engine.duration > 0 ? engine.currentTime / engine.duration : 0
+        // Convert sleepTimerRemaining: if > 0, pass value; otherwise nil
+        let timerRemaining: TimeInterval? = engine.sleepTimerRemaining > 0 ? engine.sleepTimerRemaining : nil
         let state = PlaybackState(
-            isPlaying: AudioEngine.shared.isPlaying,
-            currentTrackId: AudioEngine.shared.currentTrack?.id.uuidString,
-            currentTrackTitle: AudioEngine.shared.currentTrack?.title,
-            currentTrackArtist: AudioEngine.shared.currentTrack?.artist,
-            progress: AudioEngine.shared.progress,
-            volume: AudioEngine.shared.volume,
-            sleepTimerRemaining: AudioEngine.shared.sleepTimerRemaining,
+            isPlaying: engine.playbackState == .playing,
+            currentTrackId: engine.currentTrack?.id.uuidString,
+            currentTrackTitle: engine.currentTrack?.title,
+            currentTrackArtist: engine.currentTrack?.artist,
+            progress: progress,
+            volume: engine.volume,
+            sleepTimerRemaining: timerRemaining,
             timestamp: Date()
         )
         syncPlaybackState(state)
@@ -273,6 +612,7 @@ extension WatchSyncManager: WCSessionDelegate {
                 print("[WatchSync] Activation complete: \(activationState.rawValue)")
                 if activationState == .activated {
                     self.sendCurrentState()
+                    self.syncLibraryState()  // Sync library on activation
                     self.sendQueuedAlerts()
                 }
             }
@@ -295,6 +635,8 @@ extension WatchSyncManager: WCSessionDelegate {
             print("[WatchSync] Reachability changed: \(session.isReachable)")
 
             if session.isReachable {
+                self.sendCurrentState()
+                self.syncLibraryState()  // Sync library when Watch reconnects
                 self.sendQueuedAlerts()
             }
         }
@@ -359,24 +701,6 @@ extension WatchSyncManager: WCSessionDelegate {
     }
 }
 
-// MARK: - AudioEngine Extension for Watch Compatibility
-
-extension AudioEngine {
-    var sleepTimerRemaining: TimeInterval? {
-        // Return remaining sleep timer if set
-        return nil // Implement based on existing sleep timer logic
-    }
-
-    func setSleepTimer(minutes: Int) {
-        // Set sleep timer
-        print("[AudioEngine] Sleep timer set for \(minutes) minutes")
-    }
-
-    func cancelSleepTimer() {
-        // Cancel sleep timer
-        print("[AudioEngine] Sleep timer cancelled")
-    }
-}
 
 // MARK: - AudioTrack to WatchTrack Conversion
 

@@ -38,12 +38,16 @@ struct SmartQueueView: View {
                     headerSection
                         .padding(.bottom, 16)
 
+                    // LIVE AUDIO VISUALIZATION - Real-time cry detection
+                    // Shows audio level bars, confidence, and detected cry type
+                    liveAudioCard
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
+
                     // AI Reasoning Card - Shows why these tracks were selected
-                    if !queue.isAmbientMode {
-                        aiReasoningCard
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 16)
-                    }
+                    aiReasoningCard
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
 
                     // Cry Type Detection Banner - Shows when cry is identified with animation
                     Group {
@@ -111,11 +115,17 @@ struct SmartQueueView: View {
         } message: {
             Text("This helps improve future recommendations")
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                animateNowPlaying = true
+        // FIX: Use task with stable ID to prevent animation restart on orientation change
+        // onAppear fires every time view rebuilds (including rotation), causing animation jumps
+        .task(id: "now-playing-animation") {
+            // Only start if not already animating
+            if !animateNowPlaying {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    animateNowPlaying = true
+                }
             }
-
+        }
+        .onAppear {
             // CRITICAL FIX: Sync playback state when view appears
             // This ensures audio is actually playing if queue shows it's playing
             queue.syncPlaybackState(verbose: true)
@@ -125,6 +135,26 @@ struct SmartQueueView: View {
                 print("[SmartQueueView] 🔧 Detected state mismatch on appear - resuming playback")
                 queue.togglePlayPause() // This will resume/start playback
             }
+
+            // CRITICAL: Start cry detection monitoring for real-time audio visualization
+            // This enables the live audio bars, confidence display, and cry type detection
+            if !cryDetection.isMonitoring {
+                print("[SmartQueueView] 🎤 Starting cry detection monitoring for live visualization")
+                Task {
+                    do {
+                        try await cryDetection.startMonitoring()
+                        print("[SmartQueueView] ✅ Cry detection monitoring started")
+                    } catch {
+                        print("[SmartQueueView] ⚠️ Failed to start monitoring: \(error)")
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            // NOTE: Don't stop monitoring on disappear - the EmergencyCryStopService
+            // manages monitoring lifecycle. Stopping here would interrupt cry detection
+            // if user navigates away briefly.
+            print("[SmartQueueView] 👋 View disappeared - monitoring continues in background")
         }
     }
 
@@ -157,9 +187,6 @@ struct SmartQueueView: View {
     }
 
     private func gradientColors(for cryType: CryType) -> [Color] {
-        if queue.isAmbientMode {
-            return [Color(red: 0.1, green: 0.4, blue: 0.3), Color(red: 0.05, green: 0.25, blue: 0.2)]
-        }
         switch cryType {
         case .tired:
             return [Color(red: 0.2, green: 0.15, blue: 0.4), Color(red: 0.1, green: 0.1, blue: 0.25)]
@@ -225,10 +252,6 @@ struct SmartQueueView: View {
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
-
-                        if queue.isAmbientMode {
-                            ModeBadge(text: "AMBIENT", color: .green)
-                        }
                     }
 
                     Text(queue.queueDescription)
@@ -276,6 +299,200 @@ struct SmartQueueView: View {
 
     // MARK: - AI Reasoning Card
 
+    /// Real-time cry type from CryDetectionService (or fallback to queue's initial type)
+    private var currentCryType: CryType {
+        // Use real-time detection if actively monitoring
+        if cryDetection.isMonitoring && cryDetection.cryType != .unknown {
+            return cryDetection.cryType
+        }
+        // Fall back to queue's cry type (from initial activation)
+        return queue.cryType
+    }
+
+    /// Whether we have an active real-time cry detection
+    private var isActiveCryDetection: Bool {
+        cryDetection.isMonitoring && cryDetection.confidenceLevel > 0.3
+    }
+
+    /// Whether monitoring is actively listening
+    private var isMonitoringActive: Bool {
+        cryDetection.isMonitoring
+    }
+
+    // MARK: - Live Audio Visualization Card
+
+    /// Real-time audio level visualization (like CryDetectionView)
+    private var liveAudioCard: some View {
+        VStack(spacing: 14) {
+            // Header
+            HStack {
+                HStack(spacing: 8) {
+                    // Animated listening indicator
+                    ZStack {
+                        Circle()
+                            .fill(cryDetection.isCryDetected ? Color.red.opacity(0.3) : Color.green.opacity(0.3))
+                            .frame(width: 12, height: 12)
+                            .scaleEffect(animateNowPlaying ? 1.3 : 1.0)
+
+                        Circle()
+                            .fill(cryDetection.isCryDetected ? Color.red : Color.green)
+                            .frame(width: 8, height: 8)
+                    }
+
+                    Image(systemName: "waveform")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.8))
+                    Text("Live Audio Analysis")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+
+                // Real-time status badge
+                HStack(spacing: 4) {
+                    Text(cryDetection.isCryDetected ? "CRY DETECTED" : "LISTENING")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                }
+                .foregroundColor(cryDetection.isCryDetected ? .red : .green)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill((cryDetection.isCryDetected ? Color.red : Color.green).opacity(0.2))
+                )
+            }
+
+            // Audio level bars (same as CryDetectionView)
+            HStack(spacing: 3) {
+                ForEach(0..<24, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(barGradientColor(for: index))
+                        .frame(width: 8, height: barHeight(for: index))
+                        .animation(.easeOut(duration: 0.15), value: cryDetection.currentAudioLevel)
+                }
+            }
+            .frame(height: 36)
+            .drawingGroup() // Rasterize for better performance
+
+            // Detection confidence meter
+            if cryDetection.confidenceLevel > 0.1 || cryDetection.isMonitoring {
+                HStack {
+                    Text("Detection confidence")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+
+                    Spacer()
+
+                    // Confidence bar
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.white.opacity(0.2))
+
+                            Capsule()
+                                .fill(confidenceBarColor)
+                                .frame(width: geometry.size.width * cryDetection.confidenceLevel)
+                        }
+                    }
+                    .frame(width: 80, height: 6)
+
+                    Text("\(Int(cryDetection.confidenceLevel * 100))%")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(confidenceBarColor)
+                        .frame(width: 36, alignment: .trailing)
+                }
+            }
+
+            // Cry Type Display (when detected)
+            if cryDetection.confidenceLevel > 0.3 {
+                HStack(spacing: 10) {
+                    // Cry type icon
+                    ZStack {
+                        Circle()
+                            .fill(cryTypeColor(cryDetection.cryType).opacity(0.3))
+                            .frame(width: 32, height: 32)
+
+                        Image(systemName: cryDetection.cryType.iconName)
+                            .font(.system(size: 14))
+                            .foregroundColor(cryTypeColor(cryDetection.cryType))
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text("Detected:")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            Text(cryDetection.cryType.displayName)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(cryTypeColor(cryDetection.cryType))
+                        }
+
+                        Text(cryDetection.cryType.suggestedAction)
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(cryDetection.isCryDetected ? Color.red.opacity(0.4) : Color.green.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
+    /// Bar height calculation (same logic as CryDetectionView)
+    private func barHeight(for index: Int) -> CGFloat {
+        let threshold = Float(index) / 24.0
+        let rawLevel = cryDetection.currentAudioLevel
+        let amplified = min(1.0, rawLevel * 15.0)
+        let level = sqrt(amplified)
+
+        let baseHeight: CGFloat = 8
+        let maxHeight: CGFloat = 36
+
+        if level > threshold {
+            let heightRatio = min(1.0, (level - threshold) * 4.0)
+            return baseHeight + (maxHeight - baseHeight) * CGFloat(heightRatio)
+        }
+        return baseHeight
+    }
+
+    /// Bar color based on level (green -> yellow -> red)
+    private func barGradientColor(for index: Int) -> Color {
+        let threshold = Float(index) / 24.0
+        let rawLevel = cryDetection.currentAudioLevel
+        let amplified = min(1.0, rawLevel * 15.0)
+        let level = sqrt(amplified)
+
+        if level > threshold {
+            if index < 8 { return .green }
+            if index < 16 { return .yellow }
+            return .red
+        }
+        return .white.opacity(0.2)
+    }
+
+    /// Confidence bar color
+    private var confidenceBarColor: Color {
+        if cryDetection.confidenceLevel < 0.5 { return .gray }
+        if cryDetection.confidenceLevel < 0.75 { return .orange }
+        return .green
+    }
+
     private var aiReasoningCard: some View {
         VStack(spacing: 14) {
             // Header
@@ -283,34 +500,63 @@ struct SmartQueueView: View {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 16))
                     .foregroundColor(.white)
-                Text("AI Selection Reasoning")
+                Text("AI Cry Detection")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 Spacer()
+
+                // Real-time detection badge (like CryDetectionView)
+                if isActiveCryDetection {
+                    DetectedCryTypeBadge(
+                        cryType: cryDetection.cryType,
+                        confidence: cryDetection.confidenceLevel
+                    )
+                } else {
+                    // Listening state badge
+                    HStack(spacing: 4) {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 10))
+                        Text("Listening")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(.white.opacity(0.2))
+                    )
+                }
             }
 
-            // Cry type detection
+            // Cry type detection - shows real-time OR queue's initial type
             VStack(spacing: 10) {
                 HStack(spacing: 12) {
-                    // Icon
+                    // Icon with color based on detection state
                     ZStack {
                         Circle()
-                            .fill(.white.opacity(0.2))
+                            .fill(isActiveCryDetection ? cryTypeColor(currentCryType).opacity(0.3) : .white.opacity(0.2))
                             .frame(width: 40, height: 40)
 
-                        Image(systemName: queue.cryType.iconName)
+                        Image(systemName: currentCryType.iconName)
                             .font(.system(size: 18))
-                            .foregroundColor(.white)
+                            .foregroundColor(isActiveCryDetection ? cryTypeColor(currentCryType) : .white)
                     }
 
-                    // Detected cry type
+                    // Detected cry type - shows real-time classification
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Detected: \(queue.cryType.rawValue)")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
+                        HStack(spacing: 6) {
+                            Text(isActiveCryDetection ? "Detected:" : "Queue Mode:")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.white.opacity(0.7))
+                            Text(currentCryType.displayName)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(isActiveCryDetection ? cryTypeColor(currentCryType) : .white)
+                        }
 
-                        Text(reasoningForCryType(queue.cryType))
+                        Text(reasoningForCryType(currentCryType))
                             .font(.caption)
                             .foregroundColor(.white.opacity(0.75))
                             .lineLimit(2)
@@ -335,7 +581,7 @@ struct SmartQueueView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        ForEach(selectionStrategy(for: queue.cryType), id: \.self) { strategy in
+                        ForEach(selectionStrategy(for: currentCryType), id: \.self) { strategy in
                             HStack(spacing: 6) {
                                 Circle()
                                     .fill(.white.opacity(0.7))
@@ -358,6 +604,20 @@ struct SmartQueueView: View {
                         .stroke(.white.opacity(0.2), lineWidth: 1)
                 )
         )
+        .animation(.easeInOut(duration: 0.3), value: isActiveCryDetection)
+        .animation(.easeInOut(duration: 0.3), value: currentCryType)
+    }
+
+    /// Color for cry type (matches CryDetectionView's DetectedCryTypeBadge)
+    private func cryTypeColor(_ type: CryType) -> Color {
+        switch type {
+        case .hunger: return .orange
+        case .tired: return .purple
+        case .pain: return .red
+        case .discomfort: return .yellow
+        case .attention: return .blue
+        case .general, .unknown: return .gray
+        }
     }
 
     /// Get reasoning text for cry type
@@ -423,13 +683,9 @@ struct SmartQueueView: View {
     // MARK: - Cry Type Detection Banner
 
     /// Check if we should show the cry type switch suggestion
-    /// Shows when: ambient mode is active AND a definite cry is detected
+    /// NOTE: Ambient mode was removed - this is no longer used
     private var shouldShowCryTypeSwitch: Bool {
-        // Only show in ambient mode when a cry is detected with high confidence
-        guard queue.isAmbientMode else { return false }
-        guard cryDetection.isCryDetected else { return false }
-        guard cryDetection.confidenceLevel >= 0.7 else { return false }
-        return cryDetection.cryType != .unknown && cryDetection.cryType != .general
+        return false
     }
 
     /// The cry type detected banner with switch melody suggestion
@@ -462,7 +718,7 @@ struct SmartQueueView: View {
                     HStack(spacing: 6) {
                         Image(systemName: cryDetection.cryType.iconName)
                             .font(.system(size: 12))
-                        Text(cryDetection.cryType.rawValue)
+                        Text(cryDetection.cryType.displayName)
                             .font(.subheadline)
                             .fontWeight(.semibold)
 
@@ -477,7 +733,7 @@ struct SmartQueueView: View {
             }
 
             // Suggestion text
-            Text("Switch to \(cryDetection.cryType.rawValue)-specific melodies for better soothing?")
+            Text("Switch to \(cryDetection.cryType.displayName)-specific melodies for better soothing?")
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.85))
                 .multilineTextAlignment(.leading)

@@ -1,10 +1,10 @@
-<!-- SW:META template="claude" version="1.0.88" sections="header,start,autodetect,metarule,rules,workflow,context,lsp,structure,taskformat,secrets,syncing,mapping,testing,api,limits,troubleshooting,principles,linking,mcp,autoexecute,auto,docs" -->
+<!-- SW:META template="claude" version="1.0.110" sections="header,start,autodetect,metarule,rules,workflow,reflect,context,lsp,structure,taskformat,secrets,syncing,mapping,testing,api,limits,troubleshooting,principles,linking,mcp,autoexecute,auto,docs" -->
 
-<!-- SW:SECTION:header version="1.0.88" -->
+<!-- SW:SECTION:header version="1.0.110" -->
 **Framework**: SpecWeave | **Truth**: `spec.md` + `tasks.md`
 <!-- SW:END:header -->
 
-<!-- SW:SECTION:start version="1.0.88" -->
+<!-- SW:SECTION:start version="1.0.110" -->
 ## Getting Started
 
 **Initial increment**: `0001-project-setup` (auto-created by `specweave init`)
@@ -14,7 +14,7 @@
 2. **Customize**: Edit spec.md and use for setup tasks
 <!-- SW:END:start -->
 
-<!-- SW:SECTION:autodetect version="1.0.88" -->
+<!-- SW:SECTION:autodetect version="1.0.110" -->
 ## Auto-Detection
 
 SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
@@ -24,7 +24,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 **Opt-out phrases**: "Just brainstorm first" | "Don't plan yet" | "Quick discussion" | "Let's explore ideas"
 <!-- SW:END:autodetect -->
 
-<!-- SW:SECTION:metarule version="1.0.88" -->
+<!-- SW:SECTION:metarule version="1.0.110" -->
 ## Meta-Rule: Think-Before-Act
 
 **Satisfy dependencies BEFORE dependent operations.**
@@ -35,7 +35,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 ```
 <!-- SW:END:metarule -->
 
-<!-- SW:SECTION:rules version="1.0.88" -->
+<!-- SW:SECTION:rules version="1.0.110" -->
 ## Rules
 
 1. **Files** → `.specweave/increments/####-name/` (spec.md, plan.md, tasks.md at root; reports/, scripts/, logs/ subfolders)
@@ -44,9 +44,11 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 4. **Emergency**: "emergency mode" → 1 edit, 50 lines max, no agents
 5. **Root clean**: NEVER create .md/reports/scripts in project root → use increment folders
 6. **⛔ Increment cleanliness**: ONLY 4 files at increment root (metadata.json, spec.md, plan.md, tasks.md). ALL other .md files → `reports/`, logs → `logs/`, scripts → `scripts/`
+7. **⛔ Initialization guard**: `.specweave/` folders MUST ONLY exist where `specweave init` was run. NEVER create `.specweave/` in parent, nested, or unrelated directories. Check `config.json` exists before creating ANY `.specweave/` subfolders.
+8. **⛔ Marketplace refresh**: ALWAYS use `specweave refresh-marketplace` CLI command. NEVER suggest `scripts/refresh-marketplace.sh` - end users don't have the scripts folder (npm global install).
 <!-- SW:END:rules -->
 
-<!-- SW:SECTION:workflow version="1.0.88" -->
+<!-- SW:SECTION:workflow version="1.0.110" -->
 ## Workflow
 
 `/sw:increment "X"` → `/sw:do` → `/sw:progress` → `/sw:done 0001`
@@ -57,7 +59,7 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 | `/sw:do` | Execute tasks |
 | `/sw:auto` | Autonomous execution |
 | `/sw:auto-status` | Check auto session |
-| `/sw:cancel-auto` | Cancel auto session |
+| `/sw:cancel-auto` | ⚠️ EMERGENCY ONLY manual cancel |
 | `/sw:validate` | Quality check |
 | `/sw:done` | Close |
 | `/sw-github:sync` | GitHub sync |
@@ -66,7 +68,51 @@ SpecWeave auto-detects product descriptions and routes to `/sw:increment`:
 **Natural language**: "Let's build X" → `/sw:increment` | "What's status?" → `/sw:progress` | "We're done" → `/sw:done` | "Ship while sleeping" → `/sw:auto`
 <!-- SW:END:workflow -->
 
-<!-- SW:SECTION:context version="1.0.88" -->
+<!-- SW:SECTION:reflect version="1.0.110" -->
+## Self-Improving Skills (Reflect)
+
+**Learn once, never repeat.** Claude learns from corrections and patterns across sessions.
+
+| Cmd | Action |
+|-----|--------|
+| `/sw:reflect` | Analyze session, extract learnings |
+| `/sw:reflect-on` | Enable auto-reflection on session end |
+| `/sw:reflect-off` | Disable auto-reflection |
+| `/sw:reflect-status` | Show memory status |
+
+**How it works**:
+1. User corrects Claude → Reflect captures learning
+2. Learning saved to centralized memory files (by category)
+3. Future sessions apply learned patterns automatically
+
+**CRITICAL - Memory Loading**: Before starting work, **check centralized memory** for learned patterns:
+```bash
+# Check if memory exists and read relevant categories
+ls .specweave/memory/*.md 2>/dev/null && cat .specweave/memory/*.md
+# Also check global memory
+ls ~/.specweave/memory/*.md 2>/dev/null
+```
+
+**Centralized Memory Files** (no skill copies needed!):
+```
+.specweave/memory/                  # Project learnings
+├── component-usage.md              # UI patterns
+├── api-patterns.md                 # API patterns
+├── testing.md                      # Test patterns
+├── deployment.md                   # Deploy patterns
+└── general.md                      # Misc patterns
+
+~/.specweave/memory/                # Global learnings (all projects)
+```
+
+**Signals detected**:
+- **Corrections** (high confidence): "No, use X instead", "Wrong, always do Y"
+- **Approvals** (medium confidence): "Perfect!", "That's exactly right"
+
+**Enable auto-learning**: `/sw:reflect-on` → Stop hook analyzes sessions automatically
+<!-- SW:END:reflect -->
+
+<!-- SW:SECTION:context version="1.0.110" -->
 ## Living Docs Context
 
 **Before implementing features**: Check existing docs for patterns and decisions.
@@ -86,7 +132,7 @@ grep -ril "keyword" .specweave/docs/internal/
 **Use `/sw:context <topic>`** to load relevant living docs into conversation.
 <!-- SW:END:context -->
 
-<!-- SW:SECTION:lsp version="1.0.88" -->
+<!-- SW:SECTION:lsp version="1.0.110" -->
 ## LSP-Enhanced Exploration
 
 **USE LSP ACTIVELY** for semantic code understanding (100x faster than grep).
@@ -103,7 +149,7 @@ go install golang.org/x/tools/gopls@latest  # Go
 **Best Practices**: ALWAYS use `findReferences` before refactoring | Use `goToDefinition` instead of grep | Combine with Explore agent
 <!-- SW:END:lsp -->
 
-<!-- SW:SECTION:structure version="1.0.88" -->
+<!-- SW:SECTION:structure version="1.0.110" -->
 ## Structure
 
 ```
@@ -173,7 +219,7 @@ my-project/
 ```
 <!-- SW:END:structure -->
 
-<!-- SW:SECTION:taskformat version="1.0.88" -->
+<!-- SW:SECTION:taskformat version="1.0.110" -->
 ## Task Format
 
 ```markdown
@@ -183,7 +229,7 @@ my-project/
 ```
 <!-- SW:END:taskformat -->
 
-<!-- SW:SECTION:secrets version="1.0.88" -->
+<!-- SW:SECTION:secrets version="1.0.110" -->
 ## Secrets Check
 
 **BEFORE CLI tools**: Check existing config first!
@@ -194,7 +240,7 @@ gh auth status
 ```
 <!-- SW:END:secrets -->
 
-<!-- SW:SECTION:syncing version="1.0.88" -->
+<!-- SW:SECTION:syncing version="1.0.110" -->
 ## External Sync (GitHub/JIRA/ADO)
 
 **After increment creation**: Run `/sw-github:sync {id}` to create issues!
@@ -222,7 +268,7 @@ Living docs sync ≠ External sync. They are separate:
 **Verify tokens**: `grep GITHUB_TOKEN .env` | `gh auth status`
 <!-- SW:END:syncing -->
 
-<!-- SW:SECTION:mapping version="1.0.88" -->
+<!-- SW:SECTION:mapping version="1.0.110" -->
 ## GitHub Mapping
 
 | SpecWeave | GitHub |
@@ -232,7 +278,7 @@ Living docs sync ≠ External sync. They are separate:
 | Task T-XXX | Checkbox |
 <!-- SW:END:mapping -->
 
-<!-- SW:SECTION:testing version="1.0.88" -->
+<!-- SW:SECTION:testing version="1.0.110" -->
 ## Testing
 
 BDD in tasks.md | Unit >80% | `.test.ts` (Vitest)
@@ -550,6 +596,7 @@ All modes use **exclusive playback** - no `.mixWithOthers`, no `.duckOthers`.
 ### FORBIDDEN Audio Types (NEVER download or generate)
 
 **CLEANED: 35 forbidden tracks removed from tracks.json (2026-01-04)**
+**GENERATED SOUNDS CLEANED: 8 noisy nature sounds removed (2026-01-09)**
 
 | Type | Examples | Reason | Removed |
 |------|----------|--------|---------|
@@ -558,25 +605,28 @@ All modes use **exclusive playback** - no `.mixWithOthers`, no `.duckOthers`.
 | **Travel/City Sounds** | Train, airplane cabin, city ambience | Stimulating, not soothing | 0 tracks |
 | **Synthetic Noise** | White noise, pink noise, brown noise (all whitenoise category) | User feedback: SCARY for babies | 13 tracks |
 | **Other Loud Sounds** | Fanfare, loud music | Too stimulating | 3 tracks |
+| **Generated Nature Sounds** | Ocean waves, forest, river, birds, crickets, fireplace, waterfall, campfire | **NEW 2026-01-09**: Unpredictable volume variations startle babies! | 8 generators |
 
-### ALLOWED Audio Types (343 tracks remaining)
+### ALLOWED Audio Types (270 tracks remaining in tracks.json)
 
 | Category | Count | Examples | Source |
 |----------|-------|----------|--------|
 | **Classical Music** | 117 | Mozart, Bach, Brahms, Chopin | Stream from R2 |
-| **Nature Sounds (gentle)** | 56 | Ocean waves, birds, river (NO rain/thunder/wind) | Stream from R2 |
-| **Fairy Tales (EN)** | 44 | English stories | Stream from R2 |
-| **Ambient** | 42 | Gentle background music | Stream from R2 |
-| **Fairy Tales (RU)** | 38 | Russian folk tales | Stream from R2 |
-| **Lullabies** | 30 | Brahms Lullaby, real recordings | Stream from R2 |
-| **Children's Songs** | 14 | Age-appropriate gentle songs | Stream from R2 |
-| **Acoustic** | 2 | Guitar, ukulele | Stream from R2 |
+| **Fairy Tales (EN)** | 86 | English stories | Stream from R2 |
+| **Fairy Tales (RU)** | 85 | Russian folk tales | Stream from R2 |
+| **Lullabies** | 51 | Brahms Lullaby, real recordings | Stream from R2 |
+| **Ambient** | 22 | Gentle background music | Stream from R2 |
+| **Children's Songs** | 20 | Age-appropriate gentle songs | Stream from R2 |
+| **Modern Piano** | 6 | Soft piano melodies | Stream from R2 |
 
 ### Generated Sounds (OK - Internal Audio Engine)
-These are OK because they're generated in real-time, not downloaded:
-- Womb sounds (synthesized)
-- Heartbeat (synthesized)
-- Gentle shushing (synthesized)
+Only gentle, predictable musical sounds remain:
+- **Baby-specific**: Womb sounds, Heartbeat, Gentle shushing, Aquarium bubbles
+- **Musical tones**: Lullaby melody, Music box, Wind chimes, Soft bells, Soft piano, Gentle guitar
+
+**REMOVED** (2026-01-09 - too noisy, unpredictable):
+- ❌ Ocean waves, River stream, Birds chirping, Crickets
+- ❌ Forest ambience, Waterfall, Campfire, Fireplace
 
 ### Content Addition Checklist
 Before adding any new audio content:
@@ -586,7 +636,7 @@ Before adding any new audio content:
 4. ✅ Is file size reasonable? (prefer < 10MB per track)
 5. ❌ NEVER bundle large audio files in the app
 
-<!-- SW:SECTION:api version="1.0.88" -->
+<!-- SW:SECTION:api version="1.0.110" -->
 ## API Development (OpenAPI-First)
 
 **For API projects only.** OpenAPI = source of truth → Postman derived from it.
@@ -605,18 +655,19 @@ Before adding any new audio content:
 **Import**: Postman → Import collection + env → Fill secrets → Select env
 <!-- SW:END:api -->
 
-<!-- SW:SECTION:limits version="1.0.88" -->
+<!-- SW:SECTION:limits version="1.0.110" -->
 ## Limits
 
 **Max 1500 lines/file** — extract before adding
 <!-- SW:END:limits -->
 
-<!-- SW:SECTION:troubleshooting version="1.0.88" -->
+<!-- SW:SECTION:troubleshooting version="1.0.110" -->
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | Skills missing | Restart Claude Code |
+| Plugins outdated | `specweave refresh-marketplace` (NEVER use `scripts/refresh-marketplace.sh` - that's for contributors only!) |
 | Commands gone | `/plugin list --installed` |
 | Out of sync | `/sw:sync-tasks` |
 | Find increment | `/sw:status` |
@@ -630,7 +681,7 @@ Before adding any new audio content:
 | Path patterns not working | `//path` = absolute, `/path` = relative to settings file, `additionalDirectories` for explicit working dirs |
 <!-- SW:END:troubleshooting -->
 
-<!-- SW:SECTION:principles version="1.0.88" -->
+<!-- SW:SECTION:principles version="1.0.110" -->
 ## Principles
 
 1. **Spec-first**: `/sw:increment` before coding
@@ -640,7 +691,7 @@ Before adding any new audio content:
 5. **Clean**: All files in increment folders
 <!-- SW:END:principles -->
 
-<!-- SW:SECTION:linking version="1.0.88" -->
+<!-- SW:SECTION:linking version="1.0.110" -->
 ## Bidirectional Linking
 
 Tasks ↔ User Stories auto-linked via AC-IDs: `AC-US1-01` → `US-001`
@@ -648,7 +699,7 @@ Tasks ↔ User Stories auto-linked via AC-IDs: `AC-US1-01` → `US-001`
 Task format: `**AC**: AC-US1-01, AC-US1-02` (CRITICAL for linking)
 <!-- SW:END:linking -->
 
-<!-- SW:SECTION:mcp version="1.0.88" -->
+<!-- SW:SECTION:mcp version="1.0.110" -->
 ## External Service Connection
 
 **Priority**: MCP Server → REST API → CLI → Direct Connection
@@ -672,7 +723,7 @@ wrangler whoami 2>/dev/null
 ```
 <!-- SW:END:mcp -->
 
-<!-- SW:SECTION:autoexecute version="1.0.88" -->
+<!-- SW:SECTION:autoexecute version="1.0.110" -->
 ## Auto-Execute Rule
 
 **NEVER** output "Manual Step Required" when credentials exist. **EXECUTE DIRECTLY.**
@@ -686,7 +737,7 @@ wrangler whoami 2>/dev/null && gh auth status 2>/dev/null
 ```
 <!-- SW:END:autoexecute -->
 
-<!-- SW:SECTION:auto version="1.0.88" -->
+<!-- SW:SECTION:auto version="1.0.110" -->
 ## Auto Mode (Autonomous Execution)
 
 **Continuous execution until all tasks complete.**
@@ -752,14 +803,18 @@ wrangler whoami 2>/dev/null && gh auth status 2>/dev/null
 
 ### Implementation
 
-**Claude Code**: `/sw:do` (continues till done) | `/sw:auto-status` (progress) | `/sw:cancel-auto` (stop)
+**Claude Code**: `/sw:auto` (autonomous mode) | `/sw:auto-status` (progress)
+
+**To pause**: Just close Claude Code session, resume with `/sw:do`
+
+**Emergency cancel**: `/sw:cancel-auto` (rarely needed - prefer closing session)
 
 **Other AI**: Loop check tasks.md `[x]` status → Max 100 iter → Human gates for: publish, force-push, prod deploy, migrations
 
 **Circuit Breaker**: External API fails 3x? Queue & continue
 <!-- SW:END:auto -->
 
-<!-- SW:SECTION:docs version="1.0.88" -->
+<!-- SW:SECTION:docs version="1.0.110" -->
 ## Docs
 
 [spec-weave.com](https://spec-weave.com) | `.specweave/docs/internal/`

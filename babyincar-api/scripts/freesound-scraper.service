@@ -1,0 +1,18 @@
+[Unit]
+Description=Freesound Baby-Safe Audio Scraper
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/AnticryBabyApp/babyincar-api/scripts
+Environment=PATH=/home/ubuntu/.local/bin:/usr/bin
+EnvironmentFile=/home/ubuntu/AnticryBabyApp/.env
+ExecStart=/usr/bin/python3 freesound-baby-safe-scraper.py --daemon
+Restart=always
+RestartSec=60
+StandardOutput=append:/var/log/freesound-scraper.log
+StandardError=append:/var/log/freesound-scraper.log
+
+[Install]
+WantedBy=multi-user.target

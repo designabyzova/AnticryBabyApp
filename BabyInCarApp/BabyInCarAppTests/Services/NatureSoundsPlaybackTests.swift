@@ -105,15 +105,16 @@ final class NatureSoundsPlaybackTests: XCTestCase {
 
     func testConstructStreamURL_FromTrackPath() {
         // Given various track paths
+        // NOTE: R2 bucket does NOT have /audio/ prefix - files are at root!
         let testCases = [
-            ("nature/ocean_waves.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/audio/nature/ocean_waves.mp3"),
-            ("nature/rain_gentle.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/audio/nature/rain_gentle.mp3"),
-            ("nature/sb_stream.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/audio/nature/sb_stream.mp3")
+            ("nature/ocean_waves.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/nature/ocean_waves.mp3"),
+            ("nature/rain_gentle.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/nature/rain_gentle.mp3"),
+            ("nature/sb_stream.mp3", "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/nature/sb_stream.mp3")
         ]
 
         for (path, expectedURL) in testCases {
-            // When constructing stream URL
-            let streamURL = APIClient.r2PublicURL + "/audio/" + path
+            // When constructing stream URL (NO /audio/ prefix!)
+            let streamURL = APIClient.r2PublicURL + "/" + path
 
             // Then it should match expected format
             XCTAssertEqual(streamURL, expectedURL,
@@ -137,8 +138,8 @@ final class NatureSoundsPlaybackTests: XCTestCase {
     // MARK: - Network Accessibility Tests (Integration)
 
     func testR2AudioFile_IsAccessible() async throws {
-        // Given a known R2 audio file URL
-        let testURL = URL(string: "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/audio/nature/ocean_waves.mp3")!
+        // Given a known R2 audio file URL (NO /audio/ prefix!)
+        let testURL = URL(string: "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/nature/ocean_waves.mp3")!
 
         // When checking if it's accessible via HEAD request
         var request = URLRequest(url: testURL)

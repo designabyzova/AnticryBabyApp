@@ -526,7 +526,7 @@ class BabyMoodLLMEngine: ObservableObject, BabyMoodLLMEngineProtocol {
             return sound
         }
 
-        return .ocean
+        return .aquarium
     }
 
     private func selectSustainedSound(
@@ -535,24 +535,24 @@ class BabyMoodLLMEngine: ObservableObject, BabyMoodLLMEngineProtocol {
         excluding: Set<String>
     ) -> GeneratorType {
         // Prefer calming sounds for sustained phase
-        let calmingSounds: [GeneratorType] = [.ocean, .river, .waterfall, .forest, .softPiano, .lullaby]
+        let calmingSounds: [GeneratorType] = [.aquarium, .aquarium, .aquarium, .bells, .softPiano, .lullaby]
 
         for sound in calmingSounds where !excluding.contains(sound.rawValue) {
             return sound
         }
 
-        return .waterfall
+        return .aquarium
     }
 
     private func selectSleepSound(age: Int) -> GeneratorType {
         if age < 6 {
             return .womb
         } else if age < 12 {
-            return .ocean
+            return .aquarium
         } else if age < 24 {
-            return .waterfall
+            return .aquarium
         } else {
-            return .forest
+            return .bells
         }
     }
 
@@ -561,44 +561,44 @@ class BabyMoodLLMEngine: ObservableObject, BabyMoodLLMEngineProtocol {
         switch strategy {
         case .sleepInduction:
             if ageMonths < 6 {
-                return [.womb, .heartbeat, .shushing, .ocean]
+                return [.womb, .heartbeat, .shushing, .aquarium]
             } else if ageMonths < 12 {
-                return [.ocean, .river, .womb, .waterfall]
+                return [.aquarium, .aquarium, .womb, .aquarium]
             } else {
-                return [.forest, .river, .waterfall, .softPiano]
+                return [.bells, .aquarium, .aquarium, .softPiano]
             }
 
         case .distraction:
             if ageMonths < 12 {
-                return [.musicBox, .shushing, .birds, .chimes]
+                return [.musicBox, .shushing, .chimes, .chimes]
             } else {
-                return [.aquarium, .lullaby, .birds, .musicBox]
+                return [.aquarium, .lullaby, .chimes, .musicBox]
             }
 
         case .comfort:
             if ageMonths < 6 {
                 return [.heartbeat, .womb, .shushing]
             } else {
-                return [.ocean, .river, .waterfall, .lullaby]
+                return [.aquarium, .aquarium, .aquarium, .lullaby]
             }
 
         case .gentle:
             if ageMonths < 12 {
-                return [.ocean, .womb, .river, .lullaby]
+                return [.aquarium, .womb, .aquarium, .lullaby]
             } else {
-                return [.waterfall, .forest, .river, .softPiano]
+                return [.aquarium, .bells, .aquarium, .softPiano]
             }
 
         case .urgent:
             if ageMonths < 6 {
-                return [.shushing, .womb, .heartbeat, .ocean]
+                return [.shushing, .womb, .heartbeat, .aquarium]
             } else {
-                return [.shushing, .ocean, .womb, .river]
+                return [.shushing, .aquarium, .womb, .aquarium]
             }
 
         case .adaptive:
             // Mix of engaging and calming
-            return [.musicBox, .ocean, .river, .lullaby, .waterfall]
+            return [.musicBox, .aquarium, .aquarium, .lullaby, .aquarium]
         }
     }
 
@@ -758,7 +758,7 @@ class BabyMoodLLMEngine: ObservableObject, BabyMoodLLMEngineProtocol {
 
         // Pick a different sound
         let altSounds = getStrategySounds(strategy: altStrategy, ageMonths: profile.ageInMonths)
-        let altSound = altSounds.first ?? .ocean
+        let altSound = altSounds.first ?? .aquarium
 
         return AlternativeRecommendation(
             strategy: altStrategy,
@@ -1081,7 +1081,7 @@ extension GeneratorType {
 
     var isEngaging: Bool {
         switch self {
-        case .musicBox, .shushing, .lullaby, .birds, .chimes, .aquarium:
+        case .musicBox, .shushing, .lullaby, .chimes, .chimes, .aquarium:
             return true
         default:
             return false

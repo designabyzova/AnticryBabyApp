@@ -11,7 +11,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/air_bach.mp3",
-      "duration": 88.0,
+      "duration": 88,
       "calmScore": 0.95,
       "tags": [
         "lullabies",
@@ -30,7 +30,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/brahms_lullaby.mp3",
-      "duration": 101.0,
+      "duration": 101,
       "calmScore": 0.97,
       "tags": [
         "lullabies",
@@ -49,7 +49,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/canon_pachelbel.mp3",
-      "duration": 129.0,
+      "duration": 129,
       "calmScore": 0.94,
       "tags": [
         "lullabies",
@@ -68,7 +68,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/clair_de_lune_debussy.mp3",
-      "duration": 149.0,
+      "duration": 149,
       "calmScore": 0.96,
       "tags": [
         "lullabies",
@@ -87,7 +87,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/fur_elise_beethoven.mp3",
-      "duration": 139.0,
+      "duration": 139,
       "calmScore": 0.93,
       "tags": [
         "lullabies",
@@ -106,7 +106,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/jesu_joy_bach.mp3",
-      "duration": 115.0,
+      "duration": 115,
       "calmScore": 0.94,
       "tags": [
         "lullabies",
@@ -125,7 +125,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/kinderscene_schumann.mp3",
-      "duration": 141.0,
+      "duration": 141,
       "calmScore": 0.95,
       "tags": [
         "lullabies",
@@ -144,7 +144,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/minuet_g_bach.mp3",
-      "duration": 76.0,
+      "duration": 76,
       "calmScore": 0.93,
       "tags": [
         "lullabies",
@@ -163,7 +163,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/moonlight_sonata_beethoven.mp3",
-      "duration": 127.0,
+      "duration": 127,
       "calmScore": 0.96,
       "tags": [
         "lullabies",
@@ -182,7 +182,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/spring_song_mendelssohn.mp3",
-      "duration": 135.0,
+      "duration": 135,
       "calmScore": 0.92,
       "tags": [
         "lullabies",
@@ -201,7 +201,7 @@
       "category": "lullabies",
       "subcategory": "piano",
       "filename": "lullabies/piano/twinkle_twinkle_little_star.mp3",
-      "duration": 103.0,
+      "duration": 103,
       "calmScore": 0.97,
       "tags": [
         "lullabies",
@@ -292,7 +292,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_happiness.mp3",
-      "duration": 261.0,
+      "duration": 261,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -328,7 +328,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_love.mp3",
-      "duration": 336.0,
+      "duration": 336,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -382,7 +382,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_pianomoment.mp3",
-      "duration": 114.0,
+      "duration": 114,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -418,7 +418,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_sadday.mp3",
-      "duration": 174.0,
+      "duration": 174,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -436,7 +436,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_slowmotion.mp3",
-      "duration": 229.0,
+      "duration": 229,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -454,7 +454,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_sunny.mp3",
-      "duration": 145.0,
+      "duration": 145,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -472,7 +472,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_sweet.mp3",
-      "duration": 264.0,
+      "duration": 264,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -490,7 +490,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_tenderness.mp3",
-      "duration": 173.0,
+      "duration": 173,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -508,7 +508,7 @@
       "category": "ambient",
       "subcategory": "ambient",
       "filename": "ambient/bensound_tomorrow.mp3",
-      "duration": 308.0,
+      "duration": 308,
       "calmScore": 0.85,
       "tags": [
         "ambient",
@@ -526,7 +526,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/emotional_sad_piano.mp3",
-      "duration": 212.0,
+      "duration": 212,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -545,7 +545,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/beautiful_piano_segment1.mp3",
-      "duration": 300.0,
+      "duration": 300,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -564,7 +564,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/beautiful_piano_segment2.mp3",
-      "duration": 300.0,
+      "duration": 300,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -583,7 +583,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/beautiful_piano_segment3.mp3",
-      "duration": 300.0,
+      "duration": 300,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -602,7 +602,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/romantic_piano_segment1.mp3",
-      "duration": 300.0,
+      "duration": 300,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -621,7 +621,7 @@
       "category": "modern_piano",
       "subcategory": "modern_piano",
       "filename": "modern_piano/romantic_piano_segment2.mp3",
-      "duration": 300.0,
+      "duration": 300,
       "calmScore": 0.92,
       "tags": [
         "modern_piano",
@@ -4475,7 +4475,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_01.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4494,7 +4493,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_02.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4513,7 +4511,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_03.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4532,7 +4529,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_04.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4551,7 +4547,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_05.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4570,7 +4565,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_06.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4589,7 +4583,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_07.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4608,7 +4601,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_08.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4627,7 +4619,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_09.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4646,7 +4637,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_10.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4665,7 +4655,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_11.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4684,7 +4673,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_12.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4703,7 +4691,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_13.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4722,7 +4709,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_14.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,
@@ -4741,7 +4727,6 @@
       "calmScore": 0.8,
       "tags": [
         "fairytales_ru",
-        "fairy_tale_15.mp3",
         "audiobook"
       ],
       "ageRangeMin": 0,

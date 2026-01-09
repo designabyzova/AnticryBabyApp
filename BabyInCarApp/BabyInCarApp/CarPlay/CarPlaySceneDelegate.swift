@@ -320,7 +320,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                 subtitle: "Gentle nature sounds",
                 image: UIImage(systemName: "water.waves")
             ) { [weak self] in
-                self?.playEmergencySound(.ocean)
+                self?.playEmergencySound(.aquarium)
             }
         ]
 

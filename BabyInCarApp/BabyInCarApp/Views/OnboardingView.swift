@@ -11,10 +11,11 @@ import UserNotifications
 
 struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var languageManager = LanguageManager.shared
     @State private var currentPage = 0
     @State private var babyName = ""
     @State private var babyBirthDate = Date()
-    @State private var selectedLanguages: Set<Language> = [.english]
+    @State private var selectedLanguage: SupportedLanguage = LanguageManager.shared.currentLanguage
     @State private var showingDatePicker = false
     @State private var showingVoiceInput = false
     @State private var parallaxOffset: CGFloat = 0
@@ -47,7 +48,7 @@ struct OnboardingView: View {
                         )
                         .tag(1)
 
-                        LanguageSelectionPage(selectedLanguages: $selectedLanguages)
+                        OnboardingLanguageSelectionPage(selectedLanguage: $selectedLanguage)
                             .tag(2)
 
                         PermissionsPage()
@@ -79,8 +80,6 @@ struct OnboardingView: View {
         switch currentPage {
         case 1:
             return !babyName.isEmpty
-        case 2:
-            return !selectedLanguages.isEmpty
         default:
             return true
         }
@@ -88,7 +87,9 @@ struct OnboardingView: View {
 
     private func completeOnboarding() {
         let baby = Baby(name: babyName, birthDate: babyBirthDate)
-        appState.completeOnboarding(baby: baby, languages: Array(selectedLanguages))
+        // Set the selected language
+        languageManager.setLanguage(selectedLanguage)
+        appState.completeOnboarding(baby: baby, language: selectedLanguage)
     }
 }
 
@@ -189,10 +190,13 @@ struct WelcomePage: View {
             withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
                 featuresOpacity = 1.0
             }
-
-            // Floating animation
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                floatingOffset = -8
+        }
+        // FIX: Use task with stable ID for floating animation to prevent restart on orientation change
+        .task(id: "floating-animation") {
+            if floatingOffset == 0 {
+                withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                    floatingOffset = -8
+                }
             }
         }
     }
@@ -244,10 +248,14 @@ struct WelcomeIllustration: View {
                     )
             }
         }
-        .onAppear {
-            for i in 0..<3 {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(Double(i) * 0.3)) {
-                    noteOffsets[i] = -8
+        // FIX: Use task with stable ID for note animations to prevent restart on orientation change
+        .task(id: "note-animations") {
+            // Only start if not already animating
+            if noteOffsets[0] == 0 {
+                for i in 0..<3 {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(Double(i) * 0.3)) {
+                        noteOffsets[i] = -8
+                    }
                 }
             }
         }
@@ -621,35 +629,37 @@ struct VoiceInputSheet: View {
     }
 }
 
-// MARK: - Language Selection Page
-struct LanguageSelectionPage: View {
-    @Binding var selectedLanguages: Set<Language>
+// MARK: - Onboarding Language Selection Page (Single Select)
+struct OnboardingLanguageSelectionPage: View {
+    @Binding var selectedLanguage: SupportedLanguage
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Select Languages")
+            Text(languageManager.localizedString("language.chooseYourLanguage"))
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.appText)
 
-            Text("Choose languages for fairy tales and stories")
+            Text(languageManager.localizedString("language.selectInterfaceLanguage"))
                 .font(.system(size: 16))
                 .foregroundColor(.appTextSecondary)
                 .multilineTextAlignment(.center)
 
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(Language.allCases) { language in
-                        LanguageCard(
+                    ForEach(SupportedLanguage.allCases) { language in
+                        OnboardingLanguageCard(
                             language: language,
-                            isSelected: selectedLanguages.contains(language)
+                            isSelected: selectedLanguage == language
                         ) {
-                            if selectedLanguages.contains(language) {
-                                if selectedLanguages.count > 1 {
-                                    selectedLanguages.remove(language)
-                                }
-                            } else {
-                                selectedLanguages.insert(language)
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedLanguage = language
+                                // Update language manager immediately for preview
+                                languageManager.setLanguage(language)
                             }
+                            // Haptic feedback
+                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                            generator.impactOccurred()
                         }
                     }
                 }
@@ -657,11 +667,12 @@ struct LanguageSelectionPage: View {
             }
         }
         .padding(.top, 40)
+        .id(languageManager.refreshID) // Force refresh when language changes
     }
 }
 
-struct LanguageCard: View {
-    let language: Language
+struct OnboardingLanguageCard: View {
+    let language: SupportedLanguage
     let isSelected: Bool
     let action: () -> Void
 
@@ -671,7 +682,7 @@ struct LanguageCard: View {
                 Text(language.flag)
                     .font(.system(size: 36))
 
-                Text(language.rawValue)
+                Text(language.displayName)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(isSelected ? .white : .appText)
             }
@@ -861,9 +872,12 @@ struct OnboardingBackground: View {
                 }
             }
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
-                animateGradient.toggle()
+        // FIX: Use task with stable ID for gradient animation to prevent restart on orientation change
+        .task(id: "gradient-animation") {
+            if !animateGradient {
+                withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
+                    animateGradient.toggle()
+                }
             }
         }
     }

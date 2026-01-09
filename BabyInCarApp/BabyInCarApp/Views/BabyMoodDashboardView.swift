@@ -1115,7 +1115,7 @@ class BabyMoodDashboardViewModel: ObservableObject {
         topSounds = [
             EffectiveSound(name: "Pink Noise", icon: "waveform", successRate: 0.87, timesUsed: 42),
             EffectiveSound(name: "Heartbeat", icon: "heart.fill", successRate: 0.82, timesUsed: 38),
-            EffectiveSound(name: "Rain Sounds", icon: "cloud.ocean.fill", successRate: 0.79, timesUsed: 31),
+            EffectiveSound(name: "Rain Sounds", icon: "cloud.aquarium.fill", successRate: 0.79, timesUsed: 31),
             EffectiveSound(name: "Music Box", icon: "music.note", successRate: 0.75, timesUsed: 25)
         ]
 

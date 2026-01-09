@@ -31,14 +31,20 @@ enum AudioSessionMode: Equatable {
     case playbackOnly           // AudioEngine normal playback
     case playAndRecord          // CryDetection monitoring while playing
     case recordOnly             // SpeechRecognition active recording
-    case emergencyPlayback      // Emergency cry response (exclusive)
+    case emergencyPlayback      // Emergency cry response (uses playAndRecord to avoid category switch conflict)
     case inactive               // No audio needed
 
     var category: AVAudioSession.Category {
         switch self {
-        case .playbackOnly, .emergencyPlayback:
+        case .playbackOnly:
             return .playback
-        case .playAndRecord:
+        case .playAndRecord, .emergencyPlayback:
+            // CRITICAL FIX: Emergency uses .playAndRecord to avoid '!pri' error
+            // When CryDetection is monitoring (.playAndRecord), switching to .playback
+            // while an input tap is active causes iOS to throw '!pri' (priority conflict).
+            // Solution: Keep .playAndRecord category - it supports both input AND output.
+            // The microphone stays available (in case we want to detect if baby calmed down)
+            // and audio output works normally.
             return .playAndRecord
         case .recordOnly:
             return .record
@@ -49,7 +55,10 @@ enum AudioSessionMode: Equatable {
 
     var mode: AVAudioSession.Mode {
         switch self {
-        case .playbackOnly, .emergencyPlayback:
+        case .playbackOnly:
+            return .default
+        case .emergencyPlayback:
+            // Use .default mode for emergency (better audio quality than .measurement)
             return .default
         case .playAndRecord, .recordOnly:
             return .measurement
@@ -60,9 +69,22 @@ enum AudioSessionMode: Equatable {
 
     var options: AVAudioSession.CategoryOptions {
         switch self {
-        case .playbackOnly, .emergencyPlayback:
+        case .playbackOnly:
             // Exclusive playback - pauses other apps (like Spotify, YouTube)
             return []
+        case .emergencyPlayback:
+            // Emergency playback with Bluetooth A2DP support for AirPods
+            // CRITICAL FIX (2026-01-09): Removed .defaultToSpeaker which was forcing audio
+            // to iPhone speaker even when AirPods were connected.
+            //
+            // For .playAndRecord category (which emergency uses to avoid '!pri' error):
+            // - Empty options [] routes to receiver (earpiece) - WRONG
+            // - .defaultToSpeaker routes to speaker but ignores Bluetooth - WRONG
+            // - .allowBluetoothA2DP allows stereo Bluetooth output (AirPods) - CORRECT!
+            //
+            // Note: This allows audio to route to AirPods while still using iPhone's mic
+            // for continued cry detection (if implemented in the future).
+            return [.allowBluetoothA2DP]
         case .playAndRecord:
             // Exclusive playback during monitoring - pauses other apps
             // Use speaker output for cry detection while playing
@@ -155,14 +177,23 @@ final class AudioSessionManager: ObservableObject {
 
     /// Release an audio session request for a specific service
     /// - Parameter serviceId: The service releasing its request
-    func releaseSession(serviceId: String) {
+    /// - Parameter immediate: If true, bypasses debounce for instant UI response (default: false)
+    func releaseSession(serviceId: String, immediate: Bool = false) {
         requestLock.lock()
         let removed = activeRequests.removeValue(forKey: serviceId)
         requestLock.unlock()
 
         if removed != nil {
-            print("[AudioSessionManager] 📤 Released request from \(serviceId)")
-            scheduleSessionUpdate()
+            print("[AudioSessionManager] 📤 Released request from \(serviceId) (immediate: \(immediate))")
+            if immediate {
+                // Bypass debounce for instant responsiveness (e.g., stopping cry detection)
+                pendingSessionChange?.cancel()
+                Task { @MainActor in
+                    await self.updateSession()
+                }
+            } else {
+                scheduleSessionUpdate()
+            }
         }
     }
 

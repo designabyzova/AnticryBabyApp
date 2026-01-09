@@ -270,37 +270,53 @@ func performGlobalMemoryCleanup(level: MemoryPressureLevel) {
 
     case .critical:
         logger.error("🔴 Memory cleanup: CRITICAL level")
-        // Disable all ML
+        // Disable all ML (always safe)
         CryDetectionService.shared.useMLEnhancement = false
         CryDetectionService.shared.useDeepInfant = false
-        // Stop cry response engine if not essential
-        SmartCryResponseEngine.shared.performLightCleanup()
-        // Clear all caches
-        URLCache.shared.removeAllCachedResponses()
+
+        // 🚨 CRITICAL FIX: Protect emergency audio from any cleanup
+        if !SmartEmergencyQueue.shared.isActive {
+            // Stop cry response engine if not essential
+            SmartCryResponseEngine.shared.performLightCleanup()
+            // Clear all caches
+            URLCache.shared.removeAllCachedResponses()
+        } else {
+            logger.warning("⚠️ Skipping aggressive cleanup - emergency audio is playing")
+        }
 
     case .emergency:
         logger.fault("🚨 Memory cleanup: EMERGENCY level")
-        // Stop ML services but NEVER stop audio playback
-        // CRITICAL: Audio is the primary purpose - baby calming MUST continue
-        CryDetectionService.shared.useMLEnhancement = false
-        CryDetectionService.shared.useDeepInfant = false
+        // 🚨 CRITICAL FIX: Check if emergency audio is playing FIRST!
+        // If emergency audio is active, we MUST protect it from ANY disruption.
+        // The "broken radio" sound was caused by cleanup interfering with audio.
+        let isEmergencyAudioActive = SmartEmergencyQueue.shared.isActive
 
-        // Reduce AI features but KEEP audio playing
-        SmartCryResponseEngine.shared.performAggressiveCleanup()
+        if isEmergencyAudioActive {
+            logger.warning("🚨 PROTECTING emergency audio - minimal cleanup only!")
+            // ONLY disable ML features - absolutely NOTHING else
+            CryDetectionService.shared.useMLEnhancement = false
+            CryDetectionService.shared.useDeepInfant = false
+            // Do NOT call SmartCryResponseEngine.performAggressiveCleanup() - it can affect audio
+            // Do NOT clear ANY caches - this can cause audio buffer issues
+            // Do NOT clear URL cache - this runs on main thread and can block audio callbacks
+            logger.info("✅ Emergency audio protected - only ML disabled")
+        } else {
+            // No emergency audio - safe to do full cleanup
+            // Stop ML services but NEVER stop audio playback
+            // CRITICAL: Audio is the primary purpose - baby calming MUST continue
+            CryDetectionService.shared.useMLEnhancement = false
+            CryDetectionService.shared.useDeepInfant = false
 
-        // Clear audio caches for FUTURE tracks, not currently playing
-        // NOTE: AudioCacheService.clearAllCache should NOT interrupt current playback
-        Task {
-            // Only clear cache if we have room - don't interrupt playback
-            // Skip aggressive cache clear during active playback
-            if SmartEmergencyQueue.shared.isActive {
-                logger.warning("⚠️ Skipping cache clear - emergency audio is playing")
-            } else {
+            // Reduce AI features but KEEP audio playing
+            SmartCryResponseEngine.shared.performAggressiveCleanup()
+
+            // Clear audio caches for FUTURE tracks, not currently playing
+            Task {
                 await AudioCacheService.shared.clearAllCache()
             }
+            // Clear URL cache
+            URLCache.shared.removeAllCachedResponses()
         }
-        // Clear URL cache
-        URLCache.shared.removeAllCachedResponses()
     }
 }
 

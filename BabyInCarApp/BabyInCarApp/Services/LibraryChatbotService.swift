@@ -197,9 +197,9 @@ class LibraryChatbotService: ObservableObject {
         } else if lowercased.contains("shush") {
             entities.soundType = .shushing
         } else if lowercased.contains("ocean") {
-            entities.soundType = .ocean
+            entities.soundType = .aquarium
         } else if lowercased.contains("forest") {
-            entities.soundType = .forest
+            entities.soundType = .bells
         }
 
         // Extract time period
@@ -525,11 +525,11 @@ class LibraryChatbotService: ObservableObject {
             return "Mimics sounds baby heard for 9 months in the womb - 90% calm in 3 minutes"
         case .shushing:
             return "Dr. Karp's 5 S's - recreates intrauterine blood flow sounds"
-        case .ocean, .river:
+        case .aquarium, .aquarium:
             return "Consistent rhythmic patterns promote relaxation"
         case .lullaby, .musicBox:
             return "60-80 BPM matches baby's resting heart rate"
-        case .forest, .birds:
+        case .bells, .chimes:
             return "Nature sounds reduce anxiety by up to 33%"
         default:
             return nil
@@ -542,17 +542,17 @@ class LibraryChatbotService: ObservableObject {
 
         switch strategy {
         case .sleepInduction:
-            sounds = [.ocean, .river]
+            sounds = [.aquarium, .aquarium]
         case .urgent:
-            sounds = [.ocean, .river]
+            sounds = [.aquarium, .aquarium]
         case .distraction:
-            sounds = [.musicBox, .birds]
+            sounds = [.musicBox, .chimes]
         case .comfort:
-            sounds = [.ocean, .river]
+            sounds = [.aquarium, .aquarium]
         case .gentle:
-            sounds = [.ocean, .river]
+            sounds = [.aquarium, .aquarium]
         case .adaptive:
-            sounds = [.ocean, .river]
+            sounds = [.aquarium, .aquarium]
         }
 
         return sounds.compactMap { sound in

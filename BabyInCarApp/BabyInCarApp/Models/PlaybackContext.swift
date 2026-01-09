@@ -18,9 +18,6 @@ enum PlaybackContext: Equatable, Hashable {
     /// Emergency cry response - baby crying NOW, need immediate calming
     case emergencyCry(type: CryType, babyAge: Int)
 
-    /// Ambient monitoring mode - proactive background music while monitoring
-    case ambientMonitoring(babyAge: Int)
-
     /// AI-powered recommendations - "More Like This" or discovery
     case aiRecommendations(basedOn: UUID)
 
@@ -36,8 +33,6 @@ enum PlaybackContext: Equatable, Hashable {
             return source
         case .emergencyCry(let type, _):
             return "Emergency: \(type.displayName)"
-        case .ambientMonitoring:
-            return "Ambient Monitoring"
         case .aiRecommendations:
             return "Smart Recommendations"
         case .carPlay:
@@ -48,7 +43,7 @@ enum PlaybackContext: Equatable, Hashable {
     /// Whether auto-replenish should be enabled (Spotify-style infinite queue)
     var autoReplenishEnabled: Bool {
         switch self {
-        case .emergencyCry, .ambientMonitoring:
+        case .emergencyCry:
             return true  // Keep playing until baby calms down
         case .library, .aiRecommendations, .carPlay:
             return false  // Play playlist as-is
@@ -60,8 +55,6 @@ enum PlaybackContext: Equatable, Hashable {
         switch self {
         case .emergencyCry:
             return 3  // Always keep 3 tracks ahead (emergency)
-        case .ambientMonitoring:
-            return 5  // Longer buffer for background mode
         default:
             return 0  // No auto-replenish
         }
@@ -82,8 +75,6 @@ enum PlaybackContext: Equatable, Hashable {
         switch self {
         case .emergencyCry(let type, _):
             return .emergency(cryType: type)
-        case .ambientMonitoring:
-            return .ambient
         default:
             return .standard
         }
@@ -94,7 +85,6 @@ enum PlaybackContext: Equatable, Hashable {
 enum PlayerTheme: Equatable {
     case standard
     case emergency(cryType: CryType)
-    case ambient
 
     /// Primary gradient colors
     var gradientColors: [Color] {
@@ -113,8 +103,6 @@ enum PlayerTheme: Equatable {
             default:
                 return [Color.purple.opacity(0.6), Color.purple.opacity(0.2)]
             }
-        case .ambient:
-            return [Color.blue.opacity(0.5), Color.blue.opacity(0.2)]
         }
     }
 
@@ -130,8 +118,6 @@ enum PlayerTheme: Equatable {
             case .pain: return .red
             default: return .purple
             }
-        case .ambient:
-            return .blue
         }
     }
 

@@ -20,6 +20,11 @@ struct PlayerView: View {
     @ObservedObject private var playbackQueueManager = PlaybackQueueManager.shared
     @Environment(\.dismiss) var dismiss
 
+    // Display track - uses current track or a default fallback (same as mini player)
+    private var displayTrack: AudioTrack {
+        audioEngine.currentTrack ?? AudioTrack.defaultEmergencyTrack()
+    }
+
     // Consolidated sheet state - prevents SwiftUI issues with multiple sheet modifiers
     enum PlayerSheet: Identifiable {
         case timer
@@ -76,7 +81,7 @@ struct PlayerView: View {
             ZStack {
                 // Premium animated background - UNIFIED ARCHITECTURE: context-aware
                 PlayerBackground(
-                    category: audioEngine.currentTrack?.category ?? .instrumental,
+                    category: displayTrack.category,
                     theme: audioEngine.playbackContext?.theme
                 )
                 .ignoresSafeArea()
@@ -352,7 +357,7 @@ struct PlayerView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.4),
+                            Color.forCategory(displayTrack.category).opacity(0.4),
                             Color.clear
                         ],
                         center: .center,
@@ -366,7 +371,7 @@ struct PlayerView: View {
 
             // Shadow layer
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.2))
+                .fill(Color.forCategory(displayTrack.category).opacity(0.2))
                 .frame(width: 280, height: 280)
                 .blur(radius: 40)
                 .offset(y: 20)
@@ -377,8 +382,8 @@ struct PlayerView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
-                            Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.1)
+                            Color.forCategory(displayTrack.category).opacity(0.3),
+                            Color.forCategory(displayTrack.category).opacity(0.1)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -399,7 +404,7 @@ struct PlayerView: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .scaleEffect(1.8)
-                        .tint(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
+                        .tint(Color.forCategory(displayTrack.category))
 
                     Text("Loading...")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
@@ -410,15 +415,15 @@ struct PlayerView: View {
                 ZStack {
                     if audioEngine.playbackState.isPlaying {
                         // Animated waveform bars
-                        WaveformVisualization(category: audioEngine.currentTrack?.category ?? .instrumental)
+                        WaveformVisualization(category: displayTrack.category)
                     } else {
-                        Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
+                        Image(systemName: displayTrack.category.icon)
                             .font(.system(size: 60, weight: .light))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [
-                                        Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                                        Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.6)
+                                        Color.forCategory(displayTrack.category),
+                                        Color.forCategory(displayTrack.category).opacity(0.6)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -435,10 +440,10 @@ struct PlayerView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.1),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental)
+                                Color.forCategory(displayTrack.category),
+                                Color.forCategory(displayTrack.category).opacity(0.1),
+                                Color.forCategory(displayTrack.category).opacity(0.3),
+                                Color.forCategory(displayTrack.category)
                             ],
                             center: .center
                         ),
@@ -461,25 +466,37 @@ struct PlayerView: View {
             }
         }
         .padding(.horizontal, 40)
-        .onAppear {
-            startBreathingAnimation()
-            startRotationAnimation()
+        // FIX: Use task with ID to prevent animation restart on rotation
+        // Rotation causes view rebuild which triggers onAppear, restarting animations
+        // Using task with stable ID ensures animation only starts once
+        .task(id: "breathing-animation") {
+            // Only start if not already animating (scale is still at initial value)
+            if breathingScale == 1.0 {
+                withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+                    breathingScale = 1.03
+                }
+            }
         }
-        .onChange(of: audioEngine.playbackState) { newState in
-            if newState.isPlaying {
-                startBreathingAnimation()
-                startRotationAnimation()
+        .task(id: "rotation-animation") {
+            // Only start if not already animating (rotation is still at initial value)
+            if artworkRotation == 0 {
+                withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+                    artworkRotation = 360
+                }
             }
         }
     }
 
+    // Animation functions kept for potential future use but no longer called on every appear
     private func startBreathingAnimation() {
+        guard breathingScale == 1.0 else { return } // Prevent restart
         withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
             breathingScale = 1.03
         }
     }
 
     private func startRotationAnimation() {
+        guard artworkRotation == 0 else { return } // Prevent restart
         withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
             artworkRotation = 360
         }
@@ -489,7 +506,7 @@ struct PlayerView: View {
     private var premiumTrackInfo: some View {
         VStack(spacing: 12) {
             // Track title with gradient
-            Text(audioEngine.currentTrack?.title ?? "Unknown Track")
+            Text(displayTrack.title)
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
@@ -503,50 +520,48 @@ struct PlayerView: View {
 
             // Artist and language
             HStack(spacing: 8) {
-                Text(audioEngine.currentTrack?.artist ?? "")
+                Text(displayTrack.artist)
                     .font(.system(size: 16, weight: .medium, design: .rounded))
                     .foregroundColor(.appTextSecondary)
 
-                if let language = audioEngine.currentTrack?.language {
+                if let language = displayTrack.language {
                     Text(language.flag)
                         .font(.system(size: 16))
                 }
             }
 
             // Track info badges
-            if let track = audioEngine.currentTrack {
-                HStack(spacing: 10) {
-                    // Age badge with gradient border
-                    PlayerInfoBadge(
-                        icon: "person.crop.circle",
-                        text: "\(track.ageRangeMin)-\(track.ageRangeMax)m",
-                        color: .appPrimary
-                    )
+            HStack(spacing: 10) {
+                // Age badge with gradient border
+                PlayerInfoBadge(
+                    icon: "person.crop.circle",
+                    text: "\(displayTrack.ageRangeMin)-\(displayTrack.ageRangeMax)m",
+                    color: .appPrimary
+                )
 
-                    // Source badge
-                    let downloadState = downloadManager.getDownloadState(for: track.id.uuidString)
-                    if downloadState.isDownloaded {
-                        PlayerInfoBadge(
-                            icon: "checkmark.circle.fill",
-                            text: "Offline",
-                            color: .appAccentMint
-                        )
-                    } else if case .downloading(let progress) = downloadState {
-                        PlayerInfoBadge(
-                            icon: "arrow.down.circle",
-                            text: "\(Int(progress * 100))%",
-                            color: .appSecondary
-                        )
-                    } else {
-                        PlayerInfoBadge(
-                            icon: track.audioSourceType == .generated ? "waveform" : "wifi",
-                            text: track.sourceDescription,
-                            color: .appTextSecondary
-                        )
-                    }
+                // Source badge
+                let downloadState = downloadManager.getDownloadState(for: displayTrack.id.uuidString)
+                if downloadState.isDownloaded {
+                    PlayerInfoBadge(
+                        icon: "checkmark.circle.fill",
+                        text: "Offline",
+                        color: .appAccentMint
+                    )
+                } else if case .downloading(let progress) = downloadState {
+                    PlayerInfoBadge(
+                        icon: "arrow.down.circle",
+                        text: "\(Int(progress * 100))%",
+                        color: .appSecondary
+                    )
+                } else {
+                    PlayerInfoBadge(
+                        icon: displayTrack.audioSourceType == .generated ? "waveform" : "wifi",
+                        text: displayTrack.sourceDescription,
+                        color: .appTextSecondary
+                    )
                 }
-                .padding(.top, 4)
             }
+            .padding(.top, 4)
         }
         .padding(.horizontal, 32)
         .padding(.top, 24)
@@ -568,8 +583,8 @@ struct PlayerView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                                    Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.7)
+                                    Color.forCategory(displayTrack.category),
+                                    Color.forCategory(displayTrack.category).opacity(0.7)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
@@ -727,14 +742,14 @@ struct PlayerView: View {
         ZStack {
             // Shadow layer
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3))
+                .fill(Color.forCategory(displayTrack.category).opacity(0.3))
                 .frame(width: 280, height: 280)
                 .blur(radius: 30)
                 .offset(y: 20)
 
             // Main circle
             Circle()
-                .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.15))
+                .fill(Color.forCategory(displayTrack.category).opacity(0.15))
                 .frame(width: 260, height: 260)
 
             // Inner circle with icon
@@ -753,9 +768,9 @@ struct PlayerView: View {
                         .foregroundColor(.secondary)
                 }
             } else {
-                Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
+                Image(systemName: displayTrack.category.icon)
                     .font(.system(size: 70))
-                    .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
+                    .foregroundColor(Color.forCategory(displayTrack.category))
             }
 
             // Rotating ring animation when playing
@@ -764,9 +779,9 @@ struct PlayerView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3),
-                                Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental)
+                                Color.forCategory(displayTrack.category),
+                                Color.forCategory(displayTrack.category).opacity(0.3),
+                                Color.forCategory(displayTrack.category)
                             ],
                             center: .center
                         ),
@@ -792,25 +807,26 @@ struct PlayerView: View {
     // MARK: - Track Info
     private var trackInfo: some View {
         VStack(spacing: 8) {
-            Text(audioEngine.currentTrack?.title ?? "Unknown Track")
+            Text(displayTrack.title)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundColor(.appText)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             HStack(spacing: 8) {
-                Text(audioEngine.currentTrack?.artist ?? "")
+                Text(displayTrack.artist)
                     .font(.system(size: 16))
                     .foregroundColor(.appTextSecondary)
 
-                if let language = audioEngine.currentTrack?.language {
+                if let language = displayTrack.language {
                     Text(language.flag)
                         .font(.system(size: 16))
                 }
             }
 
             // Source and download indicator
-            if let track = audioEngine.currentTrack {
+            let track = displayTrack
+            Group {
                 HStack(spacing: 12) {
                     // Age appropriateness badge
                     Text("Ages \(track.ageRangeMin)-\(track.ageRangeMax) months")
@@ -870,7 +886,7 @@ struct PlayerView: View {
                     audioEngine.isScrubbing = editing
                 }
             )
-            .accentColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
+            .accentColor(Color.forCategory(displayTrack.category))
 
             // Time labels
             HStack {
@@ -1066,15 +1082,15 @@ struct PlayerView: View {
                 // Outer glow when playing
                 if audioEngine.playbackState.isPlaying {
                     Circle()
-                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.3))
+                        .fill(Color.forCategory(displayTrack.category).opacity(0.3))
                         .frame(width: 82, height: 82)
                         .blur(radius: 8)
                 }
 
                 Circle()
-                    .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
+                    .fill(Color.forCategory(displayTrack.category))
                     .frame(width: 72, height: 72)
-                    .shadow(color: Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.4),
+                    .shadow(color: Color.forCategory(displayTrack.category).opacity(0.4),
                             radius: 8, y: 4)
 
                 Image(systemName: audioEngine.playbackState.isPlaying ? "pause.fill" : "play.fill")
@@ -2360,7 +2376,7 @@ struct MoreLikeThisSheet: View {
             id: UUID(uuidString: track.id) ?? UUID(),
             title: track.title,
             artist: track.artist,
-            category: AudioCategory(rawValue: track.category) ?? .instrumental,
+            category: AudioCategory.fromJSONKey(track.category),
             language: Language(rawValue: track.language),
             duration: TimeInterval(track.duration),
             ageRangeMin: track.ageRangeMin,
@@ -2377,7 +2393,7 @@ struct MoreLikeThisSheet: View {
                 id: UUID(uuidString: searchTrack.id) ?? UUID(),
                 title: searchTrack.title,
                 artist: searchTrack.artist,
-                category: AudioCategory(rawValue: searchTrack.category) ?? .instrumental,
+                category: AudioCategory.fromJSONKey(searchTrack.category),
                 language: Language(rawValue: searchTrack.language),
                 duration: TimeInterval(searchTrack.duration),
                 ageRangeMin: searchTrack.ageRangeMin,
@@ -2398,7 +2414,7 @@ struct MoreLikeThisSheet: View {
             id: UUID(uuidString: track.id) ?? UUID(),
             title: track.title,
             artist: track.artist,
-            category: AudioCategory(rawValue: track.category) ?? .instrumental,
+            category: AudioCategory.fromJSONKey(track.category),
             language: Language(rawValue: track.language),
             duration: TimeInterval(track.duration),
             ageRangeMin: track.ageRangeMin,
@@ -2504,11 +2520,11 @@ struct MoreLikeThisRow: View {
     }
 
     private var categoryColor: Color {
-        Color.forCategory(AudioCategory(rawValue: track.category) ?? .instrumental)
+        Color.forCategory(AudioCategory.fromJSONKey(track.category))
     }
 
     private var categoryIcon: String {
-        (AudioCategory(rawValue: track.category) ?? .instrumental).icon
+        AudioCategory.fromJSONKey(track.category).icon
     }
 
     private func formatDuration(_ seconds: Int) -> String {

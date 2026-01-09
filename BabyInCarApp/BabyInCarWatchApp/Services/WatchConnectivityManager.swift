@@ -16,15 +16,19 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     // MARK: - Published Properties
 
     @Published private(set) var isPhoneReachable = false
+    @Published private(set) var isCompanionAppInstalled = false
     @Published private(set) var iPhonePlaybackState: PlaybackState = .idle
     @Published private(set) var favorites: [WatchTrack] = []
     @Published private(set) var pendingCryAlerts: [CryAlert] = []
     @Published private(set) var activationState: WCSessionActivationState = .notActivated
+    @Published private(set) var libraryState: WatchLibraryState = .empty
+    @Published private(set) var isEmergencyModeActive = false
 
     // MARK: - Private Properties
 
     private var session: WCSession?
     private var cancellables = Set<AnyCancellable>()
+    private var hasLoggedCompanionNotInstalled = false
 
     // MARK: - Initialization
 
@@ -50,7 +54,30 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     /// Send a command to iPhone
     func sendCommand(_ command: WatchCommand) {
-        guard let session = session, session.isReachable else {
+        guard let session = session else {
+            print("[WatchConnectivity] No session available")
+            return
+        }
+
+        // Check activation state first
+        guard session.activationState == .activated else {
+            print("[WatchConnectivity] Session not activated yet")
+            return
+        }
+
+        // Check if iPhone app is installed (prevents 7018 error spam)
+        #if os(watchOS)
+        guard session.isCompanionAppInstalled else {
+            // Only log once per session to avoid spam
+            if !hasLoggedCompanionNotInstalled {
+                print("[WatchConnectivity] ⚠️ iPhone companion app not installed or not paired")
+                hasLoggedCompanionNotInstalled = true
+            }
+            return
+        }
+        #endif
+
+        guard session.isReachable else {
             print("[WatchConnectivity] iPhone not reachable, cannot send command")
             return
         }
@@ -65,7 +92,13 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                 print("[WatchConnectivity] Command sent successfully: \(command)")
                 // Haptic feedback for confirmation
                 WKInterfaceDevice.current().play(.click)
-            }, errorHandler: { error in
+            }, errorHandler: { [weak self] error in
+                let nsError = error as NSError
+                // Silently ignore "companion not installed" errors (7018)
+                if nsError.domain == "WCErrorDomain" && nsError.code == 7018 {
+                    self?.hasLoggedCompanionNotInstalled = true
+                    return
+                }
                 print("[WatchConnectivity] Failed to send command: \(error)")
                 // Haptic feedback for error
                 WKInterfaceDevice.current().play(.failure)
@@ -87,6 +120,17 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     /// Toggle play/pause
     func togglePlayPause() {
+        // Optimistically update local state for immediate UI feedback
+        iPhonePlaybackState = PlaybackState(
+            isPlaying: !iPhonePlaybackState.isPlaying,
+            currentTrackId: iPhonePlaybackState.currentTrackId,
+            currentTrackTitle: iPhonePlaybackState.currentTrackTitle,
+            currentTrackArtist: iPhonePlaybackState.currentTrackArtist,
+            progress: iPhonePlaybackState.progress,
+            volume: iPhonePlaybackState.volume,
+            sleepTimerRemaining: iPhonePlaybackState.sleepTimerRemaining,
+            timestamp: Date()
+        )
         sendCommand(.togglePlayPause)
     }
 
@@ -123,6 +167,38 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     /// Request iPhone to play specific track
     func playTrack(trackId: String) {
         sendCommand(.playTrack(trackId: trackId))
+    }
+
+    /// Request iPhone to play a category
+    func playCategory(categoryId: String) {
+        sendCommand(.playCategory(categoryId: categoryId))
+    }
+
+    /// Start emergency mode on iPhone (music only)
+    func startEmergencyMode() {
+        sendCommand(.startEmergencyMode)
+        isEmergencyModeActive = true
+        WKInterfaceDevice.current().play(.notification)
+    }
+
+    /// Start emergency mode on iPhone WITH cry detection monitoring enabled
+    /// This is the full emergency experience - plays soothing music AND listens for baby cries
+    func startEmergencyModeWithCryDetection() {
+        sendCommand(.startEmergencyModeWithCryDetection)
+        isEmergencyModeActive = true
+        WKInterfaceDevice.current().play(.notification)
+        print("[WatchConnectivity] 🚨🎤 Requesting emergency mode WITH cry detection")
+    }
+
+    /// Stop emergency mode on iPhone
+    func stopEmergencyMode() {
+        sendCommand(.stopEmergencyMode)
+        isEmergencyModeActive = false
+    }
+
+    /// Request library sync from iPhone
+    func requestLibrarySync() {
+        sendCommand(.requestLibrarySync)
     }
 
     // MARK: - Cry Alert Management
@@ -219,13 +295,19 @@ extension WatchConnectivityManager: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         Task { @MainActor in
             self.activationState = activationState
-            self.isPhoneReachable = session.isReachable
+            self.isCompanionAppInstalled = session.isCompanionAppInstalled
+            // Only consider reachable if companion app is installed AND session is reachable
+            self.isPhoneReachable = session.isCompanionAppInstalled && session.isReachable
 
             if let error = error {
                 print("[WatchConnectivity] Activation failed: \(error)")
             } else {
                 print("[WatchConnectivity] Activation complete: \(activationState.rawValue)")
-                if activationState == .activated {
+                print("[WatchConnectivity] Companion app installed: \(session.isCompanionAppInstalled)")
+                print("[WatchConnectivity] Is reachable: \(session.isReachable)")
+
+                if activationState == .activated && session.isCompanionAppInstalled {
+                    self.hasLoggedCompanionNotInstalled = false  // Reset flag on successful activation
                     self.requestStateSync()
                 }
             }
@@ -234,10 +316,12 @@ extension WatchConnectivityManager: WCSessionDelegate {
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         Task { @MainActor in
-            self.isPhoneReachable = session.isReachable
-            print("[WatchConnectivity] Reachability changed: \(session.isReachable)")
+            // Only consider reachable if companion app is installed AND session is reachable
+            self.isPhoneReachable = session.isCompanionAppInstalled && session.isReachable
+            print("[WatchConnectivity] Reachability changed: \(session.isReachable), companion installed: \(session.isCompanionAppInstalled)")
 
-            if session.isReachable {
+            if session.isReachable && session.isCompanionAppInstalled {
+                self.hasLoggedCompanionNotInstalled = false  // Reset flag
                 self.requestStateSync()
             }
         }
@@ -275,6 +359,17 @@ extension WatchConnectivityManager: WCSessionDelegate {
                 print("[WatchConnectivity] Failed to decode favorites: \(error)")
             }
         }
+
+        // Handle library state update
+        if let libraryData = context["libraryState"] as? Data {
+            do {
+                let state = try JSONDecoder().decode(WatchLibraryState.self, from: libraryData)
+                self.libraryState = state
+                print("[WatchConnectivity] Received library state: \(state.categories.count) categories")
+            } catch {
+                print("[WatchConnectivity] Failed to decode library state: \(error)")
+            }
+        }
     }
 
     // MARK: - Message Receiving
@@ -302,6 +397,15 @@ extension WatchConnectivityManager: WCSessionDelegate {
             } catch {
                 print("[WatchConnectivity] Failed to decode cry alert: \(error)")
             }
+        }
+
+        // Handle emergency state
+        if let isActive = message["emergencyState"] as? Bool {
+            self.isEmergencyModeActive = isActive
+            if isActive {
+                WKInterfaceDevice.current().play(.notification)
+            }
+            print("[WatchConnectivity] Emergency mode: \(isActive)")
         }
     }
 

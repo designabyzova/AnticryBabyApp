@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct FavoritesView: View {
-    @StateObject private var favoritesManager = FavoritesManager.shared
-    @StateObject private var playlistManager = PlaylistManager.shared
+    // FIX: Use @ObservedObject for singletons - prevents state recreation on orientation change
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @ObservedObject private var playlistManager = PlaylistManager.shared
     @EnvironmentObject var audioEngine: AudioEngine
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
     @State private var selectedTab = 0

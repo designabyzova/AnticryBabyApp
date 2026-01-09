@@ -6,6 +6,7 @@
 //
 
 import Testing
+import Foundation
 @testable import BabyInCarApp
 
 @Suite("Voice Command LLM Service")

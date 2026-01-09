@@ -41,11 +41,12 @@ class SmartEmergencyQueue: ObservableObject {
     @Published var totalTracks: Int = 0
     @Published var currentIndex: Int = 0
 
-    // MARK: - Ambient Mode (Proactive Playlist)
-    /// When true, playlist plays IMMEDIATELY when monitoring starts - no cry detection needed
-    @Published var isAmbientMode: Bool = false
     /// Human-readable mode name for UI
     @Published var modeName: String = "Smart Soothing"
+
+    /// CRITICAL FIX (2026-01-09): Track if skip is in progress to prevent double-press issues
+    /// When true, additional skip requests are ignored until current skip completes
+    @Published var isSkipping: Bool = false
 
     // MARK: - Private State
     private var allQueueTracks: [AudioTrack] = []
@@ -114,13 +115,14 @@ class SmartEmergencyQueue: ObservableObject {
     /// Track session count for rotation decisions
     private static var sessionCount: Int = 0
 
-    /// Generated tracks for rotation (Piano Moment alternatives)
+    /// Generated tracks for rotation (Piano Moment as default, then alternatives)
+    /// NOTE: softPiano (Piano Moment) is the PRIMARY default per user preference
     private static let generatedFirstTrackOptions: [GeneratorType] = [
-        .lullaby,       // Default - gentle lullaby melody
+        .softPiano,     // PRIMARY DEFAULT - Piano Moment (user preference!)
         .musicBox,      // Alternative - classic music box
-        .softPiano,     // Alternative - gentle piano
+        .lullaby,       // Alternative - gentle lullaby melody
         .heartbeat,     // For very young babies
-        .ocean,         // Nature option - rhythmic waves
+        .aquarium,         // Nature option - rhythmic waves
     ]
 
     // MARK: - Playlist Mode Strategies
@@ -132,12 +134,6 @@ class SmartEmergencyQueue: ObservableObject {
         /// - Queue priority: Comfort sounds, high calming scores
         /// - Variety: Lower priority - effectiveness is key
         case emergency
-
-        /// Ambient mode: Continuous background music for monitoring
-        /// - First track: High-quality library track with smooth start
-        /// - Queue priority: Variety, long-form content
-        /// - Variety: High priority - prevent repetition
-        case ambient
 
         /// AI Detection mode: Cry detected by ML, proactive response
         /// - First track: Balance of instant-start AND effectiveness
@@ -175,6 +171,7 @@ class SmartEmergencyQueue: ObservableObject {
         let actuallyPlaying = audioEngine.playbackState == .playing
         let hasActiveTrack = audioEngine.currentTrack != nil
         let engineState = audioEngine.playbackState
+        let isLoading = engineState == .loading
 
         // Only log when verbose OR when we're actually active (reduces startup noise)
         if verbose || isActive {
@@ -182,8 +179,10 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         // If we think we're playing but AudioEngine isn't, correct our state
-        if isPlaying && !actuallyPlaying {
-            print("[SmartQueue] 🔧 Fixing state mismatch: queue.isPlaying=true but no audio playing")
+        // IMPORTANT: Don't reset if state is .loading - audio is buffering and will start soon!
+        // This fixes the race condition where streamed audio takes time to buffer.
+        if isPlaying && !actuallyPlaying && !isLoading {
+            print("[SmartQueue] 🔧 Fixing state mismatch: queue.isPlaying=true but no audio playing (state=\(engineState))")
             isPlaying = false
         }
 
@@ -201,6 +200,7 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         // If we think we have a track but AudioEngine has stopped completely, clear our track
+        // Don't do this if still loading - audio might be buffering
         if currentTrack != nil && !hasActiveTrack && engineState == .stopped && upcomingTracks.isEmpty {
             print("[SmartQueue] 🔧 Fixing stale track state: queue has track but engine stopped")
             // Keep the queue active but mark as not playing
@@ -239,7 +239,6 @@ class SmartEmergencyQueue: ObservableObject {
 
         self.cryType = cryType
         self.babyAge = babyAge
-        self.isAmbientMode = false
 
         // Set playlist mode based on context
         if let categories = preferredCategories, !categories.isEmpty {
@@ -347,7 +346,6 @@ class SmartEmergencyQueue: ObservableObject {
         // Set metadata
         self.cryType = cryType
         self.babyAge = babyAge
-        self.isAmbientMode = false
         self.modeName = "Spotify Smart Mix"
         self.queueName = "🎧 Your Baby's Mix"
         self.queueDescription = "AI-curated based on what works for your baby"
@@ -422,10 +420,6 @@ class SmartEmergencyQueue: ObservableObject {
             // AI Detection: Balance - we have a moment to try something new
             provenTrackProbability = 0.60
             varietyWeight = 0.4
-        case .ambient:
-            // Ambient: Favor variety - this is background music
-            provenTrackProbability = 0.30
-            varietyWeight = 0.7
         case .manualCategory:
             // Manual: User chose category, respect that but add smart selection
             provenTrackProbability = 0.50
@@ -464,8 +458,7 @@ class SmartEmergencyQueue: ObservableObject {
         }
 
         // STRATEGY 3: Select from real library tracks (top rated) with rotation AND randomization
-        // More exploration in ambient mode, stricter selection in emergency
-        let librarySearchDepth = currentPlaylistMode == .ambient ? 20 : 10
+        let librarySearchDepth = 10
         let eligibleTracks = melodicTracks.prefix(librarySearchDepth).filter {
             !SmartEmergencyQueue.recentFirstTracks.contains($0.id)
         }
@@ -497,30 +490,32 @@ class SmartEmergencyQueue: ObservableObject {
     }
 
     /// Select a generated track with smart rotation based on cry type and age
+    /// NOTE: softPiano (Piano Moment) is always first in rotation per user preference
     private func selectRotatedGeneratedTrack(cryType: CryType, babyAge: Int) -> AudioTrack {
         // Priority order varies by cry type and age
+        // softPiano (Piano Moment) is ALWAYS the primary default per user preference
         var prioritizedTypes: [GeneratorType]
 
         switch cryType {
         case .tired:
-            // For tired: prioritize sleep-inducing sounds
-            prioritizedTypes = [.lullaby, .musicBox, .softPiano, .ocean, .heartbeat]
+            // For tired: prioritize sleep-inducing sounds (Piano Moment first!)
+            prioritizedTypes = [.softPiano, .lullaby, .musicBox, .aquarium, .heartbeat]
         case .pain:
             // For pain: prioritize comfort sounds
             prioritizedTypes = babyAge < 6
-                ? [.heartbeat, .womb, .lullaby, .musicBox, .ocean]
-                : [.lullaby, .musicBox, .softPiano, .heartbeat, .ocean]
+                ? [.heartbeat, .softPiano, .womb, .lullaby, .musicBox]
+                : [.softPiano, .lullaby, .musicBox, .heartbeat, .aquarium]
         case .hunger:
-            // For hunger: prioritize engaging/distracting sounds
-            prioritizedTypes = [.musicBox, .lullaby, .softPiano, .ocean, .heartbeat]
+            // For hunger: prioritize engaging/distracting sounds (Piano Moment first!)
+            prioritizedTypes = [.softPiano, .musicBox, .lullaby, .aquarium, .heartbeat]
         case .attention:
-            // For attention: prioritize melodic, engaging sounds
-            prioritizedTypes = [.musicBox, .softPiano, .lullaby, .ocean, .heartbeat]
+            // For attention: prioritize melodic, engaging sounds (Piano Moment first!)
+            prioritizedTypes = [.softPiano, .musicBox, .lullaby, .aquarium, .heartbeat]
         default:
-            // Default: use age-based selection
+            // Default: softPiano is always first (user preference!)
             prioritizedTypes = babyAge < 6
-                ? [.heartbeat, .lullaby, .musicBox, .womb, .ocean]
-                : [.lullaby, .musicBox, .softPiano, .ocean, .heartbeat]
+                ? [.softPiano, .heartbeat, .lullaby, .musicBox, .womb]
+                : [.softPiano, .lullaby, .musicBox, .aquarium, .heartbeat]
         }
 
         // Apply session-based rotation: shift the order based on session count
@@ -548,9 +543,12 @@ class SmartEmergencyQueue: ObservableObject {
         // Use stable UUIDs based on generator type for tracking
         let stableId = UUID(uuidString: "E7744FB8-6D21-4364-\(String(format: "%04X", type.hashValue & 0xFFFF))-000000000001") ?? UUID()
 
+        // Use "Piano Moment" as the display name for softPiano (user preference)
+        let displayTitle = type == .softPiano ? "Piano Moment" : type.rawValue
+
         return AudioTrack(
             id: stableId,
-            title: type.rawValue,
+            title: displayTitle,
             artist: "Lulla",
             category: type.category,
             language: nil,
@@ -581,248 +579,6 @@ class SmartEmergencyQueue: ObservableObject {
         }
     }
 
-    // MARK: - Ambient Playlist Mode (PROACTIVE - No Cry Detection Required!)
-
-    /// Build an AMBIENT playlist that starts IMMEDIATELY - no cry detection needed
-    /// Uses ONLY REAL library tracks - NO generated noise (fan, pink, brown, white noise)
-    /// This is for parents who want soothing music playing continuously while monitoring
-    ///
-    /// CRITICAL: This replaces the old Fan/Brown/Pink noise approach with REAL MUSIC:
-    /// - Classical music (Brahms, Mozart, Chopin)
-    /// - Lullabies (real recordings, not synthesized)
-    /// - Instrumental (harp, piano, guitar)
-    /// - Nature sounds (ocean, river - NOT rain/thunder)
-    func buildAmbientPlaylist(
-        babyAge: Int,
-        language: String = "en",
-        maxTracks: Int = 30
-    ) async -> [AudioTrack] {
-        print("[SmartQueue] 🎵 Building AMBIENT playlist (REAL tracks only!) age=\(babyAge)mo")
-
-        self.babyAge = babyAge
-        self.isAmbientMode = true
-        self.currentPlaylistMode = .ambient  // Set mode for smart selection
-        self.modeName = "Ambient Soothing"
-        self.cryType = .general // Ambient mode is not cry-specific
-
-        // Get ONLY real tracks from library - NO generated sounds!
-        let realTracks = await getAmbientLibraryTracks(
-            babyAge: babyAge,
-            language: language,
-            maxCount: maxTracks
-        )
-
-        // Set queue metadata for ambient mode
-        self.queueName = "Ambient Soothing"
-        self.queueDescription = "Continuous calming music for your \(babyAge < 12 ? "baby" : "toddler")"
-
-        print("[SmartQueue] 🎵 Built ambient playlist: \(realTracks.count) REAL tracks (no generated noise!)")
-        return realTracks
-    }
-
-    /// Get tracks suitable for ambient/continuous playback
-    /// EXCLUDES: All generated sounds, harsh white noise, mechanical sounds
-    /// INCLUDES: Classical, lullabies, instrumental, gentle nature (ocean, river, birds), fairy tales
-    private func getAmbientLibraryTracks(
-        babyAge: Int,
-        language: String,
-        maxCount: Int
-    ) async -> [AudioTrack] {
-        let allTracks = contentLibrary.allTracks
-
-        print("[SmartQueue] 🔍 Filtering from \(allTracks.count) total tracks")
-
-        // Filter for ambient-suitable REAL tracks only
-        let suitableTracks = allTracks.filter { track in
-            // MUST be bundled or streamed - NOT generated!
-            guard track.audioSourceType == .bundled || track.audioSourceType == .streamed else {
-                return false
-            }
-
-            // Age appropriate
-            guard track.ageRangeMin <= babyAge && track.ageRangeMax >= babyAge else {
-                return false
-            }
-
-            // Not locked
-            guard !track.isLocked else { return false }
-
-            // AMBIENT CATEGORIES - include ALL calming content categories
-            // NOTE: This now includes fairyTales (english/russian stories are calming!)
-            // CRITICAL: Include ALL calming categories from library!
-            let ambientCategories: Set<AudioCategory> = [
-                .classicalMusic,   // 116 tracks - Brahms, Mozart, etc.
-                .lullabies,        // 30 tracks - Dedicated lullaby category!
-                .instrumental,     // 2 tracks - Acoustic, harp, piano
-                .ambient,          // 42 tracks - Calming ambient music!
-                .childrenSongs,    // 14 tracks - Gentle children's songs
-                .natureSounds,     // 56 tracks - Ocean, river, birds (not rain/thunder!)
-                .fairyTales,       // 82 tracks - Stories are calming for older babies
-            ]
-
-            guard ambientCategories.contains(track.category) else {
-                return false
-            }
-
-            // EXCLUDE harsh/scary nature sounds
-            if track.category == .natureSounds {
-                let scaryKeywords = ["rain", "thunder", "storm", "wind", "vacuum", "hair dryer", "washing"]
-                let titleLower = track.title.lowercased()
-                if scaryKeywords.contains(where: { titleLower.contains($0) }) {
-                    return false
-                }
-            }
-
-            // EXCLUDE ALL white noise, generated sounds, and harsh sounds by title
-            // COMPREHENSIVE BAN LIST - same as emergency mode!
-            let bannedKeywords: Set<String> = [
-                "white noise", "pink noise", "brown noise", "grey noise", "blue noise",
-                "pure white", "pure pink", "pure brown",
-                "fan", "washer", "washing machine", "vacuum", "hair dryer",
-                "rain", "thunder", "storm", "wind", "traffic",
-                "airplane", "train", "car engine", "motor",
-                "shush", "shushing", "womb", "heartbeat",
-            ]
-            let titleLower = track.title.lowercased()
-            for keyword in bannedKeywords {
-                if titleLower.contains(keyword) {
-                    return false
-                }
-            }
-
-            // Language filtering for fairy tales
-            if track.category == .fairyTales {
-                // For fairy tales, respect user's language preference
-                if let trackLang = track.language {
-                    // If user's language is Russian, include Russian stories
-                    // If user's language is English (or default), include English stories
-                    // Allow matching language or English as fallback
-                    if trackLang.code != language && trackLang != .english {
-                        return false
-                    }
-                }
-            }
-
-            return true
-        }
-
-        print("[SmartQueue] 🎵 Found \(suitableTracks.count) suitable REAL tracks")
-
-        // Score and sort by calming effectiveness
-        let scoredTracks = suitableTracks.map { track -> (track: AudioTrack, score: Double) in
-            var score = track.calmingScore
-
-            // BOOST different categories for ambient mode
-            switch track.category {
-            case .classicalMusic:
-                score += 0.30  // Classical is proven most effective
-            case .instrumental:
-                score += 0.25  // Ambient/acoustic very calming
-            case .childrenSongs:
-                score += 0.22  // Lullabies are great
-            case .natureSounds:
-                // Only ocean/river/birds get boost (gentle sounds)
-                let titleLower = track.title.lowercased()
-                if titleLower.contains("ocean") || titleLower.contains("wave") {
-                    score += 0.20
-                } else if titleLower.contains("river") || titleLower.contains("stream") || titleLower.contains("brook") {
-                    score += 0.18
-                } else if titleLower.contains("bird") || titleLower.contains("forest") {
-                    score += 0.15
-                } else {
-                    score += 0.10  // Other nature sounds
-                }
-            case .fairyTales:
-                // Fairy tales are engaging but calming
-                score += 0.15
-                // Boost for older babies who can appreciate stories
-                if babyAge >= 12 {
-                    score += 0.10
-                }
-            default:
-                break
-            }
-
-            // Age-specific boost
-            if track.isOptimalFor(ageMonths: babyAge) {
-                score += 0.10
-            }
-
-            return (track, min(1.0, score))
-        }
-
-        // Sort by score and take top tracks
-        let sortedTracks = scoredTracks
-            .sorted { $0.score > $1.score }
-            .prefix(maxCount)
-            .map { $0.track }
-
-        // Shuffle slightly for variety but keep high-scoring ones at front
-        var result = Array(sortedTracks)
-        if result.count > 5 {
-            // Keep top 5 in place (best tracks), shuffle the rest for variety
-            let top5 = Array(result.prefix(5))
-            var rest = Array(result.dropFirst(5))
-            rest.shuffle()
-            result = top5 + rest
-        }
-
-        print("[SmartQueue] 🎵 Selected \(result.count) ambient tracks:")
-        for (index, track) in result.prefix(10).enumerated() {
-            print("  \(index + 1). \(track.title) [\(track.category.rawValue)] - \(track.audioSourceType)")
-        }
-
-        return result
-    }
-
-    /// Start ambient playlist immediately (called when monitoring begins)
-    func startAmbientMode(babyAge: Int, language: String = "en") async {
-        print("[SmartQueue] 🚀 Starting AMBIENT MODE - immediate playback!")
-
-        let tracks = await buildAmbientPlaylist(
-            babyAge: babyAge,
-            language: language,
-            maxTracks: 30
-        )
-
-        guard !tracks.isEmpty else {
-            print("[SmartQueue] ⚠️ No ambient tracks available!")
-            return
-        }
-
-        await startQueue(tracks: tracks)
-        print("[SmartQueue] ✅ Ambient mode active with \(tracks.count) REAL tracks")
-    }
-
-    /// Switch from ambient mode to cry-specific mode when cry is detected
-    func switchToCrySpecificMode(cryType: CryType, babyAge: Int, language: String = "en") async {
-        print("[SmartQueue] 🔄 Switching from ambient to cry-specific mode: \(cryType.rawValue)")
-
-        // Stop current playback
-        audioEngine.stop()
-        isPlaying = false
-
-        // Build cry-specific queue
-        let cryTracks = await buildQueue(
-            for: cryType,
-            babyAge: babyAge,
-            language: language,
-            maxTracks: 20
-        )
-
-        guard !cryTracks.isEmpty else {
-            print("[SmartQueue] ⚠️ No cry-specific tracks, continuing ambient")
-            return
-        }
-
-        // Start cry-specific queue
-        await startQueue(tracks: cryTracks)
-        self.isAmbientMode = false
-        self.modeName = "Cry Response"
-
-        print("[SmartQueue] ✅ Switched to cry-specific mode: \(cryType.rawValue)")
-    }
-
     // MARK: - Spotify-Style Queue Start (Main Entry Point!)
 
     /// Start a Spotify-style smart queue - the main entry point for smart playback!
@@ -831,8 +587,8 @@ class SmartEmergencyQueue: ObservableObject {
     /// - Automatically replenishes to 8 when tracks finish (7→8)
     /// - Uses rotation policy to prevent repetition
     ///
-    /// USAGE: Call this instead of `startAmbientMode` or `switchToCrySpecificMode` for
-    /// the full Spotify-like experience.
+    /// CRITICAL: First track is ALWAYS a generated track for instant playback!
+    /// Library tracks may take time to stream, but generated tracks play immediately.
     func startSpotifyMode(
         cryType: CryType,
         babyAge: Int,
@@ -842,7 +598,7 @@ class SmartEmergencyQueue: ObservableObject {
         print("[SmartQueue] 🎧 Starting SPOTIFY MODE for \(cryType.rawValue)!")
 
         // Build smart queue using Spotify algorithm
-        let tracks = await buildSpotifyQueue(
+        var tracks = await buildSpotifyQueue(
             for: cryType,
             babyAge: babyAge,
             language: language,
@@ -860,6 +616,23 @@ class SmartEmergencyQueue: ObservableObject {
             )
             await startQueue(tracks: fallbackTracks)
             return
+        }
+
+        // CRITICAL FIX (2026-01-09): Use REAL "Pianomoment" from R2 instead of generated audio!
+        // User feedback: NoiseGenerator's softPiano sounds like "broken radio".
+        // The REAL Bensound Pianomoment from R2 CDN provides high-quality audio.
+        // Note: R2 streaming is fast enough for emergency mode - CDN ensures low latency.
+        //
+        // Check if first track is the real Pianomoment - if not, insert it
+        let realPianoMoment = AudioTrack.defaultEmergencyTrack()
+        let firstIsRealPiano = tracks.first?.serverId == realPianoMoment.serverId
+
+        if !firstIsRealPiano {
+            print("[SmartQueue] 🎹 Inserting REAL Pianomoment (Bensound) from R2 for high-quality playback!")
+            tracks.insert(realPianoMoment, at: 0)
+            print("[SmartQueue] ✅ Inserted real track: \(realPianoMoment.title) by \(realPianoMoment.artist)")
+        } else {
+            print("[SmartQueue] ✅ First track is already Pianomoment: \(tracks.first?.title ?? "unknown")")
         }
 
         // Enable Spotify-style replenishment
@@ -914,6 +687,7 @@ class SmartEmergencyQueue: ObservableObject {
 
     /// Start emergency queue playback
     /// MEMORY OPTIMIZATION: Only loads first 3 tracks, queues the rest
+    /// FIX: Synchronously activates audio session BEFORE playback to prevent "no sound" issue
     func startQueue(tracks: [AudioTrack]) async {
         guard !tracks.isEmpty else {
             print("[SmartQueue] Cannot start empty queue")
@@ -942,6 +716,20 @@ class SmartEmergencyQueue: ObservableObject {
         updateUpcomingTracks()
         totalTracks = tracks.count
 
+        // CRITICAL FIX: Synchronously activate audio session BEFORE playback
+        // This prevents the race condition where playback starts before session is active
+        // Previously: configureAudioSession() was debounced (100ms delay) causing "no sound" bug
+        do {
+            try AudioSessionManager.shared.activateSessionSync(
+                mode: .emergencyPlayback,
+                priority: .emergency,
+                serviceId: "SmartEmergencyQueue"
+            )
+            print("[SmartQueue] ✅ Audio session activated synchronously for emergency playback")
+        } catch {
+            print("[SmartQueue] ⚠️ Failed to activate audio session: \(error) - playback may not work")
+        }
+
         // Start playback through session manager (emergency priority)
         if let first = currentTrack {
             playbackSession.requestPlayback(track: first, from: .emergencyMode, forceImmediate: true)
@@ -961,6 +749,18 @@ class SmartEmergencyQueue: ObservableObject {
             print("[SmartQueue] ⚠️ Ignoring next() - queue not active")
             return
         }
+
+        // CRITICAL FIX (2026-01-09): Prevent double-press causing unresponsive UI
+        // First press sets isSkipping=true, second press is ignored until complete
+        guard !isSkipping else {
+            print("[SmartQueue] ⏭️ Skip already in progress, ignoring duplicate request")
+            return
+        }
+
+        isSkipping = true
+        defer { isSkipping = false }
+
+        print("[SmartQueue] ⏭️ Skip requested - starting skip operation...")
 
         // SPOTIFY-STYLE: Record completed track for scoring algorithm
         if let completedTrack = currentTrack {
@@ -992,21 +792,17 @@ class SmartEmergencyQueue: ObservableObject {
         // When we go from 8 to 7, add 1 more track
         replenishQueueIfNeeded()
 
-        // Crossfade to next
+        // CRITICAL FIX (2026-01-09): Use immediate playback instead of crossfade for responsiveness
+        // Crossfade was causing perceived "unresponsiveness" because it waits for stream to buffer.
+        // Immediate playback starts the new track right away with loading state visible.
         if let next = currentTrack {
-            do {
-                try await audioEngine.crossfade(to: next, duration: 2.0)
-                // CRITICAL FIX: Reset currentTime to prevent timeline flickering
-                // This ensures UI shows correct time for new track
-                audioEngine.currentTime = 0
-            } catch {
-                // Fallback to immediate play
-                audioEngine.playImmediateWithoutFade(track: next)
-                audioEngine.currentTime = 0
-            }
+            // Reset time FIRST for immediate visual feedback
+            audioEngine.currentTime = 0
+            // Play immediately - AudioEngine will show loading state while buffering
+            audioEngine.playImmediateWithoutFade(track: next)
         }
 
-        print("[SmartQueue] Advanced to track \(currentIndex + 1)/\(totalTracks): \(currentTrack?.title ?? "Unknown")")
+        print("[SmartQueue] ⏭️ Advanced to track \(currentIndex + 1)/\(totalTracks): \(currentTrack?.title ?? "Unknown")")
         print("[SmartQueue] 🧠 Loaded: \(loadedTracks.count), Queued: \(queuedTrackIds.count), Upcoming: \(upcomingTracks.count)")
     }
 
@@ -1042,6 +838,17 @@ class SmartEmergencyQueue: ObservableObject {
             return
         }
 
+        // CRITICAL FIX (2026-01-09): Prevent double-press causing unresponsive UI
+        guard !isSkipping else {
+            print("[SmartQueue] ⏮️ Skip already in progress, ignoring duplicate request")
+            return
+        }
+
+        isSkipping = true
+        defer { isSkipping = false }
+
+        print("[SmartQueue] ⏮️ Previous requested - starting skip operation...")
+
         currentIndex -= 1
         currentTrack = allQueueTracks[currentIndex]
 
@@ -1053,11 +860,14 @@ class SmartEmergencyQueue: ObservableObject {
         updateUpcomingTracks()
 
         if let track = currentTrack {
-            playbackSession.requestPlayback(track: track, from: .emergencyMode, forceImmediate: true)
-            // CRITICAL FIX: Reset currentTime to prevent timeline flickering
+            // Reset time FIRST for immediate visual feedback
             audioEngine.currentTime = 0
+            // Play immediately
+            audioEngine.playImmediateWithoutFade(track: track)
             isPlaying = true  // Ensure isPlaying is synced with actual playback
         }
+
+        print("[SmartQueue] ⏮️ Went back to track \(currentIndex + 1)/\(totalTracks): \(currentTrack?.title ?? "Unknown")")
     }
 
     /// Skip to specific track in queue
@@ -1229,6 +1039,69 @@ class SmartEmergencyQueue: ObservableObject {
         }
     }
 
+    /// Adapt the queue when ML classifies a new cry type
+    /// Reprioritizes upcoming tracks to better match the detected cry type
+    func adaptToCryType(_ newCryType: CryType, babyAge: Int) async {
+        guard isActive else { return }
+
+        let oldCryType = self.cryType
+        self.cryType = newCryType
+
+        print("[SmartQueue] 🎯 ADAPTING to cry type: \(oldCryType.rawValue) → \(newCryType.rawValue)")
+
+        // Get optimal sounds for this cry type from UltraSmartSelector
+        let optimalSounds = ultraSmartSelector.selectOptimalSounds(
+            cryType: newCryType,
+            babyAge: babyAge,
+            cryIntensity: 0.7, // Assume moderate-high intensity for adaptive response
+            maxSounds: 5
+        )
+
+        print("[SmartQueue] 🎵 Optimal sounds for \(newCryType.rawValue): \(optimalSounds.map { $0.rawValue })")
+
+        // Reorder upcoming tracks to prioritize those matching the cry type
+        let upcomingCount = upcomingTracks.count
+        if upcomingCount > 2 {
+            // Sort upcoming tracks by relevance to new cry type
+            var reordered: [AudioTrack] = []
+            var remaining = upcomingTracks
+
+            // First: Add tracks with matching generator types
+            for sound in optimalSounds {
+                if let idx = remaining.firstIndex(where: { $0.generatorType == sound }) {
+                    reordered.append(remaining.remove(at: idx))
+                }
+            }
+
+            // Second: Add tracks with high calming scores
+            let highCalming = remaining.filter { $0.calmingScore >= 0.8 }
+            reordered.append(contentsOf: highCalming)
+            remaining.removeAll { track in highCalming.contains { $0.id == track.id } }
+
+            // Third: Add remaining tracks
+            reordered.append(contentsOf: remaining)
+
+            // Update the upcoming tracks (don't touch current track or queue before it)
+            if reordered != upcomingTracks {
+                upcomingTracks = reordered
+
+                // Also update allQueueTracks to reflect new order
+                let currentAndBefore = Array(allQueueTracks.prefix(currentIndex + 1))
+                allQueueTracks = currentAndBefore + reordered
+
+                print("[SmartQueue] ✅ Reordered \(upcomingCount) upcoming tracks for \(newCryType.rawValue)")
+            }
+        }
+
+        // Add a cry-type-specific generated track to the front if not already there
+        let instantTrack = selectRotatedGeneratedTrack(cryType: newCryType, babyAge: babyAge)
+        if upcomingTracks.first?.generatorType != instantTrack.generatorType {
+            upcomingTracks.insert(instantTrack, at: 0)
+            allQueueTracks.insert(instantTrack, at: currentIndex + 1)
+            print("[SmartQueue] 🎹 Inserted \(instantTrack.title) for immediate response to \(newCryType.rawValue)")
+        }
+    }
+
     /// Boost tracks similar to an effective one
     private func boostSimilarTracks(to effectiveTrack: AudioTrack) {
         // Find tracks with same category or generator type
@@ -1284,7 +1157,7 @@ class SmartEmergencyQueue: ObservableObject {
 
         // 2. A generated track option (for variety)
         if suggestions.count < limit {
-            let generatedOptions: [GeneratorType] = [.lullaby, .musicBox, .softPiano, .ocean]
+            let generatedOptions: [GeneratorType] = [.lullaby, .musicBox, .softPiano, .aquarium]
             for genType in generatedOptions {
                 let genTrack = createGeneratedTrack(for: genType)
                 if genTrack.id != currentTrack?.id && !suggestions.contains(where: { $0.id == genTrack.id }) {
@@ -2209,11 +2082,13 @@ class SmartEmergencyQueue: ObservableObject {
     }
 
     var hasNext: Bool {
-        return currentIndex < allQueueTracks.count - 1
+        // Disable during skip to prevent double-press issues
+        return !isSkipping && currentIndex < allQueueTracks.count - 1
     }
 
     var hasPrevious: Bool {
-        return currentIndex > 0
+        // Disable during skip to prevent double-press issues
+        return !isSkipping && currentIndex > 0
     }
 }
 

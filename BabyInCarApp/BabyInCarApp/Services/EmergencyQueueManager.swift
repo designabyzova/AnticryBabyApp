@@ -288,7 +288,7 @@ extension EmergencyQueueManager {
                 category: .natureSounds,
                 duration: 300,
                 audioSourceType: .generated,
-                generatorType: .ocean
+                generatorType: .aquarium
             ),
             AudioTrack(
                 title: "Russian Lullaby",

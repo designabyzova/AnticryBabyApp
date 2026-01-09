@@ -10,7 +10,8 @@ import SwiftUI
 
 struct LanguageSelectionView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var languageManager = LanguageManager.shared
+    @EnvironmentObject var appState: AppState
+    @ObservedObject private var languageManager = LanguageManager.shared
     @State private var selectedLanguage: SupportedLanguage
 
     init() {
@@ -25,14 +26,14 @@ struct LanguageSelectionView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "globe")
                             .font(.system(size: 48))
-                            .foregroundStyle(.appAccent.gradient)
+                            .foregroundColor(.appPrimary)
                             .padding(.top, 20)
 
-                        Text("Choose Your Language")
+                        Text(languageManager.localizedString("language.chooseYourLanguage"))
                             .font(.title2.bold())
                             .foregroundStyle(.primary)
 
-                        Text("Select the language for the app interface")
+                        Text(languageManager.localizedString("language.selectInterfaceLanguage"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -51,7 +52,11 @@ struct LanguageSelectionView: View {
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedLanguage = language
+                                    // Update UI language
                                     languageManager.setLanguage(language)
+                                    // Also update content language filter in AppState
+                                    appState.selectedLanguages = [language.toContentLanguage]
+                                    appState.saveUserData()
 
                                     // Haptic feedback
                                     let generator = UIImpactFeedbackGenerator(style: .medium)
@@ -71,24 +76,6 @@ struct LanguageSelectionView: View {
                             .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
                     )
                     .padding(.horizontal, 20)
-
-                    // Note about content language
-                    VStack(spacing: 12) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "info.circle.fill")
-                                .font(.caption)
-                            Text("About Content Language")
-                                .font(.caption.bold())
-                        }
-                        .foregroundStyle(.secondary)
-
-                        Text("This changes the app interface language. Audio content language is selected separately in your profile settings.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 24)
                 }
                 .padding(.bottom, 40)
             }
@@ -96,7 +83,7 @@ struct LanguageSelectionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(languageManager.localizedString("button.done")) {
                         dismiss()
                     }
                     .font(.body.weight(.semibold))
@@ -135,14 +122,14 @@ struct LanguageRow: View {
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.appAccent)
+                    .foregroundColor(.appPrimary)
                     .transition(.scale.combined(with: .opacity))
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(
-            isSelected ? Color.appAccent.opacity(0.08) : Color.clear
+            isSelected ? Color.appPrimary.opacity(0.08) : Color.clear
         )
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }

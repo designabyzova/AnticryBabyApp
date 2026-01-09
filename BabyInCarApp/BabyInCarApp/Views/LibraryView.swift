@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct LibraryView: View {
-    @StateObject private var contentLibrary = ContentLibraryService.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    // FIX: Use @ObservedObject for singletons - prevents state recreation on orientation change
+    @ObservedObject private var contentLibrary = ContentLibraryService.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
     @EnvironmentObject var audioEngine: AudioEngine
     @EnvironmentObject var appState: AppState
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding

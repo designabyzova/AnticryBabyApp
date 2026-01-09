@@ -85,7 +85,7 @@ struct UpcomingTrackRow: View {
                 category: .natureSounds,
                 duration: 300,
                 audioSourceType: .generated,
-                generatorType: .ocean
+                generatorType: .aquarium
             ),
             position: 1
         )

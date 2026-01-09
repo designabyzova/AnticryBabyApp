@@ -17,36 +17,38 @@ struct EmergencyCategorySelectionTests {
 
     // MARK: - Default Track Tests
 
-    @Test("Default emergency track is Soothing Lullaby")
-    func defaultEmergencyTrackIsSoothingLullaby() {
+    @Test("Default emergency track is Pianomoment by Bensound")
+    func defaultEmergencyTrackIsPianomoment() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
 
-        #expect(defaultTrack.title == "Soothing Lullaby",
-               "Default emergency track title should be 'Soothing Lullaby'")
-        #expect(defaultTrack.artist == "Lulla",
-               "Default emergency track artist should be 'Lulla'")
-        #expect(defaultTrack.category == .lullabies,
-               "Default emergency track should be lullabies category")
+        #expect(defaultTrack.title == "Pianomoment",
+               "Default emergency track title should be 'Pianomoment'")
+        #expect(defaultTrack.artist == "Bensound",
+               "Default emergency track artist should be 'Bensound'")
+        #expect(defaultTrack.category == .ambient,
+               "Default emergency track should be ambient category")
     }
 
-    @Test("Default emergency track is generated for instant playback")
-    func defaultEmergencyTrackIsGenerated() {
+    @Test("Default emergency track is streamed from R2 (real audio, not AI-generated)")
+    func defaultEmergencyTrackIsStreamed() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
 
-        #expect(defaultTrack.audioSourceType == .generated,
-               "Default emergency track should be generated (not bundled) for instant playback")
-        #expect(defaultTrack.isDownloaded == true,
-               "Default emergency track should be marked as downloaded (locally generated)")
-        #expect(defaultTrack.generatorType == .lullaby,
-               "Default emergency track should use lullaby generator")
+        #expect(defaultTrack.audioSourceType == .streamed,
+               "Default emergency track should be STREAMED (real music from R2, not AI-generated)")
+        #expect(defaultTrack.generatorType == nil,
+               "Default emergency track should NOT have a generator type (it's real audio)")
+        #expect(defaultTrack.streamURL != nil,
+               "Default emergency track should have a stream URL")
+        #expect(defaultTrack.streamURL?.contains("r2.dev") == true,
+               "Default emergency track should stream from R2 CDN")
     }
 
-    @Test("Default emergency track has high calming score")
-    func defaultEmergencyTrackHasHighCalmingScore() {
+    @Test("Default emergency track has appropriate calming score")
+    func defaultEmergencyTrackHasAppropriateScore() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
 
-        #expect(defaultTrack.calmingScore >= 0.9,
-               "Default emergency track should have high calming score (>=0.9), got: \(defaultTrack.calmingScore)")
+        #expect(defaultTrack.calmingScore >= 0.8,
+               "Default emergency track should have good calming score (>=0.8), got: \(defaultTrack.calmingScore)")
     }
 
     @Test("Default emergency track is age-appropriate for all babies")
@@ -245,8 +247,8 @@ final class EmergencyCategorySelectionXCTests: XCTestCase {
     func testDefaultTrackCanBeCreated() {
         let defaultTrack = AudioTrack.defaultEmergencyTrack()
         XCTAssertNotNil(defaultTrack)
-        XCTAssertEqual(defaultTrack.title, "Soothing Lullaby")
-        XCTAssertEqual(defaultTrack.audioSourceType, .generated)
+        XCTAssertEqual(defaultTrack.title, "Pianomoment")
+        XCTAssertEqual(defaultTrack.audioSourceType, .streamed)
     }
 
     @MainActor

@@ -7,9 +7,10 @@
 
 import Foundation
 import AVFoundation
+import SwiftUI
 
 // MARK: - Audio Category
-enum AudioCategory: String, Codable, CaseIterable, Identifiable {
+enum AudioCategory: String, CaseIterable, Identifiable {
     case classicalMusic = "Classical Music"
     case fairyTales = "Fairy Tales"
     case natureSounds = "Nature Sounds"
@@ -20,6 +21,57 @@ enum AudioCategory: String, Codable, CaseIterable, Identifiable {
     case ambient = "Ambient"
 
     var id: String { rawValue }
+
+    // MARK: - JSON Key Mapping
+    // Maps JSON category values (snake_case) to enum cases
+    private static let jsonKeyMap: [String: AudioCategory] = [
+        // Direct matches
+        "lullabies": .lullabies,
+        "ambient": .ambient,
+        "classical": .classicalMusic,
+        "classical_music": .classicalMusic,
+        "nature": .natureSounds,
+        "nature_sounds": .natureSounds,
+        "instrumental": .instrumental,
+        "modern_piano": .instrumental,  // Modern piano maps to instrumental
+        "podcasts": .podcasts,
+        "children_songs": .childrenSongs,
+        // Fairy tales (multiple languages)
+        "fairytales": .fairyTales,
+        "fairytales_en": .fairyTales,
+        "fairytales_ru": .fairyTales,
+        "fairytales_es": .fairyTales,
+        "fairytales_de": .fairyTales,
+        "fairytales_fr": .fairyTales,
+        // Legacy/alternative names
+        "Classical Music": .classicalMusic,
+        "Fairy Tales": .fairyTales,
+        "Nature Sounds": .natureSounds,
+        "Instrumental": .instrumental,
+        "Children's Songs": .childrenSongs,
+        "Podcasts": .podcasts,
+        "Lullabies": .lullabies,
+        "Ambient": .ambient
+    ]
+
+    /// Initialize from JSON category string
+    static func fromJSONKey(_ key: String) -> AudioCategory {
+        return jsonKeyMap[key] ?? jsonKeyMap[key.lowercased()] ?? .instrumental
+    }
+}
+
+// MARK: - AudioCategory Codable
+extension AudioCategory: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+        self = AudioCategory.fromJSONKey(stringValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 
     var icon: String {
         switch self {
@@ -200,6 +252,12 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
     var artworkURL: String?
     var isLocked: Bool
 
+    // Searchable tags (from tracks.json)
+    var tags: [String]
+
+    // Subcategory for finer classification
+    var subcategory: String?
+
     init(
         id: UUID = UUID(),
         title: String,
@@ -221,7 +279,9 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
         streamURL: String? = nil,
         serverId: String? = nil,
         artworkURL: String? = nil,
-        isLocked: Bool = false
+        isLocked: Bool = false,
+        tags: [String] = [],
+        subcategory: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -244,6 +304,8 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
         self.serverId = serverId
         self.artworkURL = artworkURL
         self.isLocked = isLocked
+        self.tags = tags
+        self.subcategory = subcategory
     }
 
     var formattedDuration: String {
@@ -305,60 +367,70 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
     }
 
     // MARK: - Default Emergency Track
-    /// Returns the default emergency track - uses GENERATED lullaby for instant, reliable playback
-    /// Generated audio starts immediately with no file loading delays or network issues
-    /// This guarantees emergency mode ALWAYS has sound, even offline
+    /// Returns the default emergency track - REAL "Pianomoment" by Bensound from R2
+    /// User preference: Real piano music, NOT AI-generated sounds
+    /// NOTE: This requires network for first play but provides real music quality
     static func defaultEmergencyTrack() -> AudioTrack {
+        // Real track from tracks.json: Pianomoment by Bensound
+        // ID: 00c5de7b-c5bd-4214-9281-26ab232a64d8
+        // Filename: ambient/bensound_pianomoment.mp3
         return AudioTrack(
-            id: UUID(uuidString: "E7744FB8-6D21-4364-A000-000000000001") ?? UUID(),
-            title: "Soothing Lullaby",
-            artist: "Lulla",
-            category: .lullabies,
+            id: UUID(uuidString: "00c5de7b-c5bd-4214-9281-26ab232a64d8") ?? UUID(),
+            title: "Pianomoment",
+            artist: "Bensound",
+            category: .ambient,
             language: nil,
-            duration: 300.0,  // 5 minutes of continuous lullaby
+            duration: 114.0,  // Real duration from tracks.json
             ageRangeMin: 0,
             ageRangeMax: 36,
             optimalAgeMonths: Array(0...36),
             tempoBPM: 60,
-            calmingScore: 0.95,  // Very high calming score
+            calmingScore: 0.85,  // From tracks.json
             isPremium: false,
-            isDownloaded: true,  // Generated locally - always available!
-            audioSourceType: .generated,  // CRITICAL: Use generated audio for reliability
-            generatorType: .lullaby,  // Gentle lullaby melody
+            isDownloaded: false,  // Streamed from R2
+            audioSourceType: .streamed,  // REAL audio from R2 CDN
+            generatorType: nil,  // NOT generated!
             fileName: nil,
             fileExtension: nil,
-            streamURL: nil,
-            serverId: "default-emergency-generated",
+            streamURL: "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/ambient/bensound_pianomoment.mp3",
+            serverId: "00c5de7b-c5bd-4214-9281-26ab232a64d8",
             artworkURL: nil,
-            isLocked: false
+            isLocked: false,
+            tags: ["ambient", "relaxing"],
+            subcategory: "ambient"
         )
     }
 
-    /// Alternative emergency track using Music Box sound
-    /// Can be used if lullaby doesn't suit the baby's preference
+    /// Alternative emergency track - REAL "Relaxing" by Bensound from R2
+    /// Provides variety when Pianomoment doesn't suit the baby's preference
     static func alternativeEmergencyTrack() -> AudioTrack {
+        // Real track from tracks.json: Relaxing by Bensound
+        // ID: 2921bbe9-37f9-49fd-ab5a-b3afa9886214
+        // Filename: ambient/bensound_relaxing.mp3
         return AudioTrack(
-            id: UUID(uuidString: "E7744FB8-6D21-4364-A000-000000000002") ?? UUID(),
-            title: "Music Box",
-            artist: "Lulla",
-            category: .lullabies,
+            id: UUID(uuidString: "2921bbe9-37f9-49fd-ab5a-b3afa9886214") ?? UUID(),
+            title: "Relaxing",
+            artist: "Bensound",
+            category: .ambient,
             language: nil,
-            duration: 300.0,
+            duration: 288.1,  // Real duration from tracks.json
             ageRangeMin: 0,
             ageRangeMax: 36,
             optimalAgeMonths: Array(0...36),
-            tempoBPM: 50,
-            calmingScore: 0.92,
+            tempoBPM: 60,
+            calmingScore: 0.85,  // From tracks.json
             isPremium: false,
-            isDownloaded: true,
-            audioSourceType: .generated,
-            generatorType: .musicBox,
+            isDownloaded: false,  // Streamed from R2
+            audioSourceType: .streamed,  // REAL audio from R2 CDN
+            generatorType: nil,  // NOT generated!
             fileName: nil,
             fileExtension: nil,
-            streamURL: nil,
-            serverId: "default-emergency-musicbox",
+            streamURL: "https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev/ambient/bensound_relaxing.mp3",
+            serverId: "2921bbe9-37f9-49fd-ab5a-b3afa9886214",
             artworkURL: nil,
-            isLocked: false
+            isLocked: false,
+            tags: ["ambient", "relaxing"],
+            subcategory: "ambient"
         )
     }
 }
@@ -372,26 +444,18 @@ enum AudioSourceType: String, Codable {
 }
 
 // MARK: - Generator Type (for synthesized audio)
-// ⚠️ WHITE NOISE REMOVED: User feedback indicates white noise is SCARY for babies!
-// Only gentle, melodic sounds remain.
+// ⚠️ WHITE NOISE AND NATURE SOUNDS REMOVED: User feedback indicates they are TOO NOISY for babies!
+// Only gentle, melodic musical sounds remain.
+// REMOVED (2026-01-09): ocean, forest, waterfall, campfire, birds, crickets, fireplace, river
+// These sounds have unpredictable volume variations that startle babies.
 enum GeneratorType: String, Codable, CaseIterable {
-    // Nature-like sounds (ONLY gentle - NO rain/thunder/wind/noise!)
-    case ocean = "Ocean Waves"
-    case river = "River Stream"
-    case birds = "Birds Chirping"
-    case crickets = "Crickets"
-    case fireplace = "Fireplace"
-    case forest = "Forest Ambience"
-    case waterfall = "Waterfall"
-    case campfire = "Campfire Night"
-
-    // Baby-specific sounds (gentle only - NO harsh mechanical sounds!)
+    // Baby-specific sounds (gentle only - NO harsh/variable sounds!)
     case heartbeat = "Heartbeat"
     case womb = "Womb Sounds"
     case shushing = "Shushing"
     case aquarium = "Aquarium Bubbles"
 
-    // Musical tones
+    // Musical tones (consistent, predictable, soothing)
     case lullaby = "Lullaby Melody"
     case musicBox = "Music Box"
     case chimes = "Wind Chimes"
@@ -401,9 +465,6 @@ enum GeneratorType: String, Codable, CaseIterable {
 
     var category: AudioCategory {
         switch self {
-        case .ocean, .river, .birds, .crickets, .fireplace,
-             .forest, .waterfall, .campfire:
-            return .natureSounds
         case .heartbeat, .womb, .shushing, .aquarium:
             return .ambient
         case .lullaby, .musicBox, .chimes, .bells, .softPiano, .gentleGuitar:
@@ -419,20 +480,12 @@ enum GeneratorType: String, Codable, CaseIterable {
         switch self {
         case .womb, .heartbeat, .shushing:
             return 0...6
-        case .ocean, .river:
-            return 3...36
-        case .birds, .crickets:
-            return 6...36
-        case .forest, .waterfall, .campfire:
-            return 12...36 // More complex sounds for older babies
         case .lullaby, .musicBox:
             return 0...24
         case .chimes, .bells:
             return 3...36
         case .softPiano, .gentleGuitar:
-            return 9...36 // Musical instruments for older babies
-        case .fireplace:
-            return 6...36
+            return 6...36 // Musical instruments for slightly older babies
         case .aquarium:
             return 6...36 // Gentle bubbling works for many ages
         }
@@ -442,18 +495,11 @@ enum GeneratorType: String, Codable, CaseIterable {
         switch self {
         case .womb, .heartbeat: return 0.95
         case .shushing: return 0.92
-        case .ocean: return 0.90
-        case .lullaby, .musicBox: return 0.85
-        case .softPiano: return 0.88
-        case .gentleGuitar: return 0.86
-        case .river: return 0.85
-        case .forest: return 0.87 // Rich nature soundscape
-        case .waterfall: return 0.86 // Consistent flowing water
-        case .campfire: return 0.84 // Crackling with night ambience
-        case .birds, .crickets: return 0.75
-        case .chimes, .bells: return 0.82
-        case .fireplace: return 0.78
+        case .softPiano: return 0.90
+        case .gentleGuitar: return 0.88
+        case .lullaby, .musicBox: return 0.87
         case .aquarium: return 0.85 // Gentle bubbles
+        case .chimes, .bells: return 0.84
         }
     }
 
@@ -461,22 +507,6 @@ enum GeneratorType: String, Codable, CaseIterable {
     /// Research-backed explanation of why this sound works for baby soothing
     var scientificRationale: String {
         switch self {
-        case .ocean:
-            return "Ocean waves create predictable rhythmic patterns at 12-14 cycles/minute matching relaxed breathing. Shown to synchronize brainwaves to theta state."
-        case .river:
-            return "Continuous water flow provides consistent masking without sudden changes. Water sounds activate parasympathetic response (Alvarsson et al., 2010)."
-        case .birds:
-            return "Birdsong signals safety in evolutionary terms ('safe environment' hypothesis). Best for daytime calming rather than sleep induction."
-        case .crickets:
-            return "Cricket sounds have regular rhythmic patterns at 2-4Hz matching relaxed delta brainwaves. Effective for older toddlers familiar with outdoor sounds."
-        case .fireplace:
-            return "Fire crackling provides random but gentle sound variations. Creates sense of warmth/security. Best combined with low-frequency ambient."
-        case .forest:
-            return "Complex forest ambience with layered sounds. Research shows 20+ minutes of nature sounds reduces anxiety by 33% (Largo-Wright et al., 2016)."
-        case .waterfall:
-            return "Waterfalls produce gentle broadband sounds with natural variation. Effective for extended masking without auditory fatigue."
-        case .campfire:
-            return "Combines fire crackle with night ambience. Multiple studies show fire sounds activate ancient 'safety' responses in humans."
         case .heartbeat:
             return "Heartbeat at 60-80 BPM mimics intrauterine environment. Reduces crying by 54% in newborns (Rosner & Doherty, 1979). Most effective 0-3 months."
         case .womb:
@@ -507,32 +537,20 @@ enum GeneratorType: String, Codable, CaseIterable {
             return [.tired, .general, .discomfort]
         case .shushing:
             return [.hunger, .tired, .attention]
-        case .ocean, .river:
-            return [.tired, .attention]
         case .musicBox, .lullaby:
             return [.attention, .tired]
         case .softPiano, .gentleGuitar:
             return [.attention, .tired]
         case .aquarium:
             return [.tired, .general]
-        default:
-            return [.general]
+        case .chimes, .bells:
+            return [.attention, .general]
         }
     }
 
     /// Icon for UI display
     var icon: String {
         switch self {
-        // Nature-like sounds
-        case .ocean: return "water.waves"
-        case .river: return "drop.triangle"
-        case .birds: return "bird"
-        case .crickets: return "ant"
-        case .fireplace: return "flame"
-        case .forest: return "tree"
-        case .waterfall: return "arrow.down.to.line"
-        case .campfire: return "flame.fill"
-
         // Baby-specific sounds
         case .heartbeat: return "heart.fill"
         case .womb: return "circle.circle"
@@ -552,16 +570,6 @@ enum GeneratorType: String, Codable, CaseIterable {
     /// Short name for compact UI display (buttons, chips)
     var shortName: String {
         switch self {
-        // Nature-like sounds
-        case .ocean: return "Ocean"
-        case .river: return "River"
-        case .birds: return "Birds"
-        case .crickets: return "Crickets"
-        case .fireplace: return "Fire"
-        case .forest: return "Forest"
-        case .waterfall: return "Falls"
-        case .campfire: return "Camp"
-
         // Baby-specific sounds
         case .heartbeat: return "Heart"
         case .womb: return "Womb"
@@ -591,12 +599,17 @@ enum GeneratorType: String, Codable, CaseIterable {
                 "Karp, H. (2002) - The Happiest Baby on the Block",
                 "Barr et al. (2006) - Effectiveness of infant soothing techniques"
             ]
-        case .ocean, .river, .forest:
+        case .softPiano, .gentleGuitar:
             return [
-                "Gould van Praag et al. (2017) - Nature sounds and physiological stress reduction",
-                "Alvarsson et al. (2010) - Stress recovery during nature sound exposure"
+                "Standley (2002) - Music therapy for premature infants in NICU",
+                "Loewy et al. (2013) - Live music therapy reduces stress in premature infants"
             ]
-        default:
+        case .lullaby, .musicBox:
+            return [
+                "Trainor (2015) - Lullabies and infant-directed singing",
+                "Trehub et al. (1993) - Maternal singing maintains infant attention"
+            ]
+        case .aquarium, .chimes, .bells:
             return ["General pediatric sleep research and clinical observations"]
         }
     }
@@ -847,149 +860,3 @@ struct PlaylistGenerationMetadata: Codable, Equatable, Hashable {
     }
 }
 
-// MARK: - Playback Context (Unified Player Architecture)
-
-import SwiftUI
-
-/// Playback context defines WHY audio is playing and HOW the UI should adapt
-/// This enables single player with context-aware UI (purple for emergency, green for library)
-enum PlaybackContext: Equatable, Hashable {
-    /// Normal library browsing - user selected track/playlist manually
-    case library(source: String)
-
-    /// Emergency cry response - baby crying NOW, need immediate calming
-    case emergencyCry(type: CryType, babyAge: Int)
-
-    /// Ambient monitoring mode - proactive background music while monitoring
-    case ambientMonitoring(babyAge: Int)
-
-    /// AI-powered recommendations - "More Like This" or discovery
-    case aiRecommendations(basedOn: UUID)
-
-    /// CarPlay initiated playback
-    case carPlay
-
-    // MARK: - Context Properties
-
-    /// Display name for session
-    var displayName: String {
-        switch self {
-        case .library(let source):
-            return source
-        case .emergencyCry(let type, _):
-            return "Emergency: \(type.displayName)"
-        case .ambientMonitoring:
-            return "Ambient Monitoring"
-        case .aiRecommendations:
-            return "Smart Recommendations"
-        case .carPlay:
-            return "CarPlay"
-        }
-    }
-
-    /// Whether auto-replenish should be enabled (Spotify-style infinite queue)
-    var autoReplenishEnabled: Bool {
-        switch self {
-        case .emergencyCry, .ambientMonitoring:
-            return true  // Keep playing until baby calms down
-        case .library, .aiRecommendations, .carPlay:
-            return false  // Play playlist as-is
-        }
-    }
-
-    /// Minimum queue size before triggering replenishment
-    var minQueueSize: Int {
-        switch self {
-        case .emergencyCry:
-            return 3  // Always keep 3 tracks ahead (emergency)
-        case .ambientMonitoring:
-            return 5  // Longer buffer for background mode
-        default:
-            return 0  // No auto-replenish
-        }
-    }
-
-    /// Whether this is high-priority playback (interrupts normal playback)
-    var isHighPriority: Bool {
-        switch self {
-        case .emergencyCry:
-            return true
-        default:
-            return false
-        }
-    }
-
-    /// UI theme for player
-    var theme: PlayerTheme {
-        switch self {
-        case .emergencyCry(let type, _):
-            return .emergency(cryType: type)
-        case .ambientMonitoring:
-            return .ambient
-        default:
-            return .standard
-        }
-    }
-}
-
-/// UI theme for adaptive player
-enum PlayerTheme: Equatable {
-    case standard
-    case emergency(cryType: CryType)
-    case ambient
-
-    /// Primary gradient colors
-    var gradientColors: [Color] {
-        switch self {
-        case .standard:
-            return [Color.green.opacity(0.6), Color.green.opacity(0.2)]
-        case .emergency(let cryType):
-            // Different purple shades based on cry type
-            switch cryType {
-            case .hunger:
-                return [Color.orange.opacity(0.6), Color.orange.opacity(0.2)]
-            case .tired:
-                return [Color.purple.opacity(0.6), Color.purple.opacity(0.2)]
-            case .pain:
-                return [Color.red.opacity(0.5), Color.red.opacity(0.2)]
-            default:
-                return [Color.purple.opacity(0.6), Color.purple.opacity(0.2)]
-            }
-        case .ambient:
-            return [Color.blue.opacity(0.5), Color.blue.opacity(0.2)]
-        }
-    }
-
-    /// Primary accent color
-    var accentColor: Color {
-        switch self {
-        case .standard:
-            return .green
-        case .emergency(let cryType):
-            switch cryType {
-            case .hunger: return .orange
-            case .tired: return .purple
-            case .pain: return .red
-            default: return .purple
-            }
-        case .ambient:
-            return .blue
-        }
-    }
-
-    /// Whether to show emergency-specific controls
-    var showEmergencyControls: Bool {
-        if case .emergency = self {
-            return true
-        }
-        return false
-    }
-
-    /// Whether to show AI reasoning card
-    var showAIReasoning: Bool {
-        if case .emergency = self {
-            return true
-        }
-        return false
-    }
-}

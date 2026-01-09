@@ -230,6 +230,22 @@ enum SupportedLanguage: String, CaseIterable, Identifiable {
     var isRTL: Bool {
         self == .arabic
     }
+
+    /// Map to content Language enum for audio content filtering
+    var toContentLanguage: Language {
+        switch self {
+        case .english: return .english
+        case .russian: return .russian
+        case .spanish: return .spanish
+        case .french: return .french
+        case .german: return .german
+        case .chineseSimplified: return .mandarin
+        case .japanese: return .japanese
+        case .portuguese: return .portuguese
+        case .arabic: return .arabic
+        case .italian: return .italian
+        }
+    }
 }
 
 // MARK: - Language Manager
@@ -240,13 +256,22 @@ class LanguageManager: ObservableObject {
     @Published var currentLanguage: SupportedLanguage {
         didSet {
             UserDefaults.standard.set(currentLanguage.rawValue, forKey: "app_language")
+            // Increment refresh ID to force view updates
+            refreshID = UUID()
             // Notify app to update language
             NotificationCenter.default.post(name: .languageChanged, object: currentLanguage)
         }
     }
 
+    /// Unique ID that changes when language changes - observe this to refresh views
+    @Published var refreshID = UUID()
+
+    /// All translations loaded from Localizable.xcstrings
+    /// Structure: [key: [languageCode: translatedValue]]
+    private var translations: [String: [String: String]] = [:]
+
     private init() {
-        // Load saved language or default to device language
+        // Initialize currentLanguage first (required before loadTranslations)
         if let savedLang = UserDefaults.standard.string(forKey: "app_language"),
            let language = SupportedLanguage(rawValue: savedLang) {
             self.currentLanguage = language
@@ -255,10 +280,84 @@ class LanguageManager: ObservableObject {
             let deviceLang = Locale.current.language.languageCode?.identifier ?? "en"
             self.currentLanguage = SupportedLanguage(rawValue: deviceLang) ?? .english
         }
+
+        // Load translations from xcstrings file
+        loadTranslations()
     }
 
     func setLanguage(_ language: SupportedLanguage) {
         currentLanguage = language
+    }
+
+    /// Load translations from compiled .lproj bundles
+    /// Xcode compiles .xcstrings into binary .strings files in each .lproj folder
+    private func loadTranslations() {
+        // All supported language codes
+        let languageCodes = ["en", "ru", "es", "fr", "de", "zh-Hans", "ja", "pt", "ar", "it"]
+
+        for langCode in languageCodes {
+            // Find the .lproj bundle for this language
+            guard let lprojPath = Bundle.main.path(forResource: langCode, ofType: "lproj"),
+                  let lprojBundle = Bundle(path: lprojPath),
+                  let stringsPath = lprojBundle.path(forResource: "Localizable", ofType: "strings") else {
+                print("LanguageManager: Could not find \(langCode).lproj/Localizable.strings")
+                continue
+            }
+
+            // Load the binary plist strings file
+            guard let stringsDict = NSDictionary(contentsOfFile: stringsPath) as? [String: String] else {
+                print("LanguageManager: Failed to load strings from \(langCode).lproj")
+                continue
+            }
+
+            // Store translations keyed by language
+            for (key, value) in stringsDict {
+                if translations[key] == nil {
+                    translations[key] = [:]
+                }
+                translations[key]?[langCode] = value
+            }
+        }
+
+        print("LanguageManager: Loaded \(translations.count) translation keys from .lproj bundles")
+    }
+
+    /// Get localized string for a key using the current language
+    func localizedString(_ key: String, comment: String = "") -> String {
+        // Get language code for current language
+        let langCode = currentLanguage.rawValue
+
+        // Try to find translation for current language
+        if let keyTranslations = translations[key] {
+            // First try exact match
+            if let translation = keyTranslations[langCode] {
+                return translation
+            }
+            // For Chinese, try zh-Hans mapping
+            if langCode == "zh-Hans", let translation = keyTranslations["zh-Hans"] {
+                return translation
+            }
+            // Fallback to English
+            if let englishTranslation = keyTranslations["en"] {
+                return englishTranslation
+            }
+        }
+
+        // If no translation found, return key (for debugging)
+        print("LanguageManager: Missing translation for key '\(key)' in language '\(langCode)'")
+        return key
+    }
+
+    /// Get localized string with format arguments
+    func localizedString(_ key: String, _ arguments: CVarArg...) -> String {
+        let format = localizedString(key)
+        return String(format: format, arguments: arguments)
+    }
+
+    /// Reload translations (useful after updates)
+    func reloadTranslations() {
+        translations.removeAll()
+        loadTranslations()
     }
 }
 
@@ -272,5 +371,53 @@ extension View {
     /// Apply RTL layout based on current language
     func applyRTL() -> some View {
         self.environment(\.layoutDirection, LanguageManager.shared.currentLanguage.isRTL ? .rightToLeft : .leftToRight)
+    }
+}
+
+// MARK: - Localized String Helper
+/// Global function for easy access to localized strings
+/// Usage: loc("nav.profile") or loc("greeting.hello", "John")
+@MainActor
+func loc(_ key: String) -> String {
+    LanguageManager.shared.localizedString(key)
+}
+
+@MainActor
+func loc(_ key: String, _ arguments: CVarArg...) -> String {
+    let format = LanguageManager.shared.localizedString(key)
+    return String(format: format, arguments: arguments)
+}
+
+// MARK: - LocalizedText View
+/// A Text view that automatically updates when language changes
+struct LocalizedText: View {
+    let key: String
+    @ObservedObject private var languageManager = LanguageManager.shared
+
+    init(_ key: String) {
+        self.key = key
+    }
+
+    var body: some View {
+        Text(languageManager.localizedString(key))
+            .id(languageManager.refreshID) // Force refresh on language change
+    }
+}
+
+// MARK: - View Modifier for Language-Aware Updates
+struct LanguageAwareModifier: ViewModifier {
+    @ObservedObject private var languageManager = LanguageManager.shared
+
+    func body(content: Content) -> some View {
+        content
+            .id(languageManager.refreshID) // Force view refresh when language changes
+            .environment(\.layoutDirection, languageManager.currentLanguage.isRTL ? .rightToLeft : .leftToRight)
+    }
+}
+
+extension View {
+    /// Makes this view refresh automatically when the app language changes
+    func languageAware() -> some View {
+        modifier(LanguageAwareModifier())
     }
 }

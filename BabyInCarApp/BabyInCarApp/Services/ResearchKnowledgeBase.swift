@@ -123,7 +123,7 @@ class ResearchKnowledgeBase {
             parts.append("Your baby spent 9 months listening to your heartbeat and the sounds of your body.")
             parts.append("These familiar sounds trigger a natural calming reflex.")
 
-        case .ocean, .waterfall, .river:
+        case .aquarium, .aquarium, .aquarium:
             parts.append("Nature sounds provide consistent, rhythmic patterns that promote relaxation.")
             parts.append("The repetitive quality helps babies feel secure and drift off to sleep.")
 
@@ -141,7 +141,7 @@ class ResearchKnowledgeBase {
             parts.append("Gentle instrumental music helps regulate breathing and heart rate.")
             parts.append("Low-tempo melodies are especially soothing for babies of all ages.")
 
-        case .birds, .forest:
+        case .chimes, .bells:
             parts.append("Gentle nature sounds create a peaceful environment.")
             parts.append("The natural rhythms help babies relax and feel calm.")
 
@@ -189,7 +189,7 @@ class ResearchKnowledgeBase {
             return .fiveSs
         case .musicBox, .lullaby, .softPiano, .gentleGuitar:
             return .lullabies
-        case .ocean, .river, .waterfall, .birds, .forest, .crickets, .fireplace, .campfire:
+        case .aquarium, .aquarium, .aquarium, .chimes, .bells, .chimes, .softPiano, .softPiano:
             return .sleepScience
         case .chimes, .bells, .aquarium:
             return .musicTherapy

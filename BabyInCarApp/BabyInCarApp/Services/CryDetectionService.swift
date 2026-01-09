@@ -511,17 +511,30 @@ class CryDetectionService: ObservableObject {
     }
 
     func stopMonitoring() {
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine = nil
-
-        // TECHNICAL DEBT FIX: Release audio session through centralized manager
-        AudioSessionManager.shared.releaseSession(serviceId: "CryDetectionService")
-
+        // PERFORMANCE FIX: Update UI state IMMEDIATELY before blocking operations
+        // This makes the UI feel responsive while cleanup happens in background
         isMonitoring = false
         isCryDetected = false
         cryIntensity = 0
         detectionStatus = .idle
+
+        // Capture references for background cleanup
+        let engineToStop = audioEngine
+        audioEngine = nil
+
+        // PERFORMANCE FIX: Release session with immediate=true to bypass 100ms debounce
+        // This prevents the UI from appearing stuck while waiting for debounce timer
+        AudioSessionManager.shared.releaseSession(serviceId: "CryDetectionService", immediate: true)
+
+        // PERFORMANCE FIX: Move blocking I/O operations to background thread
+        // removeTap() and engine.stop() are synchronous I/O that can block for 50-100ms
+        Task.detached(priority: .userInitiated) {
+            engineToStop?.stop()
+            engineToStop?.inputNode.removeTap(onBus: 0)
+            print("[CryDetection] ✅ Audio engine stopped in background")
+        }
+
+        // Reset state (fast in-memory operations)
         consecutiveCryFrames = 0
         cryPatternBuffer.removeAll()
         clearDeepInfantBuffer()

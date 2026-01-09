@@ -634,7 +634,7 @@ class AdaptiveFeedbackLoop: ObservableObject {
         }
 
         // Analyze rhythm-synced sound effectiveness
-        let rhythmicSounds: [GeneratorType] = [.heartbeat, .lullaby, .musicBox, .ocean]
+        let rhythmicSounds: [GeneratorType] = [.heartbeat, .lullaby, .musicBox, .aquarium]
         let rhythmicEffectiveness = rhythmicSounds
             .compactMap { profile.soundEffectiveness[$0.rawValue] }
             .reduce(0, +) / Double(rhythmicSounds.count)
@@ -646,8 +646,8 @@ class AdaptiveFeedbackLoop: ObservableObject {
         }
 
         // Analyze pitch preference
-        let lowPitchSounds: [GeneratorType] = [.womb, .ocean, .river]
-        let highPitchSounds: [GeneratorType] = [.birds, .chimes, .bells]
+        let lowPitchSounds: [GeneratorType] = [.womb, .aquarium, .aquarium]
+        let highPitchSounds: [GeneratorType] = [.chimes, .chimes, .bells]
 
         let lowPitchScore = lowPitchSounds
             .compactMap { profile.soundEffectiveness[$0.rawValue] }

@@ -10,11 +10,14 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var aiEngine = AIRecommendationEngine.shared
-    @StateObject private var emergencyService = EmergencyCryStopService.shared
-    @StateObject private var favoritesManager = FavoritesManager.shared
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
+    // FIX: Use @ObservedObject for singletons - prevents recreation on orientation change
+    // @StateObject creates new wrapper on view rebuild, @ObservedObject reuses existing singleton
+    @ObservedObject private var aiEngine = AIRecommendationEngine.shared
+    @ObservedObject private var emergencyService = EmergencyCryStopService.shared
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     @State private var quickPickPlaylists: [Playlist] = []
     @State private var isLoading = true
@@ -81,6 +84,7 @@ struct HomeView: View {
             )
             .toolbar(.hidden, for: .navigationBar)
         }
+        .id(languageManager.refreshID) // Force refresh when language changes
         .task {
             await loadQuickPicks()
         }
@@ -207,10 +211,10 @@ struct HomeView: View {
     private var timeBasedGreeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
-        case 5..<12: return "Good Morning!"
-        case 12..<17: return "Good Afternoon!"
-        case 17..<21: return "Good Evening!"
-        default: return "Sweet Dreams!"
+        case 5..<12: return languageManager.localizedString("home.greeting.morning")
+        case 12..<17: return languageManager.localizedString("home.greeting.afternoon")
+        case 17..<21: return languageManager.localizedString("home.greeting.evening")
+        default: return languageManager.localizedString("home.greeting.night")
         }
     }
 
@@ -227,10 +231,10 @@ struct HomeView: View {
     private var timeOfDayText: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
-        case 5..<12: return "Morning time"
-        case 12..<17: return "Afternoon nap time"
-        case 17..<21: return "Evening wind down"
-        default: return "Bedtime mode"
+        case 5..<12: return languageManager.localizedString("home.morningTime")
+        case 12..<17: return languageManager.localizedString("home.afternoonNapTime")
+        case 17..<21: return languageManager.localizedString("home.eveningWindDown")
+        default: return languageManager.localizedString("home.bedtimeMode")
         }
     }
 
@@ -252,7 +256,7 @@ struct HomeView: View {
                         .font(.system(size: 14))
                         .foregroundColor(.appPrimary)
 
-                    Text("AI Cry Detection & Insights")
+                    Text(languageManager.localizedString("home.aiCryDetection"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.appPrimary)
 
@@ -262,7 +266,7 @@ struct HomeView: View {
                         Circle()
                             .fill(emergencyService.isAIMonitoringEnabled ? Color.green : Color.gray.opacity(0.4))
                             .frame(width: 6, height: 6)
-                        Text(emergencyService.isAIMonitoringEnabled ? "Active" : "Tap to start")
+                        Text(emergencyService.isAIMonitoringEnabled ? languageManager.localizedString("home.active") : languageManager.localizedString("home.tapToStart"))
                             .font(.system(size: 11))
                             .foregroundColor(.appTextSecondary)
                     }
@@ -296,13 +300,13 @@ struct HomeView: View {
                     .font(.system(size: 20))
                     .foregroundColor(.appPrimary)
 
-                Text("Voice Control")
+                Text(languageManager.localizedString("home.voiceControl"))
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.appText)
 
                 Spacer()
 
-                Text("Hands-free")
+                Text(languageManager.localizedString("home.handsFree"))
                     .font(.system(size: 12))
                     .foregroundColor(.appTextSecondary)
                     .padding(.horizontal, 10)
@@ -330,7 +334,7 @@ struct HomeView: View {
     // MARK: - Now Playing Section
     private var nowPlayingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("NOW PLAYING")
+            Text(languageManager.localizedString("player.nowPlaying").uppercased())
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.appTextSecondary)
                 .padding(.horizontal, 20)
@@ -420,14 +424,14 @@ struct HomeView: View {
                 Image(systemName: "heart.fill")
                     .foregroundColor(.appSecondary)
 
-                Text("Your Favorites")
+                Text(languageManager.localizedString("home.yourFavorites"))
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.appText)
 
                 Spacer()
 
                 NavigationLink(destination: FavoritesView()) {
-                    Text("See All")
+                    Text(languageManager.localizedString("home.seeAll"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.appPrimary)
                 }
@@ -451,11 +455,11 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 if let baby = appState.currentBaby {
-                    Text("Quick Picks for \(baby.formattedAge)")
+                    Text(String(format: languageManager.localizedString("home.quickPicksFor"), baby.formattedAge))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.appText)
                 } else {
-                    Text("Quick Picks")
+                    Text(languageManager.localizedString("home.quickPicks"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.appText)
                 }
@@ -487,7 +491,7 @@ struct HomeView: View {
     // MARK: - Categories Section
     private var categoriesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Categories")
+            Text(languageManager.localizedString("home.categories"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.appText)
                 .padding(.horizontal, 20)
@@ -905,7 +909,7 @@ struct EmergencyModeView: View {
         switch sound {
         case .musicBox, .lullaby, .softPiano, .gentleGuitar, .chimes, .bells:
             return "Melodic • Calming"
-        case .ocean, .waterfall, .river, .forest:
+        case .aquarium, .aquarium, .aquarium, .bells:
             return "Nature • Soothing"
         case .heartbeat, .womb, .shushing:
             return "Comfort • Familiar"
@@ -966,7 +970,7 @@ struct EmergencyModeView: View {
         // 3. Record learning data
         if let baby = appState.currentBaby {
             let cryType = emergencyService.detectedCryType
-            let currentSound = SmartCryResponseEngine.shared.currentSound ?? .ocean
+            let currentSound = SmartCryResponseEngine.shared.currentSound ?? .aquarium
 
             // Record to adaptive learning engine
             learningEngine.recordSession(

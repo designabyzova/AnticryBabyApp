@@ -10,9 +10,11 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
-    @StateObject private var adaptiveLearning = AdaptiveLearningEngine.shared
+    // FIX: Use @ObservedObject for singletons - prevents state recreation on orientation change
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var adaptiveLearning = AdaptiveLearningEngine.shared
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     @State private var showingEditBaby = false
     @State private var showingLanguageSelection = false
@@ -41,13 +43,14 @@ struct ProfileView: View {
             }
             .scrollIndicators(.visible)
             .background(Color.appBackground)
-            .navigationTitle("Profile")
+            .navigationTitle(languageManager.localizedString("nav.profile"))
         }
+        .id(languageManager.refreshID) // Force refresh when language changes
         .sheet(isPresented: $showingEditBaby) {
             EditBabySheet()
         }
         .sheet(isPresented: $showingLanguageSelection) {
-            LanguageSelectionSheet()
+            LanguageSelectionView()
         }
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
@@ -116,7 +119,7 @@ struct ProfileView: View {
             } label: {
                 HStack {
                     Image(systemName: "pencil")
-                    Text("Edit Profile")
+                    Text(languageManager.localizedString("profile.editProfile"))
                 }
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.appPrimary)
@@ -143,11 +146,11 @@ struct ProfileView: View {
                     .foregroundColor(.yellow)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Upgrade to Premium")
+                    Text(languageManager.localizedString("profile.upgradeToPremium"))
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
 
-                    Text("Unlock all content & features")
+                    Text(languageManager.localizedString("profile.unlockAllContent"))
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -175,23 +178,23 @@ struct ProfileView: View {
     private var settingsSections: some View {
         VStack(spacing: 20) {
             // Audio Settings
-            SettingsSection(title: "Audio Settings") {
+            SettingsSection(title: languageManager.localizedString("settings.audioSettings")) {
                 SettingsRow(
                     icon: "speaker.wave.2.fill",
-                    title: "Default Volume",
+                    title: languageManager.localizedString("settings.defaultVolume"),
                     value: "\(Int(audioEngine.volume * 100))%"
                 )
 
                 SettingsRow(
                     icon: "clock.fill",
-                    title: "Sleep Timer",
+                    title: languageManager.localizedString("settings.sleepTimer"),
                     value: audioEngine.sleepTimer.displayName
                 )
 
                 SettingsToggleRow(
                     icon: "waveform.path",
-                    title: "Smooth Transitions",
-                    subtitle: "Crossfade between tracks",
+                    title: languageManager.localizedString("settings.smoothTransitions"),
+                    subtitle: languageManager.localizedString("settings.crossfadeTracks"),
                     isOn: Binding(
                         get: { appState.smoothTransitionsEnabled },
                         set: { appState.setSmoothTransitions($0) }
@@ -207,10 +210,10 @@ struct ProfileView: View {
             }
 
             // Cry Detection Settings (Auto-enabled by default for safety)
-            SettingsSection(title: "Cry Detection") {
+            SettingsSection(title: languageManager.localizedString("settings.cryDetection")) {
                 SettingsToggleRow(
                     icon: "waveform.badge.exclamationmark",
-                    title: "Auto-Start on Launch",
+                    title: languageManager.localizedString("settings.autoStartOnLaunch"),
                     isOn: Binding(
                         get: { appState.autoCryMonitoringEnabled },
                         set: { appState.setAutoCryMonitoring($0) }
@@ -220,8 +223,8 @@ struct ProfileView: View {
                 NavigationLink(destination: CryDetectionView()) {
                     SettingsRow(
                         icon: "ear.and.waveform",
-                        title: "Cry Detection Settings",
-                        value: EmergencyCryStopService.shared.isAIMonitoringEnabled ? "Active" : "Ready",
+                        title: languageManager.localizedString("settings.cryDetectionSettings"),
+                        value: EmergencyCryStopService.shared.isAIMonitoringEnabled ? languageManager.localizedString("home.active") : languageManager.localizedString("settings.ready"),
                         valueColor: EmergencyCryStopService.shared.isAIMonitoringEnabled ? .green : .secondary,
                         showChevron: true
                     )
@@ -229,14 +232,14 @@ struct ProfileView: View {
             }
 
             // Content Settings
-            SettingsSection(title: "Content") {
+            SettingsSection(title: languageManager.localizedString("settings.content")) {
                 Button {
                     showingLanguageSelection = true
                 } label: {
                     SettingsRow(
                         icon: "globe",
-                        title: "Languages",
-                        value: appState.selectedLanguages.map { $0.flag }.joined(separator: " "),
+                        title: languageManager.localizedString("settings.languages"),
+                        value: "\(languageManager.currentLanguage.flag) \(languageManager.currentLanguage.displayName)",
                         showChevron: true
                     )
                 }
@@ -244,24 +247,24 @@ struct ProfileView: View {
                 NavigationLink(destination: DownloadsManagerView()) {
                     SettingsRowWithBadge(
                         icon: "arrow.down.circle.fill",
-                        title: "Manage Downloads",
+                        title: languageManager.localizedString("nav.downloads"),
                         showChevron: true
                     )
                 }
 
                 SettingsToggleRow(
                     icon: "mic.fill",
-                    title: "Voice Control",
+                    title: languageManager.localizedString("home.voiceControl"),
                     isOn: .constant(true)
                 )
             }
 
             // App Settings
-            SettingsSection(title: "App") {
+            SettingsSection(title: languageManager.localizedString("settings.app")) {
                 NavigationLink(destination: AboutView()) {
                     SettingsRow(
                         icon: "info.circle.fill",
-                        title: "About",
+                        title: languageManager.localizedString("nav.about"),
                         showChevron: true
                     )
                 }
@@ -269,7 +272,7 @@ struct ProfileView: View {
                 NavigationLink(destination: PrivacyPolicyView()) {
                     SettingsRow(
                         icon: "lock.shield.fill",
-                        title: "Privacy Policy",
+                        title: languageManager.localizedString("settings.privacyPolicy"),
                         showChevron: true
                     )
                 }
@@ -277,7 +280,7 @@ struct ProfileView: View {
                 NavigationLink(destination: TermsView()) {
                     SettingsRow(
                         icon: "doc.text.fill",
-                        title: "Terms of Service",
+                        title: languageManager.localizedString("settings.termsOfService"),
                         showChevron: true
                     )
                 }
@@ -287,18 +290,18 @@ struct ProfileView: View {
                 } label: {
                     SettingsRow(
                         icon: "envelope.fill",
-                        title: "Contact Support",
+                        title: languageManager.localizedString("settings.contactSupport"),
                         showChevron: true
                     )
                 }
             }
 
             // Account
-            SettingsSection(title: "Account") {
+            SettingsSection(title: languageManager.localizedString("settings.account")) {
                 if appState.isPremiumUser {
                     SettingsRow(
                         icon: "star.fill",
-                        title: "Subscription",
+                        title: languageManager.localizedString("settings.subscription"),
                         value: "Premium",
                         valueColor: .appPrimary
                     )
@@ -312,24 +315,24 @@ struct ProfileView: View {
                 } label: {
                     SettingsRow(
                         icon: "arrow.clockwise",
-                        title: "Restore Purchases",
+                        title: languageManager.localizedString("settings.restorePurchases"),
                         showChevron: true
                     )
                 }
             }
 
             // Data & Privacy
-            SettingsSection(title: "Data & Privacy") {
+            SettingsSection(title: languageManager.localizedString("settings.dataPrivacy")) {
                 // Show learning stats
                 SettingsRow(
                     icon: "brain.head.profile",
-                    title: "Learning Sessions",
+                    title: languageManager.localizedString("settings.learningSessions"),
                     value: "\(adaptiveLearning.totalLearningSessions)"
                 )
 
                 SettingsRow(
                     icon: "chart.line.uptrend.xyaxis",
-                    title: "Learning Confidence",
+                    title: languageManager.localizedString("settings.learningConfidence"),
                     value: "\(Int(adaptiveLearning.learningConfidence * 100))%"
                 )
 
@@ -342,7 +345,7 @@ struct ProfileView: View {
                             .foregroundColor(.red)
                             .frame(width: 32)
 
-                        Text("Reset Learning Data")
+                        Text(languageManager.localizedString("settings.resetLearningData"))
                             .font(.system(size: 16))
                             .foregroundColor(.red)
 
@@ -355,7 +358,7 @@ struct ProfileView: View {
 
             // Version info
             VStack(spacing: 4) {
-                Text("Lulla - Sweet Dreams on Every Ride")
+                Text(languageManager.localizedString("app.tagline"))
                     .font(.system(size: 12))
                     .foregroundColor(.appTextSecondary)
 
@@ -606,66 +609,6 @@ struct EditBabySheet: View {
             return "1 month old"
         } else {
             return "\(months) months old"
-        }
-    }
-}
-
-// MARK: - Language Selection Sheet
-struct LanguageSelectionSheet: View {
-    @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss
-    @State private var selectedLanguages: Set<Language> = []
-
-    var body: some View {
-        NavigationView {
-            List {
-                ForEach(Language.allCases) { language in
-                    Button {
-                        if selectedLanguages.contains(language) {
-                            if selectedLanguages.count > 1 {
-                                selectedLanguages.remove(language)
-                            }
-                        } else {
-                            selectedLanguages.insert(language)
-                        }
-                    } label: {
-                        HStack {
-                            Text(language.flag)
-                                .font(.system(size: 24))
-
-                            Text(language.rawValue)
-                                .foregroundColor(.appText)
-
-                            Spacer()
-
-                            if selectedLanguages.contains(language) {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.appPrimary)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Languages")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        appState.selectedLanguages = Array(selectedLanguages)
-                        appState.saveUserData()
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                selectedLanguages = Set(appState.selectedLanguages)
-            }
         }
     }
 }

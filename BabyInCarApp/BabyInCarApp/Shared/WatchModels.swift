@@ -193,6 +193,12 @@ enum WatchCommand: Codable, Equatable {
     case startSoothingMusic(playlistId: String?)
     case requestStateSync
     case playTrack(trackId: String)
+    // New commands for Library and Emergency
+    case playCategory(categoryId: String)
+    case startEmergencyMode           // Start emergency mode with cry detection + music
+    case startEmergencyModeWithCryDetection  // Explicitly start cry detection monitoring
+    case stopEmergencyMode
+    case requestLibrarySync
 
     // Custom coding for associated values
     enum CodingKeys: String, CodingKey {
@@ -224,6 +230,13 @@ enum WatchCommand: Codable, Equatable {
         case "playTrack":
             let trackId = try container.decode(String.self, forKey: .value)
             self = .playTrack(trackId: trackId)
+        case "playCategory":
+            let categoryId = try container.decode(String.self, forKey: .value)
+            self = .playCategory(categoryId: categoryId)
+        case "startEmergencyMode": self = .startEmergencyMode
+        case "startEmergencyModeWithCryDetection": self = .startEmergencyModeWithCryDetection
+        case "stopEmergencyMode": self = .stopEmergencyMode
+        case "requestLibrarySync": self = .requestLibrarySync
         default:
             self = .requestStateSync
         }
@@ -259,6 +272,17 @@ enum WatchCommand: Codable, Equatable {
         case .playTrack(let trackId):
             try container.encode("playTrack", forKey: .type)
             try container.encode(trackId, forKey: .value)
+        case .playCategory(let categoryId):
+            try container.encode("playCategory", forKey: .type)
+            try container.encode(categoryId, forKey: .value)
+        case .startEmergencyMode:
+            try container.encode("startEmergencyMode", forKey: .type)
+        case .startEmergencyModeWithCryDetection:
+            try container.encode("startEmergencyModeWithCryDetection", forKey: .type)
+        case .stopEmergencyMode:
+            try container.encode("stopEmergencyMode", forKey: .type)
+        case .requestLibrarySync:
+            try container.encode("requestLibrarySync", forKey: .type)
         }
     }
 }
@@ -271,6 +295,40 @@ enum WatchMessage: String {
     case favoritesUpdate = "favoritesUpdate"
     case fileTransferComplete = "fileTransferComplete"
     case requestSync = "requestSync"
+    case libraryState = "libraryState"
+    case emergencyState = "emergencyState"
+}
+
+// MARK: - Watch Category for Library Sync
+struct WatchCategory: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let icon: String
+    let trackCount: Int
+    let description: String
+
+    init(id: String, name: String, icon: String, trackCount: Int, description: String = "") {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.trackCount = trackCount
+        self.description = description
+    }
+}
+
+// MARK: - Watch Library State
+struct WatchLibraryState: Codable {
+    let categories: [WatchCategory]
+    let recentTracks: [WatchTrack]
+    let topCalmingTracks: [WatchTrack]
+    let timestamp: Date
+
+    static let empty = WatchLibraryState(
+        categories: [],
+        recentTracks: [],
+        topCalmingTracks: [],
+        timestamp: Date()
+    )
 }
 
 // MARK: - Convenience Extensions

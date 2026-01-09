@@ -155,9 +155,9 @@ class DynamicSoundMixer: ObservableObject {
             description: "Soft layers for peaceful sleep",
             icon: "moon.zzz",
             baseLayers: [
-                SoundLayer(sound: .ocean, volume: 0.35, reason: "Base layer for consistent masking"),
+                SoundLayer(sound: .aquarium, volume: 0.35, reason: "Base layer for consistent masking"),
                 SoundLayer(sound: .heartbeat, volume: 0.25, rhythmSync: true, reason: "Rhythmic comfort"),
-                SoundLayer(sound: .waterfall, volume: 0.15, startDelay: 30, reason: "Added warmth")
+                SoundLayer(sound: .aquarium, volume: 0.15, startDelay: 30, reason: "Added warmth")
             ],
             suitableFor: [.tired],
             ageRange: 0...36
@@ -170,7 +170,7 @@ class DynamicSoundMixer: ObservableObject {
             baseLayers: [
                 SoundLayer(sound: .womb, volume: 0.45, reason: "Primary womb sound"),
                 SoundLayer(sound: .heartbeat, volume: 0.3, rhythmSync: true, reason: "Mother's heartbeat"),
-                SoundLayer(sound: .river, volume: 0.1, reason: "Additional bass warmth")
+                SoundLayer(sound: .aquarium, volume: 0.1, reason: "Additional bass warmth")
             ],
             suitableFor: [.general, .discomfort],
             ageRange: 0...6
@@ -181,9 +181,9 @@ class DynamicSoundMixer: ObservableObject {
             description: "Peaceful nature sounds",
             icon: "leaf.fill",
             baseLayers: [
-                SoundLayer(sound: .ocean, volume: 0.4, reason: "Consistent natural masking"),
-                SoundLayer(sound: .ocean, volume: 0.2, startDelay: 10, reason: "Rhythmic waves"),
-                SoundLayer(sound: .birds, volume: 0.1, startDelay: 60, reason: "Gentle engagement")
+                SoundLayer(sound: .aquarium, volume: 0.4, reason: "Consistent natural masking"),
+                SoundLayer(sound: .aquarium, volume: 0.2, startDelay: 10, reason: "Rhythmic waves"),
+                SoundLayer(sound: .chimes, volume: 0.1, startDelay: 60, reason: "Gentle engagement")
             ],
             suitableFor: [.attention, .general],
             ageRange: 6...36
@@ -196,7 +196,7 @@ class DynamicSoundMixer: ObservableObject {
             baseLayers: [
                 SoundLayer(sound: .shushing, volume: 0.5, reason: "Immediate attention capture"),
                 SoundLayer(sound: .shushing, volume: 0.35, startDelay: 5, reason: "Intense masking"),
-                SoundLayer(sound: .ocean, volume: 0.25, startDelay: 30, fadeInDuration: 10, reason: "Transition to calmer sound")
+                SoundLayer(sound: .aquarium, volume: 0.25, startDelay: 30, fadeInDuration: 10, reason: "Transition to calmer sound")
             ],
             suitableFor: [.pain, .discomfort],
             ageRange: 0...12
@@ -209,7 +209,7 @@ class DynamicSoundMixer: ObservableObject {
             baseLayers: [
                 SoundLayer(sound: .musicBox, volume: 0.4, reason: "Engaging melody"),
                 SoundLayer(sound: .chimes, volume: 0.2, startDelay: 30, reason: "Gentle highlights"),
-                SoundLayer(sound: .ocean, volume: 0.15, reason: "Background consistency")
+                SoundLayer(sound: .aquarium, volume: 0.15, reason: "Background consistency")
             ],
             suitableFor: [.hunger, .attention],
             ageRange: 3...24
@@ -798,7 +798,7 @@ extension DynamicSoundMixer {
             .forCryType(.tired)
             .addLayer(.womb, volume: 0.4, reason: "Base womb sound")
             .addLayer(.heartbeat, volume: 0.25, rhythmSync: true, reason: "Rhythmic comfort")
-            .addLayer(.waterfall, volume: 0.15, startAfter: 30, reason: "Added warmth")
+            .addLayer(.aquarium, volume: 0.15, startAfter: 30, reason: "Added warmth")
             .build()
         play(mix)
     }

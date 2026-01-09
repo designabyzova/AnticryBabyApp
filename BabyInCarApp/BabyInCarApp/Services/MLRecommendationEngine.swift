@@ -104,28 +104,28 @@ class MLRecommendationEngine: ObservableObject {
     /// Preferred generator types for each cry type at different ages
     private let cryTypePreferences: [CryType: (young: [GeneratorType], older: [GeneratorType])] = [
         .tired: (
-            young: [.ocean, .womb, .heartbeat, .shushing, .waterfall],
-            older: [.waterfall, .forest, .river, .ocean, .lullaby]
+            young: [.aquarium, .womb, .heartbeat, .shushing, .aquarium],
+            older: [.aquarium, .bells, .aquarium, .aquarium, .lullaby]
         ),
         .hunger: (
-            young: [.shushing, .musicBox, .ocean, .heartbeat],
-            older: [.shushing, .musicBox, .ocean, .chimes]
+            young: [.shushing, .musicBox, .aquarium, .heartbeat],
+            older: [.shushing, .musicBox, .aquarium, .chimes]
         ),
         .pain: (
-            young: [.shushing, .womb, .shushing, .river, .womb],
-            older: [.river, .lullaby, .ocean, .shushing]
+            young: [.shushing, .womb, .shushing, .aquarium, .womb],
+            older: [.aquarium, .lullaby, .aquarium, .shushing]
         ),
         .attention: (
-            young: [.musicBox, .birds, .chimes, .heartbeat],
-            older: [.aquarium, .forest, .softPiano, .musicBox]
+            young: [.musicBox, .chimes, .chimes, .heartbeat],
+            older: [.aquarium, .bells, .softPiano, .musicBox]
         ),
         .discomfort: (
-            young: [.ocean, .womb, .shushing, .heartbeat],
-            older: [.ocean, .river, .waterfall, .womb]
+            young: [.aquarium, .womb, .shushing, .heartbeat],
+            older: [.aquarium, .aquarium, .aquarium, .womb]
         ),
         .general: (
-            young: [.ocean, .womb, .heartbeat, .shushing],
-            older: [.ocean, .river, .lullaby, .musicBox]
+            young: [.aquarium, .womb, .heartbeat, .shushing],
+            older: [.aquarium, .aquarium, .lullaby, .musicBox]
         )
     ]
 
@@ -246,10 +246,10 @@ class MLRecommendationEngine: ObservableObject {
             // Move womb/shushing/ocean to front for young babies
             if babyAge < 12 {
                 let urgentSoothers = candidates.filter {
-                    [GeneratorType.womb, .shushing, .heartbeat, .ocean].contains($0.generatorType ?? .ocean)
+                    [GeneratorType.womb, .shushing, .heartbeat, .aquarium].contains($0.generatorType ?? .aquarium)
                 }
                 let others = candidates.filter {
-                    ![GeneratorType.womb, .shushing, .heartbeat, .ocean].contains($0.generatorType ?? .ocean)
+                    ![GeneratorType.womb, .shushing, .heartbeat, .aquarium].contains($0.generatorType ?? .aquarium)
                 }
                 candidates = urgentSoothers + others
             }
@@ -363,14 +363,14 @@ class MLRecommendationEngine: ObservableObject {
 
         case .crying, .emergency:
             if let generator = track.generatorType,
-               [.shushing, .womb, .heartbeat, .ocean, .river].contains(generator) {
+               [.shushing, .womb, .heartbeat, .aquarium, .aquarium].contains(generator) {
                 return 0.1
             }
             return 0
 
         case .carRide:
             if let generator = track.generatorType,
-               [.ocean, .river, .womb, .shushing].contains(generator) {
+               [.aquarium, .aquarium, .womb, .shushing].contains(generator) {
                 return 0.05
             }
             return 0

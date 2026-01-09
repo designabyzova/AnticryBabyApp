@@ -9,8 +9,9 @@
 import SwiftUI
 import UserNotifications
 import Intents
+import WatchConnectivity
 
-// MARK: - App Delegate for Siri Integration
+// MARK: - App Delegate for Siri Integration + Lifecycle Management
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // NOTE: Siri authorization is NOT requested on launch to avoid threading issues.
@@ -34,6 +35,37 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             return nil
         }
     }
+
+    /// CRITICAL: Clean up audio resources when app is terminated (force quit)
+    /// This ensures microphone is released when user kills the app
+    func applicationWillTerminate(_ application: UIApplication) {
+        print("[AppDelegate] 🛑 App terminating - cleaning up audio resources")
+        cleanupAudioResources()
+    }
+
+    /// Clean up all audio resources to release microphone and audio session
+    private func cleanupAudioResources() {
+        // Stop cry detection monitoring (releases microphone)
+        // Using DispatchQueue.main.sync to ensure cleanup completes before termination
+        // Note: We have ~5 seconds to complete cleanup on termination
+        DispatchQueue.main.async {
+            // Stop cry detection (this stops the audio engine and releases mic)
+            CryDetectionService.shared.stopMonitoring()
+            print("[AppDelegate] ✅ CryDetectionService stopped")
+
+            // Stop any speech recognition
+            SpeechRecognitionService.shared.stopListening()
+            print("[AppDelegate] ✅ SpeechRecognitionService stopped")
+
+            // Stop audio playback
+            AudioEngine.shared.stop()
+            print("[AppDelegate] ✅ AudioEngine stopped")
+
+            // Force deactivate audio session to release all audio hardware
+            AudioSessionManager.shared.forceDeactivate()
+            print("[AppDelegate] ✅ AudioSession deactivated")
+        }
+    }
 }
 
 @main
@@ -45,6 +77,9 @@ struct BabyInCarApp: App {
     @StateObject private var audioEngine = AudioEngine.shared
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @State private var showSplash = true
+
+    /// Track scene phase for app lifecycle management
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         // Configure app appearance
@@ -85,6 +120,89 @@ struct BabyInCarApp: App {
                 }
             }
         }
+        // CRITICAL: Handle app lifecycle changes to properly release microphone
+        .onChange(of: scenePhase) { newPhase in
+            handleScenePhaseChange(to: newPhase)
+        }
+    }
+
+    /// Handle scene phase changes for proper audio resource management
+    /// - Note: This ensures microphone is released when app goes to background
+    private func handleScenePhaseChange(to newPhase: ScenePhase) {
+        print("[BabyInCarApp] 📱 Scene phase changed → \(newPhase)")
+
+        switch newPhase {
+        case .background:
+            // App is going to background - prepare for potential termination
+            // iOS may kill the app while in background, so clean up now
+            print("[BabyInCarApp] 🌙 App entering background - releasing audio resources")
+            releaseAudioResourcesForBackground()
+
+        case .inactive:
+            // App is inactive (e.g., app switcher, notification center)
+            // Don't stop monitoring yet - user might return quickly
+            print("[BabyInCarApp] ⏸️ App inactive")
+
+        case .active:
+            // App is active - restore monitoring if it was enabled
+            print("[BabyInCarApp] ✅ App active")
+            restoreAudioResourcesFromBackground()
+
+        @unknown default:
+            break
+        }
+    }
+
+    /// Release audio resources when app goes to background
+    /// This ensures microphone indicator disappears when app is backgrounded
+    private func releaseAudioResourcesForBackground() {
+        // Stop cry detection (releases microphone)
+        // IMPORTANT: This is the primary source of microphone usage
+        if CryDetectionService.shared.isMonitoring {
+            CryDetectionService.shared.stopMonitoring()
+            // Save state so we know to restore on foreground
+            UserDefaults.standard.set(true, forKey: "wasMonitoringBeforeBackground")
+            print("[BabyInCarApp] 🎤 Stopped cry monitoring (was active)")
+        }
+
+        // Stop speech recognition if active
+        SpeechRecognitionService.shared.stopListening()
+
+        // Note: We do NOT stop AudioEngine playback - background audio is a feature
+        // Users may want lullabies to continue playing when app is backgrounded
+
+        // Deactivate audio session to fully release microphone
+        // This is critical - even if monitoring is stopped, session might hold mic
+        AudioSessionManager.shared.forceDeactivate()
+        print("[BabyInCarApp] 🔇 Audio session deactivated for background")
+    }
+
+    /// Restore audio resources when app returns to foreground
+    private func restoreAudioResourcesFromBackground() {
+        // Check if we should restore cry monitoring
+        let wasMonitoring = UserDefaults.standard.bool(forKey: "wasMonitoringBeforeBackground")
+        UserDefaults.standard.removeObject(forKey: "wasMonitoringBeforeBackground")
+
+        if wasMonitoring && appState.autoCryMonitoringEnabled {
+            // Restore cry monitoring
+            Task {
+                if let baby = appState.currentBaby {
+                    do {
+                        print("[BabyInCarApp] 🎤 Restoring cry monitoring...")
+                        try await EmergencyCryStopService.shared.enableAIMonitoring(for: baby)
+                        print("[BabyInCarApp] ✅ Cry monitoring restored")
+                    } catch {
+                        print("[BabyInCarApp] ⚠️ Failed to restore cry monitoring: \(error)")
+                    }
+                }
+            }
+        }
+
+        // Restore audio session for playback if needed
+        if audioEngine.playbackState.isPlaying || audioEngine.currentTrack != nil {
+            audioEngine.configureAudioSession()
+            print("[BabyInCarApp] 🔊 Audio session restored for playback")
+        }
     }
 
     private func configureAppearance() {
@@ -119,6 +237,11 @@ struct BabyInCarApp: App {
         // This was missing - voice commands weren't executing because handler had no state!
         VoiceCommandHandler.shared.configure(with: appState)
         print("[BabyInCarApp] ✅ VoiceCommandHandler configured with AppState")
+
+        // 🔧 FIX: Initialize Watch connectivity
+        // This was missing - Watch app couldn't communicate with iPhone!
+        _ = WatchSyncManager.shared
+        print("[BabyInCarApp] ✅ WatchSyncManager initialized for Watch connectivity")
 
         // Request necessary permissions and setup audio services
         // CRITICAL: All audio session operations are sequenced to prevent conflicts
@@ -216,32 +339,54 @@ struct BabyInCarApp: App {
         }
 
         // Critical level: aggressive cleanup
+        // 🚨 CRITICAL: Protect emergency audio from cache clearing!
         memoryMonitor.onCriticalLevel = {
             print("[MemoryMonitor] 🔴 Critical level - aggressive cleanup")
             Task { @MainActor in
-                // Disable all heavy ML features
+                // Disable all heavy ML features (always safe)
                 CryDetectionService.shared.useMLEnhancement = false
                 CryDetectionService.shared.useDeepInfant = false
 
-                // Clear audio caches
-                Task { await AudioCacheService.shared.clearAllCache() }
+                // 🚨 CRITICAL FIX: Only clear caches if NOT in emergency mode
+                // Clearing caches during emergency playback causes audio artifacts
+                if !SmartEmergencyQueue.shared.isActive {
+                    Task { await AudioCacheService.shared.clearAllCache() }
+                } else {
+                    print("[MemoryMonitor] ⏭️ Skipping cache clear - emergency audio is playing")
+                }
             }
         }
 
         // Emergency level: stop non-essential services
+        // 🚨 CRITICAL: NEVER stop audio playback during emergency memory cleanup!
+        // Audio is the PRIMARY PURPOSE of the app - baby calming MUST continue.
         memoryMonitor.onEmergencyLevel = {
             print("[MemoryMonitor] 🚨 Emergency level - stopping services")
             Task { @MainActor in
-                // Stop cry detection temporarily
-                CryDetectionService.shared.stopMonitoring()
+                // 🚨 CRITICAL FIX: Check if emergency audio is playing BEFORE cleanup!
+                let isEmergencyAudioPlaying = SmartEmergencyQueue.shared.isActive
 
-                // Stop smart response engine
-                SmartCryResponseEngine.shared.deactivate()
+                if isEmergencyAudioPlaying {
+                    print("[MemoryMonitor] 🚨 PROTECTING emergency audio - only disabling ML features!")
+                    // ONLY disable ML features - NEVER touch audio during emergency playback
+                    CryDetectionService.shared.useMLEnhancement = false
+                    CryDetectionService.shared.useDeepInfant = false
+                    // Do NOT call SmartCryResponseEngine.deactivate() - that stops audio!
+                    // Do NOT clear audio caches - that interrupts streaming
+                    print("[MemoryMonitor] ✅ Emergency audio protected - ML disabled, audio continues")
+                } else {
+                    // No emergency audio - safe to do full cleanup
+                    // Stop cry detection temporarily
+                    CryDetectionService.shared.stopMonitoring()
 
-                // Clear all caches
-                Task { await AudioCacheService.shared.clearAllCache() }
+                    // Stop smart response engine (only when NOT playing)
+                    SmartCryResponseEngine.shared.deactivate()
 
-                print("[MemoryMonitor] Services stopped to prevent crash")
+                    // Clear all caches
+                    Task { await AudioCacheService.shared.clearAllCache() }
+
+                    print("[MemoryMonitor] Services stopped to prevent crash")
+                }
             }
         }
 
@@ -260,13 +405,20 @@ struct BabyInCarApp: App {
             return
         }
 
-        print("🎤 [App] Received play media activity: \(action)")
+        print("🎤 [App] Received play media activity")
 
         switch action {
         case "emergency":
             // Trigger emergency mode via SmartEmergencyQueue
             Task { @MainActor in
-                let babyAge = appState.currentBaby?.ageInMonths ?? 12
+                guard let baby = appState.currentBaby else {
+                    print("🎤 [App] ⚠️ Cannot start emergency mode - no baby profile")
+                    // Play default calming content as fallback
+                    playDefault()
+                    return
+                }
+
+                let babyAge = baby.ageInMonths
                 let language = Locale.current.language.languageCode?.identifier ?? "en"
 
                 await SmartEmergencyQueue.shared.startSpotifyMode(
@@ -274,7 +426,7 @@ struct BabyInCarApp: App {
                     babyAge: babyAge,
                     language: language
                 )
-                print("🎤 [App] Emergency queue started")
+                print("🎤 [App] Emergency queue started for baby (age: \(babyAge) months)")
             }
 
         case "playCategory":
@@ -298,7 +450,7 @@ struct BabyInCarApp: App {
             return
         }
 
-        print("🎤 [App] Searching for: \(searchTerm)")
+        print("🎤 [App] Processing search request")
         playSearch(searchTerm)
     }
 
@@ -310,7 +462,7 @@ struct BabyInCarApp: App {
             return
         }
 
-        print("🎤 [App] Adding to favorites: \(trackIdString)")
+        print("🎤 [App] Processing add to favorites")
 
         Task { @MainActor in
             // If "current", use currently playing track
@@ -319,7 +471,7 @@ struct BabyInCarApp: App {
                     if !FavoritesManager.shared.isFavorite(track: currentTrack) {
                         FavoritesManager.shared.toggleFavorite(track: currentTrack)
                     }
-                    print("🎤 [App] Added current track to favorites: \(currentTrack.title)")
+                    print("🎤 [App] Added current track to favorites")
                 }
             } else if let trackId = UUID(uuidString: trackIdString) {
                 // Find specific track by ID
@@ -328,7 +480,7 @@ struct BabyInCarApp: App {
                     if !FavoritesManager.shared.isFavorite(track: track) {
                         FavoritesManager.shared.toggleFavorite(track: track)
                     }
-                    print("🎤 [App] Added track to favorites: \(track.title)")
+                    print("🎤 [App] Added track to favorites")
                 }
             }
         }
@@ -350,16 +502,16 @@ struct BabyInCarApp: App {
         }
 
         guard let category = category else {
-            print("🎤 [App] Unknown category: \(categoryString)")
+            print("🎤 [App] Unknown category")
             playDefault()
             return
         }
 
-        print("🎤 [App] Playing category: \(category.rawValue)")
+        print("🎤 [App] Playing category")
 
         let tracks = ContentLibraryService.shared.getTracks(for: category)
         guard !tracks.isEmpty else {
-            print("🎤 [App] No tracks for category: \(category.rawValue)")
+            print("🎤 [App] No tracks available for category")
             playDefault()
             return
         }
@@ -379,7 +531,7 @@ struct BabyInCarApp: App {
 
     /// Search and play matching tracks
     private func playSearch(_ searchTerm: String) {
-        print("🎤 [App] Searching for: \(searchTerm)")
+        print("🎤 [App] Processing search request")
 
         let matches = ContentLibraryService.shared.allTracks.filter { track in
             track.title.lowercased().contains(searchTerm.lowercased()) ||
@@ -395,7 +547,7 @@ struct BabyInCarApp: App {
             )
             audioEngine.play(playlist: playlist)
         } else {
-            print("🎤 [App] No matches for search: \(searchTerm)")
+            print("🎤 [App] No matches found")
             playDefault()
         }
     }
@@ -508,6 +660,15 @@ class AppState: ObservableObject {
     func completeOnboarding(baby: Baby, languages: [Language]) {
         currentBaby = baby
         selectedLanguages = languages
+        isOnboardingComplete = true
+        saveUserData()
+    }
+
+    /// Complete onboarding with a single UI language (language is automatically set via LanguageManager)
+    func completeOnboarding(baby: Baby, language: SupportedLanguage) {
+        currentBaby = baby
+        // Map SupportedLanguage to content Language for filtering
+        selectedLanguages = [language.toContentLanguage]
         isOnboardingComplete = true
         saveUserData()
     }

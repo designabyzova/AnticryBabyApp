@@ -384,17 +384,17 @@ class AdaptiveLearningEngine: ObservableObject {
         // Based on scientific research (Frontiers in AI 2024, DeepInfant)
         switch cryType {
         case .hunger:
-            return [.shushing, .womb, .heartbeat, .ocean]
+            return [.shushing, .womb, .heartbeat, .aquarium]
         case .tired:
-            return [.waterfall, .river, .ocean, .forest]
+            return [.aquarium, .aquarium, .aquarium, .bells]
         case .pain:
-            return [.river, .shushing, .womb, .heartbeat]
+            return [.aquarium, .shushing, .womb, .heartbeat]
         case .discomfort:
-            return [.forest, .womb, .ocean, .ocean]
+            return [.bells, .womb, .aquarium, .aquarium]
         case .attention:
-            return [.musicBox, .chimes, .aquarium, .birds]
+            return [.musicBox, .chimes, .aquarium, .chimes]
         case .general, .unknown:
-            return [.ocean, .shushing, .womb, .forest]
+            return [.aquarium, .shushing, .womb, .bells]
         }
     }
 

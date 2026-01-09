@@ -75,27 +75,23 @@ struct CryDetectionView: View {
                             }
                         }
 
-                        // REMOVED: Duplicate player card - use unified bottom mini player instead
-                        // The unified mini player shows across all screens automatically
-                        // No need for a separate player UI on this screen
-
                         // Quick Actions
                         quickActionsGrid
 
                         // Collapsible Info Sections
                         infoSections
 
-                        Spacer(minLength: 40)
+                        // Extra padding at bottom for mini player
+                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
                 }
-
-                // FS-017: Smart Emergency Queue logic (NO overlay - detection screen stays visible)
-                // The player overlay was removed to keep the detection UI always visible.
-                // Emergency playback still works in background via SmartEmergencyQueue.
-                // User wants to see detection bars/status, not a duplicate player screen.
-                // For the full player UI, use the Emergency tab in the main app.
+            }
+            // Add mini player at the bottom (since CryDetectionView is presented as sheet without tab bar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                CryDetectionMiniPlayer(showingFullPlayer: $showingFullPlayer)
+                    .environmentObject(audioEngine)
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -150,20 +146,32 @@ struct CryDetectionView: View {
             } message: {
                 Text(errorMessage ?? "Unknown error occurred")
             }
+            // FIX: Use task with stable ID to prevent animation restart on orientation change
+            // onAppear fires every time view rebuilds (including rotation), causing animation jumps
+            .task(id: "breathe-animation") {
+                // Only start if not already animating
+                if !breatheAnimation {
+                    withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                        breatheAnimation = true
+                    }
+                }
+            }
             .onAppear {
                 loadBaby()
                 // Fix ghost playing state - sync with actual AudioEngine state
                 smartQueue.syncPlaybackState()
-                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                    breatheAnimation = true
+            }
+            .onDisappear {
+                // Stop emergency audio playback when leaving this screen
+                // This prevents "ghost playing" where audio continues but UI shows wrong progress
+                // NOTE: Cry detection monitoring continues in background (not stopped here)
+                // Only the emergency PLAYBACK is stopped - monitoring stays active for safety
+                if smartQueue.isActive {
+                    Task {
+                        await smartQueue.stop(wasEffective: nil)
+                    }
                 }
             }
-            // CRITICAL FIX: Do NOT stop monitoring when view disappears!
-            // Cry detection should continue in the background for baby safety.
-            // The old code was stopping monitoring whenever user navigated away,
-            // which completely broke the feature. Monitoring should only stop
-            // when explicitly disabled by the user via toggleMonitoring().
-            // .onDisappear { ... } - REMOVED
         }
     }
 
@@ -318,6 +326,9 @@ struct CryDetectionView: View {
             }
 
             // Audio level bars
+            // FIX: Use drawingGroup() to rasterize this frequently-updating view
+            // This prevents expensive layout recalculations during orientation changes
+            // The bars update very frequently (50+ Hz) which can cause jank during rotation
             HStack(spacing: 3) {
                 ForEach(0..<24, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 2)
@@ -327,6 +338,7 @@ struct CryDetectionView: View {
                 }
             }
             .frame(height: 36)
+            .drawingGroup() // Rasterize for better performance during orientation
 
             // Detection confidence
             if cryDetection.confidenceLevel > 0.1 {
@@ -1670,6 +1682,292 @@ struct AcousticFeaturesCard: View {
                     .fontWeight(.medium)
             }
         }
+    }
+}
+
+// MARK: - Cry Detection Mini Player
+/// Floating mini player for CryDetectionView (shown as sheet without tab bar mini player)
+/// Reuses the same pattern as ContentView's MiniPlayerView for consistency
+struct CryDetectionMiniPlayer: View {
+    @EnvironmentObject var audioEngine: AudioEngine
+    @Binding var showingFullPlayer: Bool
+    @State private var dragOffset: CGFloat = 0
+    @State private var playButtonScale: CGFloat = 1.0
+
+    // Haptic feedback
+    private let impactLight = UIImpactFeedbackGenerator(style: .light)
+    private let impactMedium = UIImpactFeedbackGenerator(style: .medium)
+
+    // Display track - uses current track or a default fallback
+    private var displayTrack: AudioTrack {
+        audioEngine.currentTrack ?? AudioTrack.defaultEmergencyTrack()
+    }
+
+    // Calculate progress for ring animation
+    private var progress: Double {
+        guard audioEngine.duration > 0 else { return 0 }
+        return audioEngine.currentTime / audioEngine.duration
+    }
+
+    var body: some View {
+        miniPlayerContent
+            .offset(y: dragOffset)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        if value.translation.height > 0 {
+                            dragOffset = value.translation.height * 0.5
+                        } else {
+                            dragOffset = value.translation.height * 0.3
+                        }
+                    }
+                    .onEnded { value in
+                        if value.translation.height < -50 {
+                            openFullPlayer()
+                        }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            dragOffset = 0
+                        }
+                    }
+            )
+            .onAppear {
+                impactLight.prepare()
+                impactMedium.prepare()
+            }
+    }
+
+    private func openFullPlayer() {
+        guard !showingFullPlayer else { return }
+        impactMedium.impactOccurred()
+        showingFullPlayer = true
+    }
+
+    private var miniPlayerContent: some View {
+        HStack(spacing: 12) {
+            // Tappable area (artwork + track info) opens full player
+            HStack(spacing: 12) {
+                artworkWithProgressRing
+                trackInfo
+            }
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                TapGesture()
+                    .onEnded {
+                        openFullPlayer()
+                    }
+            )
+
+            Spacer(minLength: 8)
+
+            // Playback Controls
+            playbackControls
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
+        .padding(.vertical, 8)
+        .background(miniPlayerBackground)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: - Artwork with Progress Ring
+    private var artworkWithProgressRing: some View {
+        ZStack {
+            // Background circle with category color
+            Circle()
+                .fill(Color.forCategory(displayTrack.category).opacity(0.15))
+                .frame(width: 52, height: 52)
+
+            // Progress ring background
+            Circle()
+                .stroke(Color.appTextSecondary.opacity(0.2), lineWidth: 3)
+                .frame(width: 52, height: 52)
+
+            // Buffer progress ring (shows when buffering)
+            if audioEngine.isBuffering && audioEngine.bufferProgress > 0 {
+                Circle()
+                    .trim(from: 0, to: CGFloat(audioEngine.bufferProgress))
+                    .stroke(
+                        Color.appTextSecondary.opacity(0.4),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    )
+                    .frame(width: 52, height: 52)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.2), value: audioEngine.bufferProgress)
+            }
+
+            // Playback progress ring
+            Circle()
+                .trim(from: 0, to: CGFloat(progress))
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.forCategory(displayTrack.category),
+                            Color.forCategory(displayTrack.category).opacity(0.7)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                )
+                .frame(width: 52, height: 52)
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.3), value: progress)
+
+            // Category icon OR loading spinner
+            if audioEngine.isBuffering {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .tint(Color.forCategory(displayTrack.category))
+            } else {
+                Image(systemName: displayTrack.category.icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color.forCategory(displayTrack.category),
+                                Color.forCategory(displayTrack.category).opacity(0.7)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+
+            // Playing indicator animation
+            if audioEngine.playbackState.isPlaying && !audioEngine.isBuffering {
+                MiniEqualizerView()
+                    .frame(width: 16, height: 12)
+                    .offset(y: 18)
+            }
+        }
+    }
+
+    // MARK: - Track Info
+    private var trackInfo: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(displayTrack.title)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(.appText)
+                .lineLimit(1)
+
+            HStack(spacing: 4) {
+                if audioEngine.isBuffering {
+                    Text("Loading...")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.appPrimary)
+                        .lineLimit(1)
+                } else {
+                    Text(displayTrack.artist)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.appTextSecondary)
+                        .lineLimit(1)
+
+                    if let language = displayTrack.language {
+                        Text(language.flag)
+                            .font(.system(size: 11))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Playback Controls
+    private var playbackControls: some View {
+        HStack(spacing: 12) {
+            // Play/Pause button with animation
+            Button {
+                impactMedium.impactOccurred()
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                    playButtonScale = 0.85
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                        playButtonScale = 1.0
+                    }
+                }
+
+                if audioEngine.playbackState.isPlaying {
+                    audioEngine.pause()
+                } else if audioEngine.playbackState == .paused {
+                    audioEngine.resume()
+                } else {
+                    audioEngine.play(track: displayTrack)
+                }
+            } label: {
+                ZStack {
+                    // Glow effect when playing
+                    if audioEngine.playbackState.isPlaying {
+                        Circle()
+                            .fill(Color.appPrimary.opacity(0.2))
+                            .frame(width: 44, height: 44)
+                            .blur(radius: 4)
+                    }
+
+                    Circle()
+                        .fill(Color.appPrimary)
+                        .frame(width: 40, height: 40)
+                        .shadow(color: Color.appPrimary.opacity(0.3), radius: 4, y: 2)
+
+                    Image(systemName: audioEngine.playbackState.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .offset(x: audioEngine.playbackState.isPlaying ? 0 : 1)
+                }
+                .scaleEffect(playButtonScale)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // Next button
+            Button {
+                impactLight.impactOccurred()
+                audioEngine.next()
+            } label: {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.appTextSecondary)
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(ScaleButtonStyle())
+        }
+    }
+
+    // MARK: - Background
+    private var miniPlayerBackground: some View {
+        ZStack {
+            // Frosted glass effect
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+
+            // Subtle gradient overlay
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.appCardBackground.opacity(0.8),
+                            Color.appCardBackground.opacity(0.6)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            // Border highlight
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.3),
+                            Color.white.opacity(0.1),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        }
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
     }
 }
 

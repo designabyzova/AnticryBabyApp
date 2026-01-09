@@ -293,12 +293,12 @@ class SmartCryResponseEngine: ObservableObject {
         cryTypeSubscription = cryDetectionService.$cryType
             .dropFirst() // Skip initial value
             .filter { $0 != .unknown && $0 != .general } // Only specific types
-            .first() // Take only first specific classification
+            .removeDuplicates() // Only react to actual changes
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newType in
                 guard let self = self, self.isActive else { return }
 
-                print("[SmartCryResponse] 🔄 Late classification received: \(newType.rawValue) - updating strategy")
+                print("[SmartCryResponse] 🔄 Cry type classified: \(newType.rawValue) - adapting response!")
 
                 // Update strategy based on new classification
                 if let baby = self.currentBaby {
@@ -308,6 +308,14 @@ class SmartCryResponseEngine: ObservableObject {
                         // Rebuild sequence with new cry type knowledge
                         self.soundSequence = self.buildSoundSequence(for: newType, baby: baby, strategy: newStrategy)
                         print("[SmartCryResponse] 📊 Updated strategy: \(newStrategy)")
+                    }
+
+                    // CRITICAL: Also update SmartEmergencyQueue if in playlist mode
+                    // This allows the queue to adapt its upcoming tracks based on cry type!
+                    if self.isEmergencyMode && self.smartEmergencyQueue.isActive {
+                        Task {
+                            await self.smartEmergencyQueue.adaptToCryType(newType, babyAge: baby.ageInMonths)
+                        }
                     }
                 }
 
@@ -609,16 +617,16 @@ class SmartCryResponseEngine: ObservableObject {
             // NO RAIN - replaced with ocean (gentler, rhythmic)
             if age < 6 {
                 // Newborns: Gentle sounds, include music box for melody
-                return [.musicBox, .womb, .heartbeat, .lullaby, .ocean]
+                return [.musicBox, .womb, .heartbeat, .lullaby, .aquarium]
             } else if age < 12 {
                 // 6-12 months: Mix of melodic and nature
-                return [.lullaby, .musicBox, .ocean, .softPiano, .river]
+                return [.lullaby, .musicBox, .aquarium, .softPiano, .aquarium]
             } else if age < 24 {
                 // 1-2 years: More variety, melodic focus
-                return [.lullaby, .softPiano, .ocean, .gentleGuitar, .ocean]
+                return [.lullaby, .softPiano, .aquarium, .gentleGuitar, .aquarium]
             } else {
                 // 2+ years: Lullabies and soft music
-                return [.lullaby, .softPiano, .gentleGuitar, .ocean, .ocean]
+                return [.lullaby, .softPiano, .gentleGuitar, .aquarium, .aquarium]
             }
 
         case .distraction:
@@ -637,22 +645,22 @@ class SmartCryResponseEngine: ObservableObject {
             // Mix melodic with comfort sounds - NO RAIN!
             if age < 6 {
                 // Newborns: Prenatal + gentle melody
-                return [.heartbeat, .womb, .musicBox, .lullaby, .ocean]
+                return [.heartbeat, .womb, .musicBox, .lullaby, .aquarium]
             } else if age < 18 {
                 // 6-18 months: Melodic + ocean (gentler than rain)
-                return [.musicBox, .lullaby, .ocean, .softPiano, .river]
+                return [.musicBox, .lullaby, .aquarium, .softPiano, .aquarium]
             } else {
                 // 18+ months: Nature + music - ocean instead of rain
-                return [.lullaby, .ocean, .softPiano, .gentleGuitar, .ocean]
+                return [.lullaby, .aquarium, .softPiano, .gentleGuitar, .aquarium]
             }
 
         case .gentle:
             // Goal: Low-intensity, sustained soothing
             // Gentle melodic and nature sounds - ocean/river instead of rain
             if age < 12 {
-                return [.lullaby, .ocean, .musicBox, .river, .ocean]
+                return [.lullaby, .aquarium, .musicBox, .aquarium, .aquarium]
             } else {
-                return [.ocean, .lullaby, .softPiano, .river, .river]
+                return [.aquarium, .lullaby, .softPiano, .aquarium, .aquarium]
             }
 
         case .urgent:
@@ -662,13 +670,13 @@ class SmartCryResponseEngine: ObservableObject {
             // NO RAIN - replaced with ocean for urgent comfort
             if age < 6 {
                 // Newborns: Familiar prenatal + gentle melody
-                return [.musicBox, .heartbeat, .womb, .lullaby, .ocean]
+                return [.musicBox, .heartbeat, .womb, .lullaby, .aquarium]
             } else if age < 18 {
                 // Older babies: Melodic first, then ocean (gentler)
-                return [.musicBox, .lullaby, .chimes, .ocean, .softPiano]
+                return [.musicBox, .lullaby, .chimes, .aquarium, .softPiano]
             } else {
                 // Toddlers: Engaging melodic sounds
-                return [.musicBox, .lullaby, .softPiano, .chimes, .ocean]
+                return [.musicBox, .lullaby, .softPiano, .chimes, .aquarium]
             }
 
         case .adaptive:
@@ -679,7 +687,7 @@ class SmartCryResponseEngine: ObservableObject {
                 return getStrategySounds(strategy: .sleepInduction, age: age, cryType: cryType)
             case .pain:
                 // Pain needs immediate comfort - gentle, familiar sounds
-                return [.heartbeat, .musicBox, .lullaby, .womb, .ocean]
+                return [.heartbeat, .musicBox, .lullaby, .womb, .aquarium]
             case .hunger:
                 // Hunger cries need engaging distraction until feeding
                 return getStrategySounds(strategy: .distraction, age: age, cryType: cryType)
@@ -687,7 +695,7 @@ class SmartCryResponseEngine: ObservableObject {
                 return getStrategySounds(strategy: .comfort, age: age, cryType: cryType)
             case .discomfort:
                 // General discomfort - mix of comfort and melodic, ocean instead of rain
-                return [.musicBox, .lullaby, .heartbeat, .ocean, .ocean]
+                return [.musicBox, .lullaby, .heartbeat, .aquarium, .aquarium]
             default:
                 // Unknown cry type: Start with proven MELODIC calming sounds
                 return getProvenCalmingSounds(for: age)
@@ -704,16 +712,16 @@ class SmartCryResponseEngine: ObservableObject {
             // 0-6 months: Womb + gentle melody
             // Music box is MUCH more pleasant than pure noise!
             // NO RAIN - replaced with pinkNoise (gentler)
-            return [.musicBox, .heartbeat, .womb, .lullaby, .ocean]
+            return [.musicBox, .heartbeat, .womb, .lullaby, .aquarium]
         } else if age < 12 {
             // 6-12 months: Melodic + ocean (gentler than rain)
-            return [.musicBox, .lullaby, .ocean, .softPiano, .river]
+            return [.musicBox, .lullaby, .aquarium, .softPiano, .aquarium]
         } else if age < 24 {
             // 1-2 years: More melodic variety, ocean instead of rain
-            return [.lullaby, .musicBox, .softPiano, .ocean, .gentleGuitar]
+            return [.lullaby, .musicBox, .softPiano, .aquarium, .gentleGuitar]
         } else {
             // 2+ years: Music + ocean (not rain!)
-            return [.lullaby, .softPiano, .gentleGuitar, .ocean, .ocean]
+            return [.lullaby, .softPiano, .gentleGuitar, .aquarium, .aquarium]
         }
     }
 
@@ -722,13 +730,13 @@ class SmartCryResponseEngine: ObservableObject {
         // AVOID pure white noise as fallback - use softer variants
         // ❌ NO RAIN - ocean/river only!
         if age < 6 {
-            return [.lullaby, .ocean, .river]
+            return [.lullaby, .aquarium, .aquarium]
         } else if age < 12 {
-            return [.softPiano, .ocean, .river]
+            return [.softPiano, .aquarium, .aquarium]
         } else if age < 24 {
-            return [.gentleGuitar, .ocean, .river]
+            return [.gentleGuitar, .aquarium, .aquarium]
         } else {
-            return [.softPiano, .gentleGuitar, .ocean]
+            return [.softPiano, .gentleGuitar, .aquarium]
         }
     }
 
@@ -825,7 +833,7 @@ class SmartCryResponseEngine: ObservableObject {
             sound = selectSleepSound(for: baby.ageInMonths)
             sound = applyRotation(to: sound, for: baby.ageInMonths, phase: phase)
         default:
-            sound = soundSequence.first ?? .ocean
+            sound = soundSequence.first ?? .aquarium
         }
 
         currentSound = sound
@@ -913,16 +921,16 @@ class SmartCryResponseEngine: ObservableObject {
         if ageMonths < 6 {
             // Newborns: Lullabies are BEST for sleep, heartbeat for comfort
             // NO RAIN - replaced with pinkNoise
-            return [.lullaby, .musicBox, .heartbeat, .ocean]
+            return [.lullaby, .musicBox, .heartbeat, .aquarium]
         } else if ageMonths < 12 {
             // Babies: Melodic + ocean (gentler than rain)
-            return [.lullaby, .musicBox, .ocean, .river]
+            return [.lullaby, .musicBox, .aquarium, .aquarium]
         } else if ageMonths < 24 {
             // Toddlers: Lullabies and soft music + ocean
-            return [.lullaby, .softPiano, .ocean, .ocean]
+            return [.lullaby, .softPiano, .aquarium, .aquarium]
         } else {
             // Older: Musical options + ocean
-            return [.lullaby, .softPiano, .gentleGuitar, .ocean]
+            return [.lullaby, .softPiano, .gentleGuitar, .aquarium]
         }
     }
 
@@ -1072,12 +1080,12 @@ class SmartCryResponseEngine: ObservableObject {
             // Apply frequency bias
             if frequencyBias < 0 {
                 // Prefer lower frequency sounds (ocean, not rain!)
-                if [.ocean, .river].contains(sound) {
+                if [.aquarium, .aquarium].contains(sound) {
                     score += 0.1
                 }
             } else if frequencyBias > 0 {
                 // Prefer higher frequency sounds
-                if [.birds].contains(sound) {
+                if [.chimes].contains(sound) {
                     score += 0.1
                 }
             }
@@ -1153,9 +1161,25 @@ class SmartCryResponseEngine: ObservableObject {
 
     // MARK: - Event Handlers
     private func handleCryDetected() async {
-        guard let baby = currentBaby ?? loadActiveBaby() else { return }
+        // CRITICAL FIX: Create fallback baby if none exists
+        // Emergency mode MUST work even without a baby profile!
+        // Use default 6-month baby for sound selection algorithms
+        let baby: Baby
+        if let existingBaby = currentBaby ?? loadActiveBaby() {
+            baby = existingBaby
+        } else {
+            // Create a default baby profile for emergency mode
+            // 6 months is a good middle ground for sound selection
+            print("[SmartCryResponse] ⚠️ No baby profile found - using default (6 months)")
+            baby = Baby(
+                name: "Baby",
+                birthDate: Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? Date()
+            )
+        }
 
         if !isActive {
+            print("[SmartCryResponse] 🚨 CRY DETECTED! Activating emergency response...")
+
             // FS-017: Smart Emergency Playlist System
             // Try emergency playlist mode first if enabled
             if isEmergencyMode {
@@ -1218,6 +1242,11 @@ class SmartCryResponseEngine: ObservableObject {
         }
 
         print("[SmartCryResponse] 🎯 Cry type: \(cryType.rawValue) - Building queue...")
+
+        // CRITICAL: Subscribe to cry type updates for real-time adaptation!
+        // When ML classification changes (e.g., unknown → tired → hungry),
+        // the queue should adapt its upcoming tracks automatically
+        subscribeToCryTypeUpdates()
 
         // Get user's preferred language
         let language = Locale.current.language.languageCode?.identifier ?? "en"
@@ -1392,7 +1421,7 @@ class SmartCryResponseEngine: ObservableObject {
 
         // Ensure we have at least some sounds (NO RAIN!)
         if sounds.isEmpty {
-            return [.ocean, .river]
+            return [.aquarium, .aquarium]
         }
 
         return sounds
@@ -1407,8 +1436,8 @@ class SmartCryResponseEngine: ObservableObject {
             // ❌ ALL noise generators REMOVED (scary for babies!)
             // ❌ "rain" REMOVED (scary, unpredictable)
             // ❌ "vacuum", "fan" REMOVED (harsh mechanical sounds)
-            "ocean": .ocean,
-            "river": .river,
+            "ocean": .aquarium,
+            "river": .aquarium,
             "music box": .musicBox,
             "lullaby": .musicBox,
             "gentle piano": .softPiano,
@@ -1450,7 +1479,7 @@ class SmartCryResponseEngine: ObservableObject {
         // Get the primary sound from the mix
         guard let primaryLayer = mix.layers.first else {
             // Fallback - immediate playback for emergency mode through session manager
-            let track = createTrack(for: .ocean)
+            let track = createTrack(for: .aquarium)
             playbackSession.requestPlayback(track: track, from: .singleSound, forceImmediate: true)
             return
         }
@@ -1463,7 +1492,7 @@ class SmartCryResponseEngine: ObservableObject {
         // Apply volume from primary layer
         audioEngine.setVolume(primaryLayer.volume)
 
-        currentSession?.soundsUsed.append(currentSound ?? .ocean)
+        currentSession?.soundsUsed.append(currentSound ?? .aquarium)
     }
 
     /// Start BabyMIM monitoring loop for continuous adaptation

@@ -136,7 +136,7 @@ class ContentLibraryService: ObservableObject {
     // MARK: - API Conversion
 
     private func convertAPITrack(_ apiTrack: APITrack) -> AudioTrack {
-        let category = AudioCategory(rawValue: apiTrack.category) ?? .instrumental
+        let category = AudioCategory.fromJSONKey(apiTrack.category)
         let language = Language.allCases.first { $0.rawValue.lowercased() == apiTrack.language.lowercased() }
 
         let audioSourceType: AudioSourceType
@@ -183,7 +183,7 @@ class ContentLibraryService: ObservableObject {
                 fullPlaylist = try await apiClient.getPlaylist(id: apiPlaylist.id)
             }
 
-            let category = fullPlaylist.category.flatMap { AudioCategory(rawValue: $0) }
+            let category = fullPlaylist.category.map { AudioCategory.fromJSONKey($0) }
             let tracks = (fullPlaylist.tracks ?? []).map { convertAPITrack($0) }
 
             let playlist = Playlist(
@@ -258,7 +258,8 @@ class ContentLibraryService: ObservableObject {
     private func filterLocalTracks(category: String?, language: String?, ageMonths: Int?) -> [AudioTrack] {
         var filtered = allTracks
 
-        if let category = category, let cat = AudioCategory(rawValue: category) {
+        if let category = category {
+            let cat = AudioCategory.fromJSONKey(category)
             filtered = filtered.filter { $0.category == cat }
         }
 
@@ -330,15 +331,19 @@ class ContentLibraryService: ObservableObject {
             }
 
             let artist = trackData["artist"] as? String ?? "Various Artists"
-            // Note: subcategory and tags are parsed from JSON but not currently used in AudioTrack model
-            // Keeping the parsing here for future extensibility
-            _ = trackData["subcategory"] as? String ?? "misc"
+            let subcategory = trackData["subcategory"] as? String
             let duration = trackData["duration"] as? Double ?? 180.0
             let calmScore = trackData["calmScore"] as? Double ?? 0.8
-            _ = trackData["tags"] as? [String] ?? []
+            let rawTags = trackData["tags"] as? [String] ?? []
+            // Clean tags: filter out malformed entries (filenames) and normalize
+            let tags = rawTags.filter { tag in
+                !tag.contains(".mp3") && !tag.contains(".wav") && !tag.isEmpty
+            }.map { $0.lowercased().replacingOccurrences(of: "_", with: " ") }
 
             // Map category string to AudioCategory
-            let category = mapStringToAudioCategory(categoryStr)
+            // IMPORTANT: Use subcategory for more precise classification
+            // e.g., subcategory "classical" overrides category "lullabies" -> classicalMusic
+            let category = mapStringToAudioCategory(categoryStr, subcategory: subcategory ?? "misc", tags: rawTags)
 
             // Determine language from category (english/russian fairy tales)
             let language: Language? = {
@@ -365,9 +370,9 @@ class ContentLibraryService: ObservableObject {
             let streamURL: String?
             if !isBundled {
                 // URL encode the filename for R2 storage
-                // R2 bucket structure: audio/{category}/{filename}
+                // R2 bucket structure: {category}/{filename} (NO /audio/ prefix!)
                 let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? filename
-                streamURL = "\(APIClient.r2PublicURL)/audio/\(encodedFilename)"
+                streamURL = "\(APIClient.r2PublicURL)/\(encodedFilename)"
             } else {
                 streamURL = nil
             }
@@ -385,7 +390,9 @@ class ContentLibraryService: ObservableObject {
                 audioSourceType: isBundled ? .bundled : .streamed,
                 fileName: isBundled ? fileName : nil,
                 fileExtension: isBundled ? fileExtension : nil,
-                streamURL: streamURL
+                streamURL: streamURL,
+                tags: tags,
+                subcategory: subcategory
             )
             tracks.append(track)
         }
@@ -401,8 +408,17 @@ class ContentLibraryService: ObservableObject {
     }
 
     /// Map category string from JSON to AudioCategory enum
+    /// Uses subcategory and tags for more precise classification
     /// NOTE: White noise category was REMOVED - user feedback says it's scary for babies!
-    private func mapStringToAudioCategory(_ str: String) -> AudioCategory {
+    private func mapStringToAudioCategory(_ str: String, subcategory: String = "", tags: [String] = []) -> AudioCategory {
+        // PRIORITY 1: Check subcategory for precise classification
+        // This allows "lullabies" category with "classical" subcategory to be properly classified as Classical Music
+        let sub = subcategory.lowercased()
+        if sub == "classical" || tags.contains("classical") {
+            return .classicalMusic
+        }
+
+        // PRIORITY 2: Check main category string
         switch str.lowercased() {
         // Nature Sounds
         case "nature", "nature_sounds": return .natureSounds
@@ -629,14 +645,14 @@ class ContentLibraryService: ObservableObject {
         // MARK: Nature Sounds (ONLY gentle, baby-safe sounds - NO rain/thunder/wind!)
         let natureSounds: [(GeneratorType, String)] = [
             // ❌ REMOVED: .rain, .rainOnRoof, .wind, .thunderstorm, .thunderRumble (scary for babies!)
-            (.ocean, "Ocean Waves"),
-            (.river, "Babbling Brook"),
-            (.birds, "Morning Birds"),
-            (.crickets, "Summer Crickets"),
-            (.fireplace, "Crackling Fire"),
-            (.forest, "Forest Ambience"),
-            (.waterfall, "Peaceful Waterfall"),
-            (.campfire, "Campfire Night")
+            (.aquarium, "Ocean Waves"),
+            (.aquarium, "Babbling Brook"),
+            (.chimes, "Morning Birds"),
+            (.chimes, "Summer Crickets"),
+            (.softPiano, "Crackling Fire"),
+            (.bells, "Forest Ambience"),
+            (.aquarium, "Peaceful Waterfall"),
+            (.softPiano, "Campfire Night")
         ]
 
         for (generator, title) in natureSounds {
@@ -815,7 +831,7 @@ class ContentLibraryService: ObservableObject {
 
         // Cozy Ambient Collection (fire sounds for relaxation)
         let cozyAmbientTypes = allTracks.filter {
-            [GeneratorType.fireplace, .campfire].contains($0.generatorType ?? .lullaby)
+            [GeneratorType.softPiano, .softPiano].contains($0.generatorType ?? .lullaby)
         }
         if !cozyAmbientTypes.isEmpty {
             playlists.append(Playlist(
@@ -833,7 +849,7 @@ class ContentLibraryService: ObservableObject {
 
         // Cozy Night Sounds (NO rain/thunder - only gentle fire sounds)
         let cozyNightTracks = allTracks.filter {
-            [GeneratorType.fireplace, .campfire].contains($0.generatorType ?? .lullaby)
+            [GeneratorType.softPiano, .softPiano].contains($0.generatorType ?? .lullaby)
         }
         playlists.append(Playlist(
             name: "Cozy Night",
@@ -1021,12 +1037,45 @@ class ContentLibraryService: ObservableObject {
     // MARK: - Search
 
     func searchTracks(query: String) -> [AudioTrack] {
-        let lowercasedQuery = query.lowercased()
-        return allTracks.filter {
-            $0.title.lowercased().contains(lowercasedQuery) ||
-            $0.artist.lowercased().contains(lowercasedQuery) ||
-            $0.category.rawValue.lowercased().contains(lowercasedQuery)
+        let lowercasedQuery = query.lowercased().trimmingCharacters(in: .whitespaces)
+        guard !lowercasedQuery.isEmpty else { return [] }
+
+        // Split query into words for multi-word matching (e.g., "kids modern" matches tracks with both tags)
+        let queryWords = lowercasedQuery.split(separator: " ").map { String($0) }
+
+        return allTracks.filter { track in
+            // Check if ALL query words match somewhere in the track
+            queryWords.allSatisfy { word in
+                track.title.lowercased().contains(word) ||
+                track.artist.lowercased().contains(word) ||
+                track.category.rawValue.lowercased().contains(word) ||
+                track.subcategory?.lowercased().contains(word) == true ||
+                track.tags.contains { $0.contains(word) }
+            }
+        }.sorted { lhs, rhs in
+            // Score by relevance: exact tag match > partial match
+            let lhsScore = scoreTrack(lhs, for: queryWords)
+            let rhsScore = scoreTrack(rhs, for: queryWords)
+            return lhsScore > rhsScore
         }
+    }
+
+    /// Score a track based on how well it matches query words
+    private func scoreTrack(_ track: AudioTrack, for queryWords: [String]) -> Int {
+        var score = 0
+        for word in queryWords {
+            // Exact tag match = 10 points
+            if track.tags.contains(word) { score += 10 }
+            // Exact subcategory match = 8 points
+            if track.subcategory?.lowercased() == word { score += 8 }
+            // Title contains = 5 points
+            if track.title.lowercased().contains(word) { score += 5 }
+            // Category contains = 3 points
+            if track.category.rawValue.lowercased().contains(word) { score += 3 }
+            // Tag partial match = 2 points
+            if track.tags.contains(where: { $0.contains(word) }) { score += 2 }
+        }
+        return score
     }
 
     func searchPlaylists(query: String) -> [Playlist] {
@@ -1049,11 +1098,16 @@ class ContentLibraryService: ObservableObject {
     ) -> [AudioTrack] {
         var results = allTracks
 
-        if let query = query?.lowercased(), !query.isEmpty {
-            results = results.filter {
-                $0.title.lowercased().contains(query) ||
-                $0.artist.lowercased().contains(query) ||
-                $0.category.rawValue.lowercased().contains(query)
+        if let query = query?.lowercased().trimmingCharacters(in: .whitespaces), !query.isEmpty {
+            let queryWords = query.split(separator: " ").map { String($0) }
+            results = results.filter { track in
+                queryWords.allSatisfy { word in
+                    track.title.lowercased().contains(word) ||
+                    track.artist.lowercased().contains(word) ||
+                    track.category.rawValue.lowercased().contains(word) ||
+                    track.subcategory?.lowercased().contains(word) == true ||
+                    track.tags.contains { $0.contains(word) }
+                }
             }
         }
 
@@ -1084,11 +1138,12 @@ class ContentLibraryService: ObservableObject {
             .map { $0 }
     }
 
-    /// Get tracks by subcategory (using fileName pattern matching)
+    /// Get tracks by subcategory
     func getTracksBySubcategory(_ subcategory: String) -> [AudioTrack] {
         let lowercased = subcategory.lowercased()
         return allTracks.filter {
-            $0.fileName?.lowercased().contains(lowercased) == true ||
+            $0.subcategory?.lowercased().contains(lowercased) == true ||
+            $0.tags.contains { $0.contains(lowercased) } ||
             $0.title.lowercased().contains(lowercased)
         }
     }

@@ -167,19 +167,19 @@ class AIRecommendationEngine: ObservableObject {
         var preferredGenerators: [GeneratorType] {
             switch self {
             case .sleepy:
-                return [.ocean, .lullaby, .river, .softPiano]
+                return [.aquarium, .lullaby, .aquarium, .softPiano]
             case .crying:
-                return [.shushing, .womb, .heartbeat, .ocean]
+                return [.shushing, .womb, .heartbeat, .aquarium]
             case .playful:
-                return [.musicBox, .birds, .chimes, .aquarium, .forest]
+                return [.musicBox, .chimes, .chimes, .aquarium, .bells]
             case .calm:
-                return [.ocean, .river, .softPiano, .forest]
+                return [.aquarium, .aquarium, .softPiano, .bells]
             case .fussy:
-                return [.shushing, .womb, .ocean, .heartbeat]
+                return [.shushing, .womb, .aquarium, .heartbeat]
             case .restless:
-                return [.waterfall, .river, .forest, .campfire]
+                return [.aquarium, .aquarium, .bells, .softPiano]
             case .overtired:
-                return [.womb, .river, .gentleGuitar, .campfire]
+                return [.womb, .aquarium, .gentleGuitar, .softPiano]
             }
         }
 
@@ -191,19 +191,19 @@ class AIRecommendationEngine: ObservableObject {
             if ageMonths >= 12 {
                 switch self {
                 case .sleepy:
-                    generators = [.forest, .waterfall, .river, .softPiano, .gentleGuitar, .campfire]
+                    generators = [.bells, .aquarium, .aquarium, .softPiano, .gentleGuitar, .softPiano]
                 case .crying:
-                    generators = [.ocean, .forest, .lullaby, .softPiano, .waterfall]
+                    generators = [.aquarium, .bells, .lullaby, .softPiano, .aquarium]
                 case .playful:
-                    generators = [.forest, .birds, .aquarium, .chimes, .musicBox]
+                    generators = [.bells, .chimes, .aquarium, .chimes, .musicBox]
                 case .calm:
-                    generators = [.forest, .campfire, .forest, .softPiano, .gentleGuitar, .waterfall]
+                    generators = [.bells, .softPiano, .bells, .softPiano, .gentleGuitar, .aquarium]
                 case .fussy:
-                    generators = [.waterfall, .forest, .lullaby, .river, .river]
+                    generators = [.aquarium, .bells, .lullaby, .aquarium, .aquarium]
                 case .restless:
-                    generators = [.lullaby, .softPiano, .forest, .forest, .birds]
+                    generators = [.lullaby, .softPiano, .bells, .bells, .chimes]
                 case .overtired:
-                    generators = [.waterfall, .forest, .river, .campfire, .softPiano]
+                    generators = [.aquarium, .bells, .aquarium, .softPiano, .softPiano]
                 }
             }
 
@@ -293,16 +293,16 @@ class AIRecommendationEngine: ObservableObject {
         let calmingGenerators: [GeneratorType]
         if ageMonths >= 18 {
             // Toddlers prefer more complex, engaging sounds
-            calmingGenerators = [.forest, .waterfall, .lullaby, .river, .campfire, .forest, .softPiano]
+            calmingGenerators = [.bells, .aquarium, .lullaby, .aquarium, .softPiano, .bells, .softPiano]
         } else if ageMonths >= 12 {
             // Older babies - transitioning to more varied sounds
-            calmingGenerators = [.forest, .ocean, .river, .ocean, .waterfall, .softPiano]
+            calmingGenerators = [.bells, .aquarium, .aquarium, .aquarium, .aquarium, .softPiano]
         } else if ageMonths >= 6 {
             // 6-12 months
-            calmingGenerators = [.ocean, .river, .womb, .forest, .lullaby]
+            calmingGenerators = [.aquarium, .aquarium, .womb, .bells, .lullaby]
         } else {
             // Newborns - stick to womb-like sounds
-            calmingGenerators = [.ocean, .shushing, .womb, .heartbeat, .ocean]
+            calmingGenerators = [.aquarium, .shushing, .womb, .heartbeat, .aquarium]
         }
 
         for i in 0..<calmingCount {
@@ -727,17 +727,17 @@ class EmergencyCryStopService: ObservableObject {
         let adaptedGenerator: GeneratorType
         switch cryType {
         case .tired:
-            adaptedGenerator = ageMonths < 12 ? .waterfall : .river
+            adaptedGenerator = ageMonths < 12 ? .aquarium : .aquarium
         case .hunger:
-            adaptedGenerator = ageMonths < 12 ? .shushing : .ocean
+            adaptedGenerator = ageMonths < 12 ? .shushing : .aquarium
         case .pain:
-            adaptedGenerator = ageMonths < 12 ? .shushing : .river
+            adaptedGenerator = ageMonths < 12 ? .shushing : .aquarium
         case .attention:
             adaptedGenerator = ageMonths < 18 ? .musicBox : .aquarium
         case .discomfort:
-            adaptedGenerator = ageMonths < 12 ? .womb : .forest
+            adaptedGenerator = ageMonths < 12 ? .womb : .bells
         default:
-            adaptedGenerator = ageMonths < 12 ? .womb : .ocean
+            adaptedGenerator = ageMonths < 12 ? .womb : .aquarium
         }
 
         let track = AudioTrack(
@@ -802,7 +802,7 @@ class EmergencyCryStopService: ObservableObject {
             )
 
         default:
-            let generator: GeneratorType = ageMonths >= 12 ? .ocean : .womb
+            let generator: GeneratorType = ageMonths >= 12 ? .aquarium : .womb
             return AudioTrack(
                 title: generator.rawValue,
                 category: .ambient,
@@ -851,7 +851,7 @@ class EmergencyCryStopService: ObservableObject {
             } else if age < 24 {
                 return .lullaby
             } else {
-                return .ocean
+                return .aquarium
             }
         }
     }
@@ -859,16 +859,16 @@ class EmergencyCryStopService: ObservableObject {
     private func getSustainedGenerator(age: Int, cryType: CryType) -> GeneratorType {
         switch cryType {
         case .tired:
-            return age < 12 ? .heartbeat : .river
+            return age < 12 ? .heartbeat : .aquarium
         default:
             if age < 6 {
                 return .heartbeat
             } else if age < 12 {
-                return .ocean
+                return .aquarium
             } else if age < 24 {
-                return .river
+                return .aquarium
             } else {
-                return .campfire
+                return .softPiano
             }
         }
     }
