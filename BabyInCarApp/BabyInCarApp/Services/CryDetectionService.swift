@@ -664,29 +664,30 @@ class CryDetectionService: ObservableObject {
             return
         }
 
-        // Skip rule-based DETECTION if too quiet (likely just ambient noise)
-        // BUT still update audio level for UI visualization AND accumulate for ML
-        let quietThreshold = ambientNoiseLevel * 1.5
-        guard rms > quietThreshold else {
-            // DIAGNOSTIC: Log when audio is too quiet (throttled to reduce spam)
-            let now = Date()
-            if now.timeIntervalSince(lastQuietLog) > 5.0 {
-                print("[CryDetection] 🔇 Audio too quiet: RMS=\(String(format: "%.4f", rms)) < threshold=\(String(format: "%.4f", quietThreshold)) (ambient=\(String(format: "%.4f", ambientNoiseLevel)))")
-                lastQuietLog = now
-            }
-
-            // MEMORY FIX: Combined update - audio level + quiet frame handling in single Task
-            // CRITICAL FIX: Still accumulate for DeepInfant - ML can detect patterns rule-based misses
-            Task { @MainActor [weak self] in
-                self?.currentAudioLevel = rms
-                self?.handleQuietFrame()
-                // Still accumulate for DeepInfant even when quiet - ML is more sensitive
-                if useMLEnhancement {
-                    self?.accumulateForDeepInfant(samples: samples, sampleRate: sampleRate)
-                }
-            }
-            return
-        }
+        // CRITICAL DIAGNOSTIC: Temporarily DISABLE quiet threshold to debug FFT detection
+        // This allows us to see FFT power values for all frames, even quiet ones
+        // TODO: Re-enable after confirming FFT thresholds are correct
+        // let quietThreshold = ambientNoiseLevel * 1.2
+        // guard rms > quietThreshold else {
+        //     // DIAGNOSTIC: Log when audio is too quiet (throttled to reduce spam)
+        //     let now = Date()
+        //     if now.timeIntervalSince(lastQuietLog) > 5.0 {
+        //         print("[CryDetection] 🔇 Audio too quiet: RMS=\(String(format: "%.4f", rms)) < threshold=\(String(format: "%.4f", quietThreshold)) (ambient=\(String(format: "%.4f", ambientNoiseLevel)))")
+        //         lastQuietLog = now
+        //     }
+        //
+        //     // MEMORY FIX: Combined update - audio level + quiet frame handling in single Task
+        //     // CRITICAL FIX: Still accumulate for DeepInfant - ML can detect patterns rule-based misses
+        //     Task { @MainActor [weak self] in
+        //         self?.currentAudioLevel = rms
+        //         self?.handleQuietFrame()
+        //         // Still accumulate for DeepInfant even when quiet - ML is more sensitive
+        //         if useMLEnhancement {
+        //             self?.accumulateForDeepInfant(samples: samples, sampleRate: sampleRate)
+        //         }
+        //     }
+        //     return
+        // }
 
         // DIAGNOSTIC: Log when audio is being analyzed (throttled)
         let now = Date()
@@ -894,14 +895,13 @@ class CryDetectionService: ObservableObject {
                         spectralCentroid > 500 && spectralCentroid < 2000 &&
                         spectralFlatness < 0.5
 
-        // Debug logging every ~1 second (throttled by frame count)
-        // This helps diagnose detection issues in real-time
+        // CRITICAL DIAGNOSTIC: Always log FFT analysis to debug threshold issues
+        // This helps identify if FFT power is lower than expected
         #if DEBUG
         struct DebugState { static var frameCount = 0 }
         DebugState.frameCount += 1
-        if DebugState.frameCount % 30 == 0 && fundamentalPower > fftPowerThreshold * 0.5 {
-            print("[CryFFT] power=\(String(format: "%.5f", fundamentalPower)) (threshold=\(String(format: "%.5f", fftPowerThreshold))), centroid=\(String(format: "%.0f", spectralCentroid))Hz, flat=\(String(format: "%.2f", spectralFlatness)), cry=\(isCryLike)")
-        }
+        // DIAGNOSTIC: Print EVERY frame (not throttled) to see ALL FFT power values
+        print("[CryFFT] power=\(String(format: "%.5f", fundamentalPower)) (threshold=\(String(format: "%.5f", fftPowerThreshold))), centroid=\(String(format: "%.0f", spectralCentroid))Hz, flat=\(String(format: "%.2f", spectralFlatness)), cry=\(isCryLike)")
         #endif
 
         return CryAnalysis(
