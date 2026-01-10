@@ -531,15 +531,58 @@ platform :ios do
           end
         end
 
-        UI.important("\n=== TestFlight Configuration Required ===")
-        UI.important("To enable automatic TestFlight deployment:")
-        UI.important("1. Go to: https://appstoreconnect.apple.com/apps/#{actual_app_id}/integrations/cloudbuilds")
-        UI.important("2. Click on workflow: #{workflow_name}")
-        UI.important("3. Click 'Edit Workflow'")
-        UI.important("4. Under 'Post-Actions', click '+'")
-        UI.important("5. Select 'TestFlight Internal Testing'")
-        UI.important("6. Choose the archive artifact and beta group")
-        UI.important("7. Save the workflow")
+        # Step 6: Try to update workflow with TestFlight distribution
+        # The actions array can include buildDistributionAudience
+        current_actions = attrs["actions"] || []
+
+        # Check if any action already has TestFlight configured
+        has_testflight = current_actions.any? { |a| a["buildDistributionAudience"] }
+
+        if has_testflight
+          UI.success("✅ TestFlight distribution already configured!")
+        else
+          UI.message("\nAttempting to configure TestFlight distribution...")
+
+          # Update actions to add TestFlight distribution to iOS archive
+          # buildDistributionAudience must be a STRING: 'INTERNAL_ONLY' or 'APP_STORE_ELIGIBLE'
+          updated_actions = current_actions.map do |action|
+            if action["actionType"] == "ARCHIVE" && action["platform"] == "IOS"
+              action.merge("buildDistributionAudience" => "INTERNAL_ONLY")
+            else
+              action
+            end
+          end
+
+          update_body = {
+            data: {
+              type: "ciWorkflows",
+              id: workflow_id,
+              attributes: {
+                actions: updated_actions
+              }
+            }
+          }
+
+          response = make_request(:patch, "#{base_url}/ciWorkflows/#{workflow_id}", token, update_body)
+
+          if response.code.to_i >= 200 && response.code.to_i < 300
+            UI.success("✅ TestFlight distribution configured!")
+          else
+            error_body = JSON.parse(response.body) rescue response.body
+            UI.error("Could not configure via API: #{response.code}")
+            UI.message("API response: #{error_body}")
+
+            UI.important("\n=== Manual TestFlight Configuration Required ===")
+            UI.important("To enable automatic TestFlight deployment:")
+            UI.important("1. Go to: https://appstoreconnect.apple.com/apps/#{actual_app_id}/integrations/cloudbuilds")
+            UI.important("2. Click on workflow: #{workflow_name}")
+            UI.important("3. Click 'Edit Workflow'")
+            UI.important("4. Under 'Post-Actions', click '+'")
+            UI.important("5. Select 'TestFlight Internal Testing'")
+            UI.important("6. Choose the archive artifact and beta group")
+            UI.important("7. Save the workflow")
+          end
+        end
       end
 
       UI.success("\n✅ Xcode Cloud workflow configuration complete!")
