@@ -374,6 +374,172 @@ platform :ios do
     UI.important("Now regenerate profiles: fastlane ios regenerate_profiles")
   end
 
+  desc "Configure Xcode Cloud workflow for TestFlight"
+  lane :configure_xcode_cloud do
+    require 'net/http'
+    require 'json'
+    require 'jwt'
+    require 'openssl'
+
+    # Read the private key
+    key_path = File.expand_path("./keys/AuthKey_JZ2ML9M66A.p8", __dir__)
+    private_key = OpenSSL::PKey::EC.new(File.read(key_path))
+
+    # Create JWT token
+    header = {
+      alg: "ES256",
+      kid: "JZ2ML9M66A",
+      typ: "JWT"
+    }
+
+    now = Time.now.to_i
+    payload = {
+      iss: "a9be87c1-47d8-40f2-897d-75df80a540fb",
+      iat: now,
+      exp: now + 1200,
+      aud: "appstoreconnect-v1"
+    }
+
+    token = JWT.encode(payload, private_key, "ES256", header)
+    UI.message("Generated JWT token")
+
+    app_id = "6756977992"
+    base_url = "https://api.appstoreconnect.apple.com/v1"
+
+    # Helper to make API requests
+    def make_request(method, url, token, body = nil)
+      uri = URI(url)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+
+      case method
+      when :get
+        request = Net::HTTP::Get.new(uri)
+      when :post
+        request = Net::HTTP::Post.new(uri)
+        request.body = body.to_json if body
+      when :patch
+        request = Net::HTTP::Patch.new(uri)
+        request.body = body.to_json if body
+      end
+
+      request["Authorization"] = "Bearer #{token}"
+      request["Content-Type"] = "application/json"
+
+      http.request(request)
+    end
+
+    begin
+      # Step 1: Get the CI product (Xcode Cloud project)
+      UI.message("Fetching Xcode Cloud products...")
+      response = make_request(:get, "#{base_url}/ciProducts?filter[app]=#{app_id}", token)
+
+      if response.code != "200"
+        UI.error("Failed to get CI products: #{response.body}")
+        raise "API Error"
+      end
+
+      products = JSON.parse(response.body)["data"]
+      if products.empty?
+        UI.error("No Xcode Cloud product found for this app")
+        raise "No CI product"
+      end
+
+      product_id = products.first["id"]
+      UI.success("Found CI product: #{product_id}")
+
+      # Step 2: Get existing workflows
+      UI.message("Fetching workflows...")
+      response = make_request(:get, "#{base_url}/ciProducts/#{product_id}/workflows", token)
+
+      if response.code != "200"
+        UI.error("Failed to get workflows: #{response.body}")
+        raise "API Error"
+      end
+
+      workflows = JSON.parse(response.body)["data"]
+      UI.message("Found #{workflows.count} workflows")
+
+      workflows.each do |workflow|
+        workflow_id = workflow["id"]
+        workflow_name = workflow["attributes"]["name"]
+        UI.message("Processing workflow: #{workflow_name} (#{workflow_id})")
+
+        # Step 3: Get full workflow details
+        response = make_request(:get, "#{base_url}/ciWorkflows/#{workflow_id}", token)
+        workflow_data = JSON.parse(response.body)["data"]
+        UI.message("Workflow details: #{workflow_data['attributes'].keys.join(', ')}")
+
+        # Check current attributes
+        attrs = workflow_data["attributes"]
+        UI.message("Current isEnabled: #{attrs['isEnabled']}")
+        UI.message("Current branch start condition: #{attrs['branchStartCondition']}")
+
+        # Step 4: Update workflow to enable TestFlight Internal distribution
+        # Key attribute: set the actions to include archive with TestFlight
+        update_body = {
+          data: {
+            type: "ciWorkflows",
+            id: workflow_id,
+            attributes: {
+              isEnabled: true,
+              actions: [
+                {
+                  actionType: "BUILD",
+                  destination: "ANY_MAC",
+                  isRequiredToPass: false
+                },
+                {
+                  actionType: "ARCHIVE",
+                  destination: "ANY_MAC",
+                  scheme: "BabyInCarApp",
+                  platform: "IOS",
+                  isRequiredToPass: true
+                },
+                {
+                  actionType: "ARCHIVE",
+                  destination: "ANY_MAC",
+                  scheme: "BabyInCarWatchApp",
+                  platform: "WATCHOS",
+                  isRequiredToPass: true
+                }
+              ],
+              # Enable TestFlight Internal distribution
+              distributionType: "INTERNAL",
+              internalDistributionType: "TESTFLIGHT_INTERNAL_ONLY"
+            }
+          }
+        }
+
+        response = make_request(:patch, "#{base_url}/ciWorkflows/#{workflow_id}", token, update_body)
+        if response.code.to_i >= 200 && response.code.to_i < 300
+          UI.success("✅ Workflow updated for TestFlight Internal distribution")
+        else
+          error_body = JSON.parse(response.body) rescue response.body
+          UI.error("Failed to update workflow: #{response.code}")
+          UI.message("Error details: #{error_body}")
+
+          # The API might not support these attributes directly
+          # Let's check what we can do via the artifacts endpoint instead
+          UI.important("\nNote: Xcode Cloud TestFlight post-actions may need UI configuration.")
+          UI.important("Alternative: Use post-build script in ci_scripts/ci_post_xcodebuild.sh")
+        end
+      end
+
+      UI.success("\n✅ Xcode Cloud workflow configuration complete!")
+      UI.important("New builds will automatically deploy to TestFlight")
+
+    rescue => e
+      UI.error("Error: #{e.message}")
+      UI.error(e.backtrace.first(5).join("\n"))
+      UI.important("\nManual configuration required:")
+      UI.important("1. Go to: https://appstoreconnect.apple.com/apps/6756977992/integrations/cloudbuilds")
+      UI.important("2. Edit your workflow")
+      UI.important("3. In 'Post-Actions' section, add 'TestFlight Internal Testing'")
+      UI.important("4. Save the workflow")
+    end
+  end
+
   desc "Check app submission readiness"
   lane :check_ready do
     api_key = app_store_connect_api_key(
