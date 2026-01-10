@@ -465,65 +465,81 @@ platform :ios do
         workflow_name = workflow["attributes"]["name"]
         UI.message("Processing workflow: #{workflow_name} (#{workflow_id})")
 
-        # Step 3: Get full workflow details
+        # Step 3: Get full workflow details with included relationships
         response = make_request(:get, "#{base_url}/ciWorkflows/#{workflow_id}", token)
-        workflow_data = JSON.parse(response.body)["data"]
+        workflow_response = JSON.parse(response.body)
+        workflow_data = workflow_response["data"]
+        next unless workflow_data
         UI.message("Workflow details: #{workflow_data['attributes'].keys.join(', ')}")
 
         # Check current attributes
         attrs = workflow_data["attributes"]
         UI.message("Current isEnabled: #{attrs['isEnabled']}")
-        UI.message("Current branch start condition: #{attrs['branchStartCondition']}")
+        UI.message("Current actions: #{attrs['actions']}")
 
-        # Step 4: Update workflow to enable TestFlight Internal distribution
-        # Key attribute: set the actions to include archive with TestFlight
-        update_body = {
-          data: {
-            type: "ciWorkflows",
-            id: workflow_id,
-            attributes: {
-              isEnabled: true,
-              actions: [
-                {
-                  actionType: "BUILD",
-                  destination: "ANY_MAC",
-                  isRequiredToPass: false
-                },
-                {
-                  actionType: "ARCHIVE",
-                  destination: "ANY_MAC",
-                  scheme: "BabyInCarApp",
-                  platform: "IOS",
-                  isRequiredToPass: true
-                },
-                {
-                  actionType: "ARCHIVE",
-                  destination: "ANY_MAC",
-                  scheme: "BabyInCarWatchApp",
-                  platform: "WATCHOS",
-                  isRequiredToPass: true
-                }
-              ],
-              # Enable TestFlight Internal distribution
-              distributionType: "INTERNAL",
-              internalDistributionType: "TESTFLIGHT_INTERNAL_ONLY"
-            }
-          }
-        }
+        # Get product for beta groups
+        product_response = make_request(:get, "#{base_url}/ciProducts/#{product_id}?include=app", token)
+        product_data = JSON.parse(product_response.body)
 
-        response = make_request(:patch, "#{base_url}/ciWorkflows/#{workflow_id}", token, update_body)
-        if response.code.to_i >= 200 && response.code.to_i < 300
-          UI.success("✅ Workflow updated for TestFlight Internal distribution")
+        app_relationship = product_data["data"]["relationships"]["app"]["data"]
+        actual_app_id = app_relationship ? app_relationship["id"] : app_id
+        UI.message("App ID for beta groups: #{actual_app_id}")
+
+        # Step 4: Get or create internal beta group
+        UI.message("Fetching beta groups...")
+        beta_response = make_request(:get, "#{base_url}/apps/#{actual_app_id}/betaGroups?filter[isInternalGroup]=true", token)
+
+        if beta_response.code == "200"
+          beta_groups = JSON.parse(beta_response.body)["data"]
+          UI.message("Found #{beta_groups.count} internal beta groups")
+
+          if beta_groups.any?
+            internal_group = beta_groups.first
+            UI.success("Using internal beta group: #{internal_group['attributes']['name']} (#{internal_group['id']})")
+          else
+            UI.important("No internal beta groups found - builds will need manual assignment")
+          end
         else
-          error_body = JSON.parse(response.body) rescue response.body
-          UI.error("Failed to update workflow: #{response.code}")
-          UI.message("Error details: #{error_body}")
-
-          # The API might not support these attributes directly
-          # Let's check what we can do via the artifacts endpoint instead
-          UI.important("\nNote: Xcode Cloud TestFlight post-actions may need UI configuration.")
-          UI.important("Alternative: Use post-build script in ci_scripts/ci_post_xcodebuild.sh")
+          UI.error("Could not fetch beta groups: #{beta_response.code}")
         end
+
+        # Step 5: Check for existing artifacts that could be distributed
+        UI.message("\nChecking for build artifacts...")
+        builds_response = make_request(:get, "#{base_url}/ciWorkflows/#{workflow_id}/buildRuns?limit=5&sort=-number", token)
+
+        if builds_response.code == "200"
+          build_runs = JSON.parse(builds_response.body)["data"]
+          UI.message("Recent builds: #{build_runs.count}")
+
+          build_runs.each do |run|
+            run_id = run["id"]
+            run_status = run["attributes"]["completionStatus"]
+            run_number = run["attributes"]["number"]
+            UI.message("  Build ##{run_number}: #{run_status || 'in progress'}")
+
+            # Check for artifacts
+            if run_status == "SUCCEEDED"
+              artifacts_response = make_request(:get, "#{base_url}/ciBuildRuns/#{run_id}/artifacts", token)
+              if artifacts_response.code == "200"
+                artifacts = JSON.parse(artifacts_response.body)["data"]
+                UI.message("    Artifacts: #{artifacts.count}")
+                artifacts.each do |art|
+                  UI.message("      - #{art['attributes']['fileName']} (#{art['attributes']['fileType']})")
+                end
+              end
+            end
+          end
+        end
+
+        UI.important("\n=== TestFlight Configuration Required ===")
+        UI.important("To enable automatic TestFlight deployment:")
+        UI.important("1. Go to: https://appstoreconnect.apple.com/apps/#{actual_app_id}/integrations/cloudbuilds")
+        UI.important("2. Click on workflow: #{workflow_name}")
+        UI.important("3. Click 'Edit Workflow'")
+        UI.important("4. Under 'Post-Actions', click '+'")
+        UI.important("5. Select 'TestFlight Internal Testing'")
+        UI.important("6. Choose the archive artifact and beta group")
+        UI.important("7. Save the workflow")
       end
 
       UI.success("\n✅ Xcode Cloud workflow configuration complete!")
@@ -538,6 +554,69 @@ platform :ios do
       UI.important("3. In 'Post-Actions' section, add 'TestFlight Internal Testing'")
       UI.important("4. Save the workflow")
     end
+  end
+
+  desc "Upload IPA to TestFlight"
+  lane :upload_testflight do |options|
+    api_key = app_store_connect_api_key(
+      key_id: "JZ2ML9M66A",
+      issuer_id: "a9be87c1-47d8-40f2-897d-75df80a540fb",
+      key_filepath: "./fastlane/keys/AuthKey_JZ2ML9M66A.p8"
+    )
+
+    ipa_path = options[:ipa] || Dir.glob("#{Dir.home}/Downloads/*.ipa").max_by { |f| File.mtime(f) }
+
+    unless ipa_path && File.exist?(ipa_path)
+      UI.error("No IPA file found. Provide path via 'ipa:path/to/file.ipa' or place IPA in Downloads folder")
+      next
+    end
+
+    UI.message("Uploading IPA: #{ipa_path}")
+
+    pilot(
+      api_key: api_key,
+      ipa: ipa_path,
+      skip_waiting_for_build_processing: false,
+      distribute_external: false,
+      notify_external_testers: false
+    )
+
+    UI.success("✅ Build uploaded to TestFlight!")
+  end
+
+  desc "Build and upload to TestFlight locally"
+  lane :build_and_upload do
+    api_key = app_store_connect_api_key(
+      key_id: "JZ2ML9M66A",
+      issuer_id: "a9be87c1-47d8-40f2-897d-75df80a540fb",
+      key_filepath: "./fastlane/keys/AuthKey_JZ2ML9M66A.p8"
+    )
+
+    # Increment build number
+    increment_build_number(
+      xcodeproj: "./BabyInCarApp.xcodeproj"
+    )
+
+    # Build the archive
+    build_app(
+      scheme: "BabyInCarApp",
+      export_method: "app-store",
+      output_directory: "./build",
+      export_options: {
+        signingStyle: "automatic",
+        uploadSymbols: true,
+        teamID: "NMCB2JZ7QG"
+      }
+    )
+
+    # Upload to TestFlight
+    pilot(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+
+    UI.success("✅ Build uploaded to TestFlight!")
   end
 
   desc "Check app submission readiness"
