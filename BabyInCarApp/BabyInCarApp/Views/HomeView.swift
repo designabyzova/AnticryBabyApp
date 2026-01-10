@@ -39,11 +39,6 @@ struct HomeView: View {
                     // Emergency Cry-Stop Button with pulsing glow
                     emergencyButton
 
-                    // Now Playing (if something is playing)
-                    if audioEngine.currentTrack != nil {
-                        nowPlayingSection
-                    }
-
                     // Favorites Section (if user has favorites)
                     if !favoritesManager.favoriteTracks.isEmpty {
                         favoritesSection
@@ -281,12 +276,6 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, 20)
-    }
-
-    // MARK: - Now Playing Section
-    private var nowPlayingSection: some View {
-        NowPlayingCard()
-            .environmentObject(audioEngine)
     }
 
     // MARK: - Favorites Section

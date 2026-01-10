@@ -576,9 +576,9 @@ class AppState: ObservableObject {
     @Published var isPremiumUser: Bool = false
     @Published var offlineMode: Bool = false
 
-    /// Auto-enable cry monitoring when app launches (DEFAULT: TRUE for safety)
-    /// Users can disable this in settings if they prefer manual activation
-    @Published var autoCryMonitoringEnabled: Bool = true
+    /// Auto-enable cry monitoring when app launches (DEFAULT: FALSE)
+    /// Users can enable this in settings or tap "AI Cry Detection" button
+    @Published var autoCryMonitoringEnabled: Bool = false
 
     /// Smooth audio transitions with crossfade (DEFAULT: TRUE)
     /// When enabled, track switches fade out current track and fade in new track
@@ -594,10 +594,10 @@ class AppState: ObservableObject {
         isOnboardingComplete = userDefaults.bool(forKey: "isOnboardingComplete")
         isPremiumUser = userDefaults.bool(forKey: "isPremiumUser")
 
-        // Auto cry monitoring defaults to TRUE if not set (opt-out, not opt-in)
-        // This ensures parents have protection by default
+        // Auto cry monitoring defaults to FALSE if not set (opt-in, not opt-out)
+        // Users must enable it manually or tap "AI Cry Detection" button
         if userDefaults.object(forKey: "autoCryMonitoringEnabled") == nil {
-            autoCryMonitoringEnabled = true  // Default ON for new users
+            autoCryMonitoringEnabled = false  // Default OFF for new users
         } else {
             autoCryMonitoringEnabled = userDefaults.bool(forKey: "autoCryMonitoringEnabled")
         }
