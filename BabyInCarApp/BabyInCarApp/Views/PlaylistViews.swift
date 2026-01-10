@@ -14,8 +14,9 @@ struct PlaylistDetailView: View {
     let isUserPlaylist: Bool
 
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var playlistManager = PlaylistManager.shared
-    @StateObject private var favoritesManager = FavoritesManager.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var playlistManager = PlaylistManager.shared
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
     @Environment(\.dismiss) var dismiss
     @Environment(\.bottomSafeAreaPadding) private var bottomPadding
 
@@ -298,7 +299,8 @@ struct PlaylistTrackRow: View {
     let isEditing: Bool
     let onPlay: () -> Void
     var onRemove: (() -> Void)?
-    @StateObject private var favoritesManager = FavoritesManager.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         HStack(spacing: 12) {

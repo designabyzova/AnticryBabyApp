@@ -556,8 +556,9 @@ struct TrackCard: View {
     var contextTracks: [AudioTrack]?
     var contextName: String?
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var favoritesManager = FavoritesManager.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
 
     var body: some View {
         Button {
@@ -668,8 +669,9 @@ struct TrackRow: View {
     var contextTracks: [AudioTrack]?
     var contextName: String?
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var favoritesManager = FavoritesManager.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
     @State private var showingAddToPlaylist = false
     @State private var isToggling = false  // Debounce rapid taps
 
@@ -851,7 +853,8 @@ struct TrackRow: View {
 struct PlaylistRow: View {
     let playlist: Playlist
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var favoritesManager = FavoritesManager.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         Button {

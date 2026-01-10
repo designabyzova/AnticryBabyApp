@@ -63,6 +63,38 @@ Set pricing to FREE
 
 Set app privacy - no data collected
 
+### ios register_app_ids
+
+```sh
+[bundle exec] fastlane ios register_app_ids
+```
+
+Register all App IDs with proper capabilities
+
+### ios configure_xcode_cloud
+
+```sh
+[bundle exec] fastlane ios configure_xcode_cloud
+```
+
+Configure Xcode Cloud workflow for TestFlight
+
+### ios upload_testflight
+
+```sh
+[bundle exec] fastlane ios upload_testflight
+```
+
+Upload IPA to TestFlight
+
+### ios build_and_upload
+
+```sh
+[bundle exec] fastlane ios build_and_upload
+```
+
+Build and upload to TestFlight locally
+
 ### ios check_ready
 
 ```sh

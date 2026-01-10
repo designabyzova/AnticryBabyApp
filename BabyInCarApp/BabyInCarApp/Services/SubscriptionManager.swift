@@ -163,6 +163,12 @@ class SubscriptionManager: ObservableObject {
 
     func purchase(planId: String) async -> Bool {
         guard let product = products.first(where: { $0.id == planId }) else {
+            // Provide user feedback when products aren't loaded
+            if products.isEmpty {
+                errorMessage = "Unable to load subscription options. Please check your internet connection and try again."
+            } else {
+                errorMessage = "Selected plan is not available. Please try another option."
+            }
             return false
         }
         return await purchase(product)
@@ -237,11 +243,13 @@ class SubscriptionManager: ObservableObject {
 
 // MARK: - Subscription View
 struct SubscriptionView: View {
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
-    @StateObject private var trialManager = TrialManager.shared
+    // FIX: Use @ObservedObject for singletons - prevents state observation issues on iPad
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var trialManager = TrialManager.shared
     @Environment(\.dismiss) var dismiss
     @State private var selectedPlan: String = ""
     @State private var showingComparison = false
+    @State private var isLoadingProducts = true
 
     var body: some View {
         NavigationView {
@@ -297,15 +305,29 @@ struct SubscriptionView: View {
                     // Subscribe button
                     Button {
                         Task {
-                            if await subscriptionManager.purchase(planId: selectedPlan) {
+                            // If no products, retry loading instead of purchasing
+                            if !hasValidProducts {
+                                isLoadingProducts = true
+                                await subscriptionManager.loadProducts()
+                                if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
+                                    selectedPlan = bestValue.id
+                                }
+                                isLoadingProducts = false
+                            } else if await subscriptionManager.purchase(planId: selectedPlan) {
                                 dismiss()
                             }
                         }
                     } label: {
                         HStack {
-                            if subscriptionManager.isLoading {
+                            if subscriptionManager.isLoading || isLoadingProducts {
                                 ProgressView()
                                     .tint(.white)
+                                Text(isLoadingProducts ? "Loading..." : "Processing...")
+                                    .padding(.leading, 8)
+                            } else if !hasValidProducts {
+                                Image(systemName: "exclamationmark.triangle")
+                                Text("Retry Loading")
+                                    .padding(.leading, 4)
                             } else {
                                 Text("Subscribe Now")
                             }
@@ -316,11 +338,12 @@ struct SubscriptionView: View {
                         .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedPlan.isEmpty ? Color.appPrimary.opacity(0.5) : Color.appPrimary)
+                                .fill(buttonBackgroundColor)
                         )
                     }
-                    .disabled(selectedPlan.isEmpty || subscriptionManager.isLoading)
+                    .disabled(isButtonDisabled)
                     .padding(.horizontal, 20)
+                    .accessibilityIdentifier("subscribeNowButton")
 
                     // Compare plans link
                     Button {
@@ -368,12 +391,71 @@ struct SubscriptionView: View {
         .sheet(isPresented: $showingComparison) {
             FreePremiumComparisonView()
         }
+        .alert("Error", isPresented: .init(
+            get: { subscriptionManager.errorMessage != nil },
+            set: { if !$0 { subscriptionManager.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                subscriptionManager.errorMessage = nil
+            }
+            Button("Retry") {
+                Task {
+                    await subscriptionManager.loadProducts()
+                    // Re-select best value plan after reload
+                    if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
+                        selectedPlan = bestValue.id
+                    }
+                }
+            }
+        } message: {
+            Text(subscriptionManager.errorMessage ?? "An error occurred")
+        }
         .onAppear {
-            // Pre-select best value plan
-            if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue }) {
+            // Pre-select best value plan (only if product is loaded)
+            if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
                 selectedPlan = bestValue.id
             }
+            isLoadingProducts = false
         }
+        .task {
+            // Ensure products are loaded when view appears
+            if subscriptionManager.products.isEmpty {
+                await subscriptionManager.loadProducts()
+                // Select best value after loading
+                if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
+                    selectedPlan = bestValue.id
+                }
+            }
+            isLoadingProducts = false
+        }
+    }
+
+    // MARK: - Computed Properties for Button State
+
+    private var hasValidProducts: Bool {
+        subscriptionManager.products.contains { product in
+            subscriptionManager.availablePlans.contains { $0.id == product.id }
+        }
+    }
+
+    private var isButtonDisabled: Bool {
+        if isLoadingProducts || subscriptionManager.isLoading {
+            return true
+        }
+        if !hasValidProducts {
+            return false // Allow tap to retry
+        }
+        return selectedPlan.isEmpty
+    }
+
+    private var buttonBackgroundColor: Color {
+        if isLoadingProducts || subscriptionManager.isLoading {
+            return Color.appPrimary.opacity(0.7)
+        }
+        if !hasValidProducts {
+            return Color.orange // Retry state
+        }
+        return selectedPlan.isEmpty ? Color.appPrimary.opacity(0.5) : Color.appPrimary
     }
 
     // MARK: - Trial Banner

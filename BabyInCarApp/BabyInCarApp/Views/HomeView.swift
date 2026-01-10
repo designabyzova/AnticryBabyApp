@@ -398,7 +398,8 @@ struct FavoriteTrackCard: View {
     /// Context tracks for smart queue - enables next/previous through favorites
     var contextTracks: [AudioTrack]?
     @EnvironmentObject var audioEngine: AudioEngine
-    @StateObject private var favoritesManager = FavoritesManager.shared
+    // FIX: Use @ObservedObject for singletons - @StateObject causes crash when views recreate
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
 
     var body: some View {
         Button {
