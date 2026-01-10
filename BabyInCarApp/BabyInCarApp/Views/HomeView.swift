@@ -23,7 +23,6 @@ struct HomeView: View {
     @State private var isLoading = true
     @State private var showingEmergencyMode = false
     @State private var showingAdvancedCryDetection = false
-    @State private var showingVoiceInput = false
     @State private var showingSubscription = false
     @State private var showingEmergencyCategorySelector = false
     @State private var selectedEmergencyCategory: AudioCategory?
@@ -39,9 +38,6 @@ struct HomeView: View {
 
                     // Emergency Cry-Stop Button with pulsing glow
                     emergencyButton
-
-                    // Voice Control Button
-                    voiceControlButton
 
                     // Now Playing (if something is playing)
                     if audioEngine.currentTrack != nil {
@@ -124,9 +120,6 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingAdvancedCryDetection) {
             CryDetectionView()
-        }
-        .sheet(isPresented: $showingVoiceInput) {
-            VoiceControlSheet()
         }
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
@@ -290,130 +283,10 @@ struct HomeView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Voice Control Button
-    private var voiceControlButton: some View {
-        Button {
-            showingVoiceInput = true
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.appPrimary)
-
-                Text(languageManager.localizedString("home.voiceControl"))
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.appText)
-
-                Spacer()
-
-                Text(languageManager.localizedString("home.handsFree"))
-                    .font(.system(size: 12))
-                    .foregroundColor(.appTextSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.appPrimary.opacity(0.1))
-                    )
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.appTextSecondary)
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.05), radius: 4)
-            )
-        }
-        .accessibilityIdentifier("voiceControlButton")
-        .padding(.horizontal, 20)
-    }
-
     // MARK: - Now Playing Section
     private var nowPlayingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(languageManager.localizedString("player.nowPlaying").uppercased())
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.appTextSecondary)
-                .padding(.horizontal, 20)
-
-            HStack(spacing: 16) {
-                // Album art / category icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.2))
-                        .frame(width: 60, height: 60)
-
-                    Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
-                        .font(.system(size: 28))
-                        .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(audioEngine.currentTrack?.title ?? "Unknown")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.appText)
-                        .lineLimit(1)
-
-                    Text(audioEngine.currentTrack?.category.rawValue ?? "")
-                        .font(.system(size: 14))
-                        .foregroundColor(.appTextSecondary)
-
-                    // Progress bar - DRAGGABLE!
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            // Background track
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.appPrimary.opacity(0.2))
-                                .frame(height: 4)
-
-                            // Progress fill
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.appPrimary)
-                                .frame(width: geometry.size.width * CGFloat(audioEngine.currentTime / max(1, audioEngine.duration)), height: 4)
-                        }
-                        .contentShape(Rectangle()) // Make entire area tappable
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    let progress = min(max(0, value.location.x / geometry.size.width), 1)
-                                    let newTime = progress * audioEngine.duration
-                                    audioEngine.seek(to: newTime)
-                                }
-                        )
-                    }
-                    .frame(height: 4)
-                }
-
-                Spacer()
-
-                // Play/Pause button
-                Button {
-                    if audioEngine.playbackState.isPlaying {
-                        audioEngine.pause()
-                    } else if audioEngine.playbackState == .paused {
-                        audioEngine.resume()
-                    } else if let track = audioEngine.currentTrack {
-                        audioEngine.play(track: track)
-                    } else {
-                        audioEngine.resume()
-                    }
-                } label: {
-                    Image(systemName: audioEngine.playbackState.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(.appPrimary)
-                }
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.05), radius: 8)
-            )
-            .padding(.horizontal, 20)
-        }
+        NowPlayingCard()
+            .environmentObject(audioEngine)
     }
 
     // MARK: - Favorites Section
@@ -909,12 +782,10 @@ struct EmergencyModeView: View {
         switch sound {
         case .musicBox, .lullaby, .softPiano, .gentleGuitar, .chimes, .bells:
             return "Melodic • Calming"
-        case .aquarium, .aquarium, .aquarium, .bells:
+        case .aquarium:
             return "Nature • Soothing"
         case .heartbeat, .womb, .shushing:
             return "Comfort • Familiar"
-        default:
-            return "Ambient • Relaxing"
         }
     }
 
@@ -1063,284 +934,6 @@ struct EmergencyModeView: View {
             return "Adapting response to baby's needs"
         case .complete:
             return "Baby should be calm now"
-        }
-    }
-}
-
-// MARK: - Voice Control Sheet
-struct VoiceControlSheet: View {
-    @StateObject private var speechService = SpeechRecognitionService.shared
-    @StateObject private var voiceHandler = VoiceCommandHandler.shared
-    @EnvironmentObject var audioEngine: AudioEngine
-    @Environment(\.dismiss) var dismiss
-
-    @State private var commandFeedback: String?
-    @State private var showingSuccess = false
-    @State private var continuousMode = false
-
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Spacer()
-
-                // Microphone visualization with success/error state
-                ZStack {
-                    // Outer pulse ring
-                    Circle()
-                        .fill(circleColor.opacity(0.2))
-                        .frame(width: 180, height: 180)
-                        .scaleEffect(speechService.isListening ? 1.3 : 1.0)
-                        .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: speechService.isListening)
-
-                    // Main circle
-                    Circle()
-                        .fill(circleColor)
-                        .frame(width: 120, height: 120)
-
-                    Image(systemName: circleIcon)
-                        .font(.system(size: 50))
-                        .foregroundColor(.white)
-                }
-
-                // Status text
-                Text(statusText)
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(circleColor)
-
-                // Command feedback banner
-                if let feedback = commandFeedback {
-                    HStack(spacing: 12) {
-                        Image(systemName: showingError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-                            .foregroundColor(circleColor)
-
-                        Text(feedback)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.appText)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(circleColor.opacity(0.15))
-                    )
-                    .padding(.horizontal, 24)
-                    .transition(.scale.combined(with: .opacity))
-                }
-
-                // Recognized text
-                if !speechService.recognizedText.isEmpty && !showingSuccess {
-                    VStack(spacing: 8) {
-                        Text("I heard:")
-                            .font(.system(size: 14))
-                            .foregroundColor(.appTextSecondary)
-
-                        Text(speechService.recognizedText)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.appPrimary)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.appPrimary.opacity(0.1))
-                            )
-                    }
-                    .padding(.horizontal, 32)
-                }
-
-                // Voice command suggestions (hide when listening or showing success)
-                if !speechService.isListening && !showingSuccess {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Try saying:")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.appTextSecondary)
-
-                        VoiceCommandSuggestion(command: "\"Play\" or \"Pause\"")
-                        VoiceCommandSuggestion(command: "\"Next\" or \"Previous\"")
-                        VoiceCommandSuggestion(command: "\"Volume up\" or \"Louder\"")
-                        VoiceCommandSuggestion(command: "\"Play lullabies\"")
-                        VoiceCommandSuggestion(command: "\"Emergency mode\"")
-                    }
-                    .padding(.horizontal, 32)
-                }
-
-                Spacer()
-
-                // Continuous mode toggle
-                Toggle(isOn: $continuousMode) {
-                    HStack {
-                        Image(systemName: "repeat")
-                            .foregroundColor(.appPrimary)
-                        Text("Continuous listening")
-                            .font(.system(size: 14))
-                            .foregroundColor(.appTextSecondary)
-                    }
-                }
-                .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
-                .padding(.horizontal, 32)
-
-                // Listen button
-                Button {
-                    if speechService.isListening {
-                        speechService.stopListening()
-                    } else {
-                        startListening()
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: speechService.isListening ? "stop.fill" : "mic.fill")
-                        Text(speechService.isListening ? "Stop Listening" : "Start Listening")
-                    }
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(speechService.isListening ? Color.appDanger : Color.appPrimary)
-                    )
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-            }
-            .navigationTitle("Voice Control")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        speechService.stopListening()
-                        dismiss()
-                    }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .voiceCommandExecuted)) { notification in
-                handleCommandExecuted(notification)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .voiceCommandNotRecognized)) { notification in
-                handleCommandNotRecognized(notification)
-            }
-            .onAppear {
-                // Auto-start listening when sheet appears
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    startListening()
-                }
-            }
-        }
-    }
-
-    private var statusText: String {
-        if showingSuccess {
-            return "Done!"
-        } else if showingError {
-            return "Try again"
-        } else if speechService.isListening {
-            return "Listening..."
-        } else {
-            return "Tap to speak"
-        }
-    }
-
-    private var circleColor: Color {
-        if showingSuccess {
-            return .green
-        } else if showingError {
-            return .orange
-        } else {
-            return .appPrimary
-        }
-    }
-
-    private var circleIcon: String {
-        if showingSuccess {
-            return "checkmark"
-        } else if showingError {
-            return "xmark"
-        } else {
-            return "mic.fill"
-        }
-    }
-
-    @State private var showingError = false
-
-    private func startListening() {
-        showingSuccess = false
-        showingError = false
-        commandFeedback = nil
-        speechService.startListening()
-    }
-
-    private func handleCommandExecuted(_ notification: Notification) {
-        guard let message = notification.userInfo?["message"] as? String,
-              let success = notification.userInfo?["success"] as? Bool,
-              success else { return }
-
-        // Show success feedback
-        withAnimation(.spring(response: 0.3)) {
-            showingSuccess = true
-            showingError = false
-            commandFeedback = message
-        }
-
-        // Haptic feedback
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-
-        // Handle next action based on mode
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            if continuousMode {
-                // Restart listening for next command
-                withAnimation {
-                    showingSuccess = false
-                    commandFeedback = nil
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    startListening()
-                }
-            } else {
-                // Auto-dismiss after successful command
-                dismiss()
-            }
-        }
-    }
-
-    private func handleCommandNotRecognized(_ notification: Notification) {
-        // Show error feedback
-        withAnimation(.spring(response: 0.3)) {
-            showingError = true
-            showingSuccess = false
-            commandFeedback = "Command not recognized"
-        }
-
-        // Haptic feedback
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.warning)
-
-        // Restart listening after delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            withAnimation {
-                showingError = false
-                commandFeedback = nil
-            }
-            if continuousMode {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    startListening()
-                }
-            }
-        }
-    }
-}
-
-struct VoiceCommandSuggestion: View {
-    let command: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(Color.appPrimary.opacity(0.3))
-                .frame(width: 6, height: 6)
-
-            Text(command)
-                .font(.system(size: 14))
-                .foregroundColor(.appText)
         }
     }
 }
@@ -2115,6 +1708,117 @@ struct EmergencyCategoryCard: View {
                     )
                     .shadow(color: .black.opacity(0.05), radius: 4)
             )
+        }
+    }
+}
+
+// MARK: - Now Playing Card (Fixed Scrubbing)
+/// Properly handles progress bar dragging without causing UI hang
+struct NowPlayingCard: View {
+    @EnvironmentObject var audioEngine: AudioEngine
+    @ObservedObject private var languageManager = LanguageManager.shared
+
+    /// Local scrubbing state to prevent continuous seek calls
+    @State private var isScrubbing = false
+    @State private var scrubTime: TimeInterval = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(languageManager.localizedString("player.nowPlaying").uppercased())
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.appTextSecondary)
+                .padding(.horizontal, 20)
+
+            HStack(spacing: 16) {
+                // Album art / category icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental).opacity(0.2))
+                        .frame(width: 60, height: 60)
+
+                    Image(systemName: audioEngine.currentTrack?.category.icon ?? "music.note")
+                        .font(.system(size: 28))
+                        .foregroundColor(Color.forCategory(audioEngine.currentTrack?.category ?? .instrumental))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(audioEngine.currentTrack?.title ?? "Unknown")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.appText)
+                        .lineLimit(1)
+
+                    Text(audioEngine.currentTrack?.category.rawValue ?? "")
+                        .font(.system(size: 14))
+                        .foregroundColor(.appTextSecondary)
+
+                    // Progress bar - FIXED: Only seek on drag END, not every frame
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Background track
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.appPrimary.opacity(0.2))
+                                .frame(height: 4)
+
+                            // Progress fill - use scrubTime when scrubbing, otherwise currentTime
+                            let displayTime = isScrubbing ? scrubTime : audioEngine.currentTime
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.appPrimary)
+                                .frame(width: geometry.size.width * CGFloat(displayTime / max(1, audioEngine.duration)), height: 4)
+                        }
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    // Mark as scrubbing to prevent timer updates
+                                    if !isScrubbing {
+                                        isScrubbing = true
+                                        audioEngine.isScrubbing = true
+                                    }
+                                    // Update local state only (not seek yet)
+                                    let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                    scrubTime = progress * audioEngine.duration
+                                }
+                                .onEnded { value in
+                                    // Seek only ONCE when drag ends
+                                    let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                    let newTime = progress * audioEngine.duration
+                                    audioEngine.seek(to: newTime)
+
+                                    // Clear scrubbing state
+                                    isScrubbing = false
+                                    audioEngine.isScrubbing = false
+                                }
+                        )
+                    }
+                    .frame(height: 4)
+                }
+
+                Spacer()
+
+                // Play/Pause button
+                Button {
+                    if audioEngine.playbackState.isPlaying {
+                        audioEngine.pause()
+                    } else if audioEngine.playbackState == .paused {
+                        audioEngine.resume()
+                    } else if let track = audioEngine.currentTrack {
+                        audioEngine.play(track: track)
+                    } else {
+                        audioEngine.resume()
+                    }
+                } label: {
+                    Image(systemName: audioEngine.playbackState.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(.appPrimary)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.05), radius: 8)
+            )
+            .padding(.horizontal, 20)
         }
     }
 }

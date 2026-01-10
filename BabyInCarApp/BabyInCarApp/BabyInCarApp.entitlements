@@ -17,5 +17,13 @@
     <!-- Siri capability for voice control -->
     <key>com.apple.developer.siri</key>
     <true/>
+
+    <!-- CarPlay Audio capability - DISABLED until Apple approval -->
+    <!-- To enable: Apply at https://developer.apple.com/contact/carplay/ -->
+    <!-- Then uncomment below and add to provisioning profile -->
+    <!--
+    <key>com.apple.developer.carplay-audio</key>
+    <true/>
+    -->
 </dict>
 </plist>

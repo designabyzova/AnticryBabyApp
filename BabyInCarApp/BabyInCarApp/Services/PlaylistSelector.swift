@@ -13,8 +13,13 @@ import Foundation
 class PlaylistSelector: ObservableObject {
     private let apiClient: APIClient
 
-    init(apiClient: APIClient = .shared) {
+    init(apiClient: APIClient) {
         self.apiClient = apiClient
+    }
+
+    /// Convenience initializer using shared APIClient
+    convenience init() {
+        self.init(apiClient: .shared)
     }
 
     /// Select optimal playlist for a given cry scenario
@@ -150,9 +155,9 @@ enum PlaylistSelectorError: LocalizedError {
 extension PlaylistSelector {
     /// Shared instance for convenience
     @MainActor
-    static let shared = PlaylistSelector(apiClient: .shared)
+    static let shared = PlaylistSelector()
 
     /// Preview/mock instance for SwiftUI previews
     @MainActor
-    static let preview = PlaylistSelector(apiClient: .shared)
+    static let preview = PlaylistSelector()
 }

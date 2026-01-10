@@ -579,6 +579,86 @@ class SmartEmergencyQueue: ObservableObject {
         }
     }
 
+    /// Select first track with Pianomoment as the DEFAULT but with smart rotation.
+    /// Pianomoment (Bensound) is the highest priority track, but we rotate to provide variety.
+    ///
+    /// Rotation strategy:
+    /// - First cry detection of session: 80% chance Pianomoment, 20% chance other high-quality track
+    /// - Subsequent detections: Rotate through quality tracks, Pianomoment every 3rd-4th time
+    /// - Favorites and proven effective tracks get priority after Pianomoment
+    private func selectSmartFirstTrackWithPianomomentPriority(
+        cryType: CryType,
+        babyAge: Int,
+        currentFirstTrack: AudioTrack?,
+        candidatePool: [AudioTrack]
+    ) -> AudioTrack {
+        let realPianoMoment = AudioTrack.defaultEmergencyTrack()
+        let effectivenessManager = EffectivenessManager.shared
+        let favoritesManager = FavoritesManager.shared
+
+        // Check if Pianomoment was used recently
+        let pianoMomentUsedRecently = SmartEmergencyQueue.recentFirstTracks.contains(realPianoMoment.id)
+        let sessionCount = SmartEmergencyQueue.sessionCount
+
+        // STRATEGY 1: Pianomoment is the DEFAULT (high priority)
+        // Use it if: not used recently, OR it's been 3+ sessions since last use
+        let sessionsSincePianomoment = SmartEmergencyQueue.recentFirstTracks.firstIndex(of: realPianoMoment.id) ?? SmartEmergencyQueue.maxRecentFirstTracks
+
+        if !pianoMomentUsedRecently || sessionsSincePianomoment >= 3 {
+            // High chance to use Pianomoment (80% for first session, 60% for subsequent)
+            let pianomomentProbability = sessionCount == 0 ? 0.80 : 0.60
+            if Double.random(in: 0...1) < pianomomentProbability {
+                print("[SmartQueue] 🎹 Selected DEFAULT: Pianomoment (Bensound) - sessions since last use: \(sessionsSincePianomoment)")
+                return realPianoMoment
+            }
+        }
+
+        // STRATEGY 2: Check for proven effective tracks
+        let effectiveTracks = effectivenessManager.getTopEffectiveTracks(limit: 5, cryType: cryType)
+        for track in effectiveTracks {
+            if !SmartEmergencyQueue.recentFirstTracks.contains(track.id) {
+                print("[SmartQueue] 🧠 Selected PROVEN effective: \(track.title)")
+                return track
+            }
+        }
+
+        // STRATEGY 3: Check favorites
+        let favorites = favoritesManager.favoriteTracks
+        for trackId in favorites.prefix(5) {
+            if !SmartEmergencyQueue.recentFirstTracks.contains(trackId),
+               let track = candidatePool.first(where: { $0.id == trackId }) {
+                print("[SmartQueue] ⭐ Selected FAVORITE: \(track.title)")
+                return track
+            }
+        }
+
+        // STRATEGY 4: Select from high-quality candidates (not recently used)
+        let eligibleCandidates = candidatePool.filter { track in
+            !SmartEmergencyQueue.recentFirstTracks.contains(track.id) &&
+            track.calmingScore >= 0.7 &&
+            track.audioSourceType == .streamed // Prefer real tracks over generated
+        }
+
+        if !eligibleCandidates.isEmpty {
+            // Pick randomly from top 5 eligible
+            let topCandidates = Array(eligibleCandidates.prefix(5))
+            let randomIndex = Int.random(in: 0..<topCandidates.count)
+            let selected = topCandidates[randomIndex]
+            print("[SmartQueue] 📚 Selected QUALITY candidate: \(selected.title) (calming: \(selected.calmingScore))")
+            return selected
+        }
+
+        // STRATEGY 5: Clear rotation history and use Pianomoment as fallback
+        if SmartEmergencyQueue.recentFirstTracks.count >= SmartEmergencyQueue.maxRecentFirstTracks {
+            SmartEmergencyQueue.recentFirstTracks.removeAll()
+            print("[SmartQueue] 🔄 Cleared rotation history, using Pianomoment")
+        }
+
+        // Ultimate fallback: Pianomoment
+        print("[SmartQueue] 🎹 Fallback to DEFAULT: Pianomoment (Bensound)")
+        return realPianoMoment
+    }
+
     // MARK: - Spotify-Style Queue Start (Main Entry Point!)
 
     /// Start a Spotify-style smart queue - the main entry point for smart playback!
@@ -587,8 +667,9 @@ class SmartEmergencyQueue: ObservableObject {
     /// - Automatically replenishes to 8 when tracks finish (7→8)
     /// - Uses rotation policy to prevent repetition
     ///
-    /// CRITICAL: First track is ALWAYS a generated track for instant playback!
-    /// Library tracks may take time to stream, but generated tracks play immediately.
+    /// First track selection: Pianomoment (Bensound) is the DEFAULT with ~80% probability
+    /// on first cry detection, but rotates with other quality tracks to provide variety.
+    /// R2 CDN streaming is fast enough for emergency mode.
     func startSpotifyMode(
         cryType: CryType,
         babyAge: Int,
@@ -618,22 +699,42 @@ class SmartEmergencyQueue: ObservableObject {
             return
         }
 
-        // CRITICAL FIX (2026-01-09): Use REAL "Pianomoment" from R2 instead of generated audio!
-        // User feedback: NoiseGenerator's softPiano sounds like "broken radio".
-        // The REAL Bensound Pianomoment from R2 CDN provides high-quality audio.
-        // Note: R2 streaming is fast enough for emergency mode - CDN ensures low latency.
+        // SMART ROTATION (2026-01-09): Pianomoment is the DEFAULT but NOT forced every time!
+        // The real Bensound Pianomoment should be in the candidate pool (it's in .ambient category)
+        // and naturally ranked high due to its calming score. We use rotation to provide variety.
         //
-        // Check if first track is the real Pianomoment - if not, insert it
+        // If Pianomoment is not in the queue at all (edge case), add it to candidate pool
         let realPianoMoment = AudioTrack.defaultEmergencyTrack()
-        let firstIsRealPiano = tracks.first?.serverId == realPianoMoment.serverId
+        let hasPianoMomentInQueue = tracks.contains { $0.serverId == realPianoMoment.serverId }
+        let hasPianoMomentInPool = candidatePool.contains { $0.serverId == realPianoMoment.serverId }
 
-        if !firstIsRealPiano {
-            print("[SmartQueue] 🎹 Inserting REAL Pianomoment (Bensound) from R2 for high-quality playback!")
-            tracks.insert(realPianoMoment, at: 0)
-            print("[SmartQueue] ✅ Inserted real track: \(realPianoMoment.title) by \(realPianoMoment.artist)")
-        } else {
-            print("[SmartQueue] ✅ First track is already Pianomoment: \(tracks.first?.title ?? "unknown")")
+        if !hasPianoMomentInQueue && !hasPianoMomentInPool {
+            // Pianomoment not in pool - add it as a high-priority candidate
+            candidatePool.insert(realPianoMoment, at: 0)
+            print("[SmartQueue] 🎹 Added Pianomoment (Bensound) to candidate pool for rotation")
         }
+
+        // Apply smart first track rotation - Pianomoment has high priority but rotates with other quality tracks
+        let firstTrack = selectSmartFirstTrackWithPianomomentPriority(
+            cryType: cryType,
+            babyAge: babyAge,
+            currentFirstTrack: tracks.first,
+            candidatePool: candidatePool
+        )
+
+        // If rotation selected a different first track, swap it in
+        if let first = tracks.first, first.id != firstTrack.id {
+            // Remove new first track from its current position (if in queue)
+            tracks.removeAll { $0.id == firstTrack.id }
+            // Insert at position 0
+            tracks.insert(firstTrack, at: 0)
+            print("[SmartQueue] 🔄 Rotated first track: \(firstTrack.title) by \(firstTrack.artist)")
+        } else {
+            print("[SmartQueue] ✅ First track: \(firstTrack.title) by \(firstTrack.artist)")
+        }
+
+        // Record this first track for future rotation
+        recordFirstTrackUsed(firstTrack.id)
 
         // Enable Spotify-style replenishment
         autoReplenishEnabled = true
@@ -1207,6 +1308,12 @@ class SmartEmergencyQueue: ObservableObject {
         totalTracks = 0
         sessionDuration = 0
         sessionStartTime = nil
+
+        // FIX 2026-01-09: Reset cry type to prevent stale "Queue Mode: [type]" display
+        cryType = .general
+        queueName = ""
+        queueDescription = ""
+        modeName = "Smart Soothing"
     }
 
     // MARK: - AI-POWERED SMART Track Selection (Learning Algorithm!)

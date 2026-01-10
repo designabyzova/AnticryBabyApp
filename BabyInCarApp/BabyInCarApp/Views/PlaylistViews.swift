@@ -69,7 +69,7 @@ struct PlaylistDetailView: View {
                         Divider()
 
                         Button {
-                            let duplicate = playlistManager.duplicatePlaylist(currentPlaylist)
+                            _ = playlistManager.duplicatePlaylist(currentPlaylist)
                             // Show toast or feedback
                         } label: {
                             Label("Duplicate Playlist", systemImage: "doc.on.doc")

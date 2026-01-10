@@ -22,6 +22,16 @@ struct SmartQueueView: View {
     @State private var showCryTypeSwitch = false
     @ObservedObject private var cryDetection = CryDetectionService.shared
 
+    // MARK: - Early Cry Indicator (shows even before full detection)
+    /// Tracks when we last saw ANY cry-like activity (for auto-hide timeout)
+    @State private var lastCryActivityTime: Date?
+    /// Timer to check for cry activity timeout
+    @State private var cryActivityTimer: Timer?
+    /// Whether to show cry type info (even before full detection threshold)
+    @State private var showEarlyCryIndicator = false
+    /// Timeout for hiding cry indicator after no activity (seconds)
+    private let cryIndicatorTimeout: TimeInterval = 12.0
+
     /// Whether this view is presented as an overlay (vs fullScreenCover)
     /// When overlay, don't call dismiss() as it would dismiss parent sheet
     var isOverlay: Bool = false
@@ -126,26 +136,34 @@ struct SmartQueueView: View {
             }
         }
         .onAppear {
-            // CRITICAL FIX: Sync playback state when view appears
-            // This ensures audio is actually playing if queue shows it's playing
-            queue.syncPlaybackState(verbose: true)
+            // FIX: Defer ALL state modifications to next run loop to prevent
+            // "Publishing changes from within view updates" SwiftUI warning
+            // Audio session reconfiguration can also block the main thread for 100-500ms
+            DispatchQueue.main.async {
+                Task { @MainActor in
+                    // Small delay allows view to finish appearing animation
+                    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
 
-            // If queue thinks it's playing but no audio, start playback
-            if queue.isPlaying && !audioEngine.playbackState.isPlaying {
-                print("[SmartQueueView] 🔧 Detected state mismatch on appear - resuming playback")
-                queue.togglePlayPause() // This will resume/start playback
-            }
+                    // CRITICAL FIX: Sync playback state when view appears
+                    // This ensures audio is actually playing if queue shows it's playing
+                    queue.syncPlaybackState(verbose: true)
 
-            // CRITICAL: Start cry detection monitoring for real-time audio visualization
-            // This enables the live audio bars, confidence display, and cry type detection
-            if !cryDetection.isMonitoring {
-                print("[SmartQueueView] 🎤 Starting cry detection monitoring for live visualization")
-                Task {
-                    do {
-                        try await cryDetection.startMonitoring()
-                        print("[SmartQueueView] ✅ Cry detection monitoring started")
-                    } catch {
-                        print("[SmartQueueView] ⚠️ Failed to start monitoring: \(error)")
+                    // If queue thinks it's playing but no audio, start playback
+                    if queue.isPlaying && !audioEngine.playbackState.isPlaying {
+                        print("[SmartQueueView] 🔧 Detected state mismatch on appear - resuming playback")
+                        queue.togglePlayPause() // This will resume/start playback
+                    }
+
+                    // CRITICAL: Start cry detection monitoring for real-time audio visualization
+                    // This enables the live audio bars, confidence display, and cry type detection
+                    if !cryDetection.isMonitoring {
+                        print("[SmartQueueView] 🎤 Starting cry detection monitoring for live visualization")
+                        do {
+                            try await cryDetection.startMonitoring()
+                            print("[SmartQueueView] ✅ Cry detection monitoring started")
+                        } catch {
+                            print("[SmartQueueView] ⚠️ Failed to start monitoring: \(error)")
+                        }
                     }
                 }
             }
@@ -155,6 +173,82 @@ struct SmartQueueView: View {
             // manages monitoring lifecycle. Stopping here would interrupt cry detection
             // if user navigates away briefly.
             print("[SmartQueueView] 👋 View disappeared - monitoring continues in background")
+
+            // Clean up cry activity timer
+            cryActivityTimer?.invalidate()
+            cryActivityTimer = nil
+        }
+        // MARK: - Early Cry Activity Tracking
+        // Track confidence level changes to detect ANY cry activity
+        // Show indicator immediately when cry-like frames detected, hide after timeout
+        .onChange(of: cryDetection.confidenceLevel) { newConfidence in
+            // Show indicator when confidence is above 50% OR cry type is detected
+            // This is MUCH more permissive than the full detection threshold (75%)
+            if newConfidence > 0.5 || (cryDetection.cryType != .unknown && newConfidence > 0.3) {
+                // Update last activity time
+                lastCryActivityTime = Date()
+
+                // Show indicator with animation if not already showing
+                if !showEarlyCryIndicator {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        showEarlyCryIndicator = true
+                    }
+                    print("[SmartQueueView] 👶 Early cry indicator SHOWN (conf: \(String(format: "%.0f%%", newConfidence * 100)), type: \(cryDetection.cryType.rawValue))")
+                }
+
+                // Start/restart timeout timer
+                startCryActivityTimer()
+            }
+        }
+        // Also track cry type changes
+        .onChange(of: cryDetection.cryType) { newType in
+            if newType != .unknown && cryDetection.confidenceLevel > 0.3 {
+                lastCryActivityTime = Date()
+
+                if !showEarlyCryIndicator {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        showEarlyCryIndicator = true
+                    }
+                    print("[SmartQueueView] 👶 Early cry indicator SHOWN (type changed to: \(newType.rawValue))")
+                }
+
+                startCryActivityTimer()
+            }
+        }
+    }
+
+    /// Start timer to auto-hide cry indicator after timeout
+    private func startCryActivityTimer() {
+        // Cancel existing timer
+        cryActivityTimer?.invalidate()
+
+        // Create new timer that fires every 2 seconds to check timeout
+        cryActivityTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [self] _ in
+            Task { @MainActor in
+                guard let lastActivity = lastCryActivityTime else {
+                    hideCryIndicator()
+                    return
+                }
+
+                let timeSinceActivity = Date().timeIntervalSince(lastActivity)
+
+                if timeSinceActivity >= cryIndicatorTimeout {
+                    hideCryIndicator()
+                }
+            }
+        }
+    }
+
+    /// Hide the cry indicator with animation
+    private func hideCryIndicator() {
+        cryActivityTimer?.invalidate()
+        cryActivityTimer = nil
+
+        if showEarlyCryIndicator {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showEarlyCryIndicator = false
+            }
+            print("[SmartQueueView] 👶 Early cry indicator HIDDEN (timeout after \(cryIndicatorTimeout)s)")
         }
     }
 
@@ -310,8 +404,10 @@ struct SmartQueueView: View {
     }
 
     /// Whether we have an active real-time cry detection
+    /// FIX 2026-01-09: Require isCryDetected, not just confidence level
+    /// Otherwise shows fake cry types from ML classifying ambient noise
     private var isActiveCryDetection: Bool {
-        cryDetection.isMonitoring && cryDetection.confidenceLevel > 0.3
+        cryDetection.isMonitoring && cryDetection.isCryDetected && cryDetection.confidenceLevel > 0.3
     }
 
     /// Whether monitoring is actively listening
@@ -407,11 +503,31 @@ struct SmartQueueView: View {
                 }
             }
 
-            // Cry Type Display (when detected)
-            if cryDetection.confidenceLevel > 0.3 {
+            // Cry Type Display - Show for EARLY detection (before full threshold)
+            // FIX 2026-01-09: Show cry type even before isCryDetected=true
+            // This gives users immediate feedback when ANY cry activity is detected
+            // Auto-hides after 12s of no cry activity (see cryIndicatorTimeout)
+            //
+            // FIX 2026-01-09: DON'T show if:
+            // - Confidence is 0% (ML classified but no actual cry activity)
+            // - Type is .unknown or .general (not a specific classification)
+            // This prevents showing "Hungry (0%)" when music is playing
+            let hasValidEarlyCryType = cryDetection.cryType != .unknown &&
+                                        cryDetection.cryType != .general &&
+                                        cryDetection.confidenceLevel > 0.1  // At least 10% confidence
+            if showEarlyCryIndicator && hasValidEarlyCryType {
                 HStack(spacing: 10) {
-                    // Cry type icon
+                    // Cry type icon with pulsing animation for "detecting" state
                     ZStack {
+                        // Pulse ring for "analyzing" state (not fully detected yet)
+                        if !cryDetection.isCryDetected {
+                            Circle()
+                                .stroke(cryTypeColor(cryDetection.cryType).opacity(0.5), lineWidth: 2)
+                                .frame(width: 38, height: 38)
+                                .scaleEffect(animateNowPlaying ? 1.2 : 1.0)
+                                .opacity(animateNowPlaying ? 0 : 1)
+                        }
+
                         Circle()
                             .fill(cryTypeColor(cryDetection.cryType).opacity(0.3))
                             .frame(width: 32, height: 32)
@@ -423,13 +539,19 @@ struct SmartQueueView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 4) {
-                            Text("Detected:")
+                            // Show "Analyzing" when not fully detected, "Detected" when confirmed
+                            Text(cryDetection.isCryDetected ? "Detected:" : "Analyzing:")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                             Text(cryDetection.cryType.displayName)
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(cryTypeColor(cryDetection.cryType))
+
+                            // Confidence badge
+                            Text("(\(Int(cryDetection.confidenceLevel * 100))%)")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.5))
                         }
 
                         Text(cryDetection.cryType.suggestedAction)
@@ -441,6 +563,10 @@ struct SmartQueueView: View {
                     Spacer()
                 }
                 .padding(.top, 4)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.9).combined(with: .opacity),
+                    removal: .opacity
+                ))
             }
         }
         .padding(16)
@@ -546,14 +672,37 @@ struct SmartQueueView: View {
                     }
 
                     // Detected cry type - shows real-time classification
+                    // FIX 2026-01-09: Don't show cry type if confidence is 0% or type is unknown
+                    // This prevents "Queue Mode: Hungry (0%)" from appearing when no cry detected
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text(isActiveCryDetection ? "Detected:" : "Queue Mode:")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.white.opacity(0.7))
-                            Text(currentCryType.displayName)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(isActiveCryDetection ? cryTypeColor(currentCryType) : .white)
+                            // Only show "Detected:" if actively detecting a cry with confidence
+                            // Show "Mode:" when in queue mode but not actively detecting
+                            // Hide type entirely if unknown or 0% confidence
+                            if isActiveCryDetection && cryDetection.confidenceLevel > 0 {
+                                Text("Detected:")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                                Text(currentCryType.displayName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(cryTypeColor(currentCryType))
+                            } else if currentCryType != .unknown && currentCryType != .general {
+                                // Show queue mode only if we have a specific type set
+                                Text("Queue Mode:")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                                Text(currentCryType.displayName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
+                            } else {
+                                // Default: just show "Smart Soothing" without cry type
+                                Text("Mode:")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                                Text(queue.modeName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
                         }
 
                         Text(reasoningForCryType(currentCryType))

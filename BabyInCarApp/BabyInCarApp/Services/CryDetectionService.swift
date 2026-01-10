@@ -66,7 +66,7 @@ class CryDetectionService: ObservableObject {
     private let deepInfantClassificationInterval: TimeInterval = 3.0  // THERMAL FIX: Run every 3 seconds (was 2) - reduces ML CPU load by 33%
 
     // MEMORY FIX (Priority 4): Thread-safe buffer access
-    // NSLock is Sendable in iOS 26+
+    // NSLock is Sendable - no nonisolated(unsafe) needed
     private let bufferLock = NSLock()
 
     /// MEMORY SAFETY: Reusable ML model instances (avoid per-frame allocation)
@@ -84,10 +84,12 @@ class CryDetectionService: ObservableObject {
     private nonisolated(unsafe) static let sharedCryClassifier = CryClassifierMLModel()
     private nonisolated(unsafe) static let sharedVoiceAnalyzer = VoiceCharacteristicsAnalyzer()
     private nonisolated(unsafe) static var sharedFeatureExtractor: AdvancedFeatureExtractor?
+    // NSLock requires nonisolated(unsafe) when accessed from nonisolated static functions in Swift 6
     private nonisolated(unsafe) static let featureExtractorLock = NSLock()
 
     // MEMORY FIX: Shared DeepInfant instance (singleton pattern)
     private nonisolated(unsafe) static var sharedDeepInfant: DeepInfantClassifierProtocol?
+    // NSLock requires nonisolated(unsafe) when accessed from nonisolated static functions in Swift 6
     private nonisolated(unsafe) static let deepInfantLock = NSLock()
 
     /// Get or create shared feature extractor for background thread (thread-safe)
@@ -182,6 +184,7 @@ class CryDetectionService: ObservableObject {
     // Created once and reused - prevents ~30 allocations/second memory leak!
     // NOTE: nonisolated(unsafe) required for @MainActor class with static properties accessed from nonisolated contexts
     private nonisolated(unsafe) static var sharedBackgroundFFTSetup: vDSP_DFT_Setup?
+    // NSLock requires nonisolated(unsafe) when accessed from nonisolated static functions in Swift 6
     private nonisolated(unsafe) static let fftSetupLock = NSLock()
 
     /// Get or create shared FFT setup for background thread (thread-safe)
@@ -207,41 +210,58 @@ class CryDetectionService: ObservableObject {
 
     // Pattern recognition state
     private var cryPatternBuffer: [CryFrame] = []
-    private let patternBufferSize = 30 // THERMAL FIX: Reduced from 60 to 30 (~1s at 30fps) - less memory, same accuracy
+    private let patternBufferSize = 60 // FALSE POSITIVE FIX: Increased from 30 to 60 (~2s at 30fps) for sustained detection
     private var consecutiveCryFrames: Int = 0
-    // ULTRA-RESPONSIVE: Reduced from 30 to 15 frames (~0.5s) for faster detection
-    // With lower FFT thresholds, we can afford faster detection without false positives
-    private let minCryFramesForDetection = 15 // ~0.5 second of consistent cry pattern
+    // AGGRESSIVE 2026-01-09: Relaxed from 12 to 8 frames (~0.27s)
+    // Faster detection - speech filter is primary defense
+    private let minCryFramesForDetection = 8 // ~0.27 second of consistent cry pattern
 
     // CRITICAL FIX: Require sustained cry detection to prevent false positives
-    // Baby cries are SUSTAINED sounds (3-5+ seconds), not brief vocalizations
+    // Baby cries are SUSTAINED sounds, not brief vocalizations
     private var sustainedCryStartTime: Date?
-    // ULTRA-RESPONSIVE: Reduced from 1.5s to 1.0s for faster response
-    // With better FFT detection, we can respond faster without false positives
-    private let minSustainedCryDuration: TimeInterval = 1.0 // Require 1.0 second of sustained cry
+    // AGGRESSIVE 2026-01-09: Relaxed from 1.5s to 0.8s for faster response
+    // We want quick detection - speech filter handles false positives
+    private let minSustainedCryDuration: TimeInterval = 0.8 // Require 0.8 seconds of sustained cry
 
     // Speech vs cry differentiation
     // Human speech typically has rapid spectral changes, cries are more monotonic
+    // AGGRESSIVE 2026-01-09: Raised threshold from 0.6 to 0.8
+    // Audio from speakers (YouTube) can have higher variance due to compression
+    // Only filter very high variance speech patterns
     private var spectralVarianceHistory: [Float] = []
-    private let speechVarianceThreshold: Float = 0.6 // High variance = likely speech (increased from 0.4 to reduce false positives)
+    private let speechVarianceThreshold: Float = 0.8 // Very high variance = likely speech
 
     // Adaptive thresholds - CONSERVATIVE defaults to prevent false positives
     private var ambientNoiseLevel: Float = 0.02  // Will be calibrated on start (RMS scale: 0-1)
     private var adaptiveThreshold: Float = 0.18  // RMS threshold for detection (0-1 scale)
     // CRITICAL FIX: FFT power threshold is much smaller than RMS!
-    // FFT magnitudes after 2/N scaling are typically 0.001-0.05 for loud audio
-    // ULTRA-SENSITIVE: Lowered from 0.003 to 0.0005 to catch quiet baby cries
-    // Real baby cries can be as low as 0.0007-0.001 FFT power in normal environments
-    private var fftPowerThreshold: Float = 0.0005 // FFT power threshold (will be calibrated)
-    // OPTIMIZED: Lowered from 60% to 50% for more responsive detection
-    // False positives are filtered by sustained duration + speech detection anyway
-    private let minCryConfidence: Double = 0.50  // 50% confidence minimum
+    // FFT magnitudes after 2/N scaling are typically 0.0003-0.01 for audio
+    // AGGRESSIVE 2026-01-09: Lowered from 0.001 to 0.0003
+    // Logs showed real cries with power as low as 0.00045
+    // Speech detection is the primary filter, not power threshold
+    private var fftPowerThreshold: Float = 0.0003 // FFT power threshold (will be calibrated)
+    // AGGRESSIVE 2026-01-09: Relaxed from 60% to 45%
+    // Lower threshold for faster detection - speech filter handles false positives
+    private let minCryConfidence: Double = 0.45  // 45% confidence minimum
     private var isCalibrated: Bool = false       // Track calibration status
 
     // Cry type classification history
     private var cryTypeHistory: [CryType] = []
     private let cryTypeHistorySize = 15
     private var detectionHistory: [Date] = []  // Track detection events for memory cleanup
+
+    // STABLE CRY TYPE: Lock-in mechanism to prevent classification flip-flopping
+    // Once a cry type is confidently detected, it stays locked for a minimum duration
+    private var lockedCryType: CryType? = nil
+    private var cryTypeLockTime: Date? = nil
+    private let cryTypeLockDuration: TimeInterval = 3.0 // Keep same type for at least 3 seconds
+
+    // CRY STATE TIMEOUT: Force reset cry detection state if no cry-like audio for too long
+    // Prevents the "stuck in cry detected state" issue when baby stops crying but state persists
+    // FALSE POSITIVE FIX 2026-01-09: Reduced from 10s to 5s for quicker state reset
+    // With tighter detection criteria, we need faster reset when no cry is present
+    private var lastCryLikeFrameTime: Date? = nil
+    private let cryStateTimeoutDuration: TimeInterval = 5.0 // Reset after 5 seconds of no cry-like audio
 
     // Callbacks
     var onCryDetected: ((CryType, Double) -> Void)?
@@ -500,8 +520,24 @@ class CryDetectionService: ObservableObject {
             throw CryDetectionError.microphoneAccessDenied
         }
 
+        // FIX: Release any existing engine to prevent "invalid reuse after initialization failure"
+        // This ensures we always start with a fresh engine
+        if audioEngine != nil {
+            audioEngine?.stop()
+            audioEngine = nil
+        }
+
         try setupAudioEngine()
-        try audioEngine?.start()
+
+        do {
+            try audioEngine?.start()
+        } catch {
+            // FIX: If engine fails to start, release it to prevent invalid reuse
+            print("[CryDetection] ❌ Failed to start audio engine: \(error)")
+            audioEngine = nil
+            detectionStatus = .error
+            throw CryDetectionError.engineSetupFailed
+        }
 
         isMonitoring = true
         detectionStatus = .listening
@@ -516,6 +552,8 @@ class CryDetectionService: ObservableObject {
         isMonitoring = false
         isCryDetected = false
         cryIntensity = 0
+        confidenceLevel = 0
+        cryType = .unknown
         detectionStatus = .idle
 
         // Capture references for background cleanup
@@ -541,9 +579,14 @@ class CryDetectionService: ObservableObject {
 
         // Reset sustained cry tracking
         sustainedCryStartTime = nil
+        lastCryLikeFrameTime = nil  // Reset timeout tracker
         spectralVarianceHistory.removeAll()
         cryTypeHistory.removeAll()
         isCalibrated = false // Require re-calibration on next start
+
+        // Reset cry type lock-in (fresh detection on next start)
+        lockedCryType = nil
+        cryTypeLockTime = nil
     }
 
     // MARK: - Permission
@@ -901,12 +944,19 @@ class CryDetectionService: ObservableObject {
         let spectralCentroid = calculateSpectralCentroidNonIsolated(magnitudes: magnitudes, resolution: frequencyResolution)
         let spectralFlatness = calculateSpectralFlatnessNonIsolated(magnitudes: magnitudes)
 
-        // CRITICAL FIX: Use FFT-scale threshold, not RMS-scale threshold
-        // This was the ROOT CAUSE of cry detection failing - threshold was 100x too high!
-        let isCryLike = fundamentalPower > fftPowerThreshold &&
-                        harmonicPower > fundamentalPower * 0.3 &&
-                        spectralCentroid > 500 && spectralCentroid < 2000 &&
-                        spectralFlatness < 0.5
+        // BALANCED 2026-01-09: Relaxed isCryLike criteria
+        // Previous settings were too strict - real baby cries weren't passing
+        //
+        // RELAXED CRITERIA for isCryLike:
+        // 1. Power just above threshold (1.0x, was 2x) - many real cries have lower power
+        // 2. Spectral centroid in wide baby range (300-3000 Hz) - harmonics can be high
+        // 3. Moderate harmonic content (0.2 ratio) - some cries have weaker harmonics
+        // 4. Moderate spectral flatness (<0.6) - allows more variation
+        let powerRatio = fundamentalPower / fftPowerThreshold
+        let isCryLike = powerRatio > 1.0 &&  // Just above threshold (relaxed from 2x)
+                        harmonicPower > fundamentalPower * 0.2 &&  // Relaxed from 0.3
+                        spectralCentroid > 300 && spectralCentroid < 3000 &&  // Widened range
+                        spectralFlatness < 0.6  // Relaxed from 0.5
 
         // CRITICAL DIAGNOSTIC: Always log FFT analysis to debug threshold issues
         // This helps identify if FFT power is lower than expected
@@ -990,12 +1040,35 @@ class CryDetectionService: ObservableObject {
 
         var scores: [(CryType, Float)] = []
 
-        // PAIN: High centroid (piercing), high power, sudden
-        // Pain cries are URGENT - detect first
+        // PAIN: High-pitched, VERY loud, tonal baby cry
+        // BALANCED FIX 2026-01-09: Previous fix was too strict (600-1000 Hz missed real pain cries)
+        //
+        // ACOUSTIC RESEARCH on baby pain cries:
+        // - F0 (fundamental): 400-700 Hz (higher than other cry types)
+        // - Spectral centroid: 600-1500 Hz (energy concentrated in harmonics)
+        // - Very TONAL (flatness < 0.4)
+        // - STRONG harmonics (>0.4 ratio) - babies have clear harmonic structure
+        // - LOUD (3x+ threshold)
+        //
+        // KEY DIFFERENTIATOR from adult voice:
+        // - Adult voice has weaker harmonic structure (< 0.4 ratio)
+        // - Adult voice is less tonal (flatness > 0.4)
+        // - Adult voice varies more in pitch (handled by speech detection)
         var painScore: Float = 0
-        if centroid > 1000 { painScore += min((centroid - 1000) / 500, 1.0) * 0.4 }
-        if power > fftPowerThreshold * 2.0 { painScore += min((power / (fftPowerThreshold * 3)), 1.0) * 0.6 }
-        if painScore > 0.5 { scores.append((.pain, painScore)) }
+        let isPainCentroid = centroid > 600 && centroid < 1500  // Baby pain range (widened from 600-1000)
+        let isPainPower = power > fftPowerThreshold * 3.0  // Loud (relaxed from 5x to 3x)
+        let isPainTonal = analysis.spectralFlatness < 0.4  // Must be tonal (relaxed from 0.35)
+        let hasStrongHarmonics = analysis.harmonicPower > analysis.fundamentalPower * 0.4  // Strong harmonics
+
+        if isPainCentroid && isPainPower && isPainTonal && hasStrongHarmonics {
+            // Score based on how well characteristics match
+            painScore = 0.6
+            // Bonus for higher power (louder = more likely pain)
+            painScore += min((power / (fftPowerThreshold * 5)), 1.0) * 0.2
+            // Bonus for being very tonal (baby cries are very tonal)
+            painScore += (0.4 - analysis.spectralFlatness) * 0.5
+        }
+        if painScore > 0.6 { scores.append((.pain, painScore)) }
 
         // HUNGER: Lower centroid, rhythmic (high fundamental ratio = more tonal/rhythmic)
         // Hunger cries are RHYTHMIC with moderate power
@@ -1007,12 +1080,30 @@ class CryDetectionService: ObservableObject {
         }
         if hungerScore > 0.4 { scores.append((.hunger, hungerScore)) }
 
-        // DISCOMFORT: Strong harmonics relative to fundamental
+        // DISCOMFORT: Strong harmonics, mid-range centroid, sustained
+        // BALANCED FIX 2026-01-09: Previous fix was too strict (500-900 Hz too narrow)
+        //
+        // ACOUSTIC RESEARCH on discomfort cries:
+        // - Mid-range F0 (350-550 Hz)
+        // - Spectral centroid: 500-1200 Hz
+        // - Strong harmonic structure (>0.5 ratio)
+        // - Tonal quality (flatness < 0.45)
+        // - Moderate power (1.5x+ threshold)
         var discomfortScore: Float = 0
-        let harmonicRatio = analysis.harmonicPower / (analysis.fundamentalPower + 0.001)
-        if harmonicRatio > 0.5 { discomfortScore += min(harmonicRatio, 1.0) * 0.5 }
-        if centroid > 600 && centroid < 1500 { discomfortScore += 0.3 }
-        if discomfortScore > 0.4 { scores.append((.discomfort, discomfortScore)) }
+        let harmonicRatioDiscomfort = analysis.harmonicPower / (analysis.fundamentalPower + 0.001)
+        let hasStrongHarmonicsDiscomfort = harmonicRatioDiscomfort > 0.5  // Relaxed from 0.7
+        let hasDiscomfortCentroid = centroid > 500 && centroid < 1200  // Widened from 500-900
+        let hasSufficientPowerDiscomfort = power > fftPowerThreshold * 1.5  // Relaxed from 2.0x
+        let isTonalDiscomfort = analysis.spectralFlatness < 0.45  // Relaxed from 0.4
+
+        if hasStrongHarmonicsDiscomfort && hasDiscomfortCentroid && hasSufficientPowerDiscomfort && isTonalDiscomfort {
+            discomfortScore = 0.5
+            // Bonus for stronger harmonics
+            discomfortScore += min((harmonicRatioDiscomfort - 0.5) * 0.5, 0.25)
+            // Bonus for being tonal
+            discomfortScore += (0.45 - analysis.spectralFlatness) * 0.5
+        }
+        if discomfortScore > 0.5 { scores.append((.discomfort, discomfortScore)) }
 
         // ATTENTION: Mid-range centroid, moderate power
         var attentionScore: Float = 0
@@ -1426,6 +1517,10 @@ class CryDetectionService: ObservableObject {
             Task { @MainActor in
                 self.isCryDetected = false
                 self.detectionStatus = .listening
+                // CRITICAL FIX: Reset display values so UI clears the "cry detected" state
+                self.confidenceLevel = 0
+                self.cryIntensity = 0
+                self.cryType = .unknown
                 self.onCryEnded?()
             }
         }
@@ -1434,10 +1529,17 @@ class CryDetectionService: ObservableObject {
     // MARK: - Detection Evaluation
     private func evaluateDetection() {
         // Use larger window for temporal analysis
-        // OPTIMIZED: Reduced from 45 to 30 frames for faster detection (~1s window)
-        let recentFrames = cryPatternBuffer.suffix(30)
-        // OPTIMIZED: Lowered confidence filter from 0.6 to 0.5 to match minCryConfidence
-        let cryLikeFrames = recentFrames.filter { $0.isCryLike && $0.confidence >= 0.5 }
+        // FALSE POSITIVE FIX: Increased from 30 to 60 frames (~2s window) to match sustained duration
+        let recentFrames = cryPatternBuffer.suffix(60)
+        // AGGRESSIVE 2026-01-09: Relaxed confidence filter from 0.4 to 0.25
+        // Include more frames to improve detection
+        let cryLikeFrames = recentFrames.filter { $0.isCryLike && $0.confidence >= 0.25 }
+
+        // CRY STATE TIMEOUT: Track when we last saw cry-like audio
+        let now = Date()
+        if !cryLikeFrames.isEmpty {
+            lastCryLikeFrameTime = now
+        }
 
         // CRITICAL FIX: Require sustained pattern, not just frame count
         // Baby cries are sustained; speech is intermittent
@@ -1446,12 +1548,15 @@ class CryDetectionService: ObservableObject {
         // Check for speech-like patterns (high spectral variance = likely speech)
         let isSpeechLike = checkIfSpeechLike(frames: Array(recentFrames))
 
-        // ULTRA-RESPONSIVE: Reduced minimum frames from 8 to 4 for faster detection
-        // Reduced ratio from 60% to 40% to handle intermittent cry detection
-        if cryLikeFrames.count >= 4 && cryFrameRatio > 0.4 && !isSpeechLike {
-            consecutiveCryFrames += 1
+        // AGGRESSIVE 2026-01-09: Very relaxed requirements for faster detection
+        // Requirements:
+        // - At least 3 cry-like frames in window
+        // - At least 10% of frames are cry-like
+        // - Not speech-like pattern
+        if cryLikeFrames.count >= 3 && cryFrameRatio > 0.10 && !isSpeechLike {
+            consecutiveCryFrames += 2  // Faster ramp up
         } else {
-            consecutiveCryFrames = max(0, consecutiveCryFrames - 2) // Decay faster
+            consecutiveCryFrames = max(0, consecutiveCryFrames - 1)
         }
 
         // Calculate average confidence from recent cry frames
@@ -1469,10 +1574,9 @@ class CryDetectionService: ObservableObject {
 
         // CRITICAL FIX: Sustained cry detection
         // Track how long we've been detecting cry-like sounds
-        let now = Date()
-        // ULTRA-RESPONSIVE: Reduced minimum frames from 8 to 4 for faster sustained timer start
-        // With lower FFT threshold (0.0005), we get more consistent cry-like frames
-        if cryLikeFrames.count >= 4 && !isSpeechLike {
+        // Note: 'now' already declared at start of evaluateDetection()
+        // AGGRESSIVE 2026-01-09: Match the relaxed threshold (3 frames, 10% ratio)
+        if cryLikeFrames.count >= 3 && cryFrameRatio > 0.10 && !isSpeechLike {
             if sustainedCryStartTime == nil {
                 sustainedCryStartTime = now
             }
@@ -1483,11 +1587,11 @@ class CryDetectionService: ObservableObject {
         // Calculate sustained duration
         let sustainedDuration = sustainedCryStartTime.map { now.timeIntervalSince($0) } ?? 0
 
-        // Detection decision - MUCH STRICTER:
-        // 1. Need high frame count (45+ frames = ~1.5 seconds)
-        // 2. Need high confidence (80%+)
-        // 3. Need sustained detection (2+ seconds)
-        // 4. Must NOT be speech-like
+        // Detection decision - AGGRESSIVE:
+        // 1. Need frame count (8+ frames = ~0.27 seconds of pattern)
+        // 2. Need low confidence (45%+)
+        // 3. Need sustained detection (0.8+ seconds)
+        // 4. Must NOT be speech-like (primary false positive filter)
         let shouldDetect = consecutiveCryFrames >= minCryFramesForDetection &&
                            avgConfidence >= minCryConfidence &&
                            sustainedDuration >= minSustainedCryDuration &&
@@ -1503,22 +1607,29 @@ class CryDetectionService: ObservableObject {
                 print("[CryDetection] frames: \(cryLikeFrames.count)/\(recentFrames.count) (\(String(format: "%.0f%%", cryFrameRatio * 100))), sustained: \(String(format: "%.1fs", sustainedDuration)), conf: \(String(format: "%.0f%%", avgConfidence * 100)), speech: \(isSpeechLike), detect: \(shouldDetect)")
             }
 
+            // CRY STATE TIMEOUT: Check if we should force-reset due to no cry-like audio
+            let timeSinceLastCryFrame = self.lastCryLikeFrameTime.map { now.timeIntervalSince($0) } ?? 0
+            let shouldTimeoutReset = self.isCryDetected && timeSinceLastCryFrame >= self.cryStateTimeoutDuration
+
             if shouldDetect && !self.isCryDetected {
                 print("[CryDetection] 🔴 CRY DETECTED! Type: \(dominantType.rawValue), Confidence: \(String(format: "%.0f%%", avgConfidence * 100)), Duration: \(String(format: "%.1fs", sustainedDuration))")
                 self.isCryDetected = true
                 self.detectionStatus = .cryDetected
                 self.onCryDetected?(dominantType, avgConfidence)
+            } else if shouldTimeoutReset {
+                // TIMEOUT RESET: Force reset after 10 seconds of no cry-like audio
+                print("[CryDetection] ⏰ Cry state TIMEOUT after \(String(format: "%.1fs", timeSinceLastCryFrame)) of silence - resetting")
+                self.resetCryState()
             } else if !shouldDetect && self.isCryDetected && consecutiveCryFrames < minCryFramesForDetection / 4 {
                 print("[CryDetection] ✅ Cry ended - baby calming down")
-                self.isCryDetected = false
-                self.detectionStatus = .listening
-                self.sustainedCryStartTime = nil
+                self.resetCryState()
             }
         }
     }
 
-    /// Check if the audio pattern is more like human speech than a baby cry
+    /// Check if the audio pattern is more like human speech/singing than a baby cry
     /// Speech has rapid spectral changes; baby cries are more sustained/monotonic
+    /// SINGING FIX (2026-01-09): Also detect adult singing (lullaby) which is low-variance like baby cries
     private func checkIfSpeechLike(frames: [CryFrame]) -> Bool {
         guard frames.count >= 10 else { return false }
 
@@ -1543,15 +1654,98 @@ class CryDetectionService: ObservableObject {
         let confMean = confidences.reduce(0, +) / Float(confidences.count)
         let confVariance = confidences.map { pow($0 - confMean, 2) }.reduce(0, +) / Float(confidences.count)
 
-        // Speech: high spectral variance OR high confidence variance
-        // FIXED: Increased confidence variance threshold from 0.04 to 0.08 to reduce false speech detection
-        let isSpeech = avgVariance > speechVarianceThreshold || confVariance > 0.08
+        // Speech: high spectral variance AND high confidence variance
+        // BALANCED 2026-01-09: Changed from OR to AND
+        // OR was too aggressive - catching real baby cries as speech
+        // Now requires BOTH high spectral variance AND high confidence variance
+        // This is more permissive for cry detection while still catching speech
+        let isSpeech = avgVariance > speechVarianceThreshold && confVariance > 0.12
+
+        // DISABLED 2026-01-09: Singing detection was filtering out real baby cries
+        // from YouTube videos (centroid shifted by phone speakers)
+        // Speech detection alone is sufficient for filtering adult speech
+        // let isSinging = checkIfSinging(frames: frames, centroidMean: mean)
+        let isSinging = false  // DISABLED
 
         if isSpeech && frames.filter({ $0.isCryLike }).count > 5 {
             print("[CryDetection] 🗣️ Speech detected (var: \(String(format: "%.3f", avgVariance)), confVar: \(String(format: "%.3f", confVariance))) - NOT a baby cry")
         }
 
-        return isSpeech
+        // Singing detection disabled - was causing false negatives
+        // if isSinging && !isSpeech {
+        //     print("[CryDetection] 🎵 SINGING detected (centroid: \(String(format: "%.0f", mean))Hz) - NOT a baby cry")
+        // }
+
+        return isSpeech  // Only check speech, not singing
+    }
+
+    /// Detect adult singing patterns (lullaby, humming)
+    /// Adult singing has LOW spectral variance (like baby cries) but DIFFERENT characteristics:
+    /// - Higher spectral centroid (~1200+ Hz) - adult voice is MUCH higher than baby
+    /// - More controlled volume (less power variation between frames)
+    /// - Often has musical pitch patterns (periodic, not chaotic like cries)
+    ///
+    /// BALANCED FIX 2026-01-09: Previous threshold of 700 Hz was too aggressive
+    /// Baby pain cries can have centroid up to 1000-1200 Hz due to harmonics
+    /// Adult singing typically has centroid > 1200 Hz
+    private func checkIfSinging(frames: [CryFrame], centroidMean: Float) -> Bool {
+        // Adult voice spectral centroid is typically 1200-2500 Hz
+        // Baby cries: fundamental 300-600 Hz, with harmonics pushing centroid to 500-1000 Hz
+        // If centroid is VERY HIGH (>1200), it's likely adult singing, not baby crying
+        // RELAXED: Changed from 700 Hz to 1200 Hz to avoid false positives on baby pain cries
+        let highCentroidThreshold: Float = 1200.0 // Hz - above this is likely adult voice
+
+        // SINGING DETECTION: Adult singing has VERY HIGH spectral centroid
+        let isHighCentroid = centroidMean > highCentroidThreshold
+
+        if !isHighCentroid {
+            return false // Centroid in baby range = likely baby cry
+        }
+
+        // Additional check: Singing has VERY CONTROLLED power variations
+        // Baby cries have chaotic power patterns (gasping, pauses, escalation)
+        let powers = frames.map { $0.fundamentalPower }
+        let powerMean = powers.reduce(0, +) / Float(powers.count)
+        let powerVariance = powers.map { pow($0 - powerMean, 2) }.reduce(0, +) / Float(powers.count)
+        let normalizedPowerVar = sqrt(powerVariance) / max(powerMean, 0.001)
+
+        // VERY low power variance = adult singing (they control volume precisely)
+        // Relaxed from 0.6 to 0.4 - only flag as singing if VERY controlled
+        let isControlledPower = normalizedPowerVar < 0.4
+
+        // Final check: Overall level consistency
+        // Singing maintains steady volume; baby cries fluctuate dramatically
+        let levels = frames.map { $0.overallLevel }
+        let levelMean = levels.reduce(0, +) / Float(levels.count)
+        let levelVariance = levels.map { pow($0 - levelMean, 2) }.reduce(0, +) / Float(levels.count)
+        let normalizedLevelVar = sqrt(levelVariance) / max(levelMean, 0.001)
+
+        // VERY steady level = singing (relaxed from 0.5 to 0.3)
+        let isSteadyLevel = normalizedLevelVar < 0.3
+
+        // ALL THREE conditions must be true to classify as singing
+        // This is stricter than before - requires high centroid AND controlled power AND steady level
+        let isSinging = isHighCentroid && isControlledPower && isSteadyLevel
+
+        return isSinging
+    }
+
+    /// Reset all cry detection state (used for timeout and normal cry-end)
+    private func resetCryState() {
+        isCryDetected = false
+        detectionStatus = .listening
+        sustainedCryStartTime = nil
+        lastCryLikeFrameTime = nil
+        consecutiveCryFrames = 0
+        // Reset cry type lock-in for fresh detection on next cry
+        lockedCryType = nil
+        cryTypeLockTime = nil
+        // CRITICAL FIX: Reset display values so UI clears the "cry detected" state
+        confidenceLevel = 0
+        cryIntensity = 0
+        cryType = .unknown
+        // Notify that cry has ended
+        onCryEnded?()
     }
 
     private func determineDominantCryType() -> CryType {
@@ -1571,7 +1765,35 @@ class CryDetectionService: ObservableObject {
             return .general
         }
 
-        return typeCounts.max(by: { $0.value < $1.value })?.key ?? .unknown
+        let rawDominantType = typeCounts.max(by: { $0.value < $1.value })?.key ?? .unknown
+
+        // STABLE CRY TYPE: Use lock-in mechanism to prevent flip-flopping
+        let now = Date()
+
+        // Check if current lock is still valid
+        if let lockedType = lockedCryType, let lockTime = cryTypeLockTime {
+            if now.timeIntervalSince(lockTime) < cryTypeLockDuration {
+                // Lock is still active - only override for urgent types (pain)
+                if rawDominantType == .pain && lockedType != .pain {
+                    // Pain is urgent - override the lock immediately
+                    lockedCryType = .pain
+                    cryTypeLockTime = now
+                    print("[CryType] ⚠️ URGENT: Pain detected, overriding lock from \(lockedType.rawValue)")
+                    return .pain
+                }
+                // Keep the locked type
+                return lockedType
+            }
+        }
+
+        // No valid lock - establish new lock if we have a specific type
+        if rawDominantType != .unknown && rawDominantType != .general {
+            lockedCryType = rawDominantType
+            cryTypeLockTime = now
+            print("[CryType] 🔒 Locked to \(rawDominantType.rawValue) for \(cryTypeLockDuration)s")
+        }
+
+        return rawDominantType
     }
 
     // MARK: - Ambient Noise Calibration
@@ -1603,10 +1825,11 @@ class CryDetectionService: ObservableObject {
 
             // CRITICAL FIX: Set FFT power threshold (separate from RMS threshold!)
             // FFT magnitudes after 2/N scaling are ~100x smaller than RMS values
-            // Use RMS-to-FFT ratio approximation: FFT power ≈ RMS / 30-50
-            // ULTRA-SENSITIVE: Lowered minimum from 0.001 to 0.0005 for quiet baby cries
-            // Real-world testing shows baby cries can be 0.0007-0.001 FFT power
-            self.fftPowerThreshold = max(0.0005, self.ambientNoiseLevel / 30.0)
+            // FALSE POSITIVE FIX 2026-01-09: Raised minimum from 0.0005 to 0.002
+            // Previous 0.0005 was too sensitive - triggered on ambient noise
+            // Baby cries typically have FFT power 0.003-0.02, well above 0.002 threshold
+            // Use RMS-to-FFT ratio but with higher floor to prevent false positives
+            self.fftPowerThreshold = max(0.002, self.ambientNoiseLevel / 15.0)  // Higher floor and ratio
             self.isCalibrated = true
 
             print("[CryDetection] Calibration complete: ambient=\(self.ambientNoiseLevel), rmsThreshold=\(self.adaptiveThreshold), fftThreshold=\(self.fftPowerThreshold)")
@@ -1706,29 +1929,35 @@ class CryDetectionService: ObservableObject {
                 )
             }.value
 
-            // CRITICAL FIX: Use ML results more aggressively to LEAD detection!
-            // OLD: Required confidence > 0.6 AND > current confidence (too conservative)
-            // NEW: Accept ML results at confidence > 0.4 to enable early cry detection
+            // CRITICAL FIX 2026-01-09: ML should NOT set confidence on its own!
+            // PROBLEM: DeepInfant classifies ambient noise as "Pain 75%" or "Discomfort 70%"
+            //          This causes the UI to show fake cry types when there's no actual cry!
+            // SOLUTION: ML can only UPDATE cryType when:
+            //   1. Rule-based detection ALREADY set confidence > 0 (we detected SOMETHING)
+            //   2. AND ML result is better than current classification
+            //   3. ML should NEVER set confidenceLevel directly - rule-based does that
             if let result = result, result.confidence > 0.4 {
-                // Update cry type if ML is confident enough
-                if result.confidence > self.confidenceLevel || self.cryType == .unknown {
-                    self.cryType = result.cryType
-                    self.confidenceLevel = result.confidence
-                    print("[DeepInfant] ML Classification: \(result.cryType) (\(Int(result.confidence * 100))%) in \(Int(result.processingTimeMs))ms")
-
-                    // CRITICAL: If ML detects cry with high confidence, trigger detection!
-                    // This allows ML to INITIATE cry detection, not just refine it
-                    if result.confidence > 0.7 && result.cryType != .unknown && result.cryType != .general {
-                        self.isCryDetected = true
-                        self.detectionStatus = .cryDetected
-                        self.onCryDetected?(result.cryType, result.confidence)
-                        print("[DeepInfant] 🔴 ML-initiated cry detection! Type: \(result.cryType.rawValue)")
-                    }
+                // GUARD: Only use ML if rule-based already detected something
+                // If confidenceLevel is 0, we haven't detected anything real yet!
+                guard self.confidenceLevel > 0.2 else {
+                    print("[DeepInfant] 🔇 Ignoring ML result (\(result.cryType) \(Int(result.confidence * 100))%) - no cry detected yet (confidence=\(Int(self.confidenceLevel * 100))%)")
+                    return
                 }
-            } else if let result = result {
-                // Log low-confidence results for debugging
-                print("[DeepInfant] Low confidence: \(result.cryType) (\(Int(result.confidence * 100))%) - not triggering")
+
+                // Only update cry type if ML is more confident than rule-based classification
+                // BUT don't update confidenceLevel - that comes from rule-based detection
+                if result.confidence > 0.6 && (self.cryType == .unknown || self.cryType == .general) {
+                    self.cryType = result.cryType
+                    // NOTE: Do NOT update confidenceLevel here - rule-based detection sets that!
+                    print("[DeepInfant] ML Classification: \(result.cryType) (ML: \(Int(result.confidence * 100))%, rule-based: \(Int(self.confidenceLevel * 100))%) in \(Int(result.processingTimeMs))ms")
+
+                    // NOTE 2026-01-09: REMOVED ML-initiated cry detection!
+                    // ML should NEVER trigger isCryDetected independently.
+                    // The rule-based evaluateDetection() handles cry triggering.
+                    // ML only provides better cry TYPE classification when rule-based already detected cry.
+                }
             }
+            // NOTE: Removed low-confidence logging - too noisy and not useful
         }
     }
 

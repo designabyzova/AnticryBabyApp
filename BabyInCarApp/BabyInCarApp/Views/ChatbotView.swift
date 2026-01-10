@@ -113,8 +113,7 @@ struct ChatbotView: View {
 
     private func toggleVoiceInput() {
         isVoiceInputActive.toggle()
-        // Voice input implementation would go here
-        // Could integrate with SpeechRecognitionService
+        // Voice input via system keyboard dictation
     }
 }
 

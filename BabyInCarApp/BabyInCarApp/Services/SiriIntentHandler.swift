@@ -4,14 +4,19 @@
 //
 //  Handles Siri Media Intents for voice control.
 //
-//  Supported Commands:
+//  Supported Commands (ALWAYS include "in Lulla" to avoid Spotify/other app conflicts):
 //    - "Hey Siri, play lullabies in Lulla"
-//    - "Hey Siri, pause Lulla"
-//    - "Hey Siri, resume Lulla"
+//    - "Hey Siri, play classical in Lulla"
+//    - "Hey Siri, calm baby in Lulla"
 //    - "Hey Siri, find Mozart in Lulla"
 //    - "Hey Siri, add to favorites in Lulla"
-//    - "Hey Siri, calm baby" (via Siri Shortcuts)
-//    - "Hey Siri, cry again" (via Siri Shortcuts)
+//    - "Hey Siri, pause Lulla" (only works when Lulla is the Now Playing app)
+//    - "Hey Siri, resume Lulla" (only works when Lulla is the Now Playing app)
+//    - "Hey Siri, next in Lulla" / "Hey Siri, skip in Lulla"
+//
+//  IMPORTANT: Pause/Resume/Skip go to whichever app is currently "Now Playing".
+//  If Spotify was playing last, "Hey Siri, pause" will pause Spotify, not Lulla.
+//  Users should say "pause Lulla" or start playback in Lulla first.
 //
 
 import Foundation
@@ -19,8 +24,8 @@ import Intents
 import MediaPlayer
 
 /// Handles Siri Media Intents for voice-controlled playback
-/// Implements INPlayMediaIntentHandling, INPauseMediaIntentHandling,
-/// INSearchForMediaIntentHandling, and INAddMediaIntentHandling
+/// Implements: Play, Search, Add to Favorites
+/// NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter, not here
 @MainActor
 class SiriIntentHandler: NSObject,
     INPlayMediaIntentHandling,
@@ -214,6 +219,12 @@ class SiriIntentHandler: NSObject,
         // Always add to favorites
         return .success(with: INMediaDestination.library)
     }
+
+    // NOTE: Pause, Resume, and Skip commands are handled by MPRemoteCommandCenter
+    // in NowPlayingService.swift. When Siri receives "pause", "resume", "next", or
+    // "previous" commands, iOS routes them to the Now Playing audio app's remote
+    // command handlers. This provides seamless integration with Control Center,
+    // Lock Screen, and CarPlay controls.
 
     // MARK: - Emergency Mode
 

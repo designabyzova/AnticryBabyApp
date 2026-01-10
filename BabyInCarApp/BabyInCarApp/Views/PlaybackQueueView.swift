@@ -283,9 +283,9 @@ struct PlaybackQueueView: View {
             }
             .padding(.horizontal, 20)
 
-            // Track list (show max 10, with "show more")
+            // Track list - Spotify-style: max 7 upcoming tracks (total 8 with "Now Playing")
             LazyVStack(spacing: 4) {
-                ForEach(Array(queueManager.contextTracks.prefix(10).enumerated()), id: \.element.id) { index, track in
+                ForEach(Array(queueManager.contextTracks.prefix(7).enumerated()), id: \.element.id) { index, track in
                     QueueTrackRowView(
                         track: track,
                         position: index + 1 + queueManager.upNextTracks.count,
@@ -299,18 +299,6 @@ struct PlaybackQueueView: View {
                             queueManager.removeFromContext(at: index)
                         }
                     )
-                }
-
-                // Show more indicator
-                if queueManager.contextTracks.count > 10 {
-                    HStack {
-                        Spacer()
-                        Text("+ \(queueManager.contextTracks.count - 10) more tracks")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.5))
-                        Spacer()
-                    }
-                    .padding(.vertical, 12)
                 }
             }
             .padding(.horizontal, 12)

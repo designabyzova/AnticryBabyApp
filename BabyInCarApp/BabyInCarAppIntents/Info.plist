@@ -8,7 +8,7 @@
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>3</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundlePackageType</key>
@@ -31,6 +31,7 @@
         <key>NSExtensionAttributes</key>
         <dict>
             <!-- Supported Intents -->
+            <!-- NOTE: Pause/Resume/Skip are handled via MPRemoteCommandCenter, not intents -->
             <key>IntentsSupported</key>
             <array>
                 <string>INPlayMediaIntent</string>

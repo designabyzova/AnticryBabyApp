@@ -525,7 +525,7 @@ class LibraryChatbotService: ObservableObject {
             return "Mimics sounds baby heard for 9 months in the womb - 90% calm in 3 minutes"
         case .shushing:
             return "Dr. Karp's 5 S's - recreates intrauterine blood flow sounds"
-        case .aquarium, .aquarium:
+        case .aquarium, .softPiano:
             return "Consistent rhythmic patterns promote relaxation"
         case .lullaby, .musicBox:
             return "60-80 BPM matches baby's resting heart rate"

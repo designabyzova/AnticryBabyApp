@@ -158,19 +158,21 @@ struct CryDetectionView: View {
             }
             .onAppear {
                 loadBaby()
-                // Fix ghost playing state - sync with actual AudioEngine state
-                smartQueue.syncPlaybackState()
+                // FIX: Move syncPlaybackState to background to prevent UI freeze
+                // syncPlaybackState() can trigger audio session reconfiguration which blocks main thread
+                // Using Task.detached ensures the main thread remains responsive during view transition
+                Task.detached { @MainActor in
+                    // Small delay allows view to finish appearing before any audio work
+                    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+                    smartQueue.syncPlaybackState()
+                }
             }
             .onDisappear {
-                // Stop emergency audio playback when leaving this screen
-                // This prevents "ghost playing" where audio continues but UI shows wrong progress
+                // FIX: Don't stop emergency playback on disappear - this was causing issues
+                // when transitioning between screens. The SmartQueueView manages its own lifecycle.
+                // The emergency playback should continue when user navigates away briefly.
                 // NOTE: Cry detection monitoring continues in background (not stopped here)
-                // Only the emergency PLAYBACK is stopped - monitoring stays active for safety
-                if smartQueue.isActive {
-                    Task {
-                        await smartQueue.stop(wasEffective: nil)
-                    }
-                }
+                print("[CryDetectionView] 👋 View disappeared - emergency playback continues if active")
             }
         }
     }
@@ -1582,7 +1584,7 @@ struct CryClassificationCard: View {
                 Text("AI Classification")
                     .font(.headline)
                 Spacer()
-                if let type = detectedType {
+                if detectedType != nil {
                     Text("\(Int(confidence * 100))%")
                         .font(.caption)
                         .fontWeight(.semibold)

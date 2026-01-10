@@ -22,8 +22,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     /// Handle Siri intents when app is launched via Siri
+    /// NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter, not intents
     func application(_ application: UIApplication, handlerFor intent: INIntent) -> Any? {
-        // Route all supported media intents to SiriIntentHandler
+        // Route supported media intents to SiriIntentHandler
         switch intent {
         case is INPlayMediaIntent:
             return SiriIntentHandler.shared
@@ -52,10 +53,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             // Stop cry detection (this stops the audio engine and releases mic)
             CryDetectionService.shared.stopMonitoring()
             print("[AppDelegate] ✅ CryDetectionService stopped")
-
-            // Stop any speech recognition
-            SpeechRecognitionService.shared.stopListening()
-            print("[AppDelegate] ✅ SpeechRecognitionService stopped")
 
             // Stop audio playback
             AudioEngine.shared.stop()
@@ -107,6 +104,8 @@ struct BabyInCarApp: App {
                     .onContinueUserActivity("com.lulla.addToFavorites") { userActivity in
                         handleAddToFavoritesActivity(userActivity)
                     }
+                    // NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter
+                    // in NowPlayingService.swift - no user activity needed
 
                 // Animated splash screen overlay
                 if showSplash {
@@ -164,9 +163,6 @@ struct BabyInCarApp: App {
             UserDefaults.standard.set(true, forKey: "wasMonitoringBeforeBackground")
             print("[BabyInCarApp] 🎤 Stopped cry monitoring (was active)")
         }
-
-        // Stop speech recognition if active
-        SpeechRecognitionService.shared.stopListening()
 
         // Note: We do NOT stop AudioEngine playback - background audio is a feature
         // Users may want lullabies to continue playing when app is backgrounded
@@ -233,11 +229,6 @@ struct BabyInCarApp: App {
         // This ensures isOnboardingComplete and currentBaby are loaded from UserDefaults
         appState.loadUserData()
 
-        // 🔧 FIX: Configure VoiceCommandHandler with AppState
-        // This was missing - voice commands weren't executing because handler had no state!
-        VoiceCommandHandler.shared.configure(with: appState)
-        print("[BabyInCarApp] ✅ VoiceCommandHandler configured with AppState")
-
         // 🔧 FIX: Initialize Watch connectivity
         // This was missing - Watch app couldn't communicate with iPhone!
         _ = WatchSyncManager.shared
@@ -246,7 +237,6 @@ struct BabyInCarApp: App {
         // Request necessary permissions and setup audio services
         // CRITICAL: All audio session operations are sequenced to prevent conflicts
         Task {
-            await SpeechRecognitionService.shared.requestAuthorization()
             _ = await NotificationService.shared.requestAuthorization()
 
             // AUTO-ENABLE CRY MONITORING (Default: ON for parent safety)
@@ -485,6 +475,9 @@ struct BabyInCarApp: App {
             }
         }
     }
+
+    // NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter in NowPlayingService.swift
+    // iOS routes "Hey Siri, pause/resume/next/previous" to the Now Playing controls automatically.
 
     /// Play a specific category
     private func playCategory(_ categoryString: String) {

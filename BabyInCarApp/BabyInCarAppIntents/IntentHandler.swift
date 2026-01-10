@@ -32,6 +32,11 @@ class IntentHandler: INExtension {
 
     /// Override to return specific handler for each intent type
     /// This method is called by iOS when Siri receives a voice command
+    ///
+    /// NOTE: Pause, Resume, and Skip commands are handled directly by the main app
+    /// through MPRemoteCommandCenter (Now Playing controls). Siri automatically
+    /// routes "Hey Siri, pause/resume/skip" to the Now Playing controls for
+    /// the currently playing audio app - no explicit intent handler needed!
     override func handler(for intent: INIntent) -> Any {
         // Route to appropriate handler based on intent type
         switch intent {
@@ -105,13 +110,6 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
 
         // Tell iOS to open the main app and continue this activity
         let response = INPlayMediaIntentResponse(code: .continueInApp, userActivity: userActivity)
-
-        // Provide spoken feedback to user
-        if isEmergency {
-            response.userActivity = userActivity
-        } else if let category = parseCategory(from: searchText) {
-            response.userActivity = userActivity
-        }
 
         completion(response)
     }
@@ -240,3 +238,8 @@ class AddMediaIntentHandler: NSObject, INAddMediaIntentHandling {
         completion(.success(with: .library))
     }
 }
+
+// NOTE: Pause, Resume, and Skip are handled automatically by iOS through MPRemoteCommandCenter.
+// When the user says "Hey Siri, pause" while audio is playing, iOS routes the command to the
+// Now Playing audio player's remote command handlers. No explicit intent handler is needed!
+// See NowPlayingService.swift for the MPRemoteCommandCenter setup.

@@ -1081,7 +1081,7 @@ extension GeneratorType {
 
     var isEngaging: Bool {
         switch self {
-        case .musicBox, .shushing, .lullaby, .chimes, .chimes, .aquarium:
+        case .musicBox, .shushing, .lullaby, .chimes, .aquarium:
             return true
         default:
             return false

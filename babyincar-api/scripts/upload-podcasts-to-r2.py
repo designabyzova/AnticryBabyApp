@@ -37,7 +37,7 @@ R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '1364b528762500de4f870e064229d44
 R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID', '')
 R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
 R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', 'anticrybaby')
-R2_PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', 'https://pub-1364b528762500de4f870e064229d443.r2.dev')
+R2_PUBLIC_URL = os.environ.get('R2_PUBLIC_URL', 'https://pub-8e38f4cfedc94123855a13244c87d5dc.r2.dev')
 
 # Try to load from .env file if not in environment
 ENV_FILE = "/Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/babyincar-api/.env"

@@ -40,16 +40,16 @@ enum IntentAudioCategory: String {
 }
 
 /// Intent action types for main app routing
+/// NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter, not intents
 enum IntentAction: String {
     case playCategory
     case search
     case emergency
     case addToFavorites
-    case pause
-    case resume
 }
 
 /// Shared user activity type identifiers
+/// NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter, not user activities
 struct IntentActivityType {
     static let playMedia = "com.lulla.playMedia"
     static let searchMedia = "com.lulla.searchMedia"

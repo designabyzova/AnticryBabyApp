@@ -161,6 +161,9 @@ extension View {
     }
 
     /// Apply animation only when reduce motion is disabled
+    /// Note: This method uses a state-independent animation which can cause warnings.
+    /// Prefer using conditionalAnimation(_:value:) for new code.
+    @available(iOS, deprecated: 15.0, message: "Use conditionalAnimation(_:value:) instead")
     func conditionalAnimation(_ animation: Animation?) -> some View {
         let reduceMotion = UIAccessibility.isReduceMotionEnabled
         if reduceMotion {

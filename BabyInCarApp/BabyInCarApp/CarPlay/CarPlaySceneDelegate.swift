@@ -36,20 +36,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         didConnect interfaceController: CPInterfaceController
     ) {
         self.interfaceController = interfaceController
-
-        // 🔧 FIX: AUTO-ENABLE voice control when CarPlay connects (hands-free driving!)
-        print("[CarPlay] 🎤 Auto-enabling voice control for hands-free operation")
-        Task { @MainActor in
-            // Enable voice control via SmartCarPlayController
-            smartCarPlay.enableVoiceControl()
-
-            // Also ensure SpeechRecognitionService is ready
-            await SpeechRecognitionService.shared.requestAuthorization()
-
-            // Start listening immediately for safety
-            SpeechRecognitionService.shared.startListening()
-            print("[CarPlay] ✅ Voice control active and listening")
-        }
+        print("[CarPlay] 🚗 CarPlay connected")
 
         // Set the root template
         let tabBarTemplate = createTabBarTemplate()
@@ -63,14 +50,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         self.interfaceController = nil
         statusUpdateTimer?.invalidate()
         statusUpdateTimer = nil
-
-        // 🔧 FIX: Disable voice control when CarPlay disconnects
-        print("[CarPlay] 🎤 Disabling voice control (CarPlay disconnected)")
-        Task { @MainActor in
-            smartCarPlay.disableVoiceControl()
-            SpeechRecognitionService.shared.stopListening()
-            print("[CarPlay] ✅ Voice control disabled")
-        }
+        print("[CarPlay] 🚗 CarPlay disconnected")
 
         // Post notification about skipped premium tracks for gentle post-drive prompt
         if !premiumTrackSkips.isEmpty {

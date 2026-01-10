@@ -3,7 +3,7 @@
 //  BabyInCarApp
 //
 //  Centralized audio session management to prevent conflicts between
-//  CryDetectionService, AudioEngine, and SpeechRecognitionService.
+//  CryDetectionService and AudioEngine.
 //
 //  TECHNICAL DEBT FIX: Eliminates audio session conflicts that cause hangs
 //
@@ -99,7 +99,7 @@ enum AudioSessionMode: Equatable {
 }
 
 /// Centralized audio session manager that coordinates all audio session changes
-/// Prevents conflicts between CryDetection, AudioEngine, and SpeechRecognition
+/// Prevents conflicts between CryDetection and AudioEngine
 @MainActor
 final class AudioSessionManager: ObservableObject {
     static let shared = AudioSessionManager()

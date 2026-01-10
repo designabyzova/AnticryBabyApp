@@ -123,7 +123,7 @@ class ResearchKnowledgeBase {
             parts.append("Your baby spent 9 months listening to your heartbeat and the sounds of your body.")
             parts.append("These familiar sounds trigger a natural calming reflex.")
 
-        case .aquarium, .aquarium, .aquarium:
+        case .aquarium:
             parts.append("Nature sounds provide consistent, rhythmic patterns that promote relaxation.")
             parts.append("The repetitive quality helps babies feel secure and drift off to sleep.")
 
@@ -142,15 +142,8 @@ class ResearchKnowledgeBase {
             parts.append("Low-tempo melodies are especially soothing for babies of all ages.")
 
         case .chimes, .bells:
-            parts.append("Gentle nature sounds create a peaceful environment.")
-            parts.append("The natural rhythms help babies relax and feel calm.")
-
-        case .chimes, .bells:
             parts.append("Soft chimes and bells provide gentle auditory stimulation.")
             parts.append("The melodic sounds can help babies focus and calm down.")
-
-        default:
-            parts.append("Consistent, gentle sounds help mask sudden noises that might wake your baby.")
         }
 
         // Cry-type specific addition
@@ -189,12 +182,10 @@ class ResearchKnowledgeBase {
             return .fiveSs
         case .musicBox, .lullaby, .softPiano, .gentleGuitar:
             return .lullabies
-        case .aquarium, .aquarium, .aquarium, .chimes, .bells, .chimes, .softPiano, .softPiano:
+        case .aquarium:
             return .sleepScience
-        case .chimes, .bells, .aquarium:
+        case .chimes, .bells:
             return .musicTherapy
-        default:
-            return .sleepScience
         }
     }
 

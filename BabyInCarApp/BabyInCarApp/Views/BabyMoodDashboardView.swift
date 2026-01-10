@@ -956,10 +956,17 @@ class BabyMoodDashboardViewModel: ObservableObject {
     private let profileManager = BabyMoodProfileManager.shared
 
     init() {
-        loadData()
+        // Don't call loadData() in init - it publishes changes during view setup
+        // which causes "Publishing changes from within view updates" warning.
+        // Instead, loadData() is called via .task modifier in the view.
     }
 
     func refreshData() {
+        loadData()
+    }
+
+    /// Called from view's .task modifier to load initial data
+    func initialLoad() {
         loadData()
     }
 

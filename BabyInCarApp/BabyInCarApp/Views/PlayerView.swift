@@ -197,7 +197,7 @@ struct PlayerView: View {
                    let track = lastPlayedTrack {
                     // Delay slightly to let UI settle
                     let duration = Date().timeIntervalSince(startTime)
-                    let cryType = cryDetectionService.cryType ?? .unknown
+                    let cryType = cryDetectionService.cryType
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         activeSheet = .effectivenessFeedback(track: track, cryType: cryType, duration: duration)
                     }
@@ -1806,24 +1806,40 @@ struct SimpleQueueTrackRow: View {
 
 // MARK: - Equalizer Animation View
 struct EqualizerView: View {
-    @State private var heights: [CGFloat] = [0.3, 0.5, 0.7, 0.4]
+    // Use separate state for each bar to avoid animation conflicts
+    @State private var height0: CGFloat = 0.3
+    @State private var height1: CGFloat = 0.5
+    @State private var height2: CGFloat = 0.7
+    @State private var height3: CGFloat = 0.4
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(0..<4, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(Color.appPrimary)
-                    .frame(width: 3, height: 20 * heights[index])
-            }
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.appPrimary)
+                .frame(width: 3, height: 20 * height0)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.appPrimary)
+                .frame(width: 3, height: 20 * height1)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.appPrimary)
+                .frame(width: 3, height: 20 * height2)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color.appPrimary)
+                .frame(width: 3, height: 20 * height3)
         }
         .onAppear {
+            // Stagger animations per bar to avoid conflicts
             withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) {
-                heights = [0.7, 0.4, 0.5, 0.8]
+                height0 = 0.7
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
-                    heights = [0.4, 0.8, 0.3, 0.6]
-                }
+            withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(0.1)) {
+                height1 = 0.8
+            }
+            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true).delay(0.2)) {
+                height2 = 0.5
+            }
+            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true).delay(0.15)) {
+                height3 = 0.6
             }
         }
     }

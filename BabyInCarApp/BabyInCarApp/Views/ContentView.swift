@@ -10,8 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
-    // FIX: Use @ObservedObject for singletons - prevents state recreation on orientation change
-    @ObservedObject private var voiceHandler = VoiceCommandHandler.shared
 
     var body: some View {
         Group {
@@ -20,9 +18,6 @@ struct ContentView: View {
             } else {
                 OnboardingView()
             }
-        }
-        .onAppear {
-            voiceHandler.configure(with: appState)
         }
     }
 }
@@ -290,8 +285,12 @@ struct TabButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .onChange(of: configuration.isPressed) { newValue in
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                    isPressed = newValue
+                // FIX: Defer state change to next run loop to avoid
+                // "Publishing changes from within view updates" error
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                        isPressed = newValue
+                    }
                 }
             }
     }
@@ -386,7 +385,9 @@ struct PremiumTabBarButton: View {
 /// ALWAYS visible - displays default playlist track ready for cry detection or manual play
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    @ObservedObject private var smartQueue = SmartEmergencyQueue.shared
+    // NOTE: Removed unused @ObservedObject smartQueue that was causing unnecessary re-renders
+    // SmartEmergencyQueue publishes timer updates every second, causing the entire view to re-render
+    // This was causing UI hangs when combined with fullScreenCover animations
     @State private var showingFullPlayer = false
     @State private var dragOffset: CGFloat = 0
     @State private var playButtonScale: CGFloat = 1.0
@@ -413,7 +414,7 @@ struct MiniPlayerView: View {
             .offset(y: dragOffset)
             .opacity(isTransitioning ? 0.7 : 1.0)
             .scaleEffect(isTransitioning ? 0.98 : 1.0)
-            .gesture(
+            .simultaneousGesture(
                 DragGesture(minimumDistance: 20)
                     .onChanged { value in
                         isDragging = true
@@ -492,9 +493,12 @@ struct MiniPlayerView: View {
                 trackInfo
             }
             .contentShape(Rectangle()) // Ensure entire area is tappable
-            .onTapGesture {
-                openFullPlayer()
-            }
+            .highPriorityGesture(
+                TapGesture()
+                    .onEnded {
+                        openFullPlayer()
+                    }
+            )
 
             Spacer(minLength: 8)
 
@@ -763,7 +767,11 @@ struct MiniPlayerButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { newValue in
-                isPressed = newValue
+                // FIX: Defer state change to next run loop to avoid
+                // "Publishing changes from within view updates" error
+                DispatchQueue.main.async {
+                    isPressed = newValue
+                }
             }
     }
 }

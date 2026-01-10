@@ -17,7 +17,6 @@ struct OnboardingView: View {
     @State private var babyBirthDate = Date()
     @State private var selectedLanguage: SupportedLanguage = LanguageManager.shared.currentLanguage
     @State private var showingDatePicker = false
-    @State private var showingVoiceInput = false
     @State private var parallaxOffset: CGFloat = 0
 
     let totalPages = 4
@@ -43,8 +42,7 @@ struct OnboardingView: View {
                         BabyInfoPage(
                             name: $babyName,
                             birthDate: $babyBirthDate,
-                            showingDatePicker: $showingDatePicker,
-                            showingVoiceInput: $showingVoiceInput
+                            showingDatePicker: $showingDatePicker
                         )
                         .tag(1)
 
@@ -166,9 +164,9 @@ struct WelcomePage: View {
             // Animated feature highlights
             VStack(spacing: DesignTokens.spacingM) {
                 AnimatedFeatureRow(icon: "waveform", text: "Age-personalized audio content", delay: 0)
-                AnimatedFeatureRow(icon: "mic.fill", text: "Hands-free voice control", delay: 0.1)
-                AnimatedFeatureRow(icon: "exclamationmark.triangle.fill", text: "Emergency cry-stop feature", delay: 0.2)
-                AnimatedFeatureRow(icon: "globe", text: "10+ language fairy tales", delay: 0.3)
+                AnimatedFeatureRow(icon: "exclamationmark.triangle.fill", text: "Emergency cry-stop feature", delay: 0.1)
+                AnimatedFeatureRow(icon: "globe", text: "10+ language fairy tales", delay: 0.2)
+                AnimatedFeatureRow(icon: "car.fill", text: "CarPlay ready for safe driving", delay: 0.3)
             }
             .padding(.horizontal, 24)
             .opacity(featuresOpacity)
@@ -335,9 +333,7 @@ struct BabyInfoPage: View {
     @Binding var name: String
     @Binding var birthDate: Date
     @Binding var showingDatePicker: Bool
-    @Binding var showingVoiceInput: Bool
 
-    @StateObject private var speechService = SpeechRecognitionService.shared
     @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
@@ -409,31 +405,6 @@ struct BabyInfoPage: View {
                             )
                         }
                     }
-
-                    // Voice input option
-                    VStack(spacing: 12) {
-                        Text("Or use voice")
-                            .font(.system(size: 14))
-                            .foregroundColor(.appTextSecondary)
-
-                        Button {
-                            isNameFieldFocused = false
-                            showingVoiceInput = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "mic.fill")
-                                Text("Say baby's age")
-                            }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.appPrimary)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 24)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.appPrimary, lineWidth: 2)
-                            )
-                        }
-                    }
                 }
                 .padding(.horizontal, 24)
 
@@ -446,9 +417,6 @@ struct BabyInfoPage: View {
         }
         .sheet(isPresented: $showingDatePicker) {
             DatePickerSheet(date: $birthDate)
-        }
-        .sheet(isPresented: $showingVoiceInput) {
-            VoiceInputSheet(birthDate: $birthDate)
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -506,125 +474,6 @@ struct DatePickerSheet: View {
                     }
                 }
             }
-        }
-    }
-}
-
-// MARK: - Voice Input Sheet
-struct VoiceInputSheet: View {
-    @Binding var birthDate: Date
-    @StateObject private var speechService = SpeechRecognitionService.shared
-    @Environment(\.dismiss) var dismiss
-    @State private var recognizedAge: Int?
-
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Spacer()
-
-                // Microphone animation
-                ZStack {
-                    Circle()
-                        .fill(speechService.isListening ? Color.appPrimary.opacity(0.2) : Color.clear)
-                        .frame(width: 150, height: 150)
-                        .scaleEffect(speechService.isListening ? 1.2 : 1.0)
-                        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: speechService.isListening)
-
-                    Circle()
-                        .fill(Color.appPrimary)
-                        .frame(width: 100, height: 100)
-
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                }
-
-                Text(speechService.isListening ? "Listening..." : "Tap to speak")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.appText)
-
-                Text("Say something like:\n\"My baby is 5 months old\"")
-                    .font(.system(size: 14))
-                    .foregroundColor(.appTextSecondary)
-                    .multilineTextAlignment(.center)
-
-                if !speechService.recognizedText.isEmpty {
-                    VStack(spacing: 8) {
-                        Text("I heard:")
-                            .font(.system(size: 14))
-                            .foregroundColor(.appTextSecondary)
-
-                        Text(speechService.recognizedText)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.appPrimary)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.appPrimary.opacity(0.1))
-                            )
-                    }
-                    .padding(.horizontal)
-                }
-
-                if let age = recognizedAge {
-                    Text("Detected age: \(age) months old")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.appSuccess)
-                }
-
-                Spacer()
-
-                // Listen button
-                Button {
-                    if speechService.isListening {
-                        speechService.stopListening()
-                        processRecognizedText()
-                    } else {
-                        speechService.startListening()
-                    }
-                } label: {
-                    Text(speechService.isListening ? "Stop" : "Start Listening")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(speechService.isListening ? Color.appDanger : Color.appPrimary)
-                        )
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-            }
-            .navigationTitle("Voice Input")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        speechService.stopListening()
-                        dismiss()
-                    }
-                }
-
-                if recognizedAge != nil {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Confirm") {
-                            if let age = recognizedAge {
-                                let calendar = Calendar.current
-                                birthDate = calendar.date(byAdding: .month, value: -age, to: Date()) ?? Date()
-                            }
-                            dismiss()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func processRecognizedText() {
-        if let age = speechService.extractAge(from: speechService.recognizedText) {
-            recognizedAge = age
         }
     }
 }
@@ -730,7 +579,7 @@ struct PermissionsPage: View {
                 PermissionRow(
                     icon: "mic.fill",
                     title: "Microphone",
-                    description: "For hands-free voice control while driving",
+                    description: "For AI cry detection and monitoring",
                     isGranted: microphoneGranted
                 ) {
                     requestMicrophonePermission()

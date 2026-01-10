@@ -80,9 +80,26 @@ class AudioEngine: ObservableObject {
     private var originalPlaylistOrder: [AudioTrack] = []
     /// Queue of tracks to play next (inserted by "Play Next" feature)
     @Published var upNextQueue: [AudioTrack] = []
-    /// History of played tracks for "previous" navigation
+    /// History of played tracks for "previous" navigation (from app start)
+    /// This queue is populated whenever a new track starts playing
     private var playbackHistory: [AudioTrack] = []
     private let maxHistorySize = 50
+
+    /// Read-only access to playback history (most recent last)
+    /// Use this to display "Recently Played" in the queue view
+    var recentlyPlayedTracks: [AudioTrack] {
+        playbackHistory
+    }
+
+    /// Number of tracks in playback history (for UI display)
+    var playbackHistoryCount: Int {
+        playbackHistory.count
+    }
+
+    /// Check if previous track is available in history
+    var canGoToPrevious: Bool {
+        !playbackHistory.isEmpty || currentPlaylist != nil
+    }
 
     // MARK: - LRU Buffer Cache (Increment 0028, Enhanced 0029)
     /// LRU cache for recently played audio buffers
@@ -378,8 +395,27 @@ class AudioEngine: ObservableObject {
     /// Play track with optional smooth crossfade transition
     /// Respects smoothTransitionsEnabled global setting
     /// NOTE: This is called directly by views AND by PlaybackSessionManager
-    func play(track: AudioTrack, crossfadeDuration: TimeInterval = 1.0) {
+    /// - Parameter addToPlaybackHistory: If true, adds current track to history before playing new one (default: true)
+    func play(track: AudioTrack, crossfadeDuration: TimeInterval = 1.0, addToPlaybackHistory: Bool = true) {
         print("[AudioEngine] 🎵 Play request: \(track.title)")
+
+        // PLAYBACK HISTORY: Add current track to history before switching
+        // This enables the "previous" button to work from app start across ALL playback modes
+        // Skip if same track (avoid duplicates) or if explicitly disabled (e.g., from previous() itself)
+        if addToPlaybackHistory, let current = currentTrack, current.id != track.id {
+            addToHistory(current)
+        }
+
+        // CRITICAL FIX (2026-01-09): Prevent dual track playback
+        // If a crossfade is in progress, cancel it completely before starting new playback
+        // This prevents the race condition where:
+        // 1. Track A playing → tap Track B → crossfade starts (state = .loading)
+        // 2. Tap Track C quickly → state is .loading, not .playing
+        // 3. Goes to else branch, both B and C play simultaneously!
+        if isCrossfading {
+            print("[AudioEngine] ⚠️ Cancelling in-progress crossfade for new track")
+            cancelCrossfade()
+        }
 
         // If smooth transitions disabled, play immediately without fade
         guard smoothTransitionsEnabled else {
@@ -387,8 +423,9 @@ class AudioEngine: ObservableObject {
             return
         }
 
-        // If already playing, crossfade to new track
-        if playbackState == .playing, let _ = currentTrack {
+        // If already playing OR loading (during crossfade), crossfade to new track
+        // CRITICAL FIX: Also check .loading state to handle rapid track changes
+        if (playbackState == .playing || playbackState == .loading), let _ = currentTrack {
             crossfadeToTrack(track, duration: crossfadeDuration)
         } else {
             // No current playback, start with fade-in
@@ -407,7 +444,14 @@ class AudioEngine: ObservableObject {
 
     /// Legacy function for backward compatibility (no crossfade)
     private func playImmediate(track: AudioTrack) {
-        stopCurrentPlayback()
+        // CRITICAL FIX (2026-01-09): Cancel any in-progress crossfade before immediate playback
+        // This prevents dual track playback when emergency mode interrupts a crossfade
+        if isCrossfading {
+            print("[AudioEngine] ⚠️ Cancelling crossfade for immediate playback")
+            cancelCrossfade()
+        } else {
+            stopCurrentPlayback()
+        }
 
         currentTrack = track
         duration = track.duration
@@ -572,6 +616,20 @@ class AudioEngine: ObservableObject {
     }
 
     func stop() {
+        // CRITICAL FIX (2026-01-09): Cancel any in-progress crossfade
+        // This prevents dual track playback when stop() is called during a crossfade
+        if isCrossfading {
+            print("[AudioEngine] ⚠️ Stopping during crossfade - cleaning up")
+            // Clean up old stream player from crossfade
+            if let oldStreamObserver = crossfadeOldTimeObserver {
+                crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
+            }
+            crossfadeOldStreamPlayer?.pause()
+            crossfadeOldStreamPlayer = nil
+            crossfadeOldTimeObserver = nil
+            isCrossfading = false
+        }
+
         // Report completion if was playing
         if let track = currentTrack, playbackState == .playing {
             Task {
@@ -599,7 +657,7 @@ class AudioEngine: ObservableObject {
         // Check if there's a track in the "up next" queue first
         if !upNextQueue.isEmpty {
             let nextTrack = upNextQueue.removeFirst()
-            addToHistory(currentTrack)
+            // Note: play() now handles adding current track to history automatically
             play(track: nextTrack)
 
             // UNIFIED ARCHITECTURE: Check if we need to replenish queue
@@ -618,8 +676,7 @@ class AudioEngine: ObservableObject {
             return
         }
 
-        // Add current track to history
-        addToHistory(currentTrack)
+        // Note: play() now handles adding current track to history automatically
 
         // Smart shuffle: pick random unplayed track
         if isShuffleEnabled {
@@ -705,29 +762,45 @@ class AudioEngine: ObservableObject {
             return
         }
 
-        // In shuffle mode, go back through history
-        if isShuffleEnabled && !playbackHistory.isEmpty {
+        // PLAYBACK HISTORY FIX: Use history for ALL modes, not just shuffle
+        // This enables "previous" to work correctly regardless of how tracks were played:
+        // - Manual selection from different categories
+        // - AI recommendations ("More Like This")
+        // - Smart queue suggestions
+        // - Shuffle mode (original behavior)
+        if !playbackHistory.isEmpty {
             let previousTrack = playbackHistory.removeLast()
-            // Remove from shuffle played so we can play it again naturally
-            if let playlist = currentPlaylist,
-               let index = playlist.tracks.firstIndex(where: { $0.id == previousTrack.id }) {
-                shufflePlayedIndices.remove(index)
+
+            // Update shuffle tracking if in shuffle mode
+            if isShuffleEnabled {
+                if let playlist = currentPlaylist,
+                   let index = playlist.tracks.firstIndex(where: { $0.id == previousTrack.id }) {
+                    shufflePlayedIndices.remove(index)
+                    currentPlaylistIndex = index
+                }
+            } else if let playlist = currentPlaylist,
+                      let index = playlist.tracks.firstIndex(where: { $0.id == previousTrack.id }) {
+                // Update playlist index if track is in current playlist
                 currentPlaylistIndex = index
             }
-            play(track: previousTrack)
+
+            // Play WITHOUT adding to history (we're going backwards, not forwards)
+            play(track: previousTrack, addToPlaybackHistory: false)
             return
         }
 
+        // No history available - fall back to playlist navigation
         guard let playlist = currentPlaylist else { return }
 
         let previousIndex = currentPlaylistIndex - 1
         if previousIndex >= 0 {
             currentPlaylistIndex = previousIndex
-            play(track: playlist.tracks[previousIndex])
+            // Don't add to history - this is going backward in playlist
+            play(track: playlist.tracks[previousIndex], addToPlaybackHistory: false)
         } else {
             // Go to last track (wrap around)
             currentPlaylistIndex = playlist.tracks.count - 1
-            play(track: playlist.tracks[currentPlaylistIndex])
+            play(track: playlist.tracks[currentPlaylistIndex], addToPlaybackHistory: false)
         }
     }
 
@@ -767,7 +840,7 @@ class AudioEngine: ObservableObject {
             let targetTime = currentTime
 
             // Use zero tolerance for precise seeking, with completion handler
-            player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { finished in
                 guard finished else {
                     print("[AudioEngine] ⚠️ Seek to \(targetTime)s was cancelled or failed")
                     return
@@ -838,29 +911,28 @@ class AudioEngine: ObservableObject {
 
         // Start a timer for continuous seeking
         seekTimer = Timer.scheduledTimer(withTimeInterval: seekInterval, repeats: true) { [weak self] timer in
-            // PERFORMANCE FIX: Removed DispatchQueue.main.async wrapper
-            // Timer.scheduledTimer already runs on main RunLoop - no need for extra async!
-            // This eliminates unnecessary closure allocations and reduces memory churn
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-            guard self.isSeeking else {
-                timer.invalidate()
-                self.seekTimer = nil
-                return
-            }
-            if forward {
-                let newTime = min(self.currentTime + seekAmount, self.duration)
-                self.seek(to: newTime)
-                if newTime >= self.duration {
-                    self.stopSeek()
+            Task { @MainActor [weak self] in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
                 }
-            } else {
-                let newTime = max(self.currentTime - seekAmount, 0)
-                self.seek(to: newTime)
-                if newTime <= 0 {
-                    self.stopSeek()
+                guard self.isSeeking else {
+                    timer.invalidate()
+                    self.seekTimer = nil
+                    return
+                }
+                if forward {
+                    let newTime = min(self.currentTime + seekAmount, self.duration)
+                    self.seek(to: newTime)
+                    if newTime >= self.duration {
+                        self.stopSeek()
+                    }
+                } else {
+                    let newTime = max(self.currentTime - seekAmount, 0)
+                    self.seek(to: newTime)
+                    if newTime <= 0 {
+                        self.stopSeek()
+                    }
                 }
             }
         }
@@ -1080,14 +1152,13 @@ class AudioEngine: ObservableObject {
         sleepTimerRemaining = timer.seconds
 
         sleepTimerInstance = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            // PERFORMANCE FIX: Removed Task { @MainActor } wrapper
-            // Timer callback is already on main RunLoop - no need for async Task!
-            // This eliminates Task allocation overhead and reduces memory churn
-            guard let self = self else { return }
-            self.sleepTimerRemaining -= 1
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                self.sleepTimerRemaining -= 1
 
-            if self.sleepTimerRemaining <= 0 {
-                self.fadeOutAndStop()
+                if self.sleepTimerRemaining <= 0 {
+                    self.fadeOutAndStop()
+                }
             }
         }
 
@@ -1519,34 +1590,33 @@ class AudioEngine: ObservableObject {
         // PERFORMANCE FIX: Reduced from 0.5s to 1.0s (industry standard like Spotify)
         // Reduces CPU usage by 50% and prevents phone overheating
         progressTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            // PERFORMANCE FIX: Removed DispatchQueue.main.async wrapper
-            // Timer.scheduledTimer already runs on main RunLoop - no need for extra async!
-            // This eliminates unnecessary closure allocations and reduces memory churn
-            guard let self = self else { return }
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
 
-            // CRITICAL FIX: Don't update currentTime while user is scrubbing
-            // This prevents the slider from "fighting" with user input
-            guard !self.isScrubbing else { return }
+                // CRITICAL FIX: Don't update currentTime while user is scrubbing
+                // This prevents the slider from "fighting" with user input
+                guard !self.isScrubbing else { return }
 
-            // CRITICAL FIX: Only read from active players to prevent timeline flickering
-            // Try bundled player first (AVAudioPlayer)
-            if let player = self.audioPlayer, player.isPlaying {
-                self.currentTime = player.currentTime
-            }
-            // Try streamed player (AVPlayer)
-            else if let player = self.streamPlayer, player.rate > 0 {
-                self.currentTime = CMTimeGetSeconds(player.currentTime())
-            }
-            // For generated audio or when no active player, increment manually
-            else if self.playbackState == .playing {
-                self.currentTime += 1.0  // Changed from 0.5 to match new 1.0s interval
-                if self.currentTime >= self.duration {
-                    self.handleTrackEnd()
+                // CRITICAL FIX: Only read from active players to prevent timeline flickering
+                // Try bundled player first (AVAudioPlayer)
+                if let player = self.audioPlayer, player.isPlaying {
+                    self.currentTime = player.currentTime
                 }
-            }
+                // Try streamed player (AVPlayer)
+                else if let player = self.streamPlayer, player.rate > 0 {
+                    self.currentTime = CMTimeGetSeconds(player.currentTime())
+                }
+                // For generated audio or when no active player, increment manually
+                else if self.playbackState == .playing {
+                    self.currentTime += 1.0  // Changed from 0.5 to match new 1.0s interval
+                    if self.currentTime >= self.duration {
+                        self.handleTrackEnd()
+                    }
+                }
 
-            // Update Now Playing time for Control Center / Lock Screen scrubber
-            NowPlayingService.shared.updatePlaybackTime()
+                // Update Now Playing time for Control Center / Lock Screen scrubber
+                NowPlayingService.shared.updatePlaybackTime()
+            }
         }
 
         // PERFORMANCE FIX: Add timer to RunLoop.common mode
@@ -1563,6 +1633,12 @@ class AudioEngine: ObservableObject {
 
     private func stopCurrentPlayback() {
         stopProgressTimer()
+
+        // CRITICAL FIX (2026-01-09): Stop fade timer to prevent dual track playback
+        // If a fade-in is in progress, cancel it immediately
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+
         audioPlayer?.stop()
         audioPlayer = nil
 
@@ -1837,7 +1913,7 @@ class AudioEngine: ObservableObject {
                 return
             }
 
-            if let playlist = self.currentPlaylist {
+            if self.currentPlaylist != nil {
                 self.next()
             } else {
                 // Single track playback - check repeat mode
@@ -1874,28 +1950,27 @@ class AudioEngine: ObservableObject {
         fadeTimer?.invalidate()
 
         let newTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            // PERFORMANCE FIX: Removed Task { @MainActor } wrapper
-            // Timer callback is already on main RunLoop - no need for async Task!
-            // This eliminates Task allocation overhead and reduces memory churn
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
+            Task { @MainActor [weak self] in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
 
-            currentStep += 1
+                currentStep += 1
 
-            // Exponential fade curve for more natural sound decay
-            let progress = Float(currentStep) / Float(fadeSteps)
-            let curve = 1.0 - pow(progress, 2) // Quadratic ease-out
-            let newVolume = initialVolume * curve
-            self.setVolume(max(0, newVolume))
+                // Exponential fade curve for more natural sound decay
+                let progress = Float(currentStep) / Float(fadeSteps)
+                let curve = 1.0 - pow(progress, 2) // Quadratic ease-out
+                let newVolume = initialVolume * curve
+                self.setVolume(max(0, newVolume))
 
-            if currentStep >= fadeSteps {
-                timer.invalidate()
-                self.fadeTimer = nil
-                self.stop()
-                self.setVolume(initialVolume) // Restore volume for next play
-                self.sleepTimer = .off
+                if currentStep >= fadeSteps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.stop()
+                    self.setVolume(initialVolume) // Restore volume for next play
+                    self.sleepTimer = .off
+                }
             }
         }
 
@@ -1990,69 +2065,68 @@ class AudioEngine: ObservableObject {
         // Crossfade timer
         fadeTimer?.invalidate()
         fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            // PERFORMANCE FIX: Removed Task { @MainActor } wrapper
-            // Timer callback is already on main RunLoop - no need for async Task!
-            // This eliminates Task allocation overhead and reduces memory churn
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-
-            currentStep += 1
-            let progress = Float(currentStep) / Float(fadeSteps)
-
-            // Fade out old track (quadratic ease-out for smooth decay)
-            let fadeOutCurve = 1.0 - pow(progress, 2)
-            let fadeOutVolume = initialVolume * fadeOutCurve
-            oldPlayer?.volume = fadeOutVolume
-            oldPlayerNode?.volume = fadeOutVolume
-            self.crossfadeOldStreamPlayer?.volume = fadeOutVolume
-
-            // Fade in new track (quadratic ease-in for smooth rise)
-            let fadeInCurve = pow(progress, 2)
-            let fadeInVolume = initialVolume * fadeInCurve
-
-            // Apply fade-in to current players
-            // NOTE: We set volume on each player individually, NOT on self.volume
-            // self.volume represents the user's desired level and should NOT change during crossfade
-            self.audioPlayer?.volume = fadeInVolume
-            self.playerNode?.volume = fadeInVolume
-            self.streamPlayer?.volume = fadeInVolume
-            self.noiseGenerator?.setVolume(fadeInVolume)
-
-            if currentStep >= fadeSteps {
-                timer.invalidate()
-                self.fadeTimer = nil
-                self.isCrossfading = false
-
-                // Stop old playback (AVPlayer uses pause, not stop)
-                oldPlayer?.pause()
-                oldPlayer?.stop()
-                oldPlayerNode?.stop()
-                oldNoiseGenerator?.stop()
-
-                // Clean up old stream player that was being faded out
-                if let oldStreamObserver = self.crossfadeOldTimeObserver {
-                    self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
+            Task { @MainActor [weak self] in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
                 }
-                self.crossfadeOldStreamPlayer?.pause()
-                self.crossfadeOldStreamPlayer = nil
-                self.crossfadeOldTimeObserver = nil
 
-                // CRITICAL FIX: Nullify old players to prevent audio overlap
-                // This ensures progress timer and audio engine don't access stale players
-                oldPlayer = nil
-                oldPlayerNode = nil
-                oldNoiseGenerator = nil
+                currentStep += 1
+                let progress = Float(currentStep) / Float(fadeSteps)
 
-                // Restore full volume
-                self.volume = initialVolume
-                self.audioPlayer?.volume = initialVolume
-                self.playerNode?.volume = initialVolume
-                self.streamPlayer?.volume = initialVolume
-                self.noiseGenerator?.setVolume(initialVolume)
+                // Fade out old track (quadratic ease-out for smooth decay)
+                let fadeOutCurve = 1.0 - pow(progress, 2)
+                let fadeOutVolume = initialVolume * fadeOutCurve
+                oldPlayer?.volume = fadeOutVolume
+                oldPlayerNode?.volume = fadeOutVolume
+                self.crossfadeOldStreamPlayer?.volume = fadeOutVolume
 
-                print("[AudioEngine] ✅ Crossfade complete to '\(newTrack.title)'")
+                // Fade in new track (quadratic ease-in for smooth rise)
+                let fadeInCurve = pow(progress, 2)
+                let fadeInVolume = initialVolume * fadeInCurve
+
+                // Apply fade-in to current players
+                // NOTE: We set volume on each player individually, NOT on self.volume
+                // self.volume represents the user's desired level and should NOT change during crossfade
+                self.audioPlayer?.volume = fadeInVolume
+                self.playerNode?.volume = fadeInVolume
+                self.streamPlayer?.volume = fadeInVolume
+                self.noiseGenerator?.setVolume(fadeInVolume)
+
+                if currentStep >= fadeSteps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.isCrossfading = false
+
+                    // Stop old playback (AVPlayer uses pause, not stop)
+                    oldPlayer?.pause()
+                    oldPlayer?.stop()
+                    oldPlayerNode?.stop()
+                    oldNoiseGenerator?.stop()
+
+                    // Clean up old stream player that was being faded out
+                    if let oldStreamObserver = self.crossfadeOldTimeObserver {
+                        self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
+                    }
+                    self.crossfadeOldStreamPlayer?.pause()
+                    self.crossfadeOldStreamPlayer = nil
+                    self.crossfadeOldTimeObserver = nil
+
+                    // CRITICAL FIX: Nullify old players to prevent audio overlap
+                    // This ensures progress timer and audio engine don't access stale players
+                    oldPlayer = nil
+                    oldPlayerNode = nil
+                    oldNoiseGenerator = nil
+
+                    // Restore full volume
+                    self.volume = initialVolume
+                    self.audioPlayer?.volume = initialVolume
+                    self.playerNode?.volume = initialVolume
+                    self.streamPlayer?.volume = initialVolume
+                    self.noiseGenerator?.setVolume(initialVolume)
+
+                    print("[AudioEngine] ✅ Crossfade complete to '\(newTrack.title)'")
+                }
             }
         }
 
@@ -2060,6 +2134,34 @@ class AudioEngine: ObservableObject {
         if let timer = fadeTimer {
             RunLoop.main.add(timer, forMode: .common)
         }
+    }
+
+    /// Cancel an in-progress crossfade and clean up all audio players
+    /// CRITICAL FIX (2026-01-09): Prevents dual track playback when user rapidly switches tracks
+    private func cancelCrossfade() {
+        guard isCrossfading else { return }
+
+        print("[AudioEngine] 🛑 Cancelling crossfade...")
+
+        // Stop the crossfade timer
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+
+        // Stop and clean up the OLD stream player (the one being faded out)
+        if let oldStreamObserver = crossfadeOldTimeObserver {
+            crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
+        }
+        crossfadeOldStreamPlayer?.pause()
+        crossfadeOldStreamPlayer = nil
+        crossfadeOldTimeObserver = nil
+
+        // Stop current playback completely (the new track that was fading in)
+        stopCurrentPlayback()
+
+        // Reset crossfade state
+        isCrossfading = false
+
+        print("[AudioEngine] ✅ Crossfade cancelled, all audio stopped")
     }
 
     /// Start playback with fade-in
@@ -2101,23 +2203,22 @@ class AudioEngine: ObservableObject {
         // Fade in
         fadeTimer?.invalidate()
         let newTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            // PERFORMANCE FIX: Removed Task { @MainActor } wrapper
-            // Timer callback is already on main RunLoop - no need for async Task!
-            // This eliminates Task allocation overhead and reduces memory churn
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
+            Task { @MainActor [weak self] in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
 
-            currentStep += 1
-            let progress = Float(currentStep) / Float(fadeSteps)
-            let fadeInCurve = pow(progress, 2) // Quadratic ease-in
-            self.setVolume(targetVolume * fadeInCurve)
+                currentStep += 1
+                let progress = Float(currentStep) / Float(fadeSteps)
+                let fadeInCurve = pow(progress, 2) // Quadratic ease-in
+                self.setVolume(targetVolume * fadeInCurve)
 
-            if currentStep >= fadeSteps {
-                timer.invalidate()
-                self.fadeTimer = nil
-                self.setVolume(targetVolume)
+                if currentStep >= fadeSteps {
+                    timer.invalidate()
+                    self.fadeTimer = nil
+                    self.setVolume(targetVolume)
+                }
             }
         }
 
@@ -2249,15 +2350,23 @@ class NoiseGenerator: @unchecked Sendable {
     // 🚨 PERFORMANCE FIX: Use atomic-like flag to prevent concurrent access issues
     private var isGenerating: Bool = false
 
+    /// Track if setup failed - prevents reuse of broken engine
+    private var setupFailed: Bool = false
+
     init(type: GeneratorType) {
         self.type = type
         setupAudioEngine()
     }
 
     private func setupAudioEngine() {
+        // FIX: Reset failure flag on fresh setup
+        setupFailed = false
         audioEngine = AVAudioEngine()
 
-        guard let engine = audioEngine else { return }
+        guard let engine = audioEngine else {
+            setupFailed = true
+            return
+        }
 
         let sampleRate: Double = 44100
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
@@ -2602,8 +2711,14 @@ class NoiseGenerator: @unchecked Sendable {
     }
 
     func start() {
+        // FIX: "invalid reuse after initialization failure" - recreate engine if previous setup failed
+        if setupFailed || audioEngine == nil {
+            print("[NoiseGenerator] 🔄 Recreating audio engine after previous failure")
+            setupAudioEngine()
+        }
+
         guard !isRunning, let engine = audioEngine else {
-            print("[NoiseGenerator] ⚠️ Cannot start: isRunning=\(isRunning), engine=\(audioEngine != nil)")
+            print("[NoiseGenerator] ⚠️ Cannot start: isRunning=\(isRunning), engine=\(audioEngine != nil), setupFailed=\(setupFailed)")
             return
         }
 
@@ -2635,6 +2750,7 @@ class NoiseGenerator: @unchecked Sendable {
             print("[NoiseGenerator] 📊 Volume: \(volume), Connections: \(engine.attachedNodes.count) nodes")
             try engine.start()
             isRunning = true
+            setupFailed = false  // Clear failure flag on successful start
 
             // Verify audio route after start
             let newRoute = session.currentRoute
@@ -2643,6 +2759,12 @@ class NoiseGenerator: @unchecked Sendable {
         } catch {
             print("[NoiseGenerator] ❌ Failed to start noise generator: \(error)")
             print("[NoiseGenerator] ❌ Error details: \(error.localizedDescription)")
+
+            // FIX: Mark setup as failed so next start() will recreate the engine
+            // "invalid reuse after initialization failure" happens when you try to
+            // use an AVAudioEngine that failed to start
+            setupFailed = true
+            audioEngine = nil  // Release the broken engine
         }
     }
 
@@ -2686,6 +2808,9 @@ class SoundMixer: ObservableObject {
 
     @Published var activeChannels: [MixerChannel] = []
 
+    /// Track if setup failed - prevents reuse of broken engine
+    private var setupFailed: Bool = false
+
     struct MixerChannel: Identifiable, Equatable {
         let id: String
         let type: GeneratorType
@@ -2702,10 +2827,14 @@ class SoundMixer: ObservableObject {
     }
 
     private func setupAudioEngine() {
+        setupFailed = false
         audioEngine = AVAudioEngine()
         mixerNode = AVAudioMixerNode()
 
-        guard let engine = audioEngine, let mixer = mixerNode else { return }
+        guard let engine = audioEngine, let mixer = mixerNode else {
+            setupFailed = true
+            return
+        }
 
         engine.attach(mixer)
         engine.connect(mixer, to: engine.mainMixerNode, format: nil)
@@ -2786,13 +2915,22 @@ class SoundMixer: ObservableObject {
     }
 
     func start() {
+        // FIX: "invalid reuse after initialization failure" - recreate engine if previous setup failed
+        if setupFailed || audioEngine == nil {
+            print("[SoundMixer] 🔄 Recreating audio engine after previous failure")
+            setupAudioEngine()
+        }
+
         guard !isRunning, let engine = audioEngine else { return }
 
         do {
             try engine.start()
             isRunning = true
+            setupFailed = false
         } catch {
-            print("Failed to start sound mixer: \(error)")
+            print("[SoundMixer] ❌ Failed to start sound mixer: \(error)")
+            setupFailed = true
+            audioEngine = nil
         }
     }
 
@@ -2920,14 +3058,19 @@ class ToneGenerator {
     private var frequency: Double = 440
     private var volume: Float = 0.5
     private var phase: Double = 0
+    private var setupFailed: Bool = false
 
     init() {
         setupAudioEngine()
     }
 
     private func setupAudioEngine() {
+        setupFailed = false
         audioEngine = AVAudioEngine()
-        guard let engine = audioEngine else { return }
+        guard let engine = audioEngine else {
+            setupFailed = true
+            return
+        }
 
         let sampleRate: Double = 44100
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
@@ -2967,7 +3110,19 @@ class ToneGenerator {
     }
 
     func start() {
-        try? audioEngine?.start()
+        // FIX: "invalid reuse after initialization failure" - recreate engine if previous setup failed
+        if setupFailed || audioEngine == nil {
+            setupAudioEngine()
+        }
+
+        do {
+            try audioEngine?.start()
+            setupFailed = false
+        } catch {
+            print("[ToneGenerator] ❌ Failed to start: \(error)")
+            setupFailed = true
+            audioEngine = nil
+        }
     }
 
     func stop() {

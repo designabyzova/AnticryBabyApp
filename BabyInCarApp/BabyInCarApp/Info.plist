@@ -10,7 +10,7 @@
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>3</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundlePackageType</key>
@@ -44,11 +44,11 @@
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 
-    <!-- Scene Configuration (Standard - No CarPlay) -->
+    <!-- Scene Configuration (with CarPlay support) -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
-        <false/>
+        <true/>
         <key>UISceneConfigurations</key>
         <dict>
             <key>UIWindowSceneSessionRoleApplication</key>
@@ -58,6 +58,15 @@
                     <string>Default Configuration</string>
                     <key>UISceneDelegateClassName</key>
                     <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+                </dict>
+            </array>
+            <key>CPTemplateApplicationSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneConfigurationName</key>
+                    <string>CarPlay Configuration</string>
+                    <key>UISceneDelegateClassName</key>
+                    <string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
                 </dict>
             </array>
         </dict>
@@ -112,6 +121,7 @@
     <string>Lulla uses Siri so you can control playback hands-free by saying things like "Hey Siri, play lullabies in Lulla".</string>
 
     <!-- Siri Intents Supported -->
+    <!-- NOTE: Pause/Resume/Skip are handled via MPRemoteCommandCenter (Now Playing controls) -->
     <key>INIntentsSupported</key>
     <array>
         <string>INPlayMediaIntent</string>

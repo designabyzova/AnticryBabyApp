@@ -750,10 +750,12 @@ class SmartCryResponseEngine: ObservableObject {
         // Phase 1: Attention Capture (0-15 seconds)
         await runPhase(.attentionCapture, duration: 15)
 
-        // Check if still crying
-        guard isActive && cryDetectionService.isCryDetected else {
-            await transitionToSuccess()
-            return
+        // CRITICAL FIX (2026-01-09): DO NOT stop when cry ends!
+        // Continue playing even if baby calms - user will dismiss manually.
+        guard isActive else { return }
+        if !cryDetectionService.isCryDetected {
+            print("[SmartCryResponse] 👶 Baby calmed during Phase 1 - continuing playback")
+            adaptationMessage = "Baby calming down... Music continues."
         }
 
         // Phase 2: Primary Soothing (15-60 seconds)
@@ -780,11 +782,12 @@ class SmartCryResponseEngine: ObservableObject {
         // Phase 4: Monitoring / Sleep Transition
         guard isActive else { return }
 
-        if cryDetectionService.isCryDetected {
-            // Still crying - continue monitoring and adapting
-            startMonitoringLoop()
-        } else {
-            await transitionToSuccess()
+        // CRITICAL FIX (2026-01-09): Always start monitoring, even if baby calmed
+        // The queue persists until user dismisses - no auto-stop!
+        startMonitoringLoop()
+        if !cryDetectionService.isCryDetected {
+            print("[SmartCryResponse] 👶 Baby calmed - monitoring continues, playback persists")
+            adaptationMessage = "Baby calming down... Music continues."
         }
     }
 
@@ -1103,9 +1106,9 @@ class SmartCryResponseEngine: ObservableObject {
         currentPhase = .monitoring
         adaptationMessage = "Monitoring baby's state..."
 
-        // THERMAL FIX: Increased from 5s to 8s - reduces monitoring overhead
-        // Cry state changes slowly; 8s is still responsive enough for good UX
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { [weak self] _ in
+        // THERMAL FIX: Reduced from 8s to 5s for quicker response to cry ending
+        // 5s is still reasonable for thermal management while being more responsive
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 await self?.monitoringCheck()
             }
@@ -1124,8 +1127,14 @@ class SmartCryResponseEngine: ObservableObject {
             smartEmergencyQueue.adjustQueueForEffectiveness(isCalmingDown: isCalmingDown)
         }
 
+        // CRITICAL FIX (2026-01-09): DO NOT auto-stop when cry ends!
+        // The queue should persist until user manually dismisses.
+        // Only escalate if clearly not working (still crying hard).
         if !cryDetectionService.isCryDetected {
-            await transitionToSuccess()
+            // Baby calmed - just log it, DON'T stop playback!
+            print("[SmartCryResponse] 🔄 Monitoring: Baby calmed - continuing playback")
+            adaptationMessage = "Baby calming down... Music continues."
+            // DO NOT call transitionToSuccess() - it stops audio!
         } else if effectiveness == .notWorking {
             await escalateResponse()
         }
@@ -1151,8 +1160,8 @@ class SmartCryResponseEngine: ObservableObject {
             }
         }
 
-        // Keep monitoring briefly
-        try? await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
+        // Keep monitoring briefly (reduced from 30s to 10s for quicker return to normal state)
+        try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
 
         if !cryDetectionService.isCryDetected {
             deactivate()
@@ -1515,9 +1524,13 @@ class SmartCryResponseEngine: ObservableObject {
         // Note: cryIntensity is evaluated in evaluateEffectiveness() below
         _ = cryDetectionService.cryIntensity
 
+        // CRITICAL FIX (2026-01-09): DO NOT auto-stop when cry ends!
+        // The queue should persist until user manually dismisses.
         if !isCrying {
-            // Baby calmed down - success!
-            await transitionToSuccessWithBabyMIM(for: baby)
+            // Baby calmed - just log it, DON'T stop playback!
+            print("[SmartCryResponse] 🔄 BabyMIM: Baby calmed - continuing playback")
+            adaptationMessage = "Baby calming down... Music continues."
+            // DO NOT call transitionToSuccessWithBabyMIM() - it stops audio!
             return
         }
 
@@ -1720,10 +1733,24 @@ class SmartCryResponseEngine: ObservableObject {
     }
 
     private func handleCryEnded() {
+        // CRITICAL FIX (2026-01-09): DO NOT stop emergency queue when cry ends!
+        // The queue should CONTINUE playing soothing music even after baby calms down.
+        // User should MANUALLY dismiss the emergency screen when ready.
+        // This prevents audio stopping mid-playback due to:
+        // 1. False cry-end detection (singing confused with crying)
+        // 2. Brief pauses in crying
+        // 3. Cry detection timeout (5s of no cry-like audio)
+        //
+        // The queue is now PERSISTENT - only user action can stop it.
+        print("[SmartCryResponse] 👶 Cry ended detected - CONTINUING playback (queue persists until user dismisses)")
+
+        // Update phase to monitoring but DO NOT transition to success or deactivate
         if isActive && currentPhase != .monitoring && currentPhase != .success {
-            Task {
-                await transitionToSuccess()
-            }
+            currentPhase = .monitoring
+            adaptationMessage = "Baby calming down... Music continues playing."
+
+            // DO NOT call transitionToSuccess() - this would stop audio!
+            // The user should manually tap "I'm Done" or dismiss the emergency screen
         }
     }
 
