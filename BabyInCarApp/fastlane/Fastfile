@@ -517,6 +517,33 @@ platform :ios do
             run_number = run["attributes"]["number"]
             UI.message("  Build ##{run_number}: #{run_status || 'in progress'}")
 
+            # Check for issues/errors
+            if run_status == "FAILED"
+              issues_response = make_request(:get, "#{base_url}/ciBuildRuns/#{run_id}/actions", token)
+              if issues_response.code == "200"
+                actions_data = JSON.parse(issues_response.body)["data"]
+                actions_data.each do |act|
+                  act_name = act["attributes"]["name"]
+                  act_status = act["attributes"]["completionStatus"]
+                  UI.message("    Action: #{act_name} - #{act_status}")
+
+                  if act_status == "FAILED"
+                    # Get issues for this action
+                    action_id = act["id"]
+                    action_issues_response = make_request(:get, "#{base_url}/ciBuildActions/#{action_id}/issues", token)
+                    if action_issues_response.code == "200"
+                      issues = JSON.parse(action_issues_response.body)["data"]
+                      issues.each do |issue|
+                        UI.error("      Issue: #{issue['attributes']['message']}")
+                        UI.message("      Category: #{issue['attributes']['category']}")
+                        UI.message("      File: #{issue['attributes']['fileSource']}")
+                      end
+                    end
+                  end
+                end
+              end
+            end
+
             # Check for artifacts
             if run_status == "SUCCEEDED"
               artifacts_response = make_request(:get, "#{base_url}/ciBuildRuns/#{run_id}/artifacts", token)

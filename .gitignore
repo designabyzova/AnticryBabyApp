@@ -173,6 +173,8 @@ ExportOptions.plist
 
 # Generated icons (can be regenerated)
 icon_*.png
+# But keep app icons in Assets.xcassets
+!**/Assets.xcassets/**/icon_*.png
 
 # Markdown reports in root (should be in increment folders)
 /*_COMPLETE.md
