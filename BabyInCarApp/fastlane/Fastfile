@@ -282,6 +282,98 @@ platform :ios do
     end
   end
 
+  desc "Register all App IDs with proper capabilities"
+  lane :register_app_ids do
+    api_key = app_store_connect_api_key(
+      key_id: "JZ2ML9M66A",
+      issuer_id: "a9be87c1-47d8-40f2-897d-75df80a540fb",
+      key_filepath: "./fastlane/keys/AuthKey_JZ2ML9M66A.p8"
+    )
+
+    # App IDs we need to register/update
+    app_ids = {
+      "com.babyincar.app" => {
+        name: "Lulla - Calm Baby",
+        platform: "IOS",
+        capabilities: ["SIRI", "APP_GROUPS"]
+      },
+      "com.babyincar.app.watchkitapp" => {
+        name: "Lulla Watch App",
+        platform: "IOS",  # watchOS bundles register as iOS in Apple's system
+        capabilities: ["APP_GROUPS"]
+      },
+      "com.babyincar.app.BabyInCarAppIntents" => {
+        name: "Lulla Intents Extension",
+        platform: "IOS",
+        capabilities: ["SIRI", "APP_GROUPS"]
+      },
+      "com.babyincar.app.BabyInCarAppIntentsUI" => {
+        name: "Lulla IntentsUI Extension",
+        platform: "IOS",
+        capabilities: ["APP_GROUPS"]
+      }
+    }
+
+    # Get all existing bundle IDs
+    existing_bundle_ids = Spaceship::ConnectAPI::BundleId.all
+    UI.message("Found #{existing_bundle_ids.count} existing bundle IDs")
+
+    app_ids.each do |identifier, config|
+      UI.message("\n--- Processing: #{identifier} ---")
+
+      existing = existing_bundle_ids.find { |b| b.identifier == identifier }
+
+      if existing
+        UI.success("Bundle ID exists: #{existing.name}")
+
+        # Get current capabilities
+        current_caps = existing.get_capabilities
+        UI.message("Current capabilities: #{current_caps.map(&:capability_type).join(', ')}")
+
+        # Enable missing capabilities
+        config[:capabilities].each do |cap|
+          cap_exists = current_caps.any? { |c| c.capability_type.to_s.upcase.include?(cap) }
+          unless cap_exists
+            UI.message("Enabling capability: #{cap}")
+            begin
+              existing.create_capability(cap)
+              UI.success("✅ Enabled #{cap}")
+            rescue => e
+              UI.error("Failed to enable #{cap}: #{e.message}")
+            end
+          else
+            UI.message("✅ #{cap} already enabled")
+          end
+        end
+      else
+        UI.message("Creating new Bundle ID: #{identifier}")
+        begin
+          new_bundle_id = Spaceship::ConnectAPI::BundleId.create(
+            identifier: identifier,
+            name: config[:name],
+            platform: config[:platform]
+          )
+          UI.success("✅ Created Bundle ID: #{identifier}")
+
+          # Enable capabilities
+          config[:capabilities].each do |cap|
+            begin
+              new_bundle_id.create_capability(cap)
+              UI.success("✅ Enabled #{cap}")
+            rescue => e
+              UI.error("Failed to enable #{cap}: #{e.message}")
+            end
+          end
+        rescue => e
+          UI.error("Failed to create Bundle ID: #{e.message}")
+        end
+      end
+    end
+
+    UI.success("\n✅ App ID registration complete!")
+    UI.important("Now regenerate profiles: fastlane ios regenerate_profiles")
+  end
+
   desc "Check app submission readiness"
   lane :check_ready do
     api_key = app_store_connect_api_key(
