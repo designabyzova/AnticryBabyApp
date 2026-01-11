@@ -33,6 +33,7 @@ struct CryDetectionView: View {
     // Section expansion states
     @State private var showHowItWorks = false
     @State private var showScience = false
+    @State private var showDiagnostics = false  // Collapsed by default during emergency
 
     // Full player presentation
     @State private var showingFullPlayer = false
@@ -51,32 +52,47 @@ struct CryDetectionView: View {
                 // Main content
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 20) {
-                        // Compact Status Header
+                        // PRIORITY DURING EMERGENCY: Show Now Playing prominently!
+                        if smartQueue.isActive, let currentTrack = smartQueue.currentTrack {
+                            prominentNowPlayingCard(track: currentTrack)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                        }
+
+                        // Compact Status Header (smaller when playing)
                         statusHeader
+                            .scaleEffect(smartQueue.isActive ? 0.92 : 1.0)
+                            .animation(.easeInOut(duration: 0.3), value: smartQueue.isActive)
 
-                        // Main Control
-                        mainControlSection
+                        // Main Control (compact when emergency active)
+                        if !smartQueue.isActive {
+                            mainControlSection
+                        }
 
-                        // Live Detection Card (when monitoring)
-                        if emergencyService.isAIMonitoringEnabled {
+                        // Live Detection Card (when monitoring, but not during emergency playback)
+                        if emergencyService.isAIMonitoringEnabled && !smartQueue.isActive {
                             liveDetectionCard
                         }
 
-                        // Cry Detected Card with AI Classification
+                        // Quick Actions - always visible
+                        quickActionsGrid
+
+                        // Cry Detected - COLLAPSIBLE during emergency playback
                         if cryDetection.isCryDetected || emergencyService.isEmergencyModeActive {
-                            cryDetectedCard
-
-                            // AI Classification Breakdown
-                            aiClassificationSection
-
-                            // Acoustic Features (when available)
-                            if cryDetection.latestExtendedFeatures != nil {
-                                acousticFeaturesSection
+                            if smartQueue.isActive {
+                                // Collapsible diagnostics section during playback
+                                diagnosticsCollapsibleSection
+                            } else {
+                                // Full display when not playing
+                                cryDetectedCard
+                                aiClassificationSection
+                                if cryDetection.latestExtendedFeatures != nil {
+                                    acousticFeaturesSection
+                                }
                             }
                         }
-
-                        // Quick Actions
-                        quickActionsGrid
 
                         // Collapsible Info Sections
                         infoSections
@@ -558,6 +574,80 @@ struct CryDetectionView: View {
         }
 
         return breakdown
+    }
+
+    // MARK: - Prominent Now Playing Card (Hero Section during Emergency)
+    private func prominentNowPlayingCard(track: AudioTrack) -> some View {
+        ProminentNowPlayingCardView(
+            track: track,
+            smartQueue: smartQueue,
+            audioEngine: audioEngine,
+            emergencyService: emergencyService,
+            showingFullPlayer: $showingFullPlayer,
+            formatTime: formatTime
+        )
+    }
+
+    // MARK: - Diagnostics Collapsible Section (during emergency playback)
+    private var diagnosticsCollapsibleSection: some View {
+        CollapsibleSection(
+            title: "Cry Analysis Details",
+            icon: "waveform.badge.magnifyingglass",
+            iconColor: .orange,
+            isExpanded: $showDiagnostics
+        ) {
+            VStack(spacing: 12) {
+                // Compact Cry Type Display
+                HStack(spacing: 12) {
+                    Image(systemName: cryDetection.cryType.iconName)
+                        .font(.system(size: 20))
+                        .foregroundColor(cryTypeColor(for: cryDetection.cryType))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(cryDetection.cryType.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text("\(Int(cryDetection.confidenceLevel * 100))% confidence")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Intensity Badge
+                    VStack(spacing: 2) {
+                        Text(intensityLabel)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(intensityColor)
+                        Text("intensity")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Divider()
+
+                // Classification Breakdown (compact)
+                let breakdown = generateClassificationBreakdown()
+                ForEach(breakdown.sorted(by: { $0.value > $1.value }).prefix(3), id: \.key) { type, prob in
+                    HStack {
+                        Image(systemName: type.iconName)
+                            .font(.caption)
+                            .foregroundColor(cryTypeColor(for: type))
+                            .frame(width: 16)
+                        Text(type.displayName)
+                            .font(.caption)
+                        Spacer()
+                        Text("\(Int(prob * 100))%")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .padding(4)
+        }
     }
 
     // MARK: - Compact Now Playing Card
@@ -1970,6 +2060,316 @@ struct CryDetectionMiniPlayer: View {
                 )
         }
         .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+    }
+}
+
+// MARK: - Prominent Now Playing Card View
+/// Extracted to separate struct to help Swift compiler with type-checking
+struct ProminentNowPlayingCardView: View {
+    let track: AudioTrack
+    @ObservedObject var smartQueue: SmartEmergencyQueue
+    @ObservedObject var audioEngine: AudioEngine
+    @ObservedObject var emergencyService: EmergencyCryStopService
+    @Binding var showingFullPlayer: Bool
+    let formatTime: (TimeInterval) -> String
+
+    var body: some View {
+        Button {
+            showingFullPlayer = true
+        } label: {
+            cardContent
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var cardContent: some View {
+        VStack(spacing: 16) {
+            heroSection
+            playbackControls
+            progressSection
+            footerSection
+        }
+        .padding(20)
+        .background(cardBackground)
+        .overlay(cardBorder)
+    }
+
+    // MARK: - Hero Section
+    private var heroSection: some View {
+        HStack(spacing: 16) {
+            albumArt
+            trackInfo
+            Spacer()
+        }
+    }
+
+    private var albumArt: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.forCategory(track.category).opacity(0.3),
+                            Color.forCategory(track.category).opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 100, height: 100)
+
+            Image(systemName: track.category.icon)
+                .font(.system(size: 40, weight: .medium))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color.forCategory(track.category),
+                            Color.forCategory(track.category).opacity(0.7)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            // Playing indicator
+            if smartQueue.isPlaying {
+                playingIndicator
+            }
+        }
+    }
+
+    private var playingIndicator: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<3, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color.white)
+                    .frame(width: 3, height: 8 + CGFloat(i) * 3)
+            }
+        }
+        .offset(y: 32)
+    }
+
+    private var trackInfo: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            nowPlayingLabel
+            titleAndArtist
+            cryTypeBadge
+        }
+    }
+
+    private var nowPlayingLabel: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.green)
+                .frame(width: 8, height: 8)
+            Text("NOW PLAYING")
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundColor(.green)
+        }
+    }
+
+    private var titleAndArtist: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(track.title)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Text(track.artist)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private var cryTypeBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: smartQueue.cryType.iconName)
+                .font(.caption2)
+            Text("For \(smartQueue.cryType.displayName)")
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+        .foregroundColor(.orange)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(Color.orange.opacity(0.15))
+        )
+    }
+
+    // MARK: - Playback Controls
+    private var playbackControls: some View {
+        HStack(spacing: 24) {
+            previousButton
+            playPauseButton
+            nextButton
+        }
+        .padding(.top, 4)
+    }
+
+    private var previousButton: some View {
+        Button {
+            Task { await smartQueue.previous() }
+        } label: {
+            Image(systemName: "backward.fill")
+                .font(.system(size: 24))
+                .foregroundColor(smartQueue.hasPrevious ? .primary : .secondary.opacity(0.4))
+        }
+        .disabled(!smartQueue.hasPrevious)
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var playPauseButton: some View {
+        Button {
+            smartQueue.togglePlayPause()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color.purple)
+                    .frame(width: 64, height: 64)
+                    .shadow(color: Color.purple.opacity(0.4), radius: 8, y: 4)
+
+                Image(systemName: smartQueue.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(.white)
+                    .offset(x: smartQueue.isPlaying ? 0 : 2)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var nextButton: some View {
+        Button {
+            Task { await smartQueue.next() }
+        } label: {
+            Image(systemName: "forward.fill")
+                .font(.system(size: 24))
+                .foregroundColor(smartQueue.hasNext ? .primary : .secondary.opacity(0.4))
+        }
+        .disabled(!smartQueue.hasNext)
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Progress Section
+    private var progressSection: some View {
+        VStack(spacing: 6) {
+            progressBar
+            timeLabels
+        }
+    }
+
+    private var progressBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 6)
+
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.purple, Color.purple.opacity(0.7)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: geometry.size.width * CGFloat(smartQueue.progress), height: 6)
+            }
+        }
+        .frame(height: 6)
+    }
+
+    private var timeLabels: some View {
+        HStack {
+            Text(formatTime(audioEngine.currentTime))
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text("Track \(smartQueue.currentIndex + 1)/\(smartQueue.totalTracks)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Text("-\(formatTime(audioEngine.duration - audioEngine.currentTime))")
+                .font(.caption2)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Footer Section
+    private var footerSection: some View {
+        HStack {
+            selectionStrategy
+            Spacer()
+            stopButton
+        }
+    }
+
+    private var selectionStrategy: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(smartQueue.modeName)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+            Text(smartQueue.queueDescription)
+                .font(.caption)
+                .foregroundColor(.purple)
+                .lineLimit(1)
+        }
+    }
+
+    private var stopButton: some View {
+        Button {
+            Task {
+                await smartQueue.stop(wasEffective: nil)
+                emergencyService.disableAIMonitoring()
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "stop.fill")
+                    .font(.caption)
+                Text("Stop")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+            .foregroundColor(.red)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(Color.red.opacity(0.15))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Card Background & Border
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(Color(.systemBackground))
+            .shadow(color: Color.purple.opacity(0.15), radius: 20, x: 0, y: 8)
+    }
+
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 24)
+            .stroke(
+                LinearGradient(
+                    colors: [Color.purple.opacity(0.4), Color.purple.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 2
+            )
     }
 }
 
