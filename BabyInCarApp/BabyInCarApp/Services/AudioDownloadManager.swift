@@ -38,6 +38,33 @@ struct DownloadTask: Identifiable {
     var localURL: URL?
 }
 
+// MARK: - Thread-Safe File Extension Storage
+
+/// Thread-safe storage for file extensions used during downloads
+/// This is needed because URLSession delegate methods are nonisolated
+final class FileExtensionStorage: @unchecked Sendable {
+    private var storage: [String: String] = [:]
+    private let queue = DispatchQueue(label: "com.babyincar.fileextension", attributes: .concurrent)
+
+    func set(_ extension: String, for trackId: String) {
+        queue.async(flags: .barrier) {
+            self.storage[trackId] = `extension`
+        }
+    }
+
+    func get(for trackId: String) -> String? {
+        queue.sync {
+            return storage[trackId]
+        }
+    }
+
+    func remove(for trackId: String) {
+        queue.async(flags: .barrier) {
+            self.storage.removeValue(forKey: trackId)
+        }
+    }
+}
+
 // MARK: - Audio Download Manager
 
 @MainActor
@@ -59,6 +86,9 @@ class AudioDownloadManager: NSObject, ObservableObject {
     // Note: cacheDirectory needs to be nonisolated for URLSessionDelegate methods
     // FileManager.default is accessed directly in nonisolated methods to avoid Sendable issues
     private nonisolated let cacheDirectory: URL
+
+    // Thread-safe storage for file extensions (accessed from nonisolated URLSession delegate)
+    private nonisolated let fileExtensionStorage = FileExtensionStorage()
 
     // MARK: - Configuration
     private let maxConcurrentDownloads = 3
@@ -189,8 +219,11 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
     /// Delete cached track
     func deleteCachedTrack(trackId: String) {
-        let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        try? FileManager.default.removeItem(at: fileURL)
+        // Try to remove files with any known extension
+        for ext in ["mp3", "wav", "m4a", "aac", "audio"] {
+            let fileURL = cacheDirectory.appendingPathComponent("\(trackId).\(ext)")
+            try? FileManager.default.removeItem(at: fileURL)
+        }
         downloadStates[trackId] = .notDownloaded
     }
 
@@ -220,9 +253,17 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
     /// Get local URL for cached track
     func getCachedURL(for trackId: String) -> URL? {
-        let fileURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            return fileURL
+        // Check common audio extensions first
+        for ext in ["mp3", "wav", "m4a", "aac"] {
+            let fileURL = cacheDirectory.appendingPathComponent("\(trackId).\(ext)")
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                return fileURL
+            }
+        }
+        // Fallback: check legacy .audio extension
+        let legacyURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
+        if FileManager.default.fileExists(atPath: legacyURL.path) {
+            return legacyURL
         }
         return nil
     }
@@ -250,6 +291,14 @@ class AudioDownloadManager: NSObject, ObservableObject {
         // Store track for metadata save after download completes
         if let track = track {
             pendingTrackMetadata[trackId] = track
+            // Store file extension in thread-safe storage for URLSession delegate
+            let fileExt = getFileExtension(for: track, streamURL: url)
+            fileExtensionStorage.set(fileExt, for: trackId)
+        } else {
+            // Fallback: extract extension from URL
+            let pathExt = url.pathExtension.lowercased()
+            let fileExt = pathExt.isEmpty ? "mp3" : pathExt
+            fileExtensionStorage.set(fileExt, for: trackId)
         }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -279,6 +328,39 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
             task.resume()
         }
+    }
+
+    /// Get file extension for a track from metadata or stream URL
+    private func getFileExtension(for track: AudioTrack, streamURL: URL) -> String {
+        // First, check track's fileExtension property
+        if let ext = track.fileExtension, !ext.isEmpty {
+            return ext
+        }
+
+        // Try to extract from fileName
+        if let fileName = track.fileName {
+            let pathExtension = (fileName as NSString).pathExtension.lowercased()
+            if !pathExtension.isEmpty {
+                return pathExtension
+            }
+        }
+
+        // Try to extract from streamURL
+        let pathExtension = streamURL.pathExtension.lowercased()
+        if !pathExtension.isEmpty {
+            return pathExtension
+        }
+
+        // Also check track's streamURL property
+        if let urlString = track.streamURL, let url = URL(string: urlString) {
+            let pathExt = url.pathExtension.lowercased()
+            if !pathExt.isEmpty {
+                return pathExt
+            }
+        }
+
+        // Default to mp3 if no extension can be determined
+        return "mp3"
     }
 
     private func waitForDownload(trackId: String) async throws -> URL {
@@ -357,19 +439,27 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         guard let trackId = downloadTask.taskDescription else { return }
 
-        let destinationURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
+        // Get the file extension from thread-safe storage (default to mp3 if not found)
+        let fileExt = fileExtensionStorage.get(for: trackId) ?? "mp3"
+        let destinationURL = cacheDirectory.appendingPathComponent("\(trackId).\(fileExt)")
+
         // Use FileManager.default directly in nonisolated context to avoid Sendable issues
         let fm = FileManager.default
 
         do {
-            // Remove existing file if any
+            // Remove existing file if any (both new extension and legacy .audio)
             try? fm.removeItem(at: destinationURL)
+            let legacyURL = cacheDirectory.appendingPathComponent("\(trackId).audio")
+            try? fm.removeItem(at: legacyURL)
 
-            // Move downloaded file to cache
+            // Move downloaded file to cache with correct extension
             try fm.moveItem(at: location, to: destinationURL)
 
             // Get file size for metadata
             let fileSize: Int64 = (try? fm.attributesOfItem(atPath: destinationURL.path)[.size] as? Int64) ?? 0
+
+            // Clean up extension storage
+            fileExtensionStorage.remove(for: trackId)
 
             Task { @MainActor in
                 self.downloadStates[trackId] = .downloaded
@@ -388,6 +478,9 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
                 self.completionHandlers.removeValue(forKey: trackId)
             }
         } catch {
+            // Clean up extension storage on failure
+            fileExtensionStorage.remove(for: trackId)
+
             Task { @MainActor in
                 self.downloadStates[trackId] = .failed(error: error.localizedDescription)
                 self.downloadTasks.removeValue(forKey: trackId)

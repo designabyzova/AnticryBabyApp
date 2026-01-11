@@ -347,6 +347,10 @@ struct DownloadsManagerView: View {
             downloadedTracksSection
         }
         .listStyle(.insetGrouped)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Spacer to prevent mini player from covering content
+            Color.clear.frame(height: 80)
+        }
         .navigationTitle("Manage Downloads")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
