@@ -8185,6 +8185,9 @@
     "Privacy Policy for Lulla\n\nLast updated: January 2026\n\nWe take your privacy seriously. This app is designed with children's safety in mind and complies with COPPA and GDPR-K requirements.\n\nData We Collect:\n• Baby's name and birth date (for personalization)\n• Selected language preferences\n• Listening history (stored locally)\n\nData We DO NOT Collect:\n• Location data\n• Personal identifiable information\n• Advertising identifiers\n• Third-party analytics data\n\nChildren's Privacy:\nThis app does not collect personal information from children. All baby profile data is stored locally on your device and is not transmitted to our servers.\n\nData Storage:\nAll user data is stored locally on your device using secure storage methods. No data is transmitted to external servers.\n\nContact:\nFor any privacy concerns, please contact us at privacy@lulla.app" : {
 
     },
+    "Processing..." : {
+
+    },
     "profile.editProfile" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8442,6 +8445,12 @@
 
     },
     "Restore Purchases" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry Loading" : {
 
     },
     "Save" : {
