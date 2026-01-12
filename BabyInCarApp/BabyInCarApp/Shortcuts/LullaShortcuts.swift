@@ -75,18 +75,28 @@ struct CalmBabyIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         print("[AppShortcut] CalmBabyIntent triggered")
 
-        // Get baby age if available, default to 12 months
-        let babyAge = 12  // Default age for broad compatibility
-        let language = Locale.current.language.languageCode?.identifier ?? "en"
+        // Play calming classical music
+        await MainActor.run {
+            let library = ContentLibraryService.shared
+            let audioEngine = AudioEngine.shared
 
-        // Start Spotify-style emergency queue with smart track selection
-        await SmartEmergencyQueue.shared.startSpotifyMode(
-            cryType: .general,
-            babyAge: babyAge,
-            language: language
-        )
+            let tracks = library.getTracks(for: .classicalMusic)
+                .sorted { $0.calmingScore > $1.calmingScore }
 
-        print("[AppShortcut] Emergency queue started")
+            if !tracks.isEmpty {
+                let playlist = Playlist(
+                    name: "Shortcut: Calming Music",
+                    tracks: Array(tracks.prefix(20)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
+            } else {
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                audioEngine.play(track: fallbackTrack)
+            }
+        }
+
+        print("[AppShortcut] Calming playlist started")
 
         return .result(dialog: "Playing soothing music for your baby")
     }

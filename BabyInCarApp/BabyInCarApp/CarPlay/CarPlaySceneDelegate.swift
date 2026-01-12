@@ -455,14 +455,17 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     private func activateEmergencyMode() {
         Task { @MainActor in
-            let appState = await getAppState()
-            if let baby = appState?.currentBaby {
-                EmergencyCryStopService.shared.activate(for: baby)
-            } else {
-                // Create default baby profile for emergency
-                let defaultBaby = Baby(name: "Baby", birthDate: Calendar.current.date(byAdding: .month, value: -6, to: Date())!)
-                EmergencyCryStopService.shared.activate(for: defaultBaby)
-            }
+            // Play calming generated audio
+            let track = AudioTrack(
+                title: "Calming Sounds",
+                category: .ambient,
+                duration: 1800,
+                calmingScore: 0.95,
+                audioSourceType: .generated,
+                generatorType: .womb
+            )
+            audioEngine.play(track: track)
+            audioEngine.setRepeatMode(.one)
 
             // Show alert
             showEmergencyAlert()
@@ -505,14 +508,14 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     private func showEmergencyAlert() {
         let alertTemplate = CPAlertTemplate(
-            titleVariants: ["Emergency Mode Active"],
+            titleVariants: ["Calming Mode Active"],
             actions: [
                 CPAlertAction(title: "OK", style: .default) { [weak self] _ in
                     self?.interfaceController?.dismissTemplate(animated: true, completion: nil)
                 },
                 CPAlertAction(title: "Stop", style: .cancel) { [weak self] _ in
                     Task { @MainActor in
-                        EmergencyCryStopService.shared.deactivate()
+                        AudioEngine.shared.stop()
                         self?.interfaceController?.dismissTemplate(animated: true, completion: nil)
                     }
                 }

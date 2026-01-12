@@ -37,7 +37,7 @@ class SiriIntentHandler: NSObject,
     private let audioEngine = AudioEngine.shared
     private let contentLibrary = ContentLibraryService.shared
 
-    // Emergency phrases that trigger SmartEmergencyQueue
+    // Emergency phrases that trigger calming playback
     private let emergencyPhrases = ["emergency", "calm baby", "baby crying", "soothe",
                                     "help baby", "cry again", "crying again", "urgent"]
 
@@ -228,28 +228,27 @@ class SiriIntentHandler: NSObject,
 
     // MARK: - Emergency Mode
 
-    /// Trigger emergency mode via SmartEmergencyQueue
+    /// Trigger calming playback for baby
     private func triggerEmergencyMode() {
-        print("🎤 Siri: Triggering emergency mode")
-
-        let smartQueue = SmartEmergencyQueue.shared
+        print("🎤 Siri: Triggering calming playback")
 
         Task { @MainActor in
-            // Get baby age from current profile or use default (12 months)
-            // Note: BabyProfileManager tracks listening profiles, not baby age
-            // Default to 12 months which works for a broad range
-            let babyAge = 12
-            let language = Locale.current.language.languageCode?.identifier ?? "en"
+            // Play calming classical music
+            let tracks = contentLibrary.getTracks(for: .classicalMusic)
+            let calmingTracks = tracks.sorted { $0.calmingScore > $1.calmingScore }
 
-            // Start SPOTIFY-STYLE emergency queue
-            // - Smart selection based on cry stop success, favorites, play counts
-            // - Maintains 8 tracks at all times with auto-replenishment
-            await smartQueue.startSpotifyMode(
-                cryType: .general,
-                babyAge: babyAge,
-                language: language
-            )
-            print("🎤 Siri: SPOTIFY-STYLE emergency queue started")
+            if !calmingTracks.isEmpty {
+                let playlist = Playlist(
+                    id: UUID(),
+                    name: "Siri: Calming Music",
+                    tracks: Array(calmingTracks.prefix(20)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
+                print("🎤 Siri: Calming playlist started")
+            } else {
+                playDefault()
+            }
         }
     }
 

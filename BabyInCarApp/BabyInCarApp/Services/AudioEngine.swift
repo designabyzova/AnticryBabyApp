@@ -47,7 +47,6 @@ class AudioEngine: ObservableObject {
 
     // MARK: - Unified Player Architecture
     /// Playback context - determines UI theme and smart queue behavior
-    /// Replaces separate AudioEngine/SmartEmergencyQueue with single unified system
     @Published var playbackContext: PlaybackContext?
 
     // Playback rate options
@@ -220,7 +219,7 @@ class AudioEngine: ObservableObject {
 
         // 🚨 CRITICAL FIX: Don't reconfigure during active emergency playback!
         // Audio session changes during playback cause glitches
-        if SmartEmergencyQueue.shared.isActive && playbackState == .playing {
+        if false /* emergency queue removed */ && playbackState == .playing {
             print("[AudioEngine] 🚨 Skipping session reconfig - emergency playback active")
             return true
         }
@@ -259,7 +258,7 @@ class AudioEngine: ObservableObject {
         let sessionManager = AudioSessionManager.shared
 
         // Determine priority based on context
-        let priority: AudioSessionPriority = SmartEmergencyQueue.shared.isActive ? .emergency : .playback
+        let priority: AudioSessionPriority = false /* emergency queue removed */ ? .emergency : .playback
 
         do {
             let success = try sessionManager.activateSessionSync(
@@ -459,14 +458,14 @@ class AudioEngine: ObservableObject {
 
         // CRITICAL FIX: Configure audio session before playback
         // This ensures audio works after emergency mode stops
-        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
-        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        // IMPORTANT: Check if emergency queue is active - if so, keep emergency audio session!
+        let isEmergencyActive = false /* emergency queue removed */
         if !isEmergencyActive {
             // Only configure normal audio session if NOT in emergency mode
             configureAudioSession(interruptOtherAudio: false)
         } else {
             // In emergency mode - ensure we have an active audio session but DON'T reset it
-            // The emergency session was already configured by SmartCryResponseEngine
+            // The emergency session was already configured by cry response engine
             print("[AudioEngine] 🚨 Emergency mode active - preserving emergency audio session")
         }
 
@@ -1684,8 +1683,8 @@ class AudioEngine: ObservableObject {
         // Emergency audio is the app's PRIMARY PURPOSE - baby calming MUST continue.
         // The memory can wait - the crying baby cannot.
         //
-        // EXPANDED GUARD: Check ALL emergency conditions, not just SmartEmergencyQueue
-        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        // EXPANDED GUARD: Check ALL emergency conditions, not just emergency queue
+        let isEmergencyActive = false /* emergency queue removed */
         let hasNoiseGenerator = noiseGenerator != nil
         let isPlaying = playbackState == .playing
         let isStreamingEmergency = streamPlayer?.rate ?? 0 > 0 && isEmergencyActive
@@ -1883,55 +1882,38 @@ class AudioEngine: ObservableObject {
     }
 
     private func handleTrackEndInternal() {
-        // CRITICAL: Post notification for external queue systems (SmartEmergencyQueue) FIRST
-        // This allows external queue managers to take control before we auto-stop
-        NotificationCenter.default.post(name: .audioTrackDidFinish, object: currentTrack)
-
-        // CRITICAL: Give external queue managers time to respond (100ms)
-        // If SmartEmergencyQueue is active, it will start playing the next track
-        // We delay our auto-stop logic to prevent conflicts
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self = self else { return }
-
-            // Check if playback has already resumed (external queue took over)
-            if self.playbackState == .playing {
-                print("[AudioEngine] External queue handled track end - skipping auto-stop")
-                return
-            }
-
-            // Handle repeat one mode - replay current track
-            if self.repeatMode == .one {
-                if let track = self.currentTrack {
-                    // Re-play the track from beginning
-                    self.play(track: track)
-                } else {
-                    self.seek(to: 0)
-                    if self.playbackState != .playing {
-                        self.resume()
-                    }
-                }
-                return
-            }
-
-            if self.currentPlaylist != nil {
-                self.next()
+        // Handle repeat one mode - replay current track
+        if repeatMode == .one {
+            if let track = currentTrack {
+                // Re-play the track from beginning
+                play(track: track)
             } else {
-                // Single track playback - check repeat mode
-                if self.repeatMode == .all {
-                    // Repeat the single track
-                    if let track = self.currentTrack {
-                        self.play(track: track)
-                    } else {
-                        self.seek(to: 0)
-                        if self.playbackState != .playing {
-                            self.resume()
-                        }
-                    }
-                } else {
-                    // Only stop if no external queue took over
-                    print("[AudioEngine] Track ended, no playlist, no repeat - stopping")
-                    self.stop()
+                seek(to: 0)
+                if playbackState != .playing {
+                    resume()
                 }
+            }
+            return
+        }
+
+        if currentPlaylist != nil {
+            next()
+        } else {
+            // Single track playback - check repeat mode
+            if repeatMode == .all {
+                // Repeat the single track
+                if let track = currentTrack {
+                    play(track: track)
+                } else {
+                    seek(to: 0)
+                    if playbackState != .playing {
+                        resume()
+                    }
+                }
+            } else {
+                // Track ended, no playlist, no repeat - stop playback
+                print("[AudioEngine] Track ended, no playlist, no repeat - stopping")
+                stop()
             }
         }
     }
@@ -2013,8 +1995,8 @@ class AudioEngine: ObservableObject {
 
         // CRITICAL FIX: Configure audio session before crossfade
         // This ensures audio works after emergency mode stops
-        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
-        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        // IMPORTANT: Check if emergency queue is active - if so, keep emergency audio session!
+        let isEmergencyActive = false /* emergency queue removed */
         if !isEmergencyActive {
             // Only configure normal audio session if NOT in emergency mode
             configureAudioSession(interruptOtherAudio: false)
@@ -2173,8 +2155,8 @@ class AudioEngine: ObservableObject {
 
         // CRITICAL FIX: Configure audio session before fade-in playback
         // This ensures audio works after emergency mode stops
-        // IMPORTANT: Check if SmartEmergencyQueue is active - if so, keep emergency audio session!
-        let isEmergencyActive = SmartEmergencyQueue.shared.isActive
+        // IMPORTANT: Check if emergency queue is active - if so, keep emergency audio session!
+        let isEmergencyActive = false /* emergency queue removed */
         if !isEmergencyActive {
             // Only configure normal audio session if NOT in emergency mode
             configureAudioSession(interruptOtherAudio: false)
@@ -3133,7 +3115,7 @@ class ToneGenerator {
 // MARK: - Smart Playlist Builder (Unified Architecture)
 
 /// Smart playlist generation service for unified player architecture
-/// Extracts core logic from SmartEmergencyQueue for reusability
+/// Extracts core logic from emergency queue for reusability
 @MainActor
 class SmartPlaylistBuilder {
     static let shared = SmartPlaylistBuilder()

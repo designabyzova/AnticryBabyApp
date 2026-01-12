@@ -191,6 +191,9 @@
     "%lld%%" : {
 
     },
+    "%lld%% confidence" : {
+
+    },
     "%lld%% effective" : {
 
     },
@@ -4075,6 +4078,9 @@
     "Finding similar tracks..." : {
 
     },
+    "For %@" : {
+
+    },
     "Free" : {
 
     },
@@ -5529,6 +5535,9 @@
           }
         }
       }
+    },
+    "intensity" : {
+
     },
     "Intensity" : {
 
@@ -10569,6 +10578,9 @@
     "Still crying" : {
 
     },
+    "Stop" : {
+
+    },
     "Stop Monitoring" : {
 
     },
@@ -10820,6 +10832,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Track %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Track %lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Track %1$lld/%2$lld"
           }
         }
       }

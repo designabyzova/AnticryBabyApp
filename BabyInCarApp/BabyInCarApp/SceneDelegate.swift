@@ -26,7 +26,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             .environmentObject(SubscriptionManager.shared)
             .environmentObject(ContentLibraryService.shared)
             .environmentObject(AIRecommendationEngine.shared)
-            .environmentObject(EmergencyCryStopService.shared)
             .environmentObject(FavoritesManager.shared)
 
         // Create UIWindow

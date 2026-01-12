@@ -180,12 +180,12 @@ struct BabyInCarApp: App {
         UserDefaults.standard.removeObject(forKey: "wasMonitoringBeforeBackground")
 
         if wasMonitoring && appState.autoCryMonitoringEnabled {
-            // Restore cry monitoring
+            // Restore cry monitoring using CryDetectionService directly
             Task {
-                if let baby = appState.currentBaby {
+                if appState.currentBaby != nil {
                     do {
                         print("[BabyInCarApp] 🎤 Restoring cry monitoring...")
-                        try await EmergencyCryStopService.shared.enableAIMonitoring(for: baby)
+                        try await CryDetectionService.shared.startMonitoring()
                         print("[BabyInCarApp] ✅ Cry monitoring restored")
                     } catch {
                         print("[BabyInCarApp] ⚠️ Failed to restore cry monitoring: \(error)")
@@ -254,7 +254,7 @@ struct BabyInCarApp: App {
                appState.currentBaby != nil {
                 do {
                     print("[BabyInCarApp] 🔊 Auto-enabling cry monitoring (default ON)")
-                    try await EmergencyCryStopService.shared.enableAIMonitoring(for: appState.currentBaby!)
+                    try await CryDetectionService.shared.startMonitoring()
                 } catch {
                     print("[BabyInCarApp] ⚠️ Failed to auto-enable cry monitoring: \(error)")
                 }
@@ -263,7 +263,6 @@ struct BabyInCarApp: App {
             }
 
             // Initialize audio session AFTER cry monitoring setup completes
-            // This prevents race conditions between CryDetection and AudioEngine
             // AudioSessionManager now coordinates all session requests by priority
             audioEngine.configureAudioSession()
 
@@ -329,7 +328,6 @@ struct BabyInCarApp: App {
         }
 
         // Critical level: aggressive cleanup
-        // 🚨 CRITICAL: Protect emergency audio from cache clearing!
         memoryMonitor.onCriticalLevel = {
             print("[MemoryMonitor] 🔴 Critical level - aggressive cleanup")
             Task { @MainActor in
@@ -337,40 +335,33 @@ struct BabyInCarApp: App {
                 CryDetectionService.shared.useMLEnhancement = false
                 CryDetectionService.shared.useDeepInfant = false
 
-                // 🚨 CRITICAL FIX: Only clear caches if NOT in emergency mode
-                // Clearing caches during emergency playback causes audio artifacts
-                if !SmartEmergencyQueue.shared.isActive {
+                // Only clear caches if audio is not playing
+                if !AudioEngine.shared.playbackState.isPlaying {
                     Task { await AudioCacheService.shared.clearAllCache() }
                 } else {
-                    print("[MemoryMonitor] ⏭️ Skipping cache clear - emergency audio is playing")
+                    print("[MemoryMonitor] ⏭️ Skipping cache clear - audio is playing")
                 }
             }
         }
 
         // Emergency level: stop non-essential services
-        // 🚨 CRITICAL: NEVER stop audio playback during emergency memory cleanup!
-        // Audio is the PRIMARY PURPOSE of the app - baby calming MUST continue.
+        // Audio is the PRIMARY PURPOSE of the app - baby calming should continue.
         memoryMonitor.onEmergencyLevel = {
             print("[MemoryMonitor] 🚨 Emergency level - stopping services")
             Task { @MainActor in
-                // 🚨 CRITICAL FIX: Check if emergency audio is playing BEFORE cleanup!
-                let isEmergencyAudioPlaying = SmartEmergencyQueue.shared.isActive
+                // Check if audio is playing BEFORE cleanup
+                let isAudioPlaying = AudioEngine.shared.playbackState.isPlaying
 
-                if isEmergencyAudioPlaying {
-                    print("[MemoryMonitor] 🚨 PROTECTING emergency audio - only disabling ML features!")
-                    // ONLY disable ML features - NEVER touch audio during emergency playback
+                if isAudioPlaying {
+                    print("[MemoryMonitor] 🚨 PROTECTING audio - only disabling ML features!")
+                    // ONLY disable ML features - NEVER touch audio during playback
                     CryDetectionService.shared.useMLEnhancement = false
                     CryDetectionService.shared.useDeepInfant = false
-                    // Do NOT call SmartCryResponseEngine.deactivate() - that stops audio!
-                    // Do NOT clear audio caches - that interrupts streaming
-                    print("[MemoryMonitor] ✅ Emergency audio protected - ML disabled, audio continues")
+                    print("[MemoryMonitor] ✅ Audio protected - ML disabled, audio continues")
                 } else {
-                    // No emergency audio - safe to do full cleanup
+                    // No audio playing - safe to do full cleanup
                     // Stop cry detection temporarily
                     CryDetectionService.shared.stopMonitoring()
-
-                    // Stop smart response engine (only when NOT playing)
-                    SmartCryResponseEngine.shared.deactivate()
 
                     // Clear all caches
                     Task { await AudioCacheService.shared.clearAllCache() }
@@ -399,24 +390,11 @@ struct BabyInCarApp: App {
 
         switch action {
         case "emergency":
-            // Trigger emergency mode via SmartEmergencyQueue
+            // Play calming content for baby
             Task { @MainActor in
-                guard let baby = appState.currentBaby else {
-                    print("🎤 [App] ⚠️ Cannot start emergency mode - no baby profile")
-                    // Play default calming content as fallback
-                    playDefault()
-                    return
-                }
-
-                let babyAge = baby.ageInMonths
-                let language = Locale.current.language.languageCode?.identifier ?? "en"
-
-                await SmartEmergencyQueue.shared.startSpotifyMode(
-                    cryType: .general,
-                    babyAge: babyAge,
-                    language: language
-                )
-                print("🎤 [App] Emergency queue started for baby (age: \(babyAge) months)")
+                // Play default calming content
+                playDefault()
+                print("🎤 [App] Playing calming content")
             }
 
         case "playCategory":

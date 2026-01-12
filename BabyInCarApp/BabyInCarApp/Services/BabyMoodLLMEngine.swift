@@ -557,7 +557,7 @@ class BabyMoodLLMEngine: ObservableObject, BabyMoodLLMEngineProtocol {
     }
 
     private func getStrategySounds(strategy: SoothingStrategy, ageMonths: Int) -> [GeneratorType] {
-        // Similar to SmartCryResponseEngine logic but more comprehensive
+        // Sound selection based on soothing strategy and baby age
         switch strategy {
         case .sleepInduction:
             if ageMonths < 6 {

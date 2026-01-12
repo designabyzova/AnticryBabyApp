@@ -274,41 +274,30 @@ func performGlobalMemoryCleanup(level: MemoryPressureLevel) {
         CryDetectionService.shared.useMLEnhancement = false
         CryDetectionService.shared.useDeepInfant = false
 
-        // 🚨 CRITICAL FIX: Protect emergency audio from any cleanup
-        if !SmartEmergencyQueue.shared.isActive {
-            // Stop cry response engine if not essential
-            SmartCryResponseEngine.shared.performLightCleanup()
+        // Only clear caches if audio is not playing
+        if !AudioEngine.shared.playbackState.isPlaying {
             // Clear all caches
             URLCache.shared.removeAllCachedResponses()
         } else {
-            logger.warning("⚠️ Skipping aggressive cleanup - emergency audio is playing")
+            logger.warning("⚠️ Skipping cache cleanup - audio is playing")
         }
 
     case .emergency:
         logger.fault("🚨 Memory cleanup: EMERGENCY level")
-        // 🚨 CRITICAL FIX: Check if emergency audio is playing FIRST!
-        // If emergency audio is active, we MUST protect it from ANY disruption.
-        // The "broken radio" sound was caused by cleanup interfering with audio.
-        let isEmergencyAudioActive = SmartEmergencyQueue.shared.isActive
+        // Check if audio is playing FIRST to protect it from ANY disruption
+        let isAudioPlaying = AudioEngine.shared.playbackState.isPlaying
 
-        if isEmergencyAudioActive {
-            logger.warning("🚨 PROTECTING emergency audio - minimal cleanup only!")
+        if isAudioPlaying {
+            logger.warning("🚨 PROTECTING audio - minimal cleanup only!")
             // ONLY disable ML features - absolutely NOTHING else
             CryDetectionService.shared.useMLEnhancement = false
             CryDetectionService.shared.useDeepInfant = false
-            // Do NOT call SmartCryResponseEngine.performAggressiveCleanup() - it can affect audio
-            // Do NOT clear ANY caches - this can cause audio buffer issues
-            // Do NOT clear URL cache - this runs on main thread and can block audio callbacks
-            logger.info("✅ Emergency audio protected - only ML disabled")
+            logger.info("✅ Audio protected - only ML disabled")
         } else {
-            // No emergency audio - safe to do full cleanup
+            // No audio playing - safe to do full cleanup
             // Stop ML services but NEVER stop audio playback
-            // CRITICAL: Audio is the primary purpose - baby calming MUST continue
             CryDetectionService.shared.useMLEnhancement = false
             CryDetectionService.shared.useDeepInfant = false
-
-            // Reduce AI features but KEEP audio playing
-            SmartCryResponseEngine.shared.performAggressiveCleanup()
 
             // Clear audio caches for FUTURE tracks, not currently playing
             Task {
@@ -316,33 +305,6 @@ func performGlobalMemoryCleanup(level: MemoryPressureLevel) {
             }
             // Clear URL cache
             URLCache.shared.removeAllCachedResponses()
-        }
-    }
-}
-
-// MARK: - SmartCryResponseEngine Memory Cleanup Extension
-extension SmartCryResponseEngine: MemoryCleanable {
-    nonisolated func performLightCleanup() {
-        Task { @MainActor in
-            print("[SmartCryResponse] Light cleanup: Reducing features")
-            // Continue playing but disable AI mode
-            self.useBabyMIMMode = false
-        }
-    }
-
-    nonisolated func performAggressiveCleanup() {
-        Task { @MainActor in
-            // CRITICAL FIX: NEVER stop audio during emergency playback!
-            // Audio is the PRIMARY PURPOSE of the app - baby calming.
-            // Memory cleanup should NOT stop audio - just reduce AI/ML features.
-            print("[SmartCryResponse] Aggressive cleanup: Reducing AI features (KEEPING AUDIO)")
-
-            // Disable AI features to save memory, but KEEP audio playing
-            self.useBabyMIMMode = false
-            // Keep isEmergencyMode = true (already set) - simple playlist mode continues
-
-            // DO NOT call self.deactivate() - that stops audio!
-            // The parent is using emergency mode because baby needs calming.
         }
     }
 }

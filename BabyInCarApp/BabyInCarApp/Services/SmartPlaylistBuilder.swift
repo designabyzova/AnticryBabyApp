@@ -3,7 +3,6 @@
 //  BabyInCarApp
 //
 //  Smart playlist generation service for unified player architecture
-//  Extracts core logic from SmartEmergencyQueue for reusability
 //
 
 import Foundation

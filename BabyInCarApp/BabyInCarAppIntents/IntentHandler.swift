@@ -58,7 +58,7 @@ class IntentHandler: INExtension {
 /// Handles "Hey Siri, play [content] in Lulla" commands
 class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
 
-    // Emergency phrases that trigger SmartEmergencyQueue
+    // Emergency phrases that trigger calming playback
     private let emergencyPhrases = [
         "emergency", "calm baby", "baby crying", "soothe",
         "help baby", "cry again", "crying again", "urgent",

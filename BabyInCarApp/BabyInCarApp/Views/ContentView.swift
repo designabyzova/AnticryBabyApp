@@ -385,9 +385,6 @@ struct PremiumTabBarButton: View {
 /// ALWAYS visible - displays default playlist track ready for cry detection or manual play
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    // NOTE: Removed unused @ObservedObject smartQueue that was causing unnecessary re-renders
-    // SmartEmergencyQueue publishes timer updates every second, causing the entire view to re-render
-    // This was causing UI hangs when combined with fullScreenCover animations
     @State private var showingFullPlayer = false
     @State private var dragOffset: CGFloat = 0
     @State private var playButtonScale: CGFloat = 1.0
@@ -474,8 +471,6 @@ struct MiniPlayerView: View {
 
         // FIX: Defer state change to next run loop to avoid
         // "Publishing changes from within view updates" error
-        // This happens because SmartEmergencyQueue @Published properties
-        // may update during the view update cycle
         DispatchQueue.main.async {
             self.showingFullPlayer = true
         }

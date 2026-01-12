@@ -258,10 +258,10 @@ class CryDetectionService: ObservableObject {
 
     // CRY STATE TIMEOUT: Force reset cry detection state if no cry-like audio for too long
     // Prevents the "stuck in cry detected state" issue when baby stops crying but state persists
-    // FALSE POSITIVE FIX 2026-01-09: Reduced from 10s to 5s for quicker state reset
-    // With tighter detection criteria, we need faster reset when no cry is present
+    // SILENCE FIX 2026-01-11: Reduced from 5s to 2s for much quicker state reset during silence
+    // Users reported "CRY DETECTED" badge persisting during complete silence
     private var lastCryLikeFrameTime: Date? = nil
-    private let cryStateTimeoutDuration: TimeInterval = 5.0 // Reset after 5 seconds of no cry-like audio
+    private let cryStateTimeoutDuration: TimeInterval = 2.0 // Reset after 2 seconds of no cry-like audio
 
     // Callbacks
     var onCryDetected: ((CryType, Double) -> Void)?
@@ -1507,13 +1507,32 @@ class CryDetectionService: ObservableObject {
     }
 
     private func handleQuietFrame() {
-        // Decrement consecutive cry frames when quiet
+        // SILENCE FIX 2026-01-11: More aggressive decrement during silence
+        // Users reported "CRY DETECTED" persisting during complete silence
+        // Decrement by 3 instead of 1 for faster reset when audio is quiet
         if consecutiveCryFrames > 0 {
-            consecutiveCryFrames -= 1
+            consecutiveCryFrames = max(0, consecutiveCryFrames - 3)
         }
 
-        // Check if cry has ended
-        if isCryDetected && consecutiveCryFrames < minCryFramesForDetection / 2 {
+        // SILENCE FIX: Also decay confidence quickly during silence
+        // This ensures the UI updates promptly when audio stops
+        Task { @MainActor in
+            // Decay confidence by 20% per quiet frame for responsive UI
+            if self.confidenceLevel > 0.1 {
+                self.confidenceLevel = max(0, self.confidenceLevel - 0.2)
+            } else {
+                self.confidenceLevel = 0
+            }
+            // Also decay intensity
+            if self.cryIntensity > 0.1 {
+                self.cryIntensity = max(0, self.cryIntensity - 0.15)
+            } else {
+                self.cryIntensity = 0
+            }
+        }
+
+        // Check if cry has ended - SILENCE FIX: use lower threshold (1 frame instead of 2)
+        if isCryDetected && consecutiveCryFrames < 2 {
             Task { @MainActor in
                 self.isCryDetected = false
                 self.detectionStatus = .listening
@@ -1617,10 +1636,13 @@ class CryDetectionService: ObservableObject {
                 self.detectionStatus = .cryDetected
                 self.onCryDetected?(dominantType, avgConfidence)
             } else if shouldTimeoutReset {
-                // TIMEOUT RESET: Force reset after 10 seconds of no cry-like audio
+                // TIMEOUT RESET: Force reset after 2 seconds of no cry-like audio
+                // SILENCE FIX 2026-01-11: Reduced from 10s to 2s for responsive UI
                 print("[CryDetection] ⏰ Cry state TIMEOUT after \(String(format: "%.1fs", timeSinceLastCryFrame)) of silence - resetting")
                 self.resetCryState()
-            } else if !shouldDetect && self.isCryDetected && consecutiveCryFrames < minCryFramesForDetection / 4 {
+            } else if !shouldDetect && self.isCryDetected && consecutiveCryFrames < 3 {
+                // SILENCE FIX 2026-01-11: Lowered threshold from minCryFramesForDetection/4 (2) to 3
+                // Combined with faster decrement, this allows quicker reset
                 print("[CryDetection] ✅ Cry ended - baby calming down")
                 self.resetCryState()
             }

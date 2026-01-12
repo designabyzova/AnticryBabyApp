@@ -248,26 +248,30 @@ class SiriShortcutsService: ObservableObject {
         AudioEngine.shared.play(playlist: playlist)
     }
 
-    /// Trigger emergency mode via SmartEmergencyQueue
+    /// Trigger calming playback
     private func triggerEmergencyMode() {
-        print("[SiriShortcuts] Triggering emergency mode")
-
-        let smartQueue = SmartEmergencyQueue.shared
+        print("[SiriShortcuts] Triggering calming playback")
 
         Task { @MainActor in
-            // Get baby age from current profile or use default (12 months)
-            let babyAge = 12
-            let language = Locale.current.language.languageCode?.identifier ?? "en"
+            let library = ContentLibraryService.shared
+            let audioEngine = AudioEngine.shared
 
-            // Start SPOTIFY-STYLE emergency queue
-            // - Smart selection based on cry stop success, favorites, play counts
-            // - Maintains 8 tracks at all times with auto-replenishment
-            await smartQueue.startSpotifyMode(
-                cryType: .general,
-                babyAge: babyAge,
-                language: language
-            )
-            print("[SiriShortcuts] SPOTIFY-STYLE emergency queue started")
+            // Play calming classical music
+            let tracks = library.getTracks(for: .classicalMusic)
+                .sorted { $0.calmingScore > $1.calmingScore }
+
+            if !tracks.isEmpty {
+                let playlist = Playlist(
+                    name: "Siri: Calming Music",
+                    tracks: Array(tracks.prefix(20)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
+                print("[SiriShortcuts] Calming playlist started")
+            } else {
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                audioEngine.play(track: fallbackTrack)
+            }
         }
     }
 

@@ -135,7 +135,7 @@ enum CryType: String, Codable, CaseIterable, Hashable {
 }
 
 // MARK: - Soothing Strategy
-enum SoothingStrategy: String {
+enum SoothingStrategy: String, Codable {
     case sleepInduction = "Sleep Induction"
     case distraction = "Distraction"
     case comfort = "Comfort"

@@ -3,7 +3,6 @@
 //  BabyInCarApp
 //
 //  Unified playback context system - Spotify-style smart playlists
-//  Replaces dual AudioEngine/SmartEmergencyQueue architecture with single unified system
 //
 
 import Foundation

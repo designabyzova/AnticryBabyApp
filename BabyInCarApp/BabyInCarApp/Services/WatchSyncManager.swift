@@ -371,7 +371,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
     // MARK: - Default Playback
 
     /// Start default playback when nothing is loaded
-    /// Uses SmartEmergencyQueue for proper audio session activation
     private func startDefaultPlayback() {
         // GUARD: Prevent concurrent playback operations
         guard !isPlaybackOperationInProgress else {
@@ -385,23 +384,25 @@ final class WatchSyncManager: NSObject, ObservableObject {
         Task { @MainActor [weak self] in
             defer { self?.isPlaybackOperationInProgress = false }
 
-            let smartQueue = SmartEmergencyQueue.shared
+            let library = ContentLibraryService.shared
+            let audioEngine = AudioEngine.shared
 
-            // Build ambient playlist using SmartQueue's AI selection
-            let tracks = await smartQueue.buildQueue(
-                for: .general,
-                babyAge: 12,
-                language: Locale.current.language.languageCode?.identifier ?? "en",
-                maxTracks: 20
-            )
+            // Get calming tracks from classical music category
+            let tracks = library.getTracks(for: .classicalMusic)
+                .sorted { $0.calmingScore > $1.calmingScore }
 
             if tracks.isEmpty {
                 print("[WatchSync] ⚠️ No tracks available - using fallback")
                 let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                await smartQueue.startQueue(tracks: [fallbackTrack])
+                audioEngine.play(track: fallbackTrack)
             } else {
                 print("[WatchSync] 🎵 Starting queue with \(tracks.count) tracks")
-                await smartQueue.startQueue(tracks: tracks)
+                let playlist = Playlist(
+                    name: "Watch Playback",
+                    tracks: Array(tracks.prefix(20)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
             }
 
             self?.sendCurrentState()
@@ -409,7 +410,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
     }
 
     /// Play tracks from a specific category
-    /// Uses SmartEmergencyQueue for proper audio session activation
     private func playCategory(categoryId: String) {
         // GUARD: Prevent concurrent playback operations
         guard !isPlaybackOperationInProgress else {
@@ -424,6 +424,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
             defer { self?.isPlaybackOperationInProgress = false }
 
             let library = ContentLibraryService.shared
+            let audioEngine = AudioEngine.shared
             let category = AudioCategory.fromJSONKey(categoryId)
             let tracks = library.getTracks(for: category)
 
@@ -432,56 +433,55 @@ final class WatchSyncManager: NSObject, ObservableObject {
                 return
             }
 
-            let smartQueue = SmartEmergencyQueue.shared
-
-            // Use SmartQueue for proper audio session activation
-            await smartQueue.startQueue(tracks: tracks.shuffled())
+            let playlist = Playlist(
+                name: "Watch: \(category.rawValue)",
+                tracks: tracks.shuffled(),
+                createdAt: Date()
+            )
+            audioEngine.play(playlist: playlist)
             self?.sendCurrentState()
             print("[WatchSync] ✅ Started playing category: \(category.rawValue)")
         }
     }
 
-    // MARK: - Emergency Mode
+    // MARK: - Calming Mode
 
     private func startEmergencyMode() {
-        print("[WatchSync] 🚨 Starting emergency mode from Watch")
+        print("[WatchSync] 🎵 Starting calming mode from Watch")
 
         Task { @MainActor in
-            // Use SmartEmergencyQueue - the canonical emergency system
-            // This properly activates audio session and uses AI-powered track selection
-            let smartQueue = SmartEmergencyQueue.shared
+            let audioEngine = AudioEngine.shared
+            let library = ContentLibraryService.shared
 
-            // Build emergency playlist using SmartQueue's AI selection
-            // Uses default cry type (general) since Watch doesn't detect specific cry type
-            let emergencyTracks = await smartQueue.buildQueue(
-                for: .general,
-                babyAge: 12,  // Default age - TODO: sync from iPhone profile
-                language: Locale.current.language.languageCode?.identifier ?? "en",
-                maxTracks: 15
-            )
+            // Get calming tracks from classical music
+            let tracks = library.getTracks(for: .classicalMusic)
+                .sorted { $0.calmingScore > $1.calmingScore }
 
-            if emergencyTracks.isEmpty {
-                print("[WatchSync] ⚠️ No emergency tracks available - using default")
-                // Fallback to generated emergency track
+            if tracks.isEmpty {
+                print("[WatchSync] ⚠️ No calming tracks available - using default")
                 let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                await smartQueue.startQueue(tracks: [fallbackTrack])
+                audioEngine.play(track: fallbackTrack)
             } else {
-                print("[WatchSync] 🎵 Starting emergency queue with \(emergencyTracks.count) tracks")
-                await smartQueue.startQueue(tracks: emergencyTracks)
+                print("[WatchSync] 🎵 Starting calming playlist with \(tracks.count) tracks")
+                let playlist = Playlist(
+                    name: "Watch: Calming Music",
+                    tracks: Array(tracks.prefix(15)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
             }
 
             // Send current state to Watch
             sendCurrentState()
 
-            // Send emergency state to Watch
+            // Send calming state to Watch
             sendEmergencyState(isActive: true)
         }
     }
 
-    /// Start emergency mode WITH cry detection monitoring enabled
-    /// This is the full emergency experience - plays soothing music AND listens for baby cries
+    /// Start calming mode WITH cry detection monitoring enabled
     private func startEmergencyModeWithCryDetection() {
-        print("[WatchSync] 🚨🎤 Starting emergency mode WITH cry detection from Watch")
+        print("[WatchSync] 🎵🎤 Starting calming mode WITH cry detection from Watch")
 
         Task { @MainActor in
             // 1. Start cry detection monitoring FIRST
@@ -498,40 +498,40 @@ final class WatchSyncManager: NSObject, ObservableObject {
                 print("[WatchSync] ℹ️ Cry detection already monitoring")
             }
 
-            // 2. Start emergency music playback
-            let smartQueue = SmartEmergencyQueue.shared
+            // 2. Start calming music playback
+            let audioEngine = AudioEngine.shared
+            let library = ContentLibraryService.shared
 
-            let emergencyTracks = await smartQueue.buildQueue(
-                for: .general,
-                babyAge: 12,
-                language: Locale.current.language.languageCode?.identifier ?? "en",
-                maxTracks: 15
-            )
+            let tracks = library.getTracks(for: .classicalMusic)
+                .sorted { $0.calmingScore > $1.calmingScore }
 
-            if emergencyTracks.isEmpty {
-                print("[WatchSync] ⚠️ No emergency tracks available - using default")
+            if tracks.isEmpty {
+                print("[WatchSync] ⚠️ No calming tracks available - using default")
                 let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                await smartQueue.startQueue(tracks: [fallbackTrack])
+                audioEngine.play(track: fallbackTrack)
             } else {
-                print("[WatchSync] 🎵 Starting emergency queue with \(emergencyTracks.count) tracks")
-                await smartQueue.startQueue(tracks: emergencyTracks)
+                print("[WatchSync] 🎵 Starting calming playlist with \(tracks.count) tracks")
+                let playlist = Playlist(
+                    name: "Watch: Calming Music",
+                    tracks: Array(tracks.prefix(15)),
+                    createdAt: Date()
+                )
+                audioEngine.play(playlist: playlist)
             }
 
             // Send current state to Watch
             sendCurrentState()
 
-            // Send emergency state to Watch
+            // Send calming state to Watch
             sendEmergencyState(isActive: true)
         }
     }
 
     private func stopEmergencyMode() {
-        print("[WatchSync] 🛑 Stopping emergency mode from Watch")
+        print("[WatchSync] 🛑 Stopping calming mode from Watch")
 
         Task { @MainActor in
-            // Stop SmartEmergencyQueue properly
-            let smartQueue = SmartEmergencyQueue.shared
-            await smartQueue.stop(wasEffective: nil)  // nil = unknown effectiveness from Watch
+            AudioEngine.shared.stop()
 
             sendEmergencyState(isActive: false)
             sendCurrentState()

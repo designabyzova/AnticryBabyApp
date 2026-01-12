@@ -18,7 +18,6 @@ import Foundation
 import Combine
 
 /// Manages regular playback queue with Spotify-like UX
-/// This is separate from SmartEmergencyQueue which handles cry-response scenarios
 @MainActor
 class PlaybackQueueManager: ObservableObject {
     static let shared = PlaybackQueueManager()

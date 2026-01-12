@@ -220,15 +220,6 @@ struct ProfileView: View {
                     )
                 )
 
-                NavigationLink(destination: CryDetectionView()) {
-                    SettingsRow(
-                        icon: "ear.and.waveform",
-                        title: languageManager.localizedString("settings.cryDetectionSettings"),
-                        value: EmergencyCryStopService.shared.isAIMonitoringEnabled ? languageManager.localizedString("home.active") : languageManager.localizedString("settings.ready"),
-                        valueColor: EmergencyCryStopService.shared.isAIMonitoringEnabled ? .green : .secondary,
-                        showChevron: true
-                    )
-                }
             }
 
             // Content Settings
@@ -650,7 +641,7 @@ struct AboutView: View {
                         .foregroundColor(.appTextSecondary.opacity(0.7))
                 }
 
-                Text("AI-powered calming audio for peaceful car rides with your little one. Using age-personalized content, voice control, and our emergency cry-stop feature.")
+                Text("AI-powered calming audio for peaceful car rides with your little one. Using age-personalized content, voice control, and curated soothing sounds.")
                     .font(.system(size: 14))
                     .foregroundColor(.appTextSecondary)
                     .multilineTextAlignment(.center)
@@ -659,7 +650,6 @@ struct AboutView: View {
                 VStack(spacing: 16) {
                     FeatureAboutRow(icon: "waveform", title: "Age-Personalized Audio")
                     FeatureAboutRow(icon: "mic.fill", title: "Hands-Free Voice Control")
-                    FeatureAboutRow(icon: "exclamationmark.triangle.fill", title: "Emergency Cry-Stop")
                     FeatureAboutRow(icon: "globe", title: "10+ Language Fairy Tales")
                 }
                 .padding(.top, 20)
