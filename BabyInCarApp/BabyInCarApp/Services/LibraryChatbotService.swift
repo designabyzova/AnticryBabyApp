@@ -537,21 +537,21 @@ class LibraryChatbotService: ObservableObject {
     }
 
     private func getResearchBasedRecommendations(for cryType: CryType) -> [TrackRecommendation] {
-        let strategy = cryType.soothingStrategy
+        // Recommend calming sounds based on cry type
         let sounds: [GeneratorType]
 
-        switch strategy {
-        case .sleepInduction:
+        switch cryType {
+        case .tired:
             sounds = [.aquarium, .aquarium]
-        case .urgent:
+        case .pain:
             sounds = [.aquarium, .aquarium]
-        case .distraction:
+        case .attention:
             sounds = [.musicBox, .chimes]
-        case .comfort:
+        case .hunger:
             sounds = [.aquarium, .aquarium]
-        case .gentle:
+        case .discomfort:
             sounds = [.aquarium, .aquarium]
-        case .adaptive:
+        case .general, .unknown:
             sounds = [.aquarium, .aquarium]
         }
 

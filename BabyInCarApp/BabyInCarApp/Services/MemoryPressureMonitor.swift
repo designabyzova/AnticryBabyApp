@@ -227,28 +227,6 @@ protocol MemoryCleanable {
     func performAggressiveCleanup()
 }
 
-// MARK: - CryDetectionService Memory Cleanup Extension
-extension CryDetectionService: MemoryCleanable {
-    nonisolated func performLightCleanup() {
-        Task { @MainActor in
-            // Reduce ML enhancement temporarily
-            self.useMLEnhancement = false
-            print("[CryDetection] Light cleanup: Disabled ML enhancement")
-        }
-    }
-
-    nonisolated func performAggressiveCleanup() {
-        Task { @MainActor in
-            // Disable heavy features
-            self.useMLEnhancement = false
-            self.useDeepInfant = false
-
-            // Clear buffers (this will be called via stopMonitoring if needed)
-            print("[CryDetection] Aggressive cleanup: Disabled all ML features")
-        }
-    }
-}
-
 // MARK: - Global Memory Cleanup Functions
 
 /// Perform app-wide memory cleanup based on pressure level
@@ -263,17 +241,11 @@ func performGlobalMemoryCleanup(level: MemoryPressureLevel) {
 
     case .warning:
         logger.warning("⚠️ Memory cleanup: WARNING level")
-        // Disable ML features
-        CryDetectionService.shared.useMLEnhancement = false
         // Clear image caches
         URLCache.shared.removeAllCachedResponses()
 
     case .critical:
         logger.error("🔴 Memory cleanup: CRITICAL level")
-        // Disable all ML (always safe)
-        CryDetectionService.shared.useMLEnhancement = false
-        CryDetectionService.shared.useDeepInfant = false
-
         // Only clear caches if audio is not playing
         if !AudioEngine.shared.playbackState.isPlaying {
             // Clear all caches
@@ -289,16 +261,9 @@ func performGlobalMemoryCleanup(level: MemoryPressureLevel) {
 
         if isAudioPlaying {
             logger.warning("🚨 PROTECTING audio - minimal cleanup only!")
-            // ONLY disable ML features - absolutely NOTHING else
-            CryDetectionService.shared.useMLEnhancement = false
-            CryDetectionService.shared.useDeepInfant = false
-            logger.info("✅ Audio protected - only ML disabled")
+            logger.info("✅ Audio protected")
         } else {
             // No audio playing - safe to do full cleanup
-            // Stop ML services but NEVER stop audio playback
-            CryDetectionService.shared.useMLEnhancement = false
-            CryDetectionService.shared.useDeepInfant = false
-
             // Clear audio caches for FUTURE tracks, not currently playing
             Task {
                 await AudioCacheService.shared.clearAllCache()

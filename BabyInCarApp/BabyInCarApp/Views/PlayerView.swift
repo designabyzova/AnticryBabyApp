@@ -14,7 +14,6 @@ struct PlayerView: View {
     @ObservedObject private var favoritesManager = FavoritesManager.shared
     @ObservedObject private var downloadManager = AudioDownloadManager.shared
     @ObservedObject private var babyProfileManager = BabyProfileManager.shared
-    @ObservedObject private var cryDetectionService = CryDetectionService.shared
     @ObservedObject private var effectivenessManager = EffectivenessManager.shared
     @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
     @ObservedObject private var playbackQueueManager = PlaybackQueueManager.shared
@@ -30,7 +29,7 @@ struct PlayerView: View {
         case timer
         case playlist
         case downloads
-        case effectivenessFeedback(track: AudioTrack, cryType: CryType, duration: TimeInterval)
+        case effectivenessFeedback(track: AudioTrack, cryType: CryType?, duration: TimeInterval)
         case cryTypePicker
         case moreLikeThis
         case softPaywall(track: AudioTrack)
@@ -179,7 +178,7 @@ struct PlayerView: View {
 
                 // Record play in EffectivenessManager for analytics
                 if let track = audioEngine.currentTrack {
-                    let cryType = cryDetectionService.isMonitoring ? cryDetectionService.cryType : nil
+                    let cryType: CryType? = nil
                     effectivenessManager.recordPlay(track: track, cryType: cryType)
 
                     // Check if this is a premium track for free user
@@ -197,7 +196,7 @@ struct PlayerView: View {
                    let track = lastPlayedTrack {
                     // Delay slightly to let UI settle
                     let duration = Date().timeIntervalSince(startTime)
-                    let cryType = cryDetectionService.cryType
+                    let cryType: CryType? = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         activeSheet = .effectivenessFeedback(track: track, cryType: cryType, duration: duration)
                     }
@@ -1257,13 +1256,8 @@ struct PlayerView: View {
     private func recordItHelped(withCryType manualCryType: CryType? = nil) {
         guard let track = audioEngine.currentTrack else { return }
 
-        // Use manual cry type if provided, otherwise get from detection service
-        let cryType: CryType?
-        if let manual = manualCryType {
-            cryType = manual
-        } else {
-            cryType = cryDetectionService.isMonitoring ? cryDetectionService.cryType : nil
-        }
+        // Use manual cry type if provided
+        let cryType: CryType? = manualCryType
 
         // Record in EffectivenessManager
         effectivenessManager.recordHelped(track: track, cryType: cryType)
@@ -1328,14 +1322,6 @@ struct PlayerView: View {
 
     /// Checks if track is premium and starts preview timer if needed
     private func checkAndStartPremiumPreview(for track: AudioTrack) {
-        // Don't show preview during cry detection - safety first!
-        guard !cryDetectionService.isMonitoring else {
-            withAnimation {
-                isPremiumPreview = false
-            }
-            return
-        }
-
         // Check if this is a premium track that needs preview limiting
         if !gatekeeper.canPlayTrack(track) {
             // This is a premium track - start preview mode
@@ -1379,12 +1365,6 @@ struct PlayerView: View {
     private func endPremiumPreview() {
         // Pause playback
         audioEngine.pause()
-
-        // Don't show paywall during cry detection!
-        guard !cryDetectionService.isMonitoring else {
-            skipToNextFreeTrack()
-            return
-        }
 
         // Show soft paywall
         if let track = audioEngine.currentTrack {
@@ -1857,7 +1837,7 @@ struct EffectivenessFeedbackSheet: View {
     @StateObject private var effectivenessManager = EffectivenessManager.shared
 
     let track: AudioTrack
-    let cryType: CryType
+    let cryType: CryType?
     let playbackDuration: TimeInterval
 
     @State private var selectedRating: EffectivenessRating?
@@ -1935,7 +1915,7 @@ struct EffectivenessFeedbackSheet: View {
                     .font(.system(size: 14))
                     .foregroundColor(.appTextSecondary)
 
-                if cryType != .unknown {
+                if let cryType = cryType, cryType != .unknown {
                     Text("During: \(cryType.rawValue) cry")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.appPrimary)
@@ -2071,10 +2051,11 @@ struct EffectivenessFeedbackSheet: View {
         let calmingTime = Int(playbackDuration)
 
         // Record locally in BabyProfileManager
+        let effectiveCryType = cryType ?? .unknown
         babyProfileManager.recordTrackEffectiveness(
             babyId: baby.id,
             trackId: track.id,
-            cryType: cryType,
+            cryType: effectiveCryType,
             wasEffective: rating.wasEffective,
             calmingTimeSeconds: calmingTime
         )
@@ -2084,7 +2065,7 @@ struct EffectivenessFeedbackSheet: View {
             await analyticsCloudService.recordTrackEffectiveness(
                 babyId: baby.id,
                 trackId: track.id,
-                cryType: cryType,
+                cryType: effectiveCryType,
                 wasEffective: rating.wasEffective,
                 calmingTimeSeconds: calmingTime
             )

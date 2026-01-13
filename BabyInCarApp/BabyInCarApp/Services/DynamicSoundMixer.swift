@@ -316,51 +316,6 @@ class DynamicSoundMixer: ObservableObject {
 
     // MARK: - Mix Creation
 
-    /// Create a personalized mix based on baby profile and current situation
-    func createPersonalizedMix(
-        for profile: BabyMoodProfile,
-        cryType: CryType,
-        recommendation: SoothingRecommendation
-    ) -> DynamicSoundMix {
-        var layers: [SoundLayer] = []
-
-        // Convert sound sequence to layers
-        var currentDelay: TimeInterval = 0
-
-        for (index, selection) in recommendation.soundSequence.enumerated() {
-            let layer = SoundLayer(
-                sound: selection.sound,
-                volume: selection.volume * profile.preferredIntensity.volumeMultiplier,
-                pitchAdjustment: selection.pitchAdjustment + Float(profile.pitchPreference) * 0.1,
-                rhythmSync: profile.rhythmSensitivity > 0.7 && index == 0,
-                startDelay: currentDelay,
-                duration: selection.duration,
-                fadeInDuration: index == 0 ? 1 : 3,
-                fadeOutDuration: 5,
-                pan: 0,
-                reason: selection.reasonForChoice
-            )
-
-            layers.append(layer)
-
-            // Next layer starts after transition
-            if selection.transitionStyle == .crossfade {
-                currentDelay += selection.duration - 5 // Overlap by 5 seconds
-            } else {
-                currentDelay += selection.duration
-            }
-        }
-
-        return DynamicSoundMix(
-            id: UUID(),
-            name: "Custom Mix for \(profile.babyName)",
-            layers: layers,
-            createdFor: profile.babyId,
-            cryType: cryType,
-            createdAt: Date()
-        )
-    }
-
     /// Create a mix from a preset
     func createFromPreset(
         _ presetId: String,

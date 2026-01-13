@@ -33,7 +33,6 @@ struct RecommendedTrack {
 enum RecommendationReason: String, Codable {
     case historicallyEffective = "Worked well before"
     case ageOptimal = "Perfect for baby's age"
-    case cryTypeMatch = "Matches current cry pattern"
     case profileMatch = "Matches baby's preferences"
     case highCalmingScore = "High calming potential"
     case similarToFavorite = "Similar to favorites"
@@ -44,7 +43,6 @@ enum RecommendationReason: String, Codable {
         switch self {
         case .historicallyEffective: return "checkmark.circle"
         case .ageOptimal: return "star"
-        case .cryTypeMatch: return "waveform"
         case .profileMatch: return "person.fill"
         case .highCalmingScore: return "moon.zzz"
         case .similarToFavorite: return "heart"
@@ -99,36 +97,6 @@ class MLRecommendationEngine: ObservableObject {
     /// Maximum recommendations to return
     private let maxRecommendations = 20
 
-    // MARK: - Cry Type to Track Mapping
-
-    /// Preferred generator types for each cry type at different ages
-    private let cryTypePreferences: [CryType: (young: [GeneratorType], older: [GeneratorType])] = [
-        .tired: (
-            young: [.aquarium, .womb, .heartbeat, .shushing, .aquarium],
-            older: [.aquarium, .bells, .aquarium, .aquarium, .lullaby]
-        ),
-        .hunger: (
-            young: [.shushing, .musicBox, .aquarium, .heartbeat],
-            older: [.shushing, .musicBox, .aquarium, .chimes]
-        ),
-        .pain: (
-            young: [.shushing, .womb, .shushing, .aquarium, .womb],
-            older: [.aquarium, .lullaby, .aquarium, .shushing]
-        ),
-        .attention: (
-            young: [.musicBox, .chimes, .chimes, .heartbeat],
-            older: [.aquarium, .bells, .softPiano, .musicBox]
-        ),
-        .discomfort: (
-            young: [.aquarium, .womb, .shushing, .heartbeat],
-            older: [.aquarium, .aquarium, .aquarium, .womb]
-        ),
-        .general: (
-            young: [.aquarium, .womb, .heartbeat, .shushing],
-            older: [.aquarium, .aquarium, .lullaby, .musicBox]
-        )
-    ]
-
     // MARK: - Initialization
 
     private init() {}
@@ -139,13 +107,11 @@ class MLRecommendationEngine: ObservableObject {
     /// - Parameters:
     ///   - babyId: Baby identifier
     ///   - babyAge: Baby's age in months
-    ///   - cryAnalysis: Current cry analysis (optional)
     ///   - context: Recommendation context
     /// - Returns: Sorted list of recommended tracks
     func getRecommendations(
         for babyId: UUID,
         babyAge: Int,
-        cryAnalysis: CryAnalysisResult? = nil,
         context: RecommendationContext = .general
     ) async -> [RecommendedTrack] {
         isProcessing = true
@@ -164,7 +130,6 @@ class MLRecommendationEngine: ObservableObject {
                 babyId: babyId,
                 babyAge: babyAge,
                 profile: profile,
-                cryAnalysis: cryAnalysis,
                 context: context
             )
 
@@ -233,15 +198,7 @@ class MLRecommendationEngine: ObservableObject {
             }
         }
 
-        // 4. Add cry-type specific tracks
-        let typeSpecific = getTracksForCryType(cryType: cryType, babyAge: babyAge)
-        for track in typeSpecific.prefix(3) {
-            if !candidates.contains(where: { $0.id == track.id }) {
-                candidates.append(track)
-            }
-        }
-
-        // 5. If intensity is very high, prioritize proven soothers
+        // 4. If intensity is very high, prioritize proven soothers
         if cryIntensity > 0.8 {
             // Move womb/shushing/ocean to front for young babies
             if babyAge < 12 {
@@ -265,7 +222,6 @@ class MLRecommendationEngine: ObservableObject {
         babyId: UUID,
         babyAge: Int,
         profile: BabyListeningProfile?,
-        cryAnalysis: CryAnalysisResult?,
         context: RecommendationContext
     ) -> (Double, [RecommendationReason]) {
         var score: Double = 0
@@ -314,40 +270,10 @@ class MLRecommendationEngine: ObservableObject {
             }
         }
 
-        // 4. Cry type match (0-0.2)
-        if let cryAnalysis = cryAnalysis {
-            let typeMatch = calculateCryTypeMatch(
-                track: track,
-                cryType: cryAnalysis.type,
-                babyAge: babyAge
-            )
-            score += typeMatch * 0.2
-            if typeMatch > 0.7 {
-                reasons.append(.cryTypeMatch)
-            }
-        }
-
-        // 5. Context-based adjustment
+        // 4. Context-based adjustment
         score += contextBonus(track: track, context: context)
 
         return (min(score, 1.0), reasons)
-    }
-
-    /// Calculate how well a track matches a cry type
-    private func calculateCryTypeMatch(track: AudioTrack, cryType: CryType, babyAge: Int) -> Double {
-        guard let generator = track.generatorType else { return 0.5 }
-
-        let isYoung = babyAge < 12
-        guard let preferences = cryTypePreferences[cryType] else { return 0.5 }
-
-        let preferredList = isYoung ? preferences.young : preferences.older
-
-        if let index = preferredList.firstIndex(of: generator) {
-            // Higher match for tracks earlier in the preference list
-            return 1.0 - (Double(index) * 0.15)
-        }
-
-        return 0.3 // Base match for non-preferred tracks
     }
 
     /// Get additional score based on context
@@ -377,21 +303,6 @@ class MLRecommendationEngine: ObservableObject {
 
         case .general:
             return 0
-        }
-    }
-
-    /// Get tracks that match a specific cry type
-    private func getTracksForCryType(cryType: CryType, babyAge: Int) -> [AudioTrack] {
-        let isYoung = babyAge < 12
-        guard let preferences = cryTypePreferences[cryType] else {
-            return []
-        }
-
-        let preferredGenerators = isYoung ? preferences.young : preferences.older
-
-        return contentLibrary.getAllTracks().filter { track in
-            guard let generator = track.generatorType else { return false }
-            return preferredGenerators.contains(generator)
         }
     }
 

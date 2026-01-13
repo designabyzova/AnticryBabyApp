@@ -19,21 +19,13 @@ struct ContentView: View {
                 LibraryView()
                     .tag(1)
 
-                // Tab 3: Emergency Mode
-                EmergencyView()
+                // Tab 3: Favorites
+                FavoritesListView()
                     .tag(2)
 
-                // Tab 4: Favorites
-                FavoritesListView()
-                    .tag(3)
-
-                // Tab 5: Cry Alerts
-                CryAlertsView()
-                    .tag(4)
-
-                // Tab 6: Settings (Sleep Timer)
+                // Tab 4: Settings (Sleep Timer)
                 SleepTimerView()
-                    .tag(5)
+                    .tag(3)
             }
             .tabViewStyle(.page)
 

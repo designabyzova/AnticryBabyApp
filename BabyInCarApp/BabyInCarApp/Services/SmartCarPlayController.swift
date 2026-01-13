@@ -48,7 +48,6 @@ class SmartCarPlayController: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let cryDetectionService = CryDetectionService.shared
     private let environmentDetector = EnvironmentSoundDetector.shared
     private let audioEngine = AudioEngine.shared
     private let contentLibrary = ContentLibraryService.shared
@@ -106,11 +105,6 @@ class SmartCarPlayController: ObservableObject {
         // Start environment detection
         try await environmentDetector.startMonitoring()
 
-        // Start cry detection if not already
-        if !cryDetectionService.isMonitoring {
-            try await cryDetectionService.startMonitoring()
-        }
-
         // Subscribe to updates
         setupSubscriptions()
 
@@ -152,15 +146,6 @@ class SmartCarPlayController: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-
-        // Listen to cry detection
-        cryDetectionService.$isCryDetected
-            .sink { [weak self] isCrying in
-                Task { @MainActor in
-                    self?.handleCryStateChange(isCrying: isCrying)
-                }
-            }
-            .store(in: &cancellables)
     }
 
     private func startDecisionLoop() {
@@ -176,15 +161,6 @@ class SmartCarPlayController: ObservableObject {
         statusMessage = state.summary
     }
 
-    private func handleCryStateChange(isCrying: Bool) {
-        if isCrying {
-            // Immediate response to crying
-            Task {
-                await makeDecision()
-            }
-        }
-    }
-
     private func makeDecision() async {
         guard isActive else { return }
 
@@ -192,16 +168,12 @@ class SmartCarPlayController: ObservableObject {
         let environmentScore = Double(environmentState?.soothingScore ?? 0)
         let motionType = environmentState?.motionType ?? .unknown
 
-        let babyState = determineBabyState()
-        let cryType = cryDetectionService.cryType
-        let cryIntensity = cryDetectionService.cryIntensity
+        let babyState: BabyAudioState = .calm
 
         // Calculate recommended volume
         let (recommendedVolume, action, reason) = calculateVolumeAndAction(
             environmentScore: environmentScore,
             babyState: babyState,
-            cryType: cryType,
-            cryIntensity: cryIntensity,
             motionType: motionType
         )
 
@@ -227,32 +199,9 @@ class SmartCarPlayController: ObservableObject {
         }
     }
 
-    private func determineBabyState() -> BabyAudioState {
-        if cryDetectionService.isCryDetected {
-            let intensity = cryDetectionService.cryIntensity
-            if intensity > 0.7 {
-                return .crying
-            } else {
-                return .fussy
-            }
-        }
-
-        // Check if baby has been quiet for a while
-        // Note: quietDuration not available in current CryPatternMetrics, using averagePauseDuration as proxy
-        if let latestPatterns = cryDetectionService.latestPatternMetrics {
-            if latestPatterns.averagePauseDuration > 300 { // 5 minutes of quiet
-                return .sleeping
-            }
-        }
-
-        return .calm
-    }
-
     private func calculateVolumeAndAction(
         environmentScore: Double,
         babyState: BabyAudioState,
-        cryType: CryType,
-        cryIntensity: Double,
         motionType: MotionType
     ) -> (Float, SmartModeAction, String) {
 
@@ -261,30 +210,16 @@ class SmartCarPlayController: ObservableObject {
         var reason: String = ""
 
         switch babyState {
-        case .crying:
-            // Baby is crying - need active soothing
-            // Environment helps, but we need music too
-            let envHelp = Float(environmentScore) * 0.3
-            volume = max(0.7, 1.0 - envHelp)
-            action = .increaseVolume
-            reason = "Baby is crying - keeping soothing sounds audible"
-
-            // Consider changing track if current isn't working
-            if cryIntensity > 0.8 && shouldChangeTrack() {
-                action = .changeTrack
-                reason = "High distress detected - trying a different sound"
-            }
-
-        case .fussy:
+        case .crying, .fussy:
             // Baby is fussy - environment can help
             if environmentScore > environmentSoothingThreshold {
                 volume = Float(max(0.4, 1.0 - environmentScore * 0.5))
                 action = .reduceVolume
-                reason = "Baby is fussy but car sounds are helping"
+                reason = "Car sounds are helping"
             } else {
                 volume = 0.8
                 action = .maintain
-                reason = "Baby is fussy - maintaining soothing level"
+                reason = "Maintaining soothing level"
             }
 
         case .calm, .sleeping:
@@ -359,40 +294,15 @@ class SmartCarPlayController: ObservableObject {
 
         // Handle track change if needed
         if decision.actionTaken == .changeTrack {
-            Task {
-                await handleTrackChange(for: cryDetectionService.cryType)
+            if let newTrack = contentLibrary.getTopCalmingTracks(limit: 1).first {
+                audioEngine.play(track: newTrack)
+                speakFeedback("Trying \(newTrack.title)")
             }
         }
 
         // Alert for urgent situations
         if decision.actionTaken == .alert {
-            speakFeedback("Baby seems distressed. Consider pulling over when safe.")
-        }
-    }
-
-    private func handleTrackChange(for cryType: CryType) async {
-        // Get recommendation based on cry type
-        let strategy = cryType.soothingStrategy
-        var newTrack: AudioTrack?
-
-        switch strategy {
-        case .urgent:
-            // Use attention-grabbing sounds
-            newTrack = contentLibrary.allTracks.first { $0.generatorType == .shushing }
-        case .sleepInduction:
-            // Use sleep-promoting sounds
-            newTrack = contentLibrary.allTracks.first { $0.generatorType == .womb }
-        case .distraction:
-            // Use engaging sounds
-            newTrack = contentLibrary.allTracks.first { $0.generatorType == .musicBox }
-        default:
-            // Use high-calming-score sound
-            newTrack = contentLibrary.getTopCalmingTracks(limit: 1).first
-        }
-
-        if let track = newTrack {
-            audioEngine.play(track: track)
-            speakFeedback("Trying \(track.title)")
+            speakFeedback("Consider pulling over when safe.")
         }
     }
 
@@ -479,19 +389,7 @@ extension SmartCarPlayController {
 
     /// Get baby state indicator for CarPlay
     var babyStateIndicator: String {
-        let state = determineBabyState()
-        switch state {
-        case .calm:
-            return "😊 Calm"
-        case .sleeping:
-            return "😴 Sleeping"
-        case .fussy:
-            return "😟 Fussy"
-        case .crying:
-            return "😢 Crying"
-        case .unknown:
-            return "👶 Monitoring"
-        }
+        return "👶 Playing"
     }
 
     /// Get environment state indicator for CarPlay

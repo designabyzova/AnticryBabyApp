@@ -236,9 +236,6 @@ final class EngagementTriggerService: ObservableObject {
         // Don't trigger for premium users
         guard !SubscriptionManager.shared.isPremium else { return }
 
-        // Don't trigger during cry detection (safety)
-        guard !CryDetectionService.shared.isMonitoring else { return }
-
         // Update counts
         updateCounts(for: event)
 
@@ -274,15 +271,11 @@ final class EngagementTriggerService: ObservableObject {
         }
     }
 
-    /// Record successful cry detection soothing (called after baby calms down)
+    /// Record successful soothing (called after baby calms down)
     /// - Parameters:
     ///   - trackTitle: The track that successfully calmed the baby
-    ///   - timeToCalmSeconds: Time in seconds from cry detection to calm
-    /// - Note: This triggers AFTER soothing, never during active cry detection
+    ///   - timeToCalmSeconds: Time in seconds to calm
     func recordCryDetectionSuccess(trackTitle: String, timeToCalmSeconds: Int) {
-        // Safety: Only trigger if cry detection is no longer active
-        guard !CryDetectionService.shared.isMonitoring else { return }
-
         recordEvent(.cryDetectionSuccess(trackTitle: trackTitle, timeToCalmSeconds: timeToCalmSeconds))
     }
 

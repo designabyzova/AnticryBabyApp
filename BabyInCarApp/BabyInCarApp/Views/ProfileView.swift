@@ -209,19 +209,6 @@ struct ProfileView: View {
                 )
             }
 
-            // Cry Detection Settings (Auto-enabled by default for safety)
-            SettingsSection(title: languageManager.localizedString("settings.cryDetection")) {
-                SettingsToggleRow(
-                    icon: "waveform.badge.exclamationmark",
-                    title: languageManager.localizedString("settings.autoStartOnLaunch"),
-                    isOn: Binding(
-                        get: { appState.autoCryMonitoringEnabled },
-                        set: { appState.setAutoCryMonitoring($0) }
-                    )
-                )
-
-            }
-
             // Content Settings
             SettingsSection(title: languageManager.localizedString("settings.content")) {
                 Button {

@@ -76,38 +76,6 @@ class AnalyticsCloudService: ObservableObject {
 
     // MARK: - Event Recording
 
-    /// Record a cry detection event (only if opted in)
-    func recordCryDetection(
-        babyId: UUID,
-        cryType: CryType,
-        confidence: Double,
-        intensity: Double,
-        features: ExtendedAudioFeatures
-    ) {
-        guard isCloudSyncEnabled else { return }
-
-        // Only record anonymized feature metrics, never raw audio
-        let anonymizedPayload: [String: Any] = [
-            "cry_type": cryType.rawValue,
-            "confidence": confidence,
-            "intensity": intensity,
-            // Only statistical features, nothing that could identify the baby's voice
-            "fundamental_frequency_range": categorizeFundamental(features.fundamentalFrequency),
-            "spectral_centroid_range": categorizeSpectralCentroid(features.spectralCentroid),
-            "calming_score": features.intensity
-        ]
-
-        let event = AnalyticsEvent(
-            id: UUID(),
-            type: .cryDetected,
-            babyId: babyId.uuidString,
-            timestamp: Date(),
-            payload: anonymizedPayload
-        )
-
-        queueEvent(event)
-    }
-
     /// Record track effectiveness (only if opted in)
     func recordTrackEffectiveness(
         babyId: UUID,
@@ -259,11 +227,6 @@ class AnalyticsCloudService: ObservableObject {
 
     private func syncEvent(_ event: AnalyticsEvent) async throws {
         switch event.type {
-        case .cryDetected:
-            // Cloud learning endpoint - simplified for now
-            // In production, this would be a dedicated analytics endpoint
-            break
-
         case .trackEffectiveness:
             guard let trackId = event.payload["track_id"] as? String,
                   let wasEffective = event.payload["was_effective"] as? Bool,
@@ -284,24 +247,6 @@ class AnalyticsCloudService: ObservableObject {
             // Playback events are less critical, just log locally
             break
         }
-    }
-
-    // MARK: - Anonymization Helpers
-
-    /// Categorize fundamental frequency to anonymize
-    private func categorizeFundamental(_ freq: Double) -> String {
-        if freq < 350 { return "low" }
-        if freq < 450 { return "medium" }
-        if freq < 550 { return "high" }
-        return "very_high"
-    }
-
-    /// Categorize spectral centroid to anonymize
-    private func categorizeSpectralCentroid(_ centroid: Double) -> String {
-        if centroid < 600 { return "low" }
-        if centroid < 1000 { return "medium" }
-        if centroid < 1500 { return "high" }
-        return "very_high"
     }
 
     // MARK: - Persistence
@@ -395,7 +340,6 @@ struct AnalyticsEvent: Codable {
 
 /// Types of analytics events
 enum AnalyticsEventType: String, Codable {
-    case cryDetected
     case trackEffectiveness
     case playback
 }

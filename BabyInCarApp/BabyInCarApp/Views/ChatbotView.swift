@@ -11,7 +11,6 @@ struct ChatbotView: View {
     @StateObject private var chatHistory = ChatHistory.shared
     @StateObject private var chatbotService = LibraryChatbotService.shared
     @StateObject private var audioEngine = AudioEngine.shared
-    @StateObject private var cryDetection = CryDetectionService.shared
     @StateObject private var environmentDetector = EnvironmentSoundDetector.shared
 
     @State private var inputText: String = ""
@@ -59,7 +58,7 @@ struct ChatbotView: View {
 
             // Quick actions
             QuickActionButtons(
-                cryType: cryDetection.cryType,
+                cryType: .general,
                 isInCar: environmentDetector.isCarEnvironmentDetected,
                 onAction: handleQuickAction
             )

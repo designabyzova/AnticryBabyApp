@@ -51,9 +51,6 @@ class AdaptiveLearningEngine: ObservableObject {
     /// Session history for temporal pattern learning
     private var sessionHistory: [LearningSession] = []
 
-    /// Feature vectors from successful sessions (for future ML training)
-    private var successfulFeatureVectors: [CryFeatureVector] = []
-
     /// Decay factor for older feedback (recent feedback weighted more)
     private let recencyDecayFactor: Double = 0.95
 
@@ -63,7 +60,6 @@ class AdaptiveLearningEngine: ObservableObject {
     /// Storage keys
     private let matrixKey = "CrySoundEffectivenessMatrix"
     private let sessionHistoryKey = "LearningSessionHistory"
-    private let featureVectorsKey = "SuccessfulFeatureVectors"
 
     // MARK: - Initialization
 
@@ -115,13 +111,6 @@ class AdaptiveLearningEngine: ObservableObject {
             print("[AdaptiveLearning] 🧹 Trimmed \(trimCount) old sessions (kept 50 most recent)")
         }
 
-        // Trim feature vectors to 100 most recent
-        let featureTrimCount = max(0, successfulFeatureVectors.count - 100)
-        if featureTrimCount > 0 {
-            successfulFeatureVectors = Array(successfulFeatureVectors.suffix(100))
-            print("[AdaptiveLearning] 🧹 Trimmed \(featureTrimCount) old feature vectors (kept 100)")
-        }
-
         // Clear learned recommendations (will regenerate if needed)
         let recCount = learnedRecommendations.count
         learnedRecommendations.removeAll()
@@ -139,14 +128,12 @@ class AdaptiveLearningEngine: ObservableObject {
     ///   - wasSuccessful: Did the baby calm down?
     ///   - timeToCalm: Time in seconds until baby calmed
     ///   - cryIntensity: Initial cry intensity (0-1)
-    ///   - features: Optional audio features for ML training
     func recordSession(
         cryType: CryType,
         soundType: GeneratorType,
         wasSuccessful: Bool,
         timeToCalm: TimeInterval?,
-        cryIntensity: Double,
-        features: ExtendedAudioFeatures? = nil
+        cryIntensity: Double
     ) {
         isLearning = true
         defer { isLearning = false }
@@ -165,35 +152,6 @@ class AdaptiveLearningEngine: ObservableObject {
 
         // Update effectiveness matrix with recency weighting
         updateEffectivenessMatrix(session: session)
-
-        // Store feature vectors for successful sessions (for future on-device training)
-        if wasSuccessful, let features = features {
-            let featureVector = CryFeatureVector(
-                cryType: cryType,
-                features: features,
-                timestamp: Date()
-            )
-            successfulFeatureVectors.append(featureVector)
-
-            // MEMORY OPTIMIZATION (Increment 0028): Proactive trimming at 50% capacity
-            let maxVectors = 100
-            let proactiveTrimThreshold = maxVectors / 2 // 50 entries
-            if successfulFeatureVectors.count >= proactiveTrimThreshold {
-                let targetSize = Int(Double(proactiveTrimThreshold) * 0.8) // Trim to 40 entries (80% of threshold)
-                if successfulFeatureVectors.count > targetSize {
-                    let trimCount = successfulFeatureVectors.count - targetSize
-                    successfulFeatureVectors.removeFirst(trimCount)
-                    print("[AdaptiveLearning] 🧹 Proactive trim: removed \(trimCount) old vectors (now \(successfulFeatureVectors.count)/\(maxVectors))")
-                }
-            }
-
-            // MEMORY OPTIMIZATION (Increment 0022): Reduced from 500 to 100 for memory efficiency
-            // Emergency trim if exceeded max
-            if successfulFeatureVectors.count > 100 {
-                successfulFeatureVectors.removeFirst(successfulFeatureVectors.count - 100)
-                print("[AdaptiveLearning] ⚠️ Emergency trim: capped at 100 vectors")
-            }
-        }
 
         // MEMORY OPTIMIZATION (Increment 0022): Reduced session history from 1000 to 200
         // LRU eviction - oldest sessions removed first
@@ -281,7 +239,7 @@ class AdaptiveLearningEngine: ObservableObject {
             overallSuccessRate: total > 0 ? Double(successful) / Double(total) : 0,
             averageTimeToCalm: avgTimeToCalm,
             learningConfidence: learningConfidence,
-            featureVectorsCollected: successfulFeatureVectors.count
+            featureVectorsCollected: 0
         )
     }
 
@@ -413,11 +371,6 @@ class AdaptiveLearningEngine: ObservableObject {
             sessionHistory = decoded
         }
 
-        // Load feature vectors
-        if let data = userDefaults.data(forKey: featureVectorsKey),
-           let decoded = try? JSONDecoder().decode([CryFeatureVector].self, from: data) {
-            successfulFeatureVectors = decoded
-        }
     }
 
     private func saveData() {
@@ -428,10 +381,6 @@ class AdaptiveLearningEngine: ObservableObject {
         if let data = try? JSONEncoder().encode(sessionHistory) {
             userDefaults.set(data, forKey: sessionHistoryKey)
         }
-
-        if let data = try? JSONEncoder().encode(successfulFeatureVectors) {
-            userDefaults.set(data, forKey: featureVectorsKey)
-        }
     }
 
     // MARK: - Reset Methods
@@ -440,7 +389,6 @@ class AdaptiveLearningEngine: ObservableObject {
     func resetAllLearning() {
         effectivenessMatrix = .empty
         sessionHistory = []
-        successfulFeatureVectors = []
         learnedRecommendations = []
         learningConfidence = 0
         totalLearningSessions = 0
@@ -511,28 +459,6 @@ struct LearningSession: Codable, Identifiable {
     }
 }
 
-/// Feature vector for ML training (stored for future on-device training)
-struct CryFeatureVector: Codable {
-    let id: UUID
-    let cryType: CryType
-    let mfcc: [Double] // MFCC coefficients (from melFrequencyCoeffs)
-    let spectralCentroid: Double
-    let spectralFlux: Double
-    let rmsEnergy: Double
-    let zeroCrossingRate: Double
-    let timestamp: Date
-
-    init(cryType: CryType, features: ExtendedAudioFeatures, timestamp: Date) {
-        self.id = UUID()
-        self.cryType = cryType
-        self.mfcc = features.melFrequencyCoeffs
-        self.spectralCentroid = features.spectralCentroid
-        self.spectralFlux = features.spectralFlux
-        self.rmsEnergy = features.rmsEnergy
-        self.zeroCrossingRate = features.zeroCrossingRate
-        self.timestamp = timestamp
-    }
-}
 
 /// Learned sound recommendation
 struct LearnedSoundRecommendation: Identifiable {

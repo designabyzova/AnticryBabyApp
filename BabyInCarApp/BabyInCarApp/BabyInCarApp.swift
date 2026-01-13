@@ -44,16 +44,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         cleanupAudioResources()
     }
 
-    /// Clean up all audio resources to release microphone and audio session
+    /// Clean up all audio resources to release audio session
     private func cleanupAudioResources() {
-        // Stop cry detection monitoring (releases microphone)
-        // Using DispatchQueue.main.sync to ensure cleanup completes before termination
-        // Note: We have ~5 seconds to complete cleanup on termination
         DispatchQueue.main.async {
-            // Stop cry detection (this stops the audio engine and releases mic)
-            CryDetectionService.shared.stopMonitoring()
-            print("[AppDelegate] ✅ CryDetectionService stopped")
-
             // Stop audio playback
             AudioEngine.shared.stop()
             print("[AppDelegate] ✅ AudioEngine stopped")
@@ -126,78 +119,28 @@ struct BabyInCarApp: App {
     }
 
     /// Handle scene phase changes for proper audio resource management
-    /// - Note: This ensures microphone is released when app goes to background
     private func handleScenePhaseChange(to newPhase: ScenePhase) {
         print("[BabyInCarApp] 📱 Scene phase changed → \(newPhase)")
 
         switch newPhase {
         case .background:
-            // App is going to background - prepare for potential termination
-            // iOS may kill the app while in background, so clean up now
-            print("[BabyInCarApp] 🌙 App entering background - releasing audio resources")
-            releaseAudioResourcesForBackground()
+            print("[BabyInCarApp] 🌙 App entering background")
+            // Note: We do NOT stop AudioEngine playback - background audio is a feature
+            // Users may want lullabies to continue playing when app is backgrounded
 
         case .inactive:
-            // App is inactive (e.g., app switcher, notification center)
-            // Don't stop monitoring yet - user might return quickly
             print("[BabyInCarApp] ⏸️ App inactive")
 
         case .active:
-            // App is active - restore monitoring if it was enabled
             print("[BabyInCarApp] ✅ App active")
-            restoreAudioResourcesFromBackground()
+            // Restore audio session for playback if needed
+            if audioEngine.playbackState.isPlaying || audioEngine.currentTrack != nil {
+                audioEngine.configureAudioSession()
+                print("[BabyInCarApp] 🔊 Audio session restored for playback")
+            }
 
         @unknown default:
             break
-        }
-    }
-
-    /// Release audio resources when app goes to background
-    /// This ensures microphone indicator disappears when app is backgrounded
-    private func releaseAudioResourcesForBackground() {
-        // Stop cry detection (releases microphone)
-        // IMPORTANT: This is the primary source of microphone usage
-        if CryDetectionService.shared.isMonitoring {
-            CryDetectionService.shared.stopMonitoring()
-            // Save state so we know to restore on foreground
-            UserDefaults.standard.set(true, forKey: "wasMonitoringBeforeBackground")
-            print("[BabyInCarApp] 🎤 Stopped cry monitoring (was active)")
-        }
-
-        // Note: We do NOT stop AudioEngine playback - background audio is a feature
-        // Users may want lullabies to continue playing when app is backgrounded
-
-        // Deactivate audio session to fully release microphone
-        // This is critical - even if monitoring is stopped, session might hold mic
-        AudioSessionManager.shared.forceDeactivate()
-        print("[BabyInCarApp] 🔇 Audio session deactivated for background")
-    }
-
-    /// Restore audio resources when app returns to foreground
-    private func restoreAudioResourcesFromBackground() {
-        // Check if we should restore cry monitoring
-        let wasMonitoring = UserDefaults.standard.bool(forKey: "wasMonitoringBeforeBackground")
-        UserDefaults.standard.removeObject(forKey: "wasMonitoringBeforeBackground")
-
-        if wasMonitoring && appState.autoCryMonitoringEnabled {
-            // Restore cry monitoring using CryDetectionService directly
-            Task {
-                if appState.currentBaby != nil {
-                    do {
-                        print("[BabyInCarApp] 🎤 Restoring cry monitoring...")
-                        try await CryDetectionService.shared.startMonitoring()
-                        print("[BabyInCarApp] ✅ Cry monitoring restored")
-                    } catch {
-                        print("[BabyInCarApp] ⚠️ Failed to restore cry monitoring: \(error)")
-                    }
-                }
-            }
-        }
-
-        // Restore audio session for playback if needed
-        if audioEngine.playbackState.isPlaying || audioEngine.currentTrack != nil {
-            audioEngine.configureAudioSession()
-            print("[BabyInCarApp] 🔊 Audio session restored for playback")
         }
     }
 
@@ -226,54 +169,27 @@ struct BabyInCarApp: App {
         setupMemoryMonitoring()
 
         // CRITICAL: Load user data FIRST before checking conditions
-        // This ensures isOnboardingComplete and currentBaby are loaded from UserDefaults
         appState.loadUserData()
 
-        // 🔧 FIX: Initialize Watch connectivity
-        // This was missing - Watch app couldn't communicate with iPhone!
+        // Initialize Watch connectivity
         _ = WatchSyncManager.shared
         print("[BabyInCarApp] ✅ WatchSyncManager initialized for Watch connectivity")
 
         // Request necessary permissions and setup audio services
-        // CRITICAL: All audio session operations are sequenced to prevent conflicts
         Task {
             _ = await NotificationService.shared.requestAuthorization()
 
-            // AUTO-ENABLE CRY MONITORING (Default: ON for parent safety)
-            // Now data is loaded, so conditions will check actual saved values
-            // Condition 1: User hasn't disabled auto-monitoring in settings
-            // Condition 2: Onboarding is complete (baby is configured)
-            // Condition 3: We have a baby profile
-            print("[BabyInCarApp] 🔍 Checking cry monitoring conditions:")
-            print("[BabyInCarApp]   - autoCryMonitoringEnabled: \(appState.autoCryMonitoringEnabled)")
-            print("[BabyInCarApp]   - isOnboardingComplete: \(appState.isOnboardingComplete)")
-            print("[BabyInCarApp]   - currentBaby: \(appState.currentBaby?.name ?? "nil")")
-
-            if appState.autoCryMonitoringEnabled &&
-               appState.isOnboardingComplete &&
-               appState.currentBaby != nil {
-                do {
-                    print("[BabyInCarApp] 🔊 Auto-enabling cry monitoring (default ON)")
-                    try await CryDetectionService.shared.startMonitoring()
-                } catch {
-                    print("[BabyInCarApp] ⚠️ Failed to auto-enable cry monitoring: \(error)")
-                }
-            } else {
-                print("[BabyInCarApp] ⚠️ Cry monitoring NOT auto-enabled - conditions not met")
-            }
-
-            // Initialize audio session AFTER cry monitoring setup completes
-            // AudioSessionManager now coordinates all session requests by priority
+            // Initialize audio session for playback
             audioEngine.configureAudioSession()
 
             // Initialize default playlist so player is always visible (but NOT auto-playing)
-            // Playback only starts on cry detection or manual user action
+            // Playback only starts on manual user action
             await initializeDefaultPlaylist()
         }
     }
 
     /// Initialize a default classical playlist so the player is always visible and ready
-    /// Player shows the track but stays SILENT until cry detection or user taps Play
+    /// Player shows the track but stays SILENT until user taps Play
     private func initializeDefaultPlaylist() async {
         // Wait a brief moment for ContentLibraryService to load
         try? await Task.sleep(nanoseconds: 500_000_000)  // 500ms
@@ -304,13 +220,13 @@ struct BabyInCarApp: App {
             audioEngine.upNextQueue = Array(selectedTracks.dropFirst())
 
             // Ensure playback is stopped - player visible but silent
-            // Playback starts ONLY on cry detection or manual Play tap
+            // Playback starts ONLY on manual Play tap
             if audioEngine.playbackState.isPlaying {
                 audioEngine.pause()
             }
 
             print("[BabyInCarApp] 🎵 Default playlist initialized with \(selectedTracks.count) classical tracks")
-            print("[BabyInCarApp] 🎵 First track: \(defaultTrack.title) - player visible, waiting for cry detection or user action")
+            print("[BabyInCarApp] 🎵 First track: \(defaultTrack.title) - player visible, waiting for user action")
         }
     }
 
@@ -321,20 +237,12 @@ struct BabyInCarApp: App {
         // Warning level: reduce non-essential features
         memoryMonitor.onWarningLevel = {
             print("[MemoryMonitor] ⚠️ Warning level - reducing features")
-            // Disable ML enhancement to reduce memory
-            Task { @MainActor in
-                CryDetectionService.shared.useMLEnhancement = false
-            }
         }
 
         // Critical level: aggressive cleanup
         memoryMonitor.onCriticalLevel = {
             print("[MemoryMonitor] 🔴 Critical level - aggressive cleanup")
             Task { @MainActor in
-                // Disable all heavy ML features (always safe)
-                CryDetectionService.shared.useMLEnhancement = false
-                CryDetectionService.shared.useDeepInfant = false
-
                 // Only clear caches if audio is not playing
                 if !AudioEngine.shared.playbackState.isPlaying {
                     Task { await AudioCacheService.shared.clearAllCache() }
@@ -345,34 +253,21 @@ struct BabyInCarApp: App {
         }
 
         // Emergency level: stop non-essential services
-        // Audio is the PRIMARY PURPOSE of the app - baby calming should continue.
+        // Audio is the PRIMARY PURPOSE of the app - baby calming should continue
         memoryMonitor.onEmergencyLevel = {
-            print("[MemoryMonitor] 🚨 Emergency level - stopping services")
+            print("[MemoryMonitor] 🚨 Emergency level")
             Task { @MainActor in
-                // Check if audio is playing BEFORE cleanup
-                let isAudioPlaying = AudioEngine.shared.playbackState.isPlaying
-
-                if isAudioPlaying {
-                    print("[MemoryMonitor] 🚨 PROTECTING audio - only disabling ML features!")
-                    // ONLY disable ML features - NEVER touch audio during playback
-                    CryDetectionService.shared.useMLEnhancement = false
-                    CryDetectionService.shared.useDeepInfant = false
-                    print("[MemoryMonitor] ✅ Audio protected - ML disabled, audio continues")
-                } else {
-                    // No audio playing - safe to do full cleanup
-                    // Stop cry detection temporarily
-                    CryDetectionService.shared.stopMonitoring()
-
-                    // Clear all caches
+                // Only clear caches if audio is not playing
+                if !AudioEngine.shared.playbackState.isPlaying {
                     Task { await AudioCacheService.shared.clearAllCache() }
-
-                    print("[MemoryMonitor] Services stopped to prevent crash")
+                    print("[MemoryMonitor] Cache cleared to prevent crash")
+                } else {
+                    print("[MemoryMonitor] ✅ Audio protected - playback continues")
                 }
             }
         }
 
         // Start monitoring (check every 2 seconds for faster response)
-        // CRITICAL: Must catch memory issues BEFORE iOS decides to kill
         memoryMonitor.startMonitoring(interval: 2.0)
     }
 
@@ -554,10 +449,6 @@ class AppState: ObservableObject {
     @Published var isPremiumUser: Bool = false
     @Published var offlineMode: Bool = false
 
-    /// Auto-enable cry monitoring when app launches (DEFAULT: FALSE)
-    /// Users can enable this in settings or tap "AI Cry Detection" button
-    @Published var autoCryMonitoringEnabled: Bool = false
-
     /// Smooth audio transitions with crossfade (DEFAULT: TRUE)
     /// When enabled, track switches fade out current track and fade in new track
     @Published var smoothTransitionsEnabled: Bool = true
@@ -571,14 +462,6 @@ class AppState: ObservableObject {
     func loadUserData() {
         isOnboardingComplete = userDefaults.bool(forKey: "isOnboardingComplete")
         isPremiumUser = userDefaults.bool(forKey: "isPremiumUser")
-
-        // Auto cry monitoring defaults to FALSE if not set (opt-in, not opt-out)
-        // Users must enable it manually or tap "AI Cry Detection" button
-        if userDefaults.object(forKey: "autoCryMonitoringEnabled") == nil {
-            autoCryMonitoringEnabled = false  // Default OFF for new users
-        } else {
-            autoCryMonitoringEnabled = userDefaults.bool(forKey: "autoCryMonitoringEnabled")
-        }
 
         // Smooth transitions defaults to TRUE if not set
         if userDefaults.object(forKey: "smoothTransitionsEnabled") == nil {
@@ -601,7 +484,6 @@ class AppState: ObservableObject {
     func saveUserData() {
         userDefaults.set(isOnboardingComplete, forKey: "isOnboardingComplete")
         userDefaults.set(isPremiumUser, forKey: "isPremiumUser")
-        userDefaults.set(autoCryMonitoringEnabled, forKey: "autoCryMonitoringEnabled")
         userDefaults.set(smoothTransitionsEnabled, forKey: "smoothTransitionsEnabled")
 
         if let baby = currentBaby,
@@ -612,12 +494,6 @@ class AppState: ObservableObject {
         if let languageData = try? JSONEncoder().encode(selectedLanguages) {
             userDefaults.set(languageData, forKey: "selectedLanguages")
         }
-    }
-
-    /// Toggle auto cry monitoring and save preference
-    func setAutoCryMonitoring(_ enabled: Bool) {
-        autoCryMonitoringEnabled = enabled
-        saveUserData()
     }
 
     /// Toggle smooth audio transitions and save preference

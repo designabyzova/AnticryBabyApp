@@ -218,11 +218,6 @@ final class FreemiumGatekeeper: ObservableObject {
 
     /// Check if we should show an upgrade prompt for this action
     func shouldShowUpgradePrompt(for track: AudioTrack) -> Bool {
-        // Never prompt during active cry detection (safety first!)
-        if CryDetectionService.shared.isMonitoring {
-            return false
-        }
-
         // Don't prompt if user has access
         if canPlayTrack(track) {
             return false

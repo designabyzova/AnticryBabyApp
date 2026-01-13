@@ -227,7 +227,6 @@ class ContextSignalCollector: ObservableObject {
         isCollecting = true
 
         startMotionUpdates()
-        subscribeToAudioLevel()
     }
 
     /// Stop collecting context signals
@@ -405,20 +404,6 @@ class ContextSignalCollector: ObservableObject {
         let isCarLike = avgIntensity < 0.3 && variance < 0.05 && avgIntensity > 0.01
 
         return isCarLike && isCurrentlyMoving
-    }
-
-    // MARK: - Audio Level Subscription
-
-    private func subscribeToAudioLevel() {
-        // Subscribe to CryDetectionService audio level on MainActor
-        Task { @MainActor in
-            CryDetectionService.shared.$currentAudioLevel
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] level in
-                    self?.currentAmbientLevel = level
-                }
-                .store(in: &self.cancellables)
-        }
     }
 
     // MARK: - Mood Prediction

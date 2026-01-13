@@ -1,5 +1,55 @@
 import Foundation
 
+// MARK: - Baby Mood Types (used by DeepInfant ML model for mood classification)
+
+/// Baby mood/cry types for ML classification and track recommendations
+/// Note: This enum is kept for DeepInfant ML model compatibility
+enum CryType: String, Codable, CaseIterable, Hashable {
+    case hunger = "hunger"
+    case tired = "tired"
+    case pain = "pain"
+    case attention = "attention"
+    case discomfort = "discomfort"
+    case general = "general"
+    case unknown = "unknown"
+
+    var displayName: String {
+        switch self {
+        case .hunger: return "Hungry"
+        case .tired: return "Tired"
+        case .pain: return "Pain/Discomfort"
+        case .attention: return "Needs Attention"
+        case .discomfort: return "Uncomfortable"
+        case .general: return "General Fussiness"
+        case .unknown: return "Unknown"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .hunger: return "fork.knife"
+        case .tired: return "moon.zzz"
+        case .pain: return "cross.case"
+        case .attention: return "hand.raised"
+        case .discomfort: return "thermometer"
+        case .general: return "figure.wave"
+        case .unknown: return "questionmark.circle"
+        }
+    }
+
+    var suggestedAction: String {
+        switch self {
+        case .hunger: return "Try feeding"
+        case .tired: return "Try calming sounds"
+        case .pain: return "Check for discomfort"
+        case .attention: return "Give comfort"
+        case .discomfort: return "Check temperature/diaper"
+        case .general: return "Try soothing music"
+        case .unknown: return "General soothing"
+        }
+    }
+}
+
 // MARK: - Shared Models for iPhone-Watch Communication
 
 /// Represents a track that can be synced and played on Apple Watch
@@ -47,138 +97,6 @@ struct PlaybackState: Codable, Equatable {
     )
 }
 
-/// Cry detection alert sent from iPhone to Watch
-struct CryAlert: Codable, Identifiable, Hashable {
-    let id: UUID
-    let timestamp: Date
-    let cryType: CryType
-    let confidence: Double
-    let suggestedAction: String
-    let suggestedPlaylistId: String?
-
-    init(cryType: CryType, confidence: Double, suggestedAction: String, suggestedPlaylistId: String? = nil) {
-        self.id = UUID()
-        self.timestamp = Date()
-        self.cryType = cryType
-        self.confidence = confidence
-        self.suggestedAction = suggestedAction
-        self.suggestedPlaylistId = suggestedPlaylistId
-    }
-}
-
-/// Cry types detected by the ML model
-/// Note: This is shared between iPhone and Watch
-enum CryType: String, Codable, CaseIterable, Hashable {
-    case hunger = "hunger"
-    case tired = "tired"
-    case pain = "pain"
-    case attention = "attention"
-    case discomfort = "discomfort"
-    case general = "general"
-    case unknown = "unknown"
-
-    var displayName: String {
-        switch self {
-        case .hunger: return "Hungry"
-        case .tired: return "Tired"
-        case .pain: return "Pain/Discomfort"
-        case .attention: return "Needs Attention"
-        case .discomfort: return "Uncomfortable"
-        case .general: return "General Fussiness"
-        case .unknown: return "Unknown"
-        }
-    }
-
-    var iconName: String {
-        switch self {
-        case .hunger: return "fork.knife"
-        case .tired: return "moon.zzz"
-        case .pain: return "cross.case"
-        case .attention: return "hand.raised"
-        case .discomfort: return "thermometer"
-        case .general: return "figure.wave"
-        case .unknown: return "questionmark.circle"
-        }
-    }
-
-    var suggestedAction: String {
-        switch self {
-        case .hunger: return "Baby might be hungry. Consider feeding."
-        case .tired: return "Baby seems tired. Try soothing lullabies."
-        case .pain: return "Baby may be in discomfort. Check diaper or temperature."
-        case .attention: return "Baby wants attention. Try gentle interaction."
-        case .discomfort: return "Baby is uncomfortable. Check clothing or position."
-        case .general: return "Try playing calming music."
-        case .unknown: return "Play soothing sounds to calm baby."
-        }
-    }
-
-    /// Recommended soothing strategy for this cry type
-    var soothingStrategy: SoothingStrategy {
-        switch self {
-        case .hunger:
-            return .distraction // Temporary until feeding
-        case .tired:
-            return .sleepInduction
-        case .pain:
-            return .urgent // Needs attention first
-        case .attention:
-            return .comfort
-        case .discomfort:
-            return .gentle
-        case .general:
-            return .adaptive
-        case .unknown:
-            return .adaptive
-        }
-    }
-}
-
-// MARK: - Soothing Strategy
-enum SoothingStrategy: String, Codable {
-    case sleepInduction = "Sleep Induction"
-    case distraction = "Distraction"
-    case comfort = "Comfort"
-    case gentle = "Gentle Calming"
-    case urgent = "Urgent Response"
-    case adaptive = "Adaptive"
-
-    var phases: [SoothingPhase] {
-        switch self {
-        case .sleepInduction:
-            return [.gentleStart, .deepCalming, .sleepTransition]
-        case .distraction:
-            return [.attentionGrab, .engagement, .gentleCalm]
-        case .comfort:
-            return [.warmStart, .steadyComfort, .maintenance]
-        case .gentle:
-            return [.softStart, .gradualCalming, .maintenance]
-        case .urgent:
-            return [.immediateResponse, .intensiveCalming, .recovery]
-        case .adaptive:
-            return [.attentionGrab, .evaluation, .adaptiveResponse]
-        }
-    }
-}
-
-enum SoothingPhase: String {
-    case gentleStart = "Gentle Start"
-    case attentionGrab = "Getting Attention"
-    case warmStart = "Warm Start"
-    case softStart = "Soft Start"
-    case immediateResponse = "Immediate Response"
-    case deepCalming = "Deep Calming"
-    case sleepTransition = "Sleep Transition"
-    case engagement = "Engagement"
-    case gentleCalm = "Gentle Calm"
-    case steadyComfort = "Steady Comfort"
-    case maintenance = "Maintenance"
-    case gradualCalming = "Gradual Calming"
-    case intensiveCalming = "Intensive Calming"
-    case recovery = "Recovery"
-    case evaluation = "Evaluation"
-    case adaptiveResponse = "Adaptive Response"
-}
 
 /// Commands sent from Watch to iPhone
 enum WatchCommand: Codable, Equatable {
@@ -193,11 +111,7 @@ enum WatchCommand: Codable, Equatable {
     case startSoothingMusic(playlistId: String?)
     case requestStateSync
     case playTrack(trackId: String)
-    // New commands for Library and Emergency
     case playCategory(categoryId: String)
-    case startEmergencyMode           // Start emergency mode with cry detection + music
-    case startEmergencyModeWithCryDetection  // Explicitly start cry detection monitoring
-    case stopEmergencyMode
     case requestLibrarySync
 
     // Custom coding for associated values
@@ -233,9 +147,6 @@ enum WatchCommand: Codable, Equatable {
         case "playCategory":
             let categoryId = try container.decode(String.self, forKey: .value)
             self = .playCategory(categoryId: categoryId)
-        case "startEmergencyMode": self = .startEmergencyMode
-        case "startEmergencyModeWithCryDetection": self = .startEmergencyModeWithCryDetection
-        case "stopEmergencyMode": self = .stopEmergencyMode
         case "requestLibrarySync": self = .requestLibrarySync
         default:
             self = .requestStateSync
@@ -275,12 +186,6 @@ enum WatchCommand: Codable, Equatable {
         case .playCategory(let categoryId):
             try container.encode("playCategory", forKey: .type)
             try container.encode(categoryId, forKey: .value)
-        case .startEmergencyMode:
-            try container.encode("startEmergencyMode", forKey: .type)
-        case .startEmergencyModeWithCryDetection:
-            try container.encode("startEmergencyModeWithCryDetection", forKey: .type)
-        case .stopEmergencyMode:
-            try container.encode("stopEmergencyMode", forKey: .type)
         case .requestLibrarySync:
             try container.encode("requestLibrarySync", forKey: .type)
         }
@@ -291,12 +196,10 @@ enum WatchCommand: Codable, Equatable {
 enum WatchMessage: String {
     case playbackState = "playbackState"
     case command = "command"
-    case cryAlert = "cryAlert"
     case favoritesUpdate = "favoritesUpdate"
     case fileTransferComplete = "fileTransferComplete"
     case requestSync = "requestSync"
     case libraryState = "libraryState"
-    case emergencyState = "emergencyState"
 }
 
 // MARK: - Watch Category for Library Sync
@@ -341,10 +244,3 @@ extension WatchTrack {
     }
 }
 
-extension CryAlert {
-    var timeAgo: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: timestamp, relativeTo: Date())
-    }
-}

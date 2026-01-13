@@ -952,7 +952,6 @@ class BabyMoodDashboardViewModel: ObservableObject {
     @Published var voicePrintQuality: Double = 0
 
     // Services
-    private let babyMIM = BabyMoodIntelligence.shared
     private let profileManager = BabyMoodProfileManager.shared
 
     init() {
@@ -1001,9 +1000,9 @@ class BabyMoodDashboardViewModel: ObservableObject {
         confidence = profile.learningProgress
         lastUpdated = Date()
 
-        // Get AI reasoning
-        aiReasoning = babyMIM.getLastAnalysis()
-        fullAnalysis = babyMIM.getDetailedAnalysis()
+        // AI reasoning (disabled - cry detection removed)
+        aiReasoning = ""
+        fullAnalysis = ""
 
         // Technical stats
         totalSessions = profile.totalSoothingSessions

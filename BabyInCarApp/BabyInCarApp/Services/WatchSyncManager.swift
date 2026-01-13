@@ -23,7 +23,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
     // MARK: - Private Properties
 
     private var session: WCSession?
-    private var queuedCryAlerts: [CryAlert] = []
     private var cancellables = Set<AnyCancellable>()
 
     // Storage limit for watch (50MB)
@@ -121,36 +120,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
             print("[WatchSync] Favorites list synced (\(limitedFavorites.count) tracks)")
         } catch {
             print("[WatchSync] Failed to sync favorites: \(error)")
-        }
-    }
-
-    /// Send cry detection alert to watch
-    func sendCryAlert(_ alert: CryAlert) {
-        guard let session = session else {
-            queuedCryAlerts.append(alert)
-            return
-        }
-
-        guard session.isReachable else {
-            queuedCryAlerts.append(alert)
-            print("[WatchSync] Watch not reachable, alert queued")
-            return
-        }
-
-        do {
-            let data = try JSONEncoder().encode(alert)
-            let message: [String: Any] = [
-                WatchMessage.cryAlert.rawValue: data
-            ]
-
-            session.sendMessage(message, replyHandler: { _ in
-                print("[WatchSync] Cry alert sent successfully")
-            }, errorHandler: { error in
-                print("[WatchSync] Failed to send cry alert: \(error)")
-                self.queuedCryAlerts.append(alert)
-            })
-        } catch {
-            print("[WatchSync] Failed to encode cry alert: \(error)")
         }
     }
 
@@ -295,15 +264,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
             case .playCategory(let categoryId):
                 playCategory(categoryId: categoryId)
 
-            case .startEmergencyMode:
-                startEmergencyMode()
-
-            case .startEmergencyModeWithCryDetection:
-                startEmergencyModeWithCryDetection()
-
-            case .stopEmergencyMode:
-                stopEmergencyMode()
-
             case .requestLibrarySync:
                 syncLibraryState()
             }
@@ -444,112 +404,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Calming Mode
-
-    private func startEmergencyMode() {
-        print("[WatchSync] 🎵 Starting calming mode from Watch")
-
-        Task { @MainActor in
-            let audioEngine = AudioEngine.shared
-            let library = ContentLibraryService.shared
-
-            // Get calming tracks from classical music
-            let tracks = library.getTracks(for: .classicalMusic)
-                .sorted { $0.calmingScore > $1.calmingScore }
-
-            if tracks.isEmpty {
-                print("[WatchSync] ⚠️ No calming tracks available - using default")
-                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                audioEngine.play(track: fallbackTrack)
-            } else {
-                print("[WatchSync] 🎵 Starting calming playlist with \(tracks.count) tracks")
-                let playlist = Playlist(
-                    name: "Watch: Calming Music",
-                    tracks: Array(tracks.prefix(15)),
-                    createdAt: Date()
-                )
-                audioEngine.play(playlist: playlist)
-            }
-
-            // Send current state to Watch
-            sendCurrentState()
-
-            // Send calming state to Watch
-            sendEmergencyState(isActive: true)
-        }
-    }
-
-    /// Start calming mode WITH cry detection monitoring enabled
-    private func startEmergencyModeWithCryDetection() {
-        print("[WatchSync] 🎵🎤 Starting calming mode WITH cry detection from Watch")
-
-        Task { @MainActor in
-            // 1. Start cry detection monitoring FIRST
-            let cryDetection = CryDetectionService.shared
-            if !cryDetection.isMonitoring {
-                do {
-                    try await cryDetection.startMonitoring()
-                    print("[WatchSync] ✅ Cry detection monitoring started from Watch request")
-                } catch {
-                    print("[WatchSync] ⚠️ Failed to start cry detection: \(error)")
-                    // Continue anyway - at least play music
-                }
-            } else {
-                print("[WatchSync] ℹ️ Cry detection already monitoring")
-            }
-
-            // 2. Start calming music playback
-            let audioEngine = AudioEngine.shared
-            let library = ContentLibraryService.shared
-
-            let tracks = library.getTracks(for: .classicalMusic)
-                .sorted { $0.calmingScore > $1.calmingScore }
-
-            if tracks.isEmpty {
-                print("[WatchSync] ⚠️ No calming tracks available - using default")
-                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                audioEngine.play(track: fallbackTrack)
-            } else {
-                print("[WatchSync] 🎵 Starting calming playlist with \(tracks.count) tracks")
-                let playlist = Playlist(
-                    name: "Watch: Calming Music",
-                    tracks: Array(tracks.prefix(15)),
-                    createdAt: Date()
-                )
-                audioEngine.play(playlist: playlist)
-            }
-
-            // Send current state to Watch
-            sendCurrentState()
-
-            // Send calming state to Watch
-            sendEmergencyState(isActive: true)
-        }
-    }
-
-    private func stopEmergencyMode() {
-        print("[WatchSync] 🛑 Stopping calming mode from Watch")
-
-        Task { @MainActor in
-            AudioEngine.shared.stop()
-
-            sendEmergencyState(isActive: false)
-            sendCurrentState()
-        }
-    }
-
-    private func sendEmergencyState(isActive: Bool) {
-        guard let session = session, session.isReachable else { return }
-
-        let message: [String: Any] = [
-            WatchMessage.emergencyState.rawValue: isActive
-        ]
-
-        session.sendMessage(message, replyHandler: nil, errorHandler: { error in
-            print("[WatchSync] Failed to send emergency state: \(error)")
-        })
-    }
-
     // MARK: - Private Helpers
 
     /// Last time state was synced (throttle to once per 500ms)
@@ -582,17 +436,6 @@ final class WatchSyncManager: NSObject, ObservableObject {
         )
         syncPlaybackState(state)
     }
-
-    private func sendQueuedAlerts() {
-        guard !queuedCryAlerts.isEmpty else { return }
-
-        let alerts = queuedCryAlerts
-        queuedCryAlerts.removeAll()
-
-        for alert in alerts {
-            sendCryAlert(alert)
-        }
-    }
 }
 
 // MARK: - WCSessionDelegate
@@ -613,7 +456,6 @@ extension WatchSyncManager: WCSessionDelegate {
                 if activationState == .activated {
                     self.sendCurrentState()
                     self.syncLibraryState()  // Sync library on activation
-                    self.sendQueuedAlerts()
                 }
             }
         }
@@ -637,7 +479,6 @@ extension WatchSyncManager: WCSessionDelegate {
             if session.isReachable {
                 self.sendCurrentState()
                 self.syncLibraryState()  // Sync library when Watch reconnects
-                self.sendQueuedAlerts()
             }
         }
     }
@@ -726,16 +567,5 @@ extension WatchSyncManager {
     func syncFavorites(from audioTracks: [AudioTrack]) {
         let watchTracks = audioTracks.map { $0.toWatchTrack() }
         syncFavorites(watchTracks)
-    }
-
-    /// Send cry alert from CryDetectionService
-    func sendCryDetectionAlert(cryType: CryType, confidence: Double) {
-        let alert = CryAlert(
-            cryType: cryType,
-            confidence: confidence,
-            suggestedAction: cryType.suggestedAction,
-            suggestedPlaylistId: nil
-        )
-        sendCryAlert(alert)
     }
 }

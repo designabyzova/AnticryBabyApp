@@ -224,29 +224,6 @@ class AudioEngine: ObservableObject {
             return true
         }
 
-        // 🚨 CRITICAL FIX: Check if CryDetection is actively monitoring!
-        // When CryDetection has an active input tap (microphone), we CANNOT switch
-        // from .playAndRecord to .playback - iOS throws '!pri' (priority conflict) error.
-        //
-        // The solution: .playAndRecord supports BOTH input AND output, so playback
-        // works perfectly fine while cry monitoring is active. We just skip the
-        // category change and use the existing session.
-        //
-        // This was causing "broken radio" sound because:
-        // 1. CryDetection activates .playAndRecord (microphone active)
-        // 2. AudioEngine tries to switch to .playback
-        // 3. iOS throws '!pri' error
-        // 4. Audio session gets corrupted/partially configured
-        // 5. NoiseGenerator produces distorted audio
-        if CryDetectionService.shared.isMonitoring {
-            let session = AVAudioSession.sharedInstance()
-            print("[AudioEngine] ⏭️ Skipping audio session change - CryDetection is monitoring")
-            print("[AudioEngine] ℹ️ Current session: \(session.category.rawValue) (supports playback)")
-            // The .playAndRecord category already supports audio output - we're good!
-            lastSessionConfigTime = now
-            return true
-        }
-
         // CRITICAL FIX: Use SYNCHRONOUS activation instead of debounced request
         // The debounced requestSession() was causing a race condition:
         // 1. requestSession() schedules debounced activation (100ms delay)
@@ -310,13 +287,6 @@ class AudioEngine: ObservableObject {
             return
         }
 
-        // 🚨 CRITICAL FIX: Don't try to change category if CryDetection is monitoring!
-        // This would cause '!pri' error and corrupt the audio session
-        if CryDetectionService.shared.isMonitoring {
-            print("[AudioEngine] ⏭️ CryDetection active - using existing session for playback")
-            return
-        }
-
         // Session not active or wrong category - activate it now!
         print("[AudioEngine] ⚠️ Audio session not active - activating now!")
         do {
@@ -329,12 +299,14 @@ class AudioEngine: ObservableObject {
     }
 
     private func setupNotifications() {
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.handleInterruption(notification)
             }
         }
@@ -344,7 +316,7 @@ class AudioEngine: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.handleRouteChange(notification)
             }
         }
@@ -355,7 +327,7 @@ class AudioEngine: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 print("[AudioEngine] ⚠️ Memory warning received - cleaning up")
                 self?.cleanup()
             }
@@ -367,7 +339,7 @@ class AudioEngine: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 if let level = notification.userInfo?["level"] as? String {
                     // Use aggressive cleanup for critical and emergency levels
                     let isAggressive = (level == "critical" || level == "emergency")
@@ -383,7 +355,7 @@ class AudioEngine: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.restoreNormalCacheLimits()
             }
         }
@@ -909,8 +881,10 @@ class AudioEngine: ObservableObject {
         let seekAmount = TimeInterval(speed) * seekInterval
 
         // Start a timer for continuous seeking
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         seekTimer = Timer.scheduledTimer(withTimeInterval: seekInterval, repeats: true) { [weak self] timer in
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     timer.invalidate()
                     return
@@ -1150,8 +1124,10 @@ class AudioEngine: ObservableObject {
 
         sleepTimerRemaining = timer.seconds
 
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         sleepTimerInstance = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.sleepTimerRemaining -= 1
 
@@ -1413,8 +1389,10 @@ class AudioEngine: ObservableObject {
         }
 
         // Observe buffering status
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         playerItemObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
                 switch item.status {
@@ -1446,7 +1424,7 @@ class AudioEngine: ObservableObject {
                         self.seek(to: pendingTime)
                     }
 
-                    // Report playback started
+                    // Report playback started (this can stay as Task - it's async network call)
                     Task {
                         try? await APIClient.shared.reportPlayback(trackId: track.id.uuidString, event: .started)
                     }
@@ -1469,7 +1447,7 @@ class AudioEngine: ObservableObject {
             object: playerItem,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.isBuffering = true
             }
         }
@@ -1480,7 +1458,7 @@ class AudioEngine: ObservableObject {
             object: playerItem,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.handleTrackEnd()
             }
         }
@@ -1491,8 +1469,11 @@ class AudioEngine: ObservableObject {
         guard let player = streamPlayer else { return }
 
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            Task { @MainActor in
+        // CRITICAL FIX: Use nil queue (fires on arbitrary queue) then dispatch to main
+        // This avoids "Publishing changes from within view updates" warnings
+        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: nil) { [weak self] time in
+            // Dispatch to main queue asynchronously to avoid view update conflicts
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
                 // CRITICAL FIX: Don't update currentTime while user is scrubbing the slider
@@ -1589,7 +1570,10 @@ class AudioEngine: ObservableObject {
         // PERFORMANCE FIX: Reduced from 0.5s to 1.0s (industry standard like Spotify)
         // Reduces CPU usage by 50% and prevents phone overheating
         progressTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+            // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+            // to avoid "Publishing changes from within view updates" warnings
+            // which cause UI freezes when timer fires during SwiftUI render cycle
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
                 // CRITICAL FIX: Don't update currentTime while user is scrubbing
@@ -1931,8 +1915,10 @@ class AudioEngine: ObservableObject {
         // Cancel any existing fade
         fadeTimer?.invalidate()
 
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         let newTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     timer.invalidate()
                     return
@@ -2045,9 +2031,11 @@ class AudioEngine: ObservableObject {
         }
 
         // Crossfade timer
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         fadeTimer?.invalidate()
         fadeTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     timer.invalidate()
                     return
@@ -2183,9 +2171,11 @@ class AudioEngine: ObservableObject {
         }
 
         // Fade in
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         fadeTimer?.invalidate()
         let newTimer = Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
-            Task { @MainActor [weak self] in
+            DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     timer.invalidate()
                     return
@@ -2290,7 +2280,9 @@ class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
     static let shared = AudioPlayerDelegate()
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        Task { @MainActor in
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
+        DispatchQueue.main.async {
             if flag {
                 // Use handleTrackEnd for consistent repeat/shuffle handling
                 AudioEngine.shared.handleTrackEndFromDelegate()

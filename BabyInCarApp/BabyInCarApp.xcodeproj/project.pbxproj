@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A976DB88E3A56AE199361E4 /* CryAlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE34BC8C5288B348AF5CED9C /* CryAlertsView.swift */; };
 		22C84F2AF9FD4E1FD1F03BDF /* WatchAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 567869108E01725C3BB01571 /* WatchAudioPlayer.swift */; };
 		2F3A374EE5B6F9F53A469C73 /* PlaybackSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */; };
 		361F761D2F0F6C5500F9A131 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 3069EDA3BDDC0886D32F4D88 /* SnapshotTesting */; };
@@ -23,7 +22,6 @@
 		6B8FA21D1F12E90150830CE6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */; };
 		717523F2C8DA1A555CB0D764 /* WatchStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */; };
 		7F9EBC73C0DDC9C1A263F393 /* BabyInCarWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */; };
-		8E0D5EDDA212DA43D3B19E17 /* CryPredictionAccuracyTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 809D3AE027D797A8F9914D8E /* CryPredictionAccuracyTracker.swift */; };
 		8F92896B4AAC67A42C0536F6 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */; };
 		A1000001 /* BabyInCarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* BabyInCarApp.swift */; };
 		A1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* SceneDelegate.swift */; };
@@ -40,11 +38,6 @@
 		A1000025 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000025 /* APIClient.swift */; };
 		A1000026 /* AudioDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000026 /* AudioDownloadManager.swift */; };
 		A1000027 /* AudioCacheService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000027 /* AudioCacheService.swift */; };
-		A1000028 /* CryDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000028 /* CryDetectionService.swift */; };
-		A1000029 /* CryClassificationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000029 /* CryClassificationModel.swift */; };
-		A100002B /* AdvancedFeatureExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002B /* AdvancedFeatureExtractor.swift */; };
-		A100002D /* CryPatternTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002D /* CryPatternTracker.swift */; };
-		A100002E /* BabyAudioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002E /* BabyAudioAnalyzer.swift */; };
 		A100002F /* BabyProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200002F /* BabyProfileManager.swift */; };
 		A1000030 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* ContentView.swift */; };
 		A1000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* OnboardingView.swift */; };
@@ -65,8 +58,6 @@
 		A1000042 /* PlaylistManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000042 /* PlaylistManager.swift */; };
 		A1000043 /* AnalyticsCloudService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000043 /* AnalyticsCloudService.swift */; };
 		A1000044 /* MLRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000044 /* MLRecommendationEngine.swift */; };
-		A1000045 /* CryDetectorMLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000045 /* CryDetectorMLModel.swift */; };
-		A1000046 /* CryClassifierMLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000046 /* CryClassifierMLModel.swift */; };
 		A1000047 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000047 /* Typography.swift */; };
 		A1000048 /* AppIconGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000048 /* AppIconGenerator.swift */; };
 		A1000049 /* IconExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000049 /* IconExporter.swift */; };
@@ -97,23 +88,13 @@
 		A1000095 /* EnvironmentSoundDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000095 /* EnvironmentSoundDetector.swift */; };
 		A1000096 /* TrialManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000096 /* TrialManager.swift */; };
 		A1000097 /* EngagementTriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000097 /* EngagementTriggerService.swift */; };
-		A1000098 /* BabyMoodLLMEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000098 /* BabyMoodLLMEngine.swift */; };
-		A1000099 /* BabyMoodIntelligence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000099 /* BabyMoodIntelligence.swift */; };
-		A100009A /* CryAudioEmbedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009A /* CryAudioEmbedder.swift */; };
 		A100009B /* ContextSignalCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009B /* ContextSignalCollector.swift */; };
 		A100009C /* DynamicSoundMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009C /* DynamicSoundMixer.swift */; };
-		A100009D /* AdaptiveFeedbackLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009D /* AdaptiveFeedbackLoop.swift */; };
-		A10000A0 /* CryAcousticProfiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000A0 /* CryAcousticProfiles.swift */; };
-		A10000A1 /* DeepInfantClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000A1 /* DeepInfantClassifier.swift */; };
-		A10000A2 /* MelSpectrogramGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000A2 /* MelSpectrogramGenerator.swift */; };
 		A10000A3 /* DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000A3 /* DeepInfant_V2.mlmodel */; };
 		A10000F1 /* FreePremiumComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F1 /* FreePremiumComparisonView.swift */; };
 		A10000F3 /* MemoryPressureMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F3 /* MemoryPressureMonitor.swift */; };
-		A10000F4 /* CryScenarioPlaylist.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F4 /* CryScenarioPlaylist.swift */; };
-		A10000F5 /* EmergencySession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F5 /* EmergencySession.swift */; };
 		A10000F6 /* TrackMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F6 /* TrackMetadata.swift */; };
 		A10000F7 /* UserLanguagePreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F7 /* UserLanguagePreference.swift */; };
-		A10000F9 /* PlaylistSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F9 /* PlaylistSelector.swift */; };
 		A10000FB /* CancelButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000FB /* CancelButton.swift */; };
 		A10000FC /* CurrentTrackCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000FC /* CurrentTrackCard.swift */; };
 		A10000FD /* TrackProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000FD /* TrackProgressBar.swift */; };
@@ -122,11 +103,11 @@
 		A1000100 /* LanguageBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000100 /* LanguageBadge.swift */; };
 		A1000101 /* CalmingScoreBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000101 /* CalmingScoreBadge.swift */; };
 		A1000102 /* TempoBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000102 /* TempoBadge.swift */; };
-		A1000103 /* UltraSmartPlaylistSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000103 /* UltraSmartPlaylistSelector.swift */; };
 		A1000106 /* SpotifyQueueEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000106 /* SpotifyQueueEngine.swift */; };
 		A1000107 /* LanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000107 /* LanguageSelectionView.swift */; };
 		A1000108 /* WatchSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000108 /* WatchSyncManager.swift */; };
 		A1000109 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A2000109 /* Localizable.xcstrings */; };
+		A1000110 /* UltraSmartPlaylistSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000110 /* UltraSmartPlaylistSelector.swift */; };
 		A1000210 /* SiriIntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000210 /* SiriIntentHandler.swift */; };
 		A1000300 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000300 /* AudioSessionManager.swift */; };
 		A1000311 /* SiriShortcutsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000311 /* SiriShortcutsService.swift */; };
@@ -137,7 +118,6 @@
 		C5E84D07A0C31B3F0DF9301D /* PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6B4D4590AA16B4858A2EED /* PlaybackContext.swift */; };
 		CF68B8E0F2DF4D3BD3EA95D7 /* PlaybackQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */; };
 		CFEEA0B45A301958F2F7875D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB48B79C6512CFA0D678E6ED /* Foundation.framework */; };
-		D014D85FB2CCDBBB666BD4D3 /* MockCryDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92EC647BF2148843A53C90F /* MockCryDetectionService.swift */; };
 		D7A36CD0CA59B28D67BB6BDD /* MemoryCleanupToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC78A623ABD7B192B2F969B /* MemoryCleanupToast.swift */; };
 		D9C43D2A296DB73CAFD1DB93 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559D56AE15E9B5EA1DD5162A /* WatchModels.swift */; };
 		DCB1EDAC03CC90EF79D2F003 /* PlaybackQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5F5BAD7791BC1D4D4919F0 /* PlaybackQueueView.swift */; };
@@ -148,7 +128,6 @@
 		F4A130084F1014B6FC4F75EE /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */; };
 		WATCH00001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = WATCH00002 /* Assets.xcassets */; };
 		WATCH00003 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WATCH00004 /* LibraryView.swift */; };
-		WATCH00005 /* EmergencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WATCH00006 /* EmergencyView.swift */; };
 		WATCH00011 /* WatchConnectivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WATCH00010 /* WatchConnectivityTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -216,7 +195,6 @@
 		24DA52BDCB52A7B3B21B3BA1 /* EnvironmentSoundDetectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnvironmentSoundDetectorTests.swift; sourceTree = "<group>"; };
 		260894FDBF40F49EAB9530C6 /* UltraSmartPlaylistSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelectorTests.swift; sourceTree = "<group>"; };
 		2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCharacteristicsAnalyzer.swift; sourceTree = "<group>"; };
-		34B27445C3AFEF4097047F00 /* EmergencyCryStopTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyCryStopTests.swift; sourceTree = "<group>"; };
 		361F76232F10907D00F9A131 /* BabyInCarAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BabyInCarAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		361F76242F10907D00F9A131 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		361F762E2F10907D00F9A131 /* BabyInCarAppIntentsUI.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BabyInCarAppIntentsUI.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -237,7 +215,6 @@
 		7728CBB1144588372F2A6EF5 /* ViewSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewSnapshotTests.swift; sourceTree = "<group>"; };
 		7AA044E9768D4DB60AFDC96E /* BabyInCarAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabyInCarAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7FFB20DE15A3F7E28683EE7D /* APIContentIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIContentIntegrationTests.swift; sourceTree = "<group>"; };
-		809D3AE027D797A8F9914D8E /* CryPredictionAccuracyTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryPredictionAccuracyTracker.swift; sourceTree = "<group>"; };
 		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FavoritesListView.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugMemoryOverlay.swift; sourceTree = "<group>"; };
 		84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -258,11 +235,6 @@
 		A2000025 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		A2000026 /* AudioDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDownloadManager.swift; sourceTree = "<group>"; };
 		A2000027 /* AudioCacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCacheService.swift; sourceTree = "<group>"; };
-		A2000028 /* CryDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryDetectionService.swift; sourceTree = "<group>"; };
-		A2000029 /* CryClassificationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryClassificationModel.swift; sourceTree = "<group>"; };
-		A200002B /* AdvancedFeatureExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedFeatureExtractor.swift; sourceTree = "<group>"; };
-		A200002D /* CryPatternTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryPatternTracker.swift; sourceTree = "<group>"; };
-		A200002E /* BabyAudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyAudioAnalyzer.swift; sourceTree = "<group>"; };
 		A200002F /* BabyProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyProfileManager.swift; sourceTree = "<group>"; };
 		A2000030 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A2000031 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -283,8 +255,6 @@
 		A2000042 /* PlaylistManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistManager.swift; sourceTree = "<group>"; };
 		A2000043 /* AnalyticsCloudService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCloudService.swift; sourceTree = "<group>"; };
 		A2000044 /* MLRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLRecommendationEngine.swift; sourceTree = "<group>"; };
-		A2000045 /* CryDetectorMLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryDetectorMLModel.swift; sourceTree = "<group>"; };
-		A2000046 /* CryClassifierMLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryClassifierMLModel.swift; sourceTree = "<group>"; };
 		A2000047 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		A2000048 /* AppIconGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconGenerator.swift; sourceTree = "<group>"; };
 		A2000049 /* IconExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconExporter.swift; sourceTree = "<group>"; };
@@ -317,23 +287,13 @@
 		A2000095 /* EnvironmentSoundDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSoundDetector.swift; sourceTree = "<group>"; };
 		A2000096 /* TrialManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialManager.swift; sourceTree = "<group>"; };
 		A2000097 /* EngagementTriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngagementTriggerService.swift; sourceTree = "<group>"; };
-		A2000098 /* BabyMoodLLMEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyMoodLLMEngine.swift; sourceTree = "<group>"; };
-		A2000099 /* BabyMoodIntelligence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyMoodIntelligence.swift; sourceTree = "<group>"; };
-		A200009A /* CryAudioEmbedder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryAudioEmbedder.swift; sourceTree = "<group>"; };
 		A200009B /* ContextSignalCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextSignalCollector.swift; sourceTree = "<group>"; };
 		A200009C /* DynamicSoundMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicSoundMixer.swift; sourceTree = "<group>"; };
-		A200009D /* AdaptiveFeedbackLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveFeedbackLoop.swift; sourceTree = "<group>"; };
-		A20000A0 /* CryAcousticProfiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryAcousticProfiles.swift; sourceTree = "<group>"; };
-		A20000A1 /* DeepInfantClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepInfantClassifier.swift; sourceTree = "<group>"; };
-		A20000A2 /* MelSpectrogramGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGenerator.swift; sourceTree = "<group>"; };
 		A20000A3 /* DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
 		A20000F1 /* FreePremiumComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreePremiumComparisonView.swift; sourceTree = "<group>"; };
 		A20000F3 /* MemoryPressureMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPressureMonitor.swift; sourceTree = "<group>"; };
-		A20000F4 /* CryScenarioPlaylist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryScenarioPlaylist.swift; sourceTree = "<group>"; };
-		A20000F5 /* EmergencySession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencySession.swift; sourceTree = "<group>"; };
 		A20000F6 /* TrackMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMetadata.swift; sourceTree = "<group>"; };
 		A20000F7 /* UserLanguagePreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLanguagePreference.swift; sourceTree = "<group>"; };
-		A20000F9 /* PlaylistSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistSelector.swift; sourceTree = "<group>"; };
 		A20000FB /* CancelButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CancelButton.swift; sourceTree = "<group>"; };
 		A20000FC /* CurrentTrackCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentTrackCard.swift; sourceTree = "<group>"; };
 		A20000FD /* TrackProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgressBar.swift; sourceTree = "<group>"; };
@@ -342,11 +302,11 @@
 		A2000100 /* LanguageBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageBadge.swift; sourceTree = "<group>"; };
 		A2000101 /* CalmingScoreBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmingScoreBadge.swift; sourceTree = "<group>"; };
 		A2000102 /* TempoBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempoBadge.swift; sourceTree = "<group>"; };
-		A2000103 /* UltraSmartPlaylistSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelector.swift; sourceTree = "<group>"; };
 		A2000106 /* SpotifyQueueEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyQueueEngine.swift; sourceTree = "<group>"; };
 		A2000107 /* LanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSelectionView.swift; sourceTree = "<group>"; };
 		A2000108 /* WatchSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncManager.swift; sourceTree = "<group>"; };
 		A2000109 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A2000110 /* UltraSmartPlaylistSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelector.swift; sourceTree = "<group>"; };
 		A2000210 /* SiriIntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriIntentHandler.swift; sourceTree = "<group>"; };
 		A2000300 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
 		A2000311 /* SiriShortcutsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriShortcutsService.swift; sourceTree = "<group>"; };
@@ -355,12 +315,10 @@
 		A3000000 /* BabyInCarApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		B2B4790E8DF1B874FE993ECB /* MemoryProfilingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryProfilingTests.swift; sourceTree = "<group>"; };
-		B76A95C0474758CC955FF8D5 /* BabyMoodIntelligenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabyMoodIntelligenceTests.swift; sourceTree = "<group>"; };
 		B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackQueueManager.swift; sourceTree = "<group>"; };
 		BF6B4D4590AA16B4858A2EED /* PlaybackContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlaybackContext.swift; path = BabyInCarApp/Models/PlaybackContext.swift; sourceTree = SOURCE_ROOT; };
 		C678D15B421B8B28FA0EC0C8 /* NowPlayingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NowPlayingView.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchStorageManager.swift; path = WatchStorageManager.swift; sourceTree = "<group>"; };
-		C92EC647BF2148843A53C90F /* MockCryDetectionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockCryDetectionService.swift; sourceTree = "<group>"; };
 		C9441C3D0ADB70B17C07C21E /* IconExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IconExportTests.swift; sourceTree = "<group>"; };
 		CF2B1A1C16E2030AEB1E5B9B /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		CFC78A623ABD7B192B2F969B /* MemoryCleanupToast.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryCleanupToast.swift; sourceTree = "<group>"; };
@@ -370,15 +328,12 @@
 		DA5F5BAD7791BC1D4D4919F0 /* PlaybackQueueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackQueueView.swift; sourceTree = "<group>"; };
 		DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComprehensiveMemoryTests.swift; sourceTree = "<group>"; };
 		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchConnectivityManager.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
-		EE34BC8C5288B348AF5CED9C /* CryAlertsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CryAlertsView.swift; path = CryAlertsView.swift; sourceTree = "<group>"; };
 		F1E195D9EBFD4E8F055D7E07 /* EmergencyResponseIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyResponseIntegrationTests.swift; sourceTree = "<group>"; };
 		F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageFilteringTests.swift; sourceTree = "<group>"; };
-		F8369FDB6781651165175825 /* CryDetectionServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionServiceTests.swift; sourceTree = "<group>"; };
 		FB48B79C6512CFA0D678E6ED /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		WATCH00002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		WATCH00004 /* LibraryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LibraryView.swift; path = LibraryView.swift; sourceTree = "<group>"; };
-		WATCH00006 /* EmergencyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EmergencyView.swift; path = EmergencyView.swift; sourceTree = "<group>"; };
 		WATCH00010 /* WatchConnectivityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -503,7 +458,6 @@
 		24B17C7A738B8CDD695BABA8 /* Mocks */ = {
 			isa = PBXGroup;
 			children = (
-				C92EC647BF2148843A53C90F /* MockCryDetectionService.swift */,
 			);
 			path = Mocks;
 			sourceTree = "<group>";
@@ -601,8 +555,6 @@
 				A2000013 /* BabyMoodProfile.swift */,
 				A2000014 /* ChatMessage.swift */,
 				A2000015 /* EnvironmentState.swift */,
-				A20000F4 /* CryScenarioPlaylist.swift */,
-				A20000F5 /* EmergencySession.swift */,
 				A20000F6 /* TrackMetadata.swift */,
 				A20000F7 /* UserLanguagePreference.swift */,
 			);
@@ -621,22 +573,13 @@
 				A2000025 /* APIClient.swift */,
 				A2000026 /* AudioDownloadManager.swift */,
 				A2000027 /* AudioCacheService.swift */,
-				A2000028 /* CryDetectionService.swift */,
-				A2000029 /* CryClassificationModel.swift */,
 				A2000090 /* AdaptiveLearningEngine.swift */,
 				A2000091 /* FreemiumGatekeeper.swift */,
 				A2000095 /* EnvironmentSoundDetector.swift */,
 				A2000096 /* TrialManager.swift */,
 				A2000097 /* EngagementTriggerService.swift */,
-				A2000098 /* BabyMoodLLMEngine.swift */,
-				A2000099 /* BabyMoodIntelligence.swift */,
-				A200009A /* CryAudioEmbedder.swift */,
 				A200009B /* ContextSignalCollector.swift */,
 				A200009C /* DynamicSoundMixer.swift */,
-				A200009D /* AdaptiveFeedbackLoop.swift */,
-				A200002B /* AdvancedFeatureExtractor.swift */,
-				A200002D /* CryPatternTracker.swift */,
-				A200002E /* BabyAudioAnalyzer.swift */,
 				A200002F /* BabyProfileManager.swift */,
 				A2000043 /* AnalyticsCloudService.swift */,
 				A2000044 /* MLRecommendationEngine.swift */,
@@ -646,15 +589,13 @@
 				A2000066 /* ResearchKnowledgeBase.swift */,
 				A2000067 /* SmartCarPlayController.swift */,
 				A20000F3 /* MemoryPressureMonitor.swift */,
-				A20000F9 /* PlaylistSelector.swift */,
-				A2000103 /* UltraSmartPlaylistSelector.swift */,
 				A2000106 /* SpotifyQueueEngine.swift */,
+				A2000110 /* UltraSmartPlaylistSelector.swift */,
 				A2000300 /* AudioSessionManager.swift */,
 				A2000311 /* SiriShortcutsService.swift */,
 				A2000312 /* NowPlayingService.swift */,
 				5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */,
 				B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */,
-				809D3AE027D797A8F9914D8E /* CryPredictionAccuracyTracker.swift */,
 				8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */,
 				A2000108 /* WatchSyncManager.swift */,
 				2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */,
@@ -665,11 +606,6 @@
 		A5000021 /* ML */ = {
 			isa = PBXGroup;
 			children = (
-				A2000045 /* CryDetectorMLModel.swift */,
-				A2000046 /* CryClassifierMLModel.swift */,
-				A20000A0 /* CryAcousticProfiles.swift */,
-				A20000A1 /* DeepInfantClassifier.swift */,
-				A20000A2 /* MelSpectrogramGenerator.swift */,
 				A20000A3 /* DeepInfant_V2.mlmodel */,
 			);
 			path = ML;
@@ -799,10 +735,7 @@
 			children = (
 				61173870F4BC522E62B4DBE5 /* MemoryMonitorTests.swift */,
 				882CE90CC9A0F96675200F13 /* EffectivenessTrackingTests.swift */,
-				F8369FDB6781651165175825 /* CryDetectionServiceTests.swift */,
-				B76A95C0474758CC955FF8D5 /* BabyMoodIntelligenceTests.swift */,
 				7FFB20DE15A3F7E28683EE7D /* APIContentIntegrationTests.swift */,
-				34B27445C3AFEF4097047F00 /* EmergencyCryStopTests.swift */,
 				260894FDBF40F49EAB9530C6 /* UltraSmartPlaylistSelectorTests.swift */,
 				11E4EF70A2A971E65CD43CEC /* SmartCarPlayControllerTests.swift */,
 				3BACE3B7EFB959E7346FC97D /* NatureSoundsPlaybackTests.swift */,
@@ -844,11 +777,9 @@
 				FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */,
 				C678D15B421B8B28FA0EC0C8 /* NowPlayingView.swift */,
 				81DFAB23B74432CEB2049442 /* FavoritesListView.swift */,
-				EE34BC8C5288B348AF5CED9C /* CryAlertsView.swift */,
 				13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */,
 				6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */,
 				WATCH00004 /* LibraryView.swift */,
-				WATCH00006 /* EmergencyView.swift */,
 			);
 			name = Views;
 			path = Views;
@@ -1074,7 +1005,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D014D85FB2CCDBBB666BD4D3 /* MockCryDetectionService.swift in Sources */,
 				WATCH00011 /* WatchConnectivityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1102,8 +1032,6 @@
 				A1000025 /* APIClient.swift in Sources */,
 				A1000026 /* AudioDownloadManager.swift in Sources */,
 				A1000027 /* AudioCacheService.swift in Sources */,
-				A1000028 /* CryDetectionService.swift in Sources */,
-				A1000029 /* CryClassificationModel.swift in Sources */,
 				A1000090 /* AdaptiveLearningEngine.swift in Sources */,
 				A1000091 /* FreemiumGatekeeper.swift in Sources */,
 				A1000092 /* PremiumBadge.swift in Sources */,
@@ -1113,23 +1041,11 @@
 				A1000095 /* EnvironmentSoundDetector.swift in Sources */,
 				A1000096 /* TrialManager.swift in Sources */,
 				A1000097 /* EngagementTriggerService.swift in Sources */,
-				A1000098 /* BabyMoodLLMEngine.swift in Sources */,
-				A1000099 /* BabyMoodIntelligence.swift in Sources */,
-				A100009A /* CryAudioEmbedder.swift in Sources */,
 				A100009B /* ContextSignalCollector.swift in Sources */,
 				A100009C /* DynamicSoundMixer.swift in Sources */,
-				A100009D /* AdaptiveFeedbackLoop.swift in Sources */,
-				A100002B /* AdvancedFeatureExtractor.swift in Sources */,
-				A100002D /* CryPatternTracker.swift in Sources */,
-				A100002E /* BabyAudioAnalyzer.swift in Sources */,
 				A100002F /* BabyProfileManager.swift in Sources */,
 				A1000043 /* AnalyticsCloudService.swift in Sources */,
 				A1000044 /* MLRecommendationEngine.swift in Sources */,
-				A1000045 /* CryDetectorMLModel.swift in Sources */,
-				A1000046 /* CryClassifierMLModel.swift in Sources */,
-				A10000A0 /* CryAcousticProfiles.swift in Sources */,
-				A10000A1 /* DeepInfantClassifier.swift in Sources */,
-				A10000A2 /* MelSpectrogramGenerator.swift in Sources */,
 				A10000A3 /* DeepInfant_V2.mlmodel in Sources */,
 				A1000030 /* ContentView.swift in Sources */,
 				A1000031 /* OnboardingView.swift in Sources */,
@@ -1168,12 +1084,8 @@
 				A1000066 /* ResearchKnowledgeBase.swift in Sources */,
 				A1000067 /* SmartCarPlayController.swift in Sources */,
 				A10000F3 /* MemoryPressureMonitor.swift in Sources */,
-				A10000F4 /* CryScenarioPlaylist.swift in Sources */,
-				A10000F5 /* EmergencySession.swift in Sources */,
 				A10000F6 /* TrackMetadata.swift in Sources */,
 				A10000F7 /* UserLanguagePreference.swift in Sources */,
-				A10000F9 /* PlaylistSelector.swift in Sources */,
-				A1000103 /* UltraSmartPlaylistSelector.swift in Sources */,
 				A10000FB /* CancelButton.swift in Sources */,
 				A10000FC /* CurrentTrackCard.swift in Sources */,
 				A10000FD /* TrackProgressBar.swift in Sources */,
@@ -1183,10 +1095,10 @@
 				A1000101 /* CalmingScoreBadge.swift in Sources */,
 				A1000102 /* TempoBadge.swift in Sources */,
 				A1000106 /* SpotifyQueueEngine.swift in Sources */,
+				A1000110 /* UltraSmartPlaylistSelector.swift in Sources */,
 				3633837E692173ECC9535D89 /* WatchModels.swift in Sources */,
 				2F3A374EE5B6F9F53A469C73 /* PlaybackSessionManager.swift in Sources */,
 				CF68B8E0F2DF4D3BD3EA95D7 /* PlaybackQueueManager.swift in Sources */,
-				8E0D5EDDA212DA43D3B19E17 /* CryPredictionAccuracyTracker.swift in Sources */,
 				DCB1EDAC03CC90EF79D2F003 /* PlaybackQueueView.swift in Sources */,
 				66028A3E62C9A355D42EB679 /* MemoryMonitor.swift in Sources */,
 				C318B073148ACC7E8A068F15 /* DebugMemoryOverlay.swift in Sources */,
@@ -1210,11 +1122,9 @@
 				6B8FA21D1F12E90150830CE6 /* ContentView.swift in Sources */,
 				45281BAD87657278983DC8E3 /* NowPlayingView.swift in Sources */,
 				EBBF0B6A4747FC6B6869CDB6 /* FavoritesListView.swift in Sources */,
-				0A976DB88E3A56AE199361E4 /* CryAlertsView.swift in Sources */,
 				E3740177B761A7C8AE82E10A /* SleepTimerView.swift in Sources */,
 				3CE3E531510641868C9A9FE7 /* WatchOnboardingView.swift in Sources */,
 				WATCH00003 /* LibraryView.swift in Sources */,
-				WATCH00005 /* EmergencyView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

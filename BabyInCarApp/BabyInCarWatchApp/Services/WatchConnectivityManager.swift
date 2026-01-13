@@ -19,10 +19,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published private(set) var isCompanionAppInstalled = false
     @Published private(set) var iPhonePlaybackState: PlaybackState = .idle
     @Published private(set) var favorites: [WatchTrack] = []
-    @Published private(set) var pendingCryAlerts: [CryAlert] = []
     @Published private(set) var activationState: WCSessionActivationState = .notActivated
     @Published private(set) var libraryState: WatchLibraryState = .empty
-    @Published private(set) var isEmergencyModeActive = false
 
     // MARK: - Private Properties
 
@@ -174,43 +172,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         sendCommand(.playCategory(categoryId: categoryId))
     }
 
-    /// Start emergency mode on iPhone (music only)
-    func startEmergencyMode() {
-        sendCommand(.startEmergencyMode)
-        isEmergencyModeActive = true
-        WKInterfaceDevice.current().play(.notification)
-    }
-
-    /// Start emergency mode on iPhone WITH cry detection monitoring enabled
-    /// This is the full emergency experience - plays soothing music AND listens for baby cries
-    func startEmergencyModeWithCryDetection() {
-        sendCommand(.startEmergencyModeWithCryDetection)
-        isEmergencyModeActive = true
-        WKInterfaceDevice.current().play(.notification)
-        print("[WatchConnectivity] 🚨🎤 Requesting emergency mode WITH cry detection")
-    }
-
-    /// Stop emergency mode on iPhone
-    func stopEmergencyMode() {
-        sendCommand(.stopEmergencyMode)
-        isEmergencyModeActive = false
-    }
-
     /// Request library sync from iPhone
     func requestLibrarySync() {
         sendCommand(.requestLibrarySync)
-    }
-
-    // MARK: - Cry Alert Management
-
-    /// Dismiss a cry alert
-    func dismissAlert(_ alert: CryAlert) {
-        pendingCryAlerts.removeAll { $0.id == alert.id }
-    }
-
-    /// Dismiss all cry alerts
-    func dismissAllAlerts() {
-        pendingCryAlerts.removeAll()
     }
 
     // MARK: - Private Helpers
@@ -227,63 +191,6 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func saveFavorites() {
         if let data = try? JSONEncoder().encode(favorites) {
             UserDefaults.standard.set(data, forKey: "watchFavorites")
-        }
-    }
-
-    private func handleCryAlert(_ alert: CryAlert) {
-        // Add to pending alerts
-        pendingCryAlerts.insert(alert, at: 0)
-
-        // Keep only last 20 alerts
-        if pendingCryAlerts.count > 20 {
-            pendingCryAlerts = Array(pendingCryAlerts.prefix(20))
-        }
-
-        // Play haptic notification
-        WKInterfaceDevice.current().play(.notification)
-
-        // Post local notification
-        postCryAlertNotification(alert)
-    }
-
-    private func postCryAlertNotification(_ alert: CryAlert) {
-        let content = UNMutableNotificationContent()
-        content.title = "Cry Detected: \(alert.cryType.displayName)"
-        content.body = alert.suggestedAction
-        content.categoryIdentifier = "CRY_ALERT"
-        content.sound = .default
-
-        // Add alert data for notification controller
-        if let data = try? JSONEncoder().encode(alert) {
-            content.userInfo = ["alertData": data]
-        }
-
-        // Add action button
-        let playMusicAction = UNNotificationAction(
-            identifier: "PLAY_MUSIC",
-            title: "Play Soothing Music",
-            options: .foreground
-        )
-
-        let category = UNNotificationCategory(
-            identifier: "CRY_ALERT",
-            actions: [playMusicAction],
-            intentIdentifiers: [],
-            options: []
-        )
-
-        UNUserNotificationCenter.current().setNotificationCategories([category])
-
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil  // Immediate
-        )
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("[WatchConnectivity] Failed to post notification: \(error)")
-            }
         }
     }
 }
@@ -389,24 +296,7 @@ extension WatchConnectivityManager: WCSessionDelegate {
 
     @MainActor
     private func handleReceivedMessage(_ message: [String: Any]) {
-        // Handle cry alert
-        if let alertData = message["cryAlert"] as? Data {
-            do {
-                let alert = try JSONDecoder().decode(CryAlert.self, from: alertData)
-                handleCryAlert(alert)
-            } catch {
-                print("[WatchConnectivity] Failed to decode cry alert: \(error)")
-            }
-        }
-
-        // Handle emergency state
-        if let isActive = message["emergencyState"] as? Bool {
-            self.isEmergencyModeActive = isActive
-            if isActive {
-                WKInterfaceDevice.current().play(.notification)
-            }
-            print("[WatchConnectivity] Emergency mode: \(isActive)")
-        }
+        // Handle messages from iPhone (no cry alerts)
     }
 
     // MARK: - File Transfer
