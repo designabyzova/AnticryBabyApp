@@ -188,7 +188,7 @@ struct FreePremiumComparisonView: View {
     private var comparisonRows: [ComparisonRowData] {
         [
             ComparisonRowData(
-                feature: "Cry Detection & Classification",
+                feature: "Mood Selection & Tracking",
                 freeValue: .checkmark,
                 premiumValue: .checkmark,
                 highlight: false
@@ -284,12 +284,12 @@ struct FreePremiumComparisonView: View {
                     )
                 }
 
-                if stats.cryDetectionCount > 3 {
+                if stats.feedbackSessionCount > 3 {
                     PersonalizedValueProp(
                         icon: "brain.head.profile",
                         iconColor: .appSuccess,
-                        title: "AI has learned from \(stats.cryDetectionCount) sessions",
-                        subtitle: "Unlock full AI insights and predictions"
+                        title: "Learned from \(stats.feedbackSessionCount) feedback sessions",
+                        subtitle: "Unlock full insights and recommendations"
                     )
                 }
             }
@@ -366,7 +366,7 @@ struct FreePremiumComparisonView: View {
         usageStats = UsageStats(
             premiumTracksViewed: gatekeeper.premiumTracksViewedCount,
             effectiveTracks: effectiveness.effectiveTracksCount,
-            cryDetectionCount: engagement.cryDetectionCount
+            feedbackSessionCount: engagement.feedbackSessionCount
         )
     }
 }
@@ -376,7 +376,7 @@ struct FreePremiumComparisonView: View {
 struct UsageStats {
     let premiumTracksViewed: Int
     let effectiveTracks: Int
-    let cryDetectionCount: Int
+    let feedbackSessionCount: Int
 }
 
 struct ComparisonRowData {

@@ -1153,10 +1153,8 @@ class AudioEngine: ObservableObject {
         print("[AudioEngine] 🎛️ Starting generated audio: \(generatorType.rawValue)")
         print("[AudioEngine] 📢 Volume: \(volume), Muted: \(isMuted), Crossfading: \(isCrossfading)")
 
-        // CRITICAL FIX: Use AudioSessionManager to avoid category conflicts
-        // When CryDetection is active with .playAndRecord, directly setting .playback
-        // causes '!pri' error (iOS refuses category switch while input tap is active).
-        // AudioSessionManager uses .playAndRecord for emergencyPlayback to avoid this.
+        // Use AudioSessionManager to configure audio session for playback.
+        // This ensures exclusive playback mode (pauses other audio apps).
         do {
             try AudioSessionManager.shared.activateSessionSync(
                 mode: .emergencyPlayback,
@@ -2705,9 +2703,8 @@ class NoiseGenerator: @unchecked Sendable {
             let outputs = currentRoute.outputs.map { "\($0.portName) (\($0.portType.rawValue))" }.joined(separator: ", ")
             print("[NoiseGenerator] 📱 Audio route before start: \(outputs.isEmpty ? "None" : outputs)")
 
-            // CRITICAL FIX: Don't change audio session category here!
+            // Don't change audio session category here!
             // AudioSessionManager already configured the session before NoiseGenerator was created.
-            // Changing category here would cause '!pri' error if CryDetection is active.
             // Just verify session is active and start the engine.
             if !session.isOtherAudioPlaying && !session.currentRoute.outputs.isEmpty {
                 // Session already configured by AudioSessionManager, just ensure it's active

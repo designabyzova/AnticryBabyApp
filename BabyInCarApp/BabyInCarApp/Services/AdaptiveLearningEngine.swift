@@ -2,9 +2,9 @@
 //  AdaptiveLearningEngine.swift
 //  BabyInCarApp
 //
-//  Self-learning engine that adapts to each baby's unique cry patterns
-//  Based on research: MFCC features + Random Forest achieves 96.39% accuracy
-//  Reference: Frontiers in AI 2024, DeepInfant CoreML
+//  Learning engine that tracks which sounds work best for each baby's mood.
+//  Uses manual user feedback ("It Helped" / "Didn't Help") to learn preferences.
+//  NOTE: No automatic detection - all mood information is manually entered by parent.
 //
 
 import Foundation
@@ -74,12 +74,14 @@ class AdaptiveLearningEngine: ObservableObject {
     /// Setup memory cleanup observers
     private func setupMemoryObservers() {
         // MEMORY OPTIMIZATION (Increment 0028): Clean up on memory warnings
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 print("[AdaptiveLearning] ⚠️ Memory warning received - cleaning up")
                 self?.cleanup()
             }
@@ -91,7 +93,7 @@ class AdaptiveLearningEngine: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 if let level = notification.userInfo?["level"] as? String {
                     print("[AdaptiveLearning] 🧹 Memory cleanup requested (\(level)) - cleaning up")
                     self?.cleanup()
@@ -339,7 +341,7 @@ class AdaptiveLearningEngine: ObservableObject {
     }
 
     private func getResearchBasedDefaults(for cryType: CryType) -> [GeneratorType] {
-        // Based on scientific research (Frontiers in AI 2024, DeepInfant)
+        // Research-based sound recommendations for different baby moods
         switch cryType {
         case .hunger:
             return [.shushing, .womb, .heartbeat, .aquarium]

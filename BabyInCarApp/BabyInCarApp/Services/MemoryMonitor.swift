@@ -88,8 +88,10 @@ class MemoryMonitor: ObservableObject {
 
         // THERMAL FIX: Schedule timer for 15-second intervals (was 5s)
         // Memory changes slowly - checking every 5s was overkill and added unnecessary CPU load
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         timer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.updateMemoryUsage()
                 self?.checkThresholds()
             }
@@ -125,13 +127,12 @@ class MemoryMonitor: ObservableObject {
         // These are estimates - actual values would need Instruments
         let total = currentMemoryMB
 
-        // Rough estimates based on increment 0022 analysis
+        // Rough estimates based on memory profiling
         memoryBreakdown = [
-            "Audio Buffers": min(total * 0.35, 30.0),      // ~35% or max 30MB
-            "AI Engines": min(total * 0.25, 20.0),         // ~25% or max 20MB
-            "Cry Detection": min(total * 0.10, 5.0),       // ~10% or max 5MB
-            "UI/System": min(total * 0.20, 15.0),          // ~20% or max 15MB
-            "Other": max(0, total - 70.0)                   // Remainder
+            "Audio Buffers": min(total * 0.40, 35.0),      // ~40% or max 35MB
+            "Learning Engine": min(total * 0.20, 15.0),    // ~20% or max 15MB
+            "Content Library": min(total * 0.15, 10.0),    // ~15% or max 10MB
+            "UI/System": min(total * 0.25, 20.0),          // ~25% or max 20MB
         ]
     }
 

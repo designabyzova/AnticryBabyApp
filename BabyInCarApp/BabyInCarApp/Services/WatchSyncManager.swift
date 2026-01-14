@@ -188,12 +188,14 @@ final class WatchSyncManager: NSObject, ObservableObject {
 
         print("[WatchSync] Received command from watch: \(command)")
 
-        Task { @MainActor in
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
+        DispatchQueue.main.async { [weak self] in
             switch command {
             case .play:
                 // If nothing is loaded, start a default playlist
                 if AudioEngine.shared.currentTrack == nil {
-                    startDefaultPlayback()
+                    self?.startDefaultPlayback()
                 } else {
                     AudioEngine.shared.resume()
                 }
@@ -206,7 +208,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
                     AudioEngine.shared.pause()
                 } else if AudioEngine.shared.currentTrack == nil {
                     // Nothing loaded - start default playback
-                    startDefaultPlayback()
+                    self?.startDefaultPlayback()
                 } else {
                     AudioEngine.shared.resume()
                 }
@@ -242,30 +244,30 @@ final class WatchSyncManager: NSObject, ObservableObject {
                 if let playlistId = playlistId {
                     // Load specific playlist
                     print("[WatchSync] Starting playlist: \(playlistId)")
-                    playCategory(categoryId: playlistId)
+                    self?.playCategory(categoryId: playlistId)
                 } else {
                     // Start default soothing music
                     print("[WatchSync] Starting default soothing music")
-                    startDefaultPlayback()
+                    self?.startDefaultPlayback()
                 }
 
             case .requestStateSync:
-                sendCurrentState()
-                syncLibraryState()
+                self?.sendCurrentState()
+                self?.syncLibraryState()
 
             case .playTrack(let trackId):
                 // Find and play specific track
                 print("[WatchSync] Playing track: \(trackId)")
                 if let track = ContentLibraryService.shared.getTrack(byId: trackId) {
                     AudioEngine.shared.play(track: track)
-                    sendCurrentState()
+                    self?.sendCurrentState()
                 }
 
             case .playCategory(let categoryId):
-                playCategory(categoryId: categoryId)
+                self?.playCategory(categoryId: categoryId)
 
             case .requestLibrarySync:
-                syncLibraryState()
+                self?.syncLibraryState()
             }
         }
     }
@@ -439,11 +441,13 @@ final class WatchSyncManager: NSObject, ObservableObject {
 }
 
 // MARK: - WCSessionDelegate
+// CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+// to avoid "Publishing changes from within view updates" warnings
 
 extension WatchSyncManager: WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.activationState = activationState
             self.isPaired = session.isPaired
             self.isWatchAppInstalled = session.isWatchAppInstalled
@@ -472,7 +476,7 @@ extension WatchSyncManager: WCSessionDelegate {
     }
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.isWatchReachable = session.isReachable
             print("[WatchSync] Reachability changed: \(session.isReachable)")
 
@@ -484,7 +488,7 @@ extension WatchSyncManager: WCSessionDelegate {
     }
 
     nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.isPaired = session.isPaired
             self.isWatchAppInstalled = session.isWatchAppInstalled
             print("[WatchSync] Watch state changed - paired: \(session.isPaired), installed: \(session.isWatchAppInstalled)")
@@ -494,14 +498,14 @@ extension WatchSyncManager: WCSessionDelegate {
     // MARK: - Message Receiving
 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        Task { @MainActor in
-            handleReceivedMessage(message)
+        DispatchQueue.main.async {
+            self.handleReceivedMessage(message)
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
-        Task { @MainActor in
-            handleReceivedMessage(message)
+        DispatchQueue.main.async {
+            self.handleReceivedMessage(message)
             replyHandler(["status": "received"])
         }
     }
@@ -527,7 +531,7 @@ extension WatchSyncManager: WCSessionDelegate {
     // MARK: - File Transfer
 
     nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
-        Task { @MainActor in
+        DispatchQueue.main.async {
             if let trackId = fileTransfer.file.metadata?["trackId"] as? String {
                 self.pendingTransfers.removeValue(forKey: trackId)
 

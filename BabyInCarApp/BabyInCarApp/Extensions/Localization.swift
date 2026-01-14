@@ -49,13 +49,13 @@ enum L10n {
         }
     }
 
-    // MARK: - Emergency Cry Detection
+    // MARK: - Emergency Playback
     enum Emergency {
         static let title = LocalizedStringKey("emergency.title")
         static let subtitle = LocalizedStringKey("emergency.subtitle")
-        static let startMonitoring = LocalizedStringKey("emergency.startMonitoring")
-        static let stopMonitoring = LocalizedStringKey("emergency.stopMonitoring")
-        static let listening = LocalizedStringKey("emergency.listening")
+        static let startPlayback = LocalizedStringKey("emergency.startMonitoring")
+        static let stopPlayback = LocalizedStringKey("emergency.stopMonitoring")
+        static let playing = LocalizedStringKey("emergency.listening")
     }
 
     // MARK: - Cry Types

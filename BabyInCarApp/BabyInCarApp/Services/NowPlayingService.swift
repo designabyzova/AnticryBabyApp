@@ -34,10 +34,13 @@ class NowPlayingService: ObservableObject {
 
         print("[NowPlaying] Setting up remote command center")
 
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
+
         // Play command
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.resume()
             }
             return MPRemoteCommandHandlerStatus.success
@@ -46,7 +49,7 @@ class NowPlayingService: ObservableObject {
         // Pause command
         commandCenter.pauseCommand.isEnabled = true
         commandCenter.pauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.pause()
             }
             return MPRemoteCommandHandlerStatus.success
@@ -55,7 +58,7 @@ class NowPlayingService: ObservableObject {
         // Toggle play/pause
         commandCenter.togglePlayPauseCommand.isEnabled = true
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 guard let self = self else { return }
                 if self.audioEngine.playbackState == .playing {
                     self.audioEngine.pause()
@@ -69,7 +72,7 @@ class NowPlayingService: ObservableObject {
         // Stop command
         commandCenter.stopCommand.isEnabled = true
         commandCenter.stopCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.stop()
             }
             return MPRemoteCommandHandlerStatus.success
@@ -78,7 +81,7 @@ class NowPlayingService: ObservableObject {
         // Next track
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.next()
             }
             return MPRemoteCommandHandlerStatus.success
@@ -87,7 +90,7 @@ class NowPlayingService: ObservableObject {
         // Previous track
         commandCenter.previousTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.previous()
             }
             return MPRemoteCommandHandlerStatus.success
@@ -99,7 +102,7 @@ class NowPlayingService: ObservableObject {
             guard let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
                 return MPRemoteCommandHandlerStatus.commandFailed
             }
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.seek(to: positionEvent.positionTime)
             }
             return MPRemoteCommandHandlerStatus.success
@@ -109,7 +112,7 @@ class NowPlayingService: ObservableObject {
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [15]
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.skipForward(seconds: 15)
             }
             return MPRemoteCommandHandlerStatus.success
@@ -119,7 +122,7 @@ class NowPlayingService: ObservableObject {
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.audioEngine.skipBackward(seconds: 15)
             }
             return MPRemoteCommandHandlerStatus.success
@@ -129,7 +132,7 @@ class NowPlayingService: ObservableObject {
         commandCenter.likeCommand.isEnabled = true
         commandCenter.likeCommand.localizedTitle = "Add to Favorites"
         commandCenter.likeCommand.addTarget { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 guard let self = self,
                       let track = self.audioEngine.currentTrack else {
                     return

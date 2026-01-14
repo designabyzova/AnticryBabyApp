@@ -85,12 +85,10 @@
 		A1000092 /* PremiumBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000092 /* PremiumBadge.swift */; };
 		A1000093 /* SoftPaywallSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000093 /* SoftPaywallSheet.swift */; };
 		A1000094 /* BabyMoodDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000094 /* BabyMoodDashboardView.swift */; };
-		A1000095 /* EnvironmentSoundDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000095 /* EnvironmentSoundDetector.swift */; };
 		A1000096 /* TrialManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000096 /* TrialManager.swift */; };
 		A1000097 /* EngagementTriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000097 /* EngagementTriggerService.swift */; };
 		A100009B /* ContextSignalCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009B /* ContextSignalCollector.swift */; };
 		A100009C /* DynamicSoundMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200009C /* DynamicSoundMixer.swift */; };
-		A10000A3 /* DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000A3 /* DeepInfant_V2.mlmodel */; };
 		A10000F1 /* FreePremiumComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F1 /* FreePremiumComparisonView.swift */; };
 		A10000F3 /* MemoryPressureMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F3 /* MemoryPressureMonitor.swift */; };
 		A10000F6 /* TrackMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000F6 /* TrackMetadata.swift */; };
@@ -192,7 +190,6 @@
 		11E4EF70A2A971E65CD43CEC /* SmartCarPlayControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartCarPlayControllerTests.swift; sourceTree = "<group>"; };
 		13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SleepTimerView.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
 		22CFF84D951A77DBCC3FAF96 /* PerformanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
-		24DA52BDCB52A7B3B21B3BA1 /* EnvironmentSoundDetectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnvironmentSoundDetectorTests.swift; sourceTree = "<group>"; };
 		260894FDBF40F49EAB9530C6 /* UltraSmartPlaylistSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelectorTests.swift; sourceTree = "<group>"; };
 		2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCharacteristicsAnalyzer.swift; sourceTree = "<group>"; };
 		361F76232F10907D00F9A131 /* BabyInCarAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BabyInCarAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -284,12 +281,10 @@
 		A2000092 /* PremiumBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumBadge.swift; sourceTree = "<group>"; };
 		A2000093 /* SoftPaywallSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoftPaywallSheet.swift; sourceTree = "<group>"; };
 		A2000094 /* BabyMoodDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyMoodDashboardView.swift; sourceTree = "<group>"; };
-		A2000095 /* EnvironmentSoundDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSoundDetector.swift; sourceTree = "<group>"; };
 		A2000096 /* TrialManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialManager.swift; sourceTree = "<group>"; };
 		A2000097 /* EngagementTriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngagementTriggerService.swift; sourceTree = "<group>"; };
 		A200009B /* ContextSignalCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextSignalCollector.swift; sourceTree = "<group>"; };
 		A200009C /* DynamicSoundMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicSoundMixer.swift; sourceTree = "<group>"; };
-		A20000A3 /* DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
 		A20000F1 /* FreePremiumComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreePremiumComparisonView.swift; sourceTree = "<group>"; };
 		A20000F3 /* MemoryPressureMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPressureMonitor.swift; sourceTree = "<group>"; };
 		A20000F6 /* TrackMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMetadata.swift; sourceTree = "<group>"; };
@@ -575,7 +570,6 @@
 				A2000027 /* AudioCacheService.swift */,
 				A2000090 /* AdaptiveLearningEngine.swift */,
 				A2000091 /* FreemiumGatekeeper.swift */,
-				A2000095 /* EnvironmentSoundDetector.swift */,
 				A2000096 /* TrialManager.swift */,
 				A2000097 /* EngagementTriggerService.swift */,
 				A200009B /* ContextSignalCollector.swift */,
@@ -606,7 +600,6 @@
 		A5000021 /* ML */ = {
 			isa = PBXGroup;
 			children = (
-				A20000A3 /* DeepInfant_V2.mlmodel */,
 			);
 			path = ML;
 			sourceTree = "<group>";
@@ -741,7 +734,6 @@
 				3BACE3B7EFB959E7346FC97D /* NatureSoundsPlaybackTests.swift */,
 				D40D47B667157EE4C7845375 /* LibraryChatbotServiceTests.swift */,
 				F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */,
-				24DA52BDCB52A7B3B21B3BA1 /* EnvironmentSoundDetectorTests.swift */,
 				44EB4820C2916DF12EEF6A75 /* ResearchKnowledgeBaseTests.swift */,
 				WATCH00010 /* WatchConnectivityTests.swift */,
 			);
@@ -1038,7 +1030,6 @@
 				A1000093 /* SoftPaywallSheet.swift in Sources */,
 				A1000094 /* BabyMoodDashboardView.swift in Sources */,
 				A10000F1 /* FreePremiumComparisonView.swift in Sources */,
-				A1000095 /* EnvironmentSoundDetector.swift in Sources */,
 				A1000096 /* TrialManager.swift in Sources */,
 				A1000097 /* EngagementTriggerService.swift in Sources */,
 				A100009B /* ContextSignalCollector.swift in Sources */,
@@ -1046,7 +1037,6 @@
 				A100002F /* BabyProfileManager.swift in Sources */,
 				A1000043 /* AnalyticsCloudService.swift in Sources */,
 				A1000044 /* MLRecommendationEngine.swift in Sources */,
-				A10000A3 /* DeepInfant_V2.mlmodel in Sources */,
 				A1000030 /* ContentView.swift in Sources */,
 				A1000031 /* OnboardingView.swift in Sources */,
 				A1000032 /* HomeView.swift in Sources */,

@@ -2,10 +2,11 @@
 //  AudioSessionManager.swift
 //  BabyInCarApp
 //
-//  Centralized audio session management to prevent conflicts between
-//  CryDetectionService and AudioEngine.
+//  Centralized audio session management for music playback.
+//  Handles playback-only audio sessions (no microphone access needed).
 //
-//  TECHNICAL DEBT FIX: Eliminates audio session conflicts that cause hangs
+//  NOTE: Audio capture / cry detection has been removed from this app.
+//  This manager now handles playback-only audio session modes.
 //
 
 import Foundation
@@ -17,9 +18,7 @@ import Combine
 enum AudioSessionPriority: Int, Comparable {
     case background = 0      // Normal playback
     case playback = 1        // Active music playback
-    case monitoring = 2      // Cry detection monitoring
-    case emergency = 3       // Emergency cry response (highest)
-    case recording = 4       // Active voice recording (needs immediate response)
+    case emergency = 2       // Emergency playback (highest)
 
     static func < (lhs: AudioSessionPriority, rhs: AudioSessionPriority) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -28,69 +27,32 @@ enum AudioSessionPriority: Int, Comparable {
 
 /// Audio session mode requested by different services
 enum AudioSessionMode: Equatable {
-    case playbackOnly           // AudioEngine normal playback
-    case playAndRecord          // CryDetection monitoring while playing
-    case recordOnly             // SpeechRecognition active recording
-    case emergencyPlayback      // Emergency cry response (uses playAndRecord to avoid category switch conflict)
+    case playbackOnly           // Normal music playback
+    case emergencyPlayback      // Emergency playback (same as playback, different priority)
     case inactive               // No audio needed
+
+    // Legacy compatibility aliases
+    static let playAndRecord = playbackOnly
+    static let recordOnly = inactive
 
     var category: AVAudioSession.Category {
         switch self {
-        case .playbackOnly:
+        case .playbackOnly, .emergencyPlayback:
             return .playback
-        case .playAndRecord, .emergencyPlayback:
-            // CRITICAL FIX: Emergency uses .playAndRecord to avoid '!pri' error
-            // When CryDetection is monitoring (.playAndRecord), switching to .playback
-            // while an input tap is active causes iOS to throw '!pri' (priority conflict).
-            // Solution: Keep .playAndRecord category - it supports both input AND output.
-            // The microphone stays available (in case we want to detect if baby calmed down)
-            // and audio output works normally.
-            return .playAndRecord
-        case .recordOnly:
-            return .record
         case .inactive:
             return .ambient
         }
     }
 
     var mode: AVAudioSession.Mode {
-        switch self {
-        case .playbackOnly:
-            return .default
-        case .emergencyPlayback:
-            // Use .default mode for emergency (better audio quality than .measurement)
-            return .default
-        case .playAndRecord, .recordOnly:
-            return .measurement
-        case .inactive:
-            return .default
-        }
+        return .default
     }
 
     var options: AVAudioSession.CategoryOptions {
         switch self {
-        case .playbackOnly:
+        case .playbackOnly, .emergencyPlayback:
             // Exclusive playback - pauses other apps (like Spotify, YouTube)
-            return []
-        case .emergencyPlayback:
-            // Emergency playback with Bluetooth A2DP support for AirPods
-            // CRITICAL FIX (2026-01-09): Removed .defaultToSpeaker which was forcing audio
-            // to iPhone speaker even when AirPods were connected.
-            //
-            // For .playAndRecord category (which emergency uses to avoid '!pri' error):
-            // - Empty options [] routes to receiver (earpiece) - WRONG
-            // - .defaultToSpeaker routes to speaker but ignores Bluetooth - WRONG
-            // - .allowBluetoothA2DP allows stereo Bluetooth output (AirPods) - CORRECT!
-            //
-            // Note: This allows audio to route to AirPods while still using iPhone's mic
-            // for continued cry detection (if implemented in the future).
-            return [.allowBluetoothA2DP]
-        case .playAndRecord:
-            // Exclusive playback during monitoring - pauses other apps
-            // Use speaker output for cry detection while playing
-            return [.defaultToSpeaker]
-        case .recordOnly:
-            // Exclusive recording - pauses other apps
+            // No mixing, no ducking - we want full control
             return []
         case .inactive:
             return []
@@ -99,7 +61,6 @@ enum AudioSessionMode: Equatable {
 }
 
 /// Centralized audio session manager that coordinates all audio session changes
-/// Prevents conflicts between CryDetection and AudioEngine
 @MainActor
 final class AudioSessionManager: ObservableObject {
     static let shared = AudioSessionManager()
@@ -186,7 +147,7 @@ final class AudioSessionManager: ObservableObject {
         if removed != nil {
             print("[AudioSessionManager] 📤 Released request from \(serviceId) (immediate: \(immediate))")
             if immediate {
-                // Bypass debounce for instant responsiveness (e.g., stopping cry detection)
+                // Bypass debounce for instant responsiveness
                 pendingSessionChange?.cancel()
                 Task { @MainActor in
                     await self.updateSession()

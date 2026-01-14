@@ -58,12 +58,14 @@ class MemoryPressureMonitor: ObservableObject {
 
     // MARK: - Setup
     private func setupMemoryWarningObserver() {
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.handleSystemMemoryWarning()
             }
         }

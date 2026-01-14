@@ -36,8 +36,8 @@ final class FreemiumGatekeeper: ObservableObject {
 
         /// Features that are ALWAYS free (never paywall these!)
         static let alwaysFreeFeatures: Set<Feature> = [
-            .cryDetection,
-            .cryClassification,
+            .moodSelection,
+            .moodTracking,
             .babyProfile,
             .favorites,
             .basicEffectiveness,
@@ -61,8 +61,8 @@ final class FreemiumGatekeeper: ObservableObject {
     // MARK: - Feature Enum
     enum Feature: String, CaseIterable {
         // Always Free
-        case cryDetection = "cry_detection"
-        case cryClassification = "cry_classification"
+        case moodSelection = "mood_selection"  // Manual mood entry by parent
+        case moodTracking = "mood_tracking"    // Track what works for each mood
         case babyProfile = "baby_profile"
         case favorites = "favorites"
         case basicEffectiveness = "basic_effectiveness"
@@ -81,8 +81,8 @@ final class FreemiumGatekeeper: ObservableObject {
 
         var displayName: String {
             switch self {
-            case .cryDetection: return "Cry Detection"
-            case .cryClassification: return "Cry Type Classification"
+            case .moodSelection: return "Mood Selection"
+            case .moodTracking: return "Mood Tracking"
             case .babyProfile: return "Baby Profile"
             case .favorites: return "Favorites"
             case .basicEffectiveness: return "Basic Effectiveness Tracking"
@@ -330,8 +330,8 @@ final class FreemiumGatekeeper: ObservableObject {
     var tierComparisons: [TierComparison] {
         [
             TierComparison(feature: "Content Library", freeValue: "25 tracks", premiumValue: "Unlimited"),
-            TierComparison(feature: "Cry Detection", freeValue: "✓ Full", premiumValue: "✓ Full"),
-            TierComparison(feature: "Cry Classification", freeValue: "✓ Full", premiumValue: "✓ Full"),
+            TierComparison(feature: "Mood Selection", freeValue: "✓ Full", premiumValue: "✓ Full"),
+            TierComparison(feature: "Feedback Tracking", freeValue: "✓ Full", premiumValue: "✓ Full"),
             TierComparison(feature: "Baby Profile", freeValue: "✓ 1 baby", premiumValue: "✓ 3 babies"),
             TierComparison(feature: "Effectiveness Tracking", freeValue: "7 days", premiumValue: "Unlimited"),
             TierComparison(feature: "AI Insights", freeValue: "Basic", premiumValue: "Full BabyMIM"),

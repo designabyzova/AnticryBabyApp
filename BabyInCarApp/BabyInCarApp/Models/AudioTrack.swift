@@ -792,7 +792,6 @@ struct UserPreferences: Codable {
     var autoPlayOnLaunch: Bool = false
     var fadeOutDuration: TimeInterval = 10.0
     var preferredSleepTimerMinutes: Int = 0  // Store as Int for Codable
-    var enableCryDetection: Bool = true
     var enableVoiceControl: Bool = true
     var downloadOnWiFiOnly: Bool = true
     var autoDownloadAgeContent: Bool = true
@@ -806,7 +805,7 @@ struct UserPreferences: Codable {
 
     enum CodingKeys: String, CodingKey {
         case defaultVolume, maxVolume, autoPlayOnLaunch, fadeOutDuration
-        case preferredSleepTimerMinutes, enableCryDetection, enableVoiceControl
+        case preferredSleepTimerMinutes, enableVoiceControl
         case downloadOnWiFiOnly, autoDownloadAgeContent, hapticFeedback, carPlayEnabled
     }
 }

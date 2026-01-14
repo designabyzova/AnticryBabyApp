@@ -1,10 +1,16 @@
 import Foundation
 
-// MARK: - Baby Mood Types (used by DeepInfant ML model for mood classification)
+// MARK: - Baby Mood Types (Manual Selection)
 
-/// Baby mood/cry types for ML classification and track recommendations
-/// Note: This enum is kept for DeepInfant ML model compatibility
-enum CryType: String, Codable, CaseIterable, Hashable {
+/// Baby mood types for manual user selection and track recommendations.
+/// Users can optionally specify the baby's mood when providing feedback
+/// about whether a track helped calm their baby.
+///
+/// NOTE: This is purely for manual user input - there is NO automatic detection.
+/// The app does NOT listen to or analyze baby sounds.
+typealias CryType = MoodType
+
+enum MoodType: String, Codable, CaseIterable, Hashable {
     case hunger = "hunger"
     case tired = "tired"
     case pain = "pain"

@@ -19,7 +19,7 @@ final class EngagementTriggerService: ObservableObject {
     private enum Config {
         // Milestone thresholds
         static let firstItHelpedMilestone = 3
-        static let cryDetectionMilestone = 5
+        static let feedbackSessionMilestone = 5
         static let weeklyUsageMilestone = 7 // days
 
         // Cooldowns
@@ -33,8 +33,8 @@ final class EngagementTriggerService: ObservableObject {
     // MARK: - Engagement Events
     enum EngagementEvent {
         case itHelpedFeedback(totalCount: Int)
-        case cryDetectionUsed(totalCount: Int)
-        case cryDetectionSuccess(trackTitle: String, timeToCalmSeconds: Int) // Post-cry success
+        case feedbackSessionUsed(totalCount: Int)
+        case successfulCalmingSession(trackTitle: String, timeToCalmSeconds: Int) // Post-cry success
         case playlistCreatedWithPremium(playlistName: String)
         case weeklyMilestone(weeksUsed: Int)
         case trialEnding(daysLeft: Int)
@@ -50,9 +50,9 @@ final class EngagementTriggerService: ObservableObject {
                 }
                 return nil
 
-            case .cryDetectionUsed(let count):
-                if count == Config.cryDetectionMilestone {
-                    return "Cry detection has helped you \(count) times!"
+            case .feedbackSessionUsed(let count):
+                if count == Config.feedbackSessionMilestone {
+                    return "You've given feedback \(count) times - helping us learn!"
                 }
                 return nil
 
@@ -78,7 +78,7 @@ final class EngagementTriggerService: ObservableObject {
                 }
                 return nil
 
-            case .cryDetectionSuccess(let trackTitle, let timeToCalmSeconds):
+            case .successfulCalmingSession(let trackTitle, let timeToCalmSeconds):
                 // Show milestone for quick calming (under 2 minutes)
                 if timeToCalmSeconds < 120 {
                     return "\"\(trackTitle)\" calmed your baby in \(timeToCalmSeconds / 60) min!"
@@ -102,8 +102,8 @@ final class EngagementTriggerService: ObservableObject {
                     )
                 }
 
-            case .cryDetectionUsed(let count):
-                if count >= Config.cryDetectionMilestone {
+            case .feedbackSessionUsed(let count):
+                if count >= Config.feedbackSessionMilestone {
                     return UpgradePrompt(
                         title: "Cry detection is helping!",
                         message: "Keep unlimited access + AI insights",
@@ -148,7 +148,7 @@ final class EngagementTriggerService: ObservableObject {
                     style: .gentle
                 )
 
-            case .cryDetectionSuccess(_, let timeToCalmSeconds):
+            case .successfulCalmingSession(_, let timeToCalmSeconds):
                 // Show upgrade prompt after successful soothing
                 let message = timeToCalmSeconds < 120
                     ? "Your baby calmed quickly! Keep unlimited access."
@@ -214,7 +214,7 @@ final class EngagementTriggerService: ObservableObject {
 
     // Tracking
     @Published private(set) var itHelpedCount = 0
-    @Published private(set) var cryDetectionCount = 0
+    @Published private(set) var feedbackSessionCount = 0
     @Published private(set) var weeksUsed = 0
 
     private let userDefaults: UserDefaults
@@ -257,11 +257,11 @@ final class EngagementTriggerService: ObservableObject {
         recordEvent(.itHelpedFeedback(totalCount: itHelpedCount))
     }
 
-    /// Record cry detection usage
-    func recordCryDetectionUsed() {
-        cryDetectionCount += 1
-        saveCount("cryDetectionCount", value: cryDetectionCount)
-        recordEvent(.cryDetectionUsed(totalCount: cryDetectionCount))
+    /// Record feedback session usage (user provided feedback on track effectiveness)
+    func recordFeedbackSessionUsed() {
+        feedbackSessionCount += 1
+        saveCount("feedbackSessionCount", value: feedbackSessionCount)
+        recordEvent(.feedbackSessionUsed(totalCount: feedbackSessionCount))
     }
 
     /// Record effective track discovery
@@ -271,12 +271,12 @@ final class EngagementTriggerService: ObservableObject {
         }
     }
 
-    /// Record successful soothing (called after baby calms down)
+    /// Record successful calming session (called when user marks track as helpful)
     /// - Parameters:
     ///   - trackTitle: The track that successfully calmed the baby
-    ///   - timeToCalmSeconds: Time in seconds to calm
-    func recordCryDetectionSuccess(trackTitle: String, timeToCalmSeconds: Int) {
-        recordEvent(.cryDetectionSuccess(trackTitle: trackTitle, timeToCalmSeconds: timeToCalmSeconds))
+    ///   - timeToCalmSeconds: Time in seconds the track was playing
+    func recordSuccessfulCalmingSession(trackTitle: String, timeToCalmSeconds: Int) {
+        recordEvent(.successfulCalmingSession(trackTitle: trackTitle, timeToCalmSeconds: timeToCalmSeconds))
     }
 
     /// Check for weekly milestone
@@ -310,8 +310,8 @@ final class EngagementTriggerService: ObservableObject {
         switch event {
         case .itHelpedFeedback(let count):
             itHelpedCount = count
-        case .cryDetectionUsed(let count):
-            cryDetectionCount = count
+        case .feedbackSessionUsed(let count):
+            feedbackSessionCount = count
         case .weeklyMilestone(let weeks):
             weeksUsed = weeks
         default:
@@ -343,7 +343,7 @@ final class EngagementTriggerService: ObservableObject {
 
     private func isMilestoneEvent(_ event: EngagementEvent) -> Bool {
         switch event {
-        case .weeklyMilestone, .cryDetectionUsed(Config.cryDetectionMilestone),
+        case .weeklyMilestone, .feedbackSessionUsed(Config.feedbackSessionMilestone),
              .itHelpedFeedback(Config.firstItHelpedMilestone):
             return true
         default:
@@ -405,7 +405,7 @@ final class EngagementTriggerService: ObservableObject {
 
     private func loadCounts() {
         itHelpedCount = userDefaults.integer(forKey: "itHelpedCount")
-        cryDetectionCount = userDefaults.integer(forKey: "cryDetectionCount")
+        feedbackSessionCount = userDefaults.integer(forKey: "feedbackSessionCount")
         weeksUsed = userDefaults.integer(forKey: "weeksUsed")
     }
 
@@ -416,14 +416,14 @@ final class EngagementTriggerService: ObservableObject {
     #if DEBUG
     func resetForTesting() {
         itHelpedCount = 0
-        cryDetectionCount = 0
+        feedbackSessionCount = 0
         weeksUsed = 0
         promptsShownThisSession = 0
         lastPromptTimes = [:]
         currentPrompt = nil
         milestoneMessage = nil
         userDefaults.removeObject(forKey: "itHelpedCount")
-        userDefaults.removeObject(forKey: "cryDetectionCount")
+        userDefaults.removeObject(forKey: "feedbackSessionCount")
         userDefaults.removeObject(forKey: "weeksUsed")
         userDefaults.removeObject(forKey: "firstLaunchDate")
     }

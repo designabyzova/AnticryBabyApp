@@ -26,7 +26,6 @@
     <key>UIRequiredDeviceCapabilities</key>
     <array>
         <string>armv7</string>
-        <string>microphone</string>
     </array>
 
     <!-- Supported Orientations -->
@@ -88,10 +87,6 @@
     </array>
 
     <!-- Privacy Usage Descriptions -->
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Lulla uses the microphone to detect when your baby is crying and automatically play soothing sounds. The microphone is also used for voice commands so you can control playback hands-free while driving. Audio is processed on-device and is never uploaded to servers.</string>
-    <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Lulla uses speech recognition to understand your voice commands for hands-free control while driving safely.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Lulla can access your photos to set a profile picture for your baby.</string>
     <key>NSCameraUsageDescription</key>
