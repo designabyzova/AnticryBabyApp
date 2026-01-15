@@ -382,14 +382,10 @@ struct PremiumTabBarButton: View {
 // MARK: - Premium Mini Player View
 
 /// Floating pill-style mini player with progress ring and fluid animations
-/// ALWAYS visible - displays default playlist track ready for cry detection or manual play
+/// ALWAYS visible - displays default playlist track ready for playback
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    @State private var showingFullPlayer = false
-    @State private var dragOffset: CGFloat = 0
     @State private var playButtonScale: CGFloat = 1.0
-    @State private var isDragging = false
-    @State private var isTransitioning = false // Track when opening full player
 
     // Haptic feedback
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -408,97 +404,26 @@ struct MiniPlayerView: View {
 
     var body: some View {
         miniPlayerContent
-            .offset(y: dragOffset)
-            .opacity(isTransitioning ? 0.7 : 1.0)
-            .scaleEffect(isTransitioning ? 0.98 : 1.0)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 20)
-                    .onChanged { value in
-                        isDragging = true
-                        // Allow dragging down to dismiss
-                        if value.translation.height > 0 {
-                            dragOffset = value.translation.height * 0.5
-                        } else {
-                            // Drag up to expand
-                            dragOffset = value.translation.height * 0.3
-                        }
-                    }
-                    .onEnded { value in
-                        isDragging = false
-                        if value.translation.height < -50 {
-                            // Swipe up - open full player
-                            openFullPlayer()
-                        }
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            dragOffset = 0
-                        }
-                    }
-            )
-        .onAppear {
-            impactLight.prepare()
-            impactMedium.prepare()
-            // Reset any stuck transition state on appear
-            isTransitioning = false
-        }
-        .fullScreenCover(isPresented: $showingFullPlayer, onDismiss: {
-            // Reset transition state when dismissed
-            isTransitioning = false
-        }) {
-            // UNIFIED ARCHITECTURE: Single PlayerView for all playback types
-            // UI automatically adapts based on audioEngine.playbackContext
-            // - Purple/Orange/Red theme for emergency mode (.emergencyCry) based on cry type
-            // - Green theme for library mode (.library)
-            PlayerView()
-                .environmentObject(audioEngine)
-                .interactiveDismissDisabled(false)
-                .onAppear {
-                    isTransitioning = false
-                }
-        }
-    }
-
-    /// Opens full player with guard against double-presentation
-    private func openFullPlayer() {
-        // Double-tap protection: prevent if already showing or recently triggered
-        guard !showingFullPlayer else { return }
-
-        // If transitioning, reset and try again (handles stuck state)
-        if isTransitioning {
-            isTransitioning = false
-        }
-
-        impactMedium.impactOccurred()
-
-        // FIX: Defer state change to next run loop to avoid
-        // "Publishing changes from within view updates" error
-        DispatchQueue.main.async {
-            self.showingFullPlayer = true
-        }
+            .onAppear {
+                impactLight.prepare()
+                impactMedium.prepare()
+            }
     }
 
     private var miniPlayerContent: some View {
         HStack(spacing: 12) {
-            // Tappable area (artwork + track info) opens full player
-            // Using explicit contentShape to ensure the entire area is tappable
+            // Artwork + track info area
             HStack(spacing: 12) {
                 // Artwork with progress ring
                 artworkWithProgressRing
 
-                // Track Info with marquee effect for long titles
+                // Track Info
                 trackInfo
             }
-            .contentShape(Rectangle()) // Ensure entire area is tappable
-            .highPriorityGesture(
-                TapGesture()
-                    .onEnded {
-                        openFullPlayer()
-                    }
-            )
 
             Spacer(minLength: 8)
 
-            // Playback Controls (not inside the tappable area)
-            // Using highPriorityGesture to ensure these buttons take precedence
+            // Playback Controls
             playbackControls
         }
         .padding(.leading, 8)
@@ -739,35 +664,6 @@ struct MiniEqualizerView: View {
                 heights[index] = CGFloat.random(in: 0.3...1.0)
             }
         }
-    }
-}
-
-// MARK: - Mini Player Tap Style (for artwork/info area)
-/// Simple, responsive button style for the tappable area of mini player
-/// Uses minimal animation to ensure tap responsiveness
-struct MiniPlayerTapStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.7 : 1.0)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Mini Player Button Style
-struct MiniPlayerButtonStyle: ButtonStyle {
-    @Binding var isPressed: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { newValue in
-                // FIX: Defer state change to next run loop to avoid
-                // "Publishing changes from within view updates" error
-                DispatchQueue.main.async {
-                    isPressed = newValue
-                }
-            }
     }
 }
 

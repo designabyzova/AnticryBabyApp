@@ -149,8 +149,10 @@ final class AudioSessionManager: ObservableObject {
             if immediate {
                 // Bypass debounce for instant responsiveness
                 pendingSessionChange?.cancel()
-                Task { @MainActor in
-                    await self.updateSession()
+                // Since updateSession() is async and @MainActor, it handles its own scheduling
+                // No need for DispatchQueue.main.async wrapper
+                Task { @MainActor [weak self] in
+                    await self?.updateSession()
                 }
             } else {
                 scheduleSessionUpdate()
@@ -165,7 +167,9 @@ final class AudioSessionManager: ObservableObject {
         sessionQueue.async { [weak self] in
             do {
                 try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-                Task { @MainActor in
+                // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+                // to avoid "Publishing changes from within view updates" warnings
+                DispatchQueue.main.async {
                     self?.isSessionActive = false
                     self?.currentMode = .inactive
                     print("[AudioSessionManager] 🛑 Force deactivated audio session")
@@ -342,21 +346,24 @@ final class AudioSessionManager: ObservableObject {
                     try session.setActive(true)
 
                     // Success - update state on main thread
-                    Task { @MainActor in
+                    // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+                    // to avoid "Publishing changes from within view updates" warnings
+                    let currentRoute = session.currentRoute
+                    DispatchQueue.main.async {
                         self.currentMode = mode
                         self.isSessionActive = true
                         self.lastError = nil
                         self.consecutiveFailures = 0
 
-                        let route = session.currentRoute
-                        let outputs = route.outputs.map { $0.portName }.joined(separator: ", ")
+                        let outputs = currentRoute.outputs.map { $0.portName }.joined(separator: ", ")
                         print("[AudioSessionManager] ✅ Session active: \(mode), route: \(outputs)")
                     }
 
                     continuation.resume()
 
                 } catch {
-                    Task { @MainActor in
+                    // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+                    DispatchQueue.main.async {
                         self.handleSessionError(error)
                     }
                     continuation.resume()
@@ -375,7 +382,9 @@ final class AudioSessionManager: ObservableObject {
                         options: .notifyOthersOnDeactivation
                     )
 
-                    Task { @MainActor in
+                    // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+                    // to avoid "Publishing changes from within view updates" warnings
+                    DispatchQueue.main.async {
                         self?.currentMode = .inactive
                         self?.isSessionActive = false
                         print("[AudioSessionManager] ✅ Session deactivated")
@@ -428,7 +437,9 @@ final class AudioSessionManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+            // to avoid "Publishing changes from within view updates" warnings
+            DispatchQueue.main.async {
                 self?.handleInterruption(notification)
             }
         }
@@ -438,7 +449,9 @@ final class AudioSessionManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            Task { @MainActor in
+            // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+            // to avoid "Publishing changes from within view updates" warnings
+            DispatchQueue.main.async {
                 self?.handleRouteChange(notification)
             }
         }

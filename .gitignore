@@ -81,8 +81,6 @@ htmlcov/               # Python
 .pytest_cache/         # Python
 test-results/          # Playwright
 
-# IDEs
-.vscode/
 .idea/
 *.swp
 *.swo

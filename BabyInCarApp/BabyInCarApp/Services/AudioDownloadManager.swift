@@ -461,7 +461,9 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
             // Clean up extension storage
             fileExtensionStorage.remove(for: trackId)
 
-            Task { @MainActor in
+            // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+            // to avoid "Publishing changes from within view updates" warnings
+            DispatchQueue.main.async {
                 self.downloadStates[trackId] = .downloaded
                 self.downloadTasks.removeValue(forKey: trackId)
                 self.activeDownloads.removeAll { $0.trackId == trackId }
@@ -481,7 +483,9 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
             // Clean up extension storage on failure
             fileExtensionStorage.remove(for: trackId)
 
-            Task { @MainActor in
+            // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+            // to avoid "Publishing changes from within view updates" warnings
+            DispatchQueue.main.async {
                 self.downloadStates[trackId] = .failed(error: error.localizedDescription)
                 self.downloadTasks.removeValue(forKey: trackId)
                 self.activeDownloads.removeAll { $0.trackId == trackId }
@@ -501,7 +505,9 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
             ? Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
             : 0
 
-        Task { @MainActor in
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
+        DispatchQueue.main.async {
             self.downloadStates[trackId] = .downloading(progress: progress)
 
             if let index = self.activeDownloads.firstIndex(where: { $0.trackId == trackId }) {
@@ -519,7 +525,9 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
               let trackId = downloadTask.taskDescription,
               let error = error else { return }
 
-        Task { @MainActor in
+        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
+        // to avoid "Publishing changes from within view updates" warnings
+        DispatchQueue.main.async {
             self.downloadStates[trackId] = .failed(error: error.localizedDescription)
             self.downloadTasks.removeValue(forKey: trackId)
             self.activeDownloads.removeAll { $0.trackId == trackId }

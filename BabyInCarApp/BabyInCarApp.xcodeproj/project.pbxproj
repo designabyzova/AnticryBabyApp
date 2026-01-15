@@ -43,7 +43,6 @@
 		A1000031 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* OnboardingView.swift */; };
 		A1000032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* HomeView.swift */; };
 		A1000033 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033 /* LibraryView.swift */; };
-		A1000034 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000034 /* PlayerView.swift */; };
 		A1000035 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000035 /* FavoritesView.swift */; };
 		A1000036 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000036 /* ProfileView.swift */; };
 		A1000037 /* TrackDownloadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000037 /* TrackDownloadView.swift */; };
@@ -207,7 +206,6 @@
 		61173870F4BC522E62B4DBE5 /* MemoryMonitorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitorTests.swift; sourceTree = "<group>"; };
 		613B84719A4680A5FC4A135D /* EmergencyCategorySelectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyCategorySelectionTests.swift; sourceTree = "<group>"; };
 		686A2521E711469647C81C48 /* FreemiumGatekeeperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeperTests.swift; sourceTree = "<group>"; };
-		6AAC9581FA170430104C68CF /* PlayerViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerViewTests.swift; sourceTree = "<group>"; };
 		6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchOnboardingView.swift; path = WatchOnboardingView.swift; sourceTree = "<group>"; };
 		7728CBB1144588372F2A6EF5 /* ViewSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewSnapshotTests.swift; sourceTree = "<group>"; };
 		7AA044E9768D4DB60AFDC96E /* BabyInCarAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabyInCarAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -237,7 +235,6 @@
 		A2000031 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A2000032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A2000033 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
-		A2000034 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A2000035 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
 		A2000036 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A2000037 /* TrackDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackDownloadView.swift; sourceTree = "<group>"; };
@@ -612,7 +609,6 @@
 				A2000031 /* OnboardingView.swift */,
 				A2000032 /* HomeView.swift */,
 				A2000033 /* LibraryView.swift */,
-				A2000034 /* PlayerView.swift */,
 				A2000035 /* FavoritesView.swift */,
 				A2000036 /* ProfileView.swift */,
 				A2000037 /* TrackDownloadView.swift */,
@@ -716,7 +712,6 @@
 				59CE75591487D9801E21BDE2 /* Snapshots */,
 				CBA5E3F209B2364E70B71F2F /* Integration */,
 				C9441C3D0ADB70B17C07C21E /* IconExportTests.swift */,
-				6AAC9581FA170430104C68CF /* PlayerViewTests.swift */,
 				A2E5EBFF3EF96467E780B601 /* Performance */,
 				BD14390931580E0C6D57CF69 /* Services */,
 			);
@@ -1041,7 +1036,6 @@
 				A1000031 /* OnboardingView.swift in Sources */,
 				A1000032 /* HomeView.swift in Sources */,
 				A1000033 /* LibraryView.swift in Sources */,
-				A1000034 /* PlayerView.swift in Sources */,
 				A1000035 /* FavoritesView.swift in Sources */,
 				A1000036 /* ProfileView.swift in Sources */,
 				A1000037 /* TrackDownloadView.swift in Sources */,
