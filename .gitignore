@@ -80,6 +80,17 @@ htmlcov/               # Python
 *.cover                # Python
 .pytest_cache/         # Python
 test-results/          # Playwright
+playwright-report/     # Playwright HTML reports
+
+# Claude Code local settings
+.claude/
+
+# Backup files
+*.bak
+
+# SpecWeave logs
+.specweave/logs/
+BabyInCarApp/.specweave/logs/
 
 .idea/
 *.swp
