@@ -188,6 +188,20 @@ ExportOptions.plist
 icon_*.png
 !**/Assets.xcassets/**/icon_*.png
 
+# Duplicate Postman files (canonical copies in babyincar-api/postman/)
+/BabyInCar-API.postman_*.json
+babyincar-api/postman-collection.json
+babyincar-api/postman-environment.json
+
+# Nested .specweave in app directory
+BabyInCarApp/BabyInCarApp/.specweave/
+
+# Audio cleanup notes
+BabyInCarApp/BabyInCarApp/Resources/Audio/*.md
+
+# Test fixtures (binary)
+web-cry-detector/tests/fixtures/
+
 # Markdown reports in root (should be in increment folders)
 /*_COMPLETE.md
 /*_REPORT.md
