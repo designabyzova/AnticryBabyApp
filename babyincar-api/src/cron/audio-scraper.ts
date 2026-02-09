@@ -10,7 +10,7 @@
  * 3. Archive.org - Public domain (free API)
  * 4. Pixabay - Manual queue (pre-collected URLs)
  *
- * Schedule: 0 */6 * * * (Every 6 hours)
+ * Schedule: Every 6 hours (cron: 0 0,6,12,18 * * *)
  */
 
 import type { Env } from '../types';

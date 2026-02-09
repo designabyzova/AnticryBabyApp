@@ -258,6 +258,10 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
     // Subcategory for finer classification
     var subcategory: String?
 
+    // Cry type suitability scores (0.0 - 1.0) for smart playlist generation
+    // Example: {"hunger": 0.8, "tired": 0.95, "pain": 0.6}
+    var crySuitability: [String: Double]?
+
     init(
         id: UUID = UUID(),
         title: String,
@@ -281,7 +285,8 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
         artworkURL: String? = nil,
         isLocked: Bool = false,
         tags: [String] = [],
-        subcategory: String? = nil
+        subcategory: String? = nil,
+        crySuitability: [String: Double]? = nil
     ) {
         self.id = id
         self.title = title
@@ -306,6 +311,7 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
         self.isLocked = isLocked
         self.tags = tags
         self.subcategory = subcategory
+        self.crySuitability = crySuitability
     }
 
     var formattedDuration: String {
@@ -323,6 +329,32 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
             return ageMonths >= ageRangeMin && ageMonths <= ageRangeMax
         }
         return optimalAgeMonths.contains(ageMonths)
+    }
+
+    /// Get suitability score for a specific cry type (0.0 - 1.0)
+    /// Falls back to calmingScore * 0.7 if no cry-specific data available
+    func suitabilityFor(_ cryType: CryType) -> Double {
+        // First check explicit crySuitability scores
+        if let scores = crySuitability, let score = scores[cryType.rawValue] {
+            return score
+        }
+
+        // For generated sounds, check GeneratorType.bestForCryTypes
+        if let generator = generatorType {
+            if generator.bestForCryTypes.contains(cryType) {
+                return generator.calmingScore
+            } else {
+                return generator.calmingScore * 0.6 // Lower score for non-optimal cry types
+            }
+        }
+
+        // Fall back to calmingScore with a reduction factor
+        return calmingScore * 0.7
+    }
+
+    /// Check if track is suitable for a given cry type (score >= threshold)
+    func isSuitable(for cryType: CryType, threshold: Double = 0.7) -> Bool {
+        return suitabilityFor(cryType) >= threshold
     }
 
     /// Check if track requires network to play
@@ -546,6 +578,36 @@ enum GeneratorType: String, Codable, CaseIterable {
         case .chimes, .bells:
             return [.attention, .general]
         }
+    }
+
+    /// Cry suitability scores for smart playlist generation
+    /// Returns a dictionary mapping cry type string to suitability score (0.0 - 1.0)
+    var crySuitabilityScores: [String: Double] {
+        // Base score is calmingScore reduced to allow room for differentiation
+        let baseScore = calmingScore * 0.6
+
+        // Define scores for all standard cry types
+        var scores: [String: Double] = [
+            CryType.hunger.rawValue: baseScore,
+            CryType.tired.rawValue: baseScore,
+            CryType.pain.rawValue: baseScore * 0.8,  // Pain requires special handling, lower default
+            CryType.attention.rawValue: baseScore,
+            CryType.discomfort.rawValue: baseScore,
+            CryType.general.rawValue: baseScore
+        ]
+
+        // Boost scores for cry types this sound is best for
+        for cryType in bestForCryTypes {
+            scores[cryType.rawValue] = calmingScore  // Full calming score for best-fit types
+        }
+
+        // Clamp all values to 0.0 - 1.0
+        return scores.mapValues { min(1.0, max(0.0, $0)) }
+    }
+
+    /// Get suitability score for a specific cry type
+    func suitabilityFor(_ cryType: CryType) -> Double {
+        return crySuitabilityScores[cryType.rawValue] ?? calmingScore * 0.5
     }
 
     /// Icon for UI display

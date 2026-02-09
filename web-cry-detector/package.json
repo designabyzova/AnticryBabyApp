@@ -1,0 +1,13 @@
+{
+  "name": "web-cry-detector",
+  "version": "1.0.0",
+  "description": "Baby cry detector web interface with two-stage detection",
+  "scripts": {
+    "start": "npx http-server -p 8080 -c-1",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

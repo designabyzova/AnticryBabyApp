@@ -1,0 +1,12 @@
+{
+  "id": "0029",
+  "name": "smart-cry-playlist-system",
+  "title": "Smart Cry-Type Playlist Generation System",
+  "description": "Implements intelligent playlist generation based on DeepInfant V2 CoreML cry classification, combining baby age, cry type, historical effectiveness, favorites, and category rotation to create optimal soothing playlists",
+  "status": "planning",
+  "createdAt": "2026-01-18T10:00:00Z",
+  "updatedAt": "2026-01-18T10:00:00Z",
+  "features": ["FS-029"],
+  "priority": "high",
+  "estimatedComplexity": "high"
+}

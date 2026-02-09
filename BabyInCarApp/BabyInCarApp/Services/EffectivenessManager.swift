@@ -150,6 +150,30 @@ class EffectivenessManager: ObservableObject {
         return data.effectivenessScore
     }
 
+    /// Get normalized effectiveness score for SmartPlaylistGenerator (0.0 - 1.0)
+    /// - Parameters:
+    ///   - trackIdString: Track ID as string
+    ///   - cryType: The cry type to check effectiveness for
+    /// - Returns: Score between 0.0 and 1.0 (0.5 if no data)
+    func getScore(for trackIdString: String, cryType: CryType) -> Double {
+        guard let trackId = UUID(uuidString: trackIdString),
+              let data = effectivenessData[trackId] else {
+            return 0.5 // Neutral score if no data
+        }
+
+        // Try cry-type-specific effectiveness first
+        if let cryTypeScore = data.effectivenessForCryType(cryType) {
+            return cryTypeScore / 100.0 // Convert from percentage to 0-1 range
+        }
+
+        // Fall back to overall effectiveness
+        if data.totalPlays > 0 {
+            return data.effectivenessScore / 100.0
+        }
+
+        return 0.5 // Neutral score
+    }
+
     /// Get top effective tracks sorted by effectiveness score
     /// - Parameters:
     ///   - limit: Maximum number of tracks to return

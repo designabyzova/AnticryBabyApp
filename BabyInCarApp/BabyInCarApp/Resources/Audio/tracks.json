@@ -1,7 +1,7 @@
 {
-  "version": "2.3",
-  "generatedAt": "2026-01-08",
-  "description": "Audio library with verified tracks - includes podcasts and children's songs",
+  "version": "2.4",
+  "generatedAt": "2026-01-19",
+  "description": "Audio library with crySuitability scores for smart playlist generation (FS-029)",
   "totalTracks": 270,
   "tracks": [
     {
@@ -33,7 +33,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.85,
+        "tired": 1,
+        "pain": 0.75
+      }
     },
     {
       "id": "69646e57-8abe-46e4-a03d-7b5b86751634",
@@ -62,7 +67,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.85,
+        "tired": 1,
+        "pain": 0.75
+      }
     },
     {
       "id": "132024a3-3da7-4274-882c-822ad5b65b44",
@@ -93,7 +103,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.8,
+        "tired": 1,
+        "pain": 0.6
+      }
     },
     {
       "id": "49fef055-9447-4013-bfd2-1b48c6407920",
@@ -123,7 +138,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.85,
+        "tired": 1,
+        "pain": 0.75
+      }
     },
     {
       "id": "f0f088a4-4fae-4273-bc0e-a92cbdf7cba9",
@@ -154,7 +174,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.4
+      }
     },
     {
       "id": "8fde6dd5-3b36-46e6-b3de-d3cf4933aa61",
@@ -183,7 +208,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 1,
+        "pain": 0.55
+      }
     },
     {
       "id": "340c0abe-cdf1-4bc5-ae95-58dda6262536",
@@ -212,7 +242,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.85,
+        "tired": 1,
+        "pain": 0.75
+      }
     },
     {
       "id": "c590a971-fca2-4314-8024-96f1d49a7506",
@@ -243,7 +278,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 1,
+        "pain": 0.55
+      }
     },
     {
       "id": "f5442def-af4b-493e-adc7-61c1966fb24b",
@@ -275,7 +315,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.8,
+        "tired": 1,
+        "pain": 0.65
+      }
     },
     {
       "id": "e9bc9478-aefa-4e83-9303-d0c11c813c08",
@@ -305,7 +350,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 1,
+        "pain": 0.55
+      }
     },
     {
       "id": "99ea091d-b49c-4274-b2e6-8137a11bd291",
@@ -334,7 +384,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.85,
+        "tired": 1,
+        "pain": 0.75
+      }
     },
     {
       "id": "432a00a8-f519-4538-a0aa-f950e6685b4b",
@@ -359,7 +414,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "3d3d0e14-5e3a-4612-bfd0-e4dbe06a80b8",
@@ -386,7 +446,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "7df54157-5d43-4bb8-9bb9-78c11f3e2b5b",
@@ -413,7 +478,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "1a89946b-b01e-4625-be34-e89354f91930",
@@ -439,7 +509,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "a419f8cd-4081-4011-ba50-21e95d5e3f72",
@@ -463,7 +538,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "af33772d-4174-4195-af3c-d77651fe4f67",
@@ -490,7 +570,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "b3233dc5-df04-45e7-94eb-5e60b06b42dd",
@@ -516,7 +601,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "a249d34c-c240-49be-b914-462424abee82",
@@ -542,7 +632,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "268802c3-26e4-45b5-90cb-b2110bc1aa9c",
@@ -566,7 +661,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "00c5de7b-c5bd-4214-9281-26ab232a64d8",
@@ -592,7 +692,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "2921bbe9-37f9-49fd-ab5a-b3afa9886214",
@@ -618,7 +723,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "11fffce3-c0bb-4517-bc9d-ce0398307305",
@@ -645,7 +755,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "b137adcc-fa22-4e70-9a4d-76b4f12c18c3",
@@ -671,7 +786,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "affa444f-6532-4fe5-bf32-02fa4de67fff",
@@ -699,7 +819,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "9180e7da-9297-4019-93d2-365f91a4b2eb",
@@ -725,7 +850,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "f8f0fd29-ffd7-460f-aecb-907e6856803c",
@@ -752,7 +882,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "96850045-95f5-4dbb-b660-590a6c89345d",
@@ -778,7 +913,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.55,
+        "tired": 0.9,
+        "pain": 0.7
+      }
     },
     {
       "id": "6bef3c58-b5aa-4f03-b7d2-e42cbfc3dd95",
@@ -803,7 +943,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "355104f1-8587-4ddd-be2f-fbc506aa1cb5",
@@ -828,7 +973,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "a4e62810-dd93-4769-a71e-e17e32aa4989",
@@ -853,7 +1003,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "09935b9b-10d6-4a96-8f56-d6cf10af8303",
@@ -878,7 +1033,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "c3f80a4d-4a95-419b-84d1-2f10c465c6e7",
@@ -903,7 +1063,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "5dbbf7c9-0173-46f8-9f8f-79b68f14ab2c",
@@ -928,7 +1093,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.93,
+        "pain": 0.5
+      }
     },
     {
       "id": "1acc9911-bf9d-4d76-907c-5eff3a5a5521",
@@ -959,7 +1129,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.66,
+        "pain": 0.2
+      }
     },
     {
       "id": "02c7fb8d-0d41-4865-be87-132ec6319202",
@@ -988,7 +1163,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d31bbfd8-7077-4e98-97fd-12c0d6f6b5b5",
@@ -1016,7 +1196,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "704e0523-2329-45e9-9c1f-a1b5d0f52fc1",
@@ -1043,7 +1228,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "424040db-ec05-46d4-8482-3c542a03ed0c",
@@ -1072,7 +1262,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "079a0d5f-4ad7-4f93-91b1-789623ad1502",
@@ -1100,7 +1295,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "7db1de7e-3196-4d16-b2d1-3fc1905c1e27",
@@ -1128,7 +1328,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "87e2762a-4724-49d4-bbac-1d1a798e827e",
@@ -1155,7 +1360,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "51bd9f72-8f8a-491e-8cd1-24e84ab47634",
@@ -1184,7 +1394,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "56633a46-4b12-40ae-acda-b1e48b6a7f43",
@@ -1213,7 +1428,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "609b301b-a59c-4b15-9e44-596a27c7c9ed",
@@ -1241,7 +1461,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "ab9d9e91-cb1b-42ff-aaed-64bc2646a4f0",
@@ -1268,7 +1493,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4d74bba7-1ee0-40d0-b0d0-ce86f291f09f",
@@ -1295,7 +1525,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.5,
+        "tired": 0.85,
+        "pain": 0.6
+      }
     },
     {
       "id": "cfe60a6d-210e-4ac9-a897-3aa2915ef975",
@@ -1323,7 +1558,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.5,
+        "tired": 0.85,
+        "pain": 0.6
+      }
     },
     {
       "id": "dc6d7c40-a100-4ff0-bc04-8ed3ec1a2476",
@@ -1348,7 +1588,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.5,
+        "tired": 0.85,
+        "pain": 0.6
+      }
     },
     {
       "id": "14ac77c6-3232-443c-9719-442b47ff1cec",
@@ -1374,7 +1619,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.5,
+        "tired": 0.85,
+        "pain": 0.6
+      }
     },
     {
       "id": "63ecb0ea-a4ad-4478-8465-888ef0337024",
@@ -1399,7 +1649,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.5,
+        "tired": 0.85,
+        "pain": 0.6
+      }
     },
     {
       "id": "011ddaed-cef8-43b6-8d02-b1a7432a096b",
@@ -1425,7 +1680,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "b90cedd3-78d6-4bfc-9362-beb0abbff23d",
@@ -1451,7 +1711,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "04c7d95d-8edd-49fc-8c37-bdc988f274c5",
@@ -1480,7 +1745,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "cf89029e-c41c-4f8d-9a8b-d8e426dd213d",
@@ -1509,7 +1779,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "3938add6-73b7-4002-b703-337fe1f8f885",
@@ -1538,7 +1813,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2106061f-5d1e-4034-90cc-85d045b3af14",
@@ -1567,7 +1847,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "72f9bf9f-73f9-4c85-8feb-c87f3786f9a4",
@@ -1598,7 +1883,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "10bbcb53-6d41-4676-90db-8108981bd8ef",
@@ -1629,7 +1919,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "55de3fdb-2544-4134-ae38-b342ac7d6dbc",
@@ -1655,7 +1950,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4eacfc7e-e0b7-4e23-983b-aae40b4f654d",
@@ -1684,7 +1984,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a3a21ee3-c74a-4002-a4e6-c500e19d12e2",
@@ -1715,7 +2020,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "c920b320-4556-4a48-9ecd-6145de0b082d",
@@ -1744,7 +2054,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "9a9bfb31-5cc9-4a9e-a094-a5fe20af2713",
@@ -1770,7 +2085,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "96dec37f-b34a-4822-a9e7-1fcdfd788895",
@@ -1799,7 +2119,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a317fec3-b303-45c0-90f6-4d28740aa6c6",
@@ -1827,7 +2152,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "6283dfd8-a06d-40ec-909e-970be8cbab05",
@@ -1854,7 +2184,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "ad4ea15d-d3ac-487f-b60f-f09328c4b8bb",
@@ -1882,7 +2217,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8945af96-bba2-4c94-b8c4-e0c77ccabeed",
@@ -1908,7 +2248,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "cafae94b-b968-4d93-be5a-ded57a2bda19",
@@ -1936,7 +2281,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "39491058-4281-4eb5-9389-df215ecbae5b",
@@ -1964,7 +2314,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d117df79-dc4e-4d00-80a5-1022ef4a661e",
@@ -1990,7 +2345,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "b60b6b95-9f75-4186-b6ef-35af8642815b",
@@ -2018,7 +2378,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "0e298f77-933c-4c7a-bb06-8e9608d98088",
@@ -2046,7 +2411,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a68184e3-3771-4c90-8189-83b3d005d9b8",
@@ -2074,7 +2444,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "09193e34-e7d5-422c-9de0-564778349e87",
@@ -2102,7 +2477,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "c0a48cb9-b413-46ab-929a-1585747c6403",
@@ -2130,7 +2510,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "a53ad8bf-4b21-447a-8cf8-9c1d3d353010",
@@ -2161,7 +2546,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "9c81eb5f-cee1-4ac8-915d-af23cf7aac2b",
@@ -2189,7 +2579,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "25b7b53b-5f1a-44ed-9172-8c817617d81b",
@@ -2216,7 +2611,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e3d15ad2-690e-4759-a0c3-573291acb040",
@@ -2243,7 +2643,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f2396afb-b44b-4f96-9976-2e5de37cc46b",
@@ -2268,7 +2673,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "ba50190d-14b1-48b4-9b6d-0fe312a1e36d",
@@ -2292,7 +2702,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "50e1f0b2-3742-4b5a-9913-42575569b61a",
@@ -2317,7 +2732,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "55c22d82-2a39-46ad-850d-934789bdf103",
@@ -2342,7 +2762,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "0b094586-2586-4f19-bf56-303ce5636870",
@@ -2367,7 +2792,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "fa159f62-cbd6-4771-8ba2-d98f63c497ff",
@@ -2395,7 +2825,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.66,
+        "pain": 0.2
+      }
     },
     {
       "id": "c72f3c65-db80-47b6-a773-9bfad2e4c7c5",
@@ -2420,7 +2855,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "dfa44b56-87b6-46ba-aa80-1c4f87441d76",
@@ -2444,7 +2884,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "1438ac51-7a28-42e9-95c3-76d3dd1ce5b4",
@@ -2469,7 +2914,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2f586866-a595-4e01-a600-bfb357a07531",
@@ -2494,7 +2944,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8c959f7d-b3ba-4331-991a-48083fca01c8",
@@ -2519,7 +2974,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "60eb1ade-8e2c-4b6b-850b-2a542d483922",
@@ -2544,7 +3004,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "86ff1159-c29e-4d94-ad50-6f302b7b895d",
@@ -2569,7 +3034,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "7c9f0da6-fc2d-45f4-a12d-5d7822403d99",
@@ -2594,7 +3064,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "98737555-9072-43f7-a749-61f6f6354a2e",
@@ -2619,7 +3094,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "442dfc5d-6c6d-4cc4-a7a8-e5409b0f2c84",
@@ -2644,7 +3124,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8ec939b0-53c2-4da8-8ea9-3ad99225a0bf",
@@ -2668,7 +3153,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "5cf753c3-a425-49f2-882f-85208a63e0a8",
@@ -2693,7 +3183,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "3cf4166c-3297-435b-964a-8f1b5bc824f9",
@@ -2718,7 +3213,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4001e35d-d1de-43d9-a61e-4c549db8039b",
@@ -2743,7 +3243,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4330fef4-0a74-438a-9f48-3a805619b545",
@@ -2768,7 +3273,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "544ee2fd-dee2-4017-ab8e-80ebc783af79",
@@ -2799,7 +3309,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "726c730f-da5e-4847-8673-9eb97dcb2823",
@@ -2830,7 +3345,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "9b1df375-1f5a-442d-b557-4d6ff77cb4b1",
@@ -2861,7 +3381,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "188c9a18-8578-4aeb-9937-0bfe053432b1",
@@ -2892,7 +3417,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "7aa5fb14-0a02-4794-aba6-5fb5d08e2f69",
@@ -2923,7 +3453,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d1b332bc-9967-4c49-a97b-13906c0891c1",
@@ -2952,7 +3487,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "5e77601b-6f82-44cf-bd6e-a176b9d83844",
@@ -2981,7 +3521,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "557fb0c2-5c0c-42c7-8e80-289fd0e455fa",
@@ -3010,7 +3555,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "a1941f93-33d8-4341-b293-e87646111b77",
@@ -3039,7 +3589,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "3c5175a8-ecf1-44a9-b72e-623e44ad7d5c",
@@ -3068,7 +3623,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "496f0463-7c16-446e-92d8-ea752dea1bca",
@@ -3097,7 +3657,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "63eb7622-1d08-4727-adca-d41c788345c9",
@@ -3126,7 +3691,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "38c41039-841a-419c-8d1c-e1e8c499f8ff",
@@ -3155,7 +3725,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "007cb3c4-3459-49c0-90f4-6765e05311af",
@@ -3180,7 +3755,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "0d39839b-0662-4daa-ace0-ef17b3ed9e80",
@@ -3205,7 +3785,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e61d6f3f-804b-4d36-b00e-905c1c68c52c",
@@ -3230,7 +3815,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e24c2d99-cd63-4439-bfc0-3d50df3514bb",
@@ -3255,7 +3845,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "91d7ef32-c3f7-43da-a00c-3fdd570c7c0b",
@@ -3280,7 +3875,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f807febe-bef3-4ca3-a40d-d0cd3a430389",
@@ -3307,7 +3907,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8aff9627-0029-4575-ad0e-da44c73c2130",
@@ -3333,7 +3938,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "43fa896c-b816-40ef-85c8-249b7fb6238f",
@@ -3361,7 +3971,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "92ed4d6e-9f6a-42df-b064-bf1c7319cd53",
@@ -3388,7 +4003,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "bb4259ea-48f6-4d99-b4fb-c8dfd6c3429b",
@@ -3415,7 +4035,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "fc229df5-d43a-4f34-a41d-384e2b4b0ba7",
@@ -3444,7 +4069,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "e47173bf-54a4-4a5a-9a59-beb2c53aa7ff",
@@ -3473,7 +4103,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "81358f12-4ca2-48e4-9c3e-02ae22d2a579",
@@ -3502,7 +4137,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "45fb918a-3932-491e-8bf4-e0d634526fc7",
@@ -3526,7 +4166,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "204d2f43-f55c-44df-980a-39dc692d4a9b",
@@ -3551,7 +4196,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "a336dc74-4373-46ab-834c-b1f736e8c584",
@@ -3576,7 +4226,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "d6a6a6d8-6cae-469b-8e7d-c60bc0374189",
@@ -3604,7 +4259,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "307c457e-1886-4566-9c6d-4d097ebc7064",
@@ -3632,7 +4292,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "5aabcd4f-a73b-4e31-8338-3cdfcd418d48",
@@ -3660,7 +4325,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "4ccb27a0-09af-4b25-8202-478bd77645df",
@@ -3685,7 +4355,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "c346d45e-9ca6-4396-86df-1232f29a9581",
@@ -3711,7 +4386,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "a033cbea-5712-4d57-b3e4-66eb3f6fe4be",
@@ -3737,7 +4417,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "f3d3c73e-c483-4f9f-ae87-543268caca54",
@@ -3763,7 +4448,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "e15a73ef-7d34-42e0-ada0-4024b648a6a0",
@@ -3790,7 +4480,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "9fdc6226-3b19-4dae-91fc-9d82dc88ede9",
@@ -3815,7 +4510,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "39eeb0f0-a2f0-4500-a9ad-96f9ea049141",
@@ -3841,7 +4541,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "7ca33241-ce80-4243-b129-4c4ec572b2d2",
@@ -3866,7 +4571,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "3f241bb2-8406-494b-b75e-7d19ef04592b",
@@ -3892,7 +4602,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "fe878b94-ae37-4641-b78d-4c6b1709221b",
@@ -3918,7 +4633,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "195f76f6-2c7e-43cb-9809-80b45ae39f81",
@@ -3944,7 +4664,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "166dec81-30e0-4f28-919c-f8c3bb11738a",
@@ -3970,7 +4695,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "ed089c06-fba6-4d66-bda3-ff9877fe9b2d",
@@ -3996,7 +4726,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "4e2bf89f-9e5d-4407-9353-fcfd78d4a01e",
@@ -4022,7 +4757,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "9ede419b-8c92-4068-a1ea-a7e4b79b8b18",
@@ -4048,7 +4788,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "1db71b06-183a-4982-b405-9dbcb8f59609",
@@ -4074,7 +4819,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "8d57ce48-40c5-44a6-bcd5-6dc051e592e2",
@@ -4100,7 +4850,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "f6463527-5446-4521-aa06-c1766bbaeec3",
@@ -4126,7 +4881,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "94d49fe0-cec7-4162-8aa4-8902030ddb49",
@@ -4152,7 +4912,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "aa5651d0-6d9b-4424-940f-feeae15bdcc4",
@@ -4178,7 +4943,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "4be7068f-0b4e-4a20-88f0-c314c9fbe65d",
@@ -4204,7 +4974,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "c6441abd-0d1c-4ccd-8432-07c2e40b4673",
@@ -4230,7 +5005,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "1da6b8f1-e571-4a05-9c10-7ede74fb486c",
@@ -4256,7 +5036,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "75955e6d-0a5a-4ae2-ba88-5d4ea22c075d",
@@ -4282,7 +5067,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "6b5621c5-408f-44af-a30c-d34bd1282185",
@@ -4308,7 +5098,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "ac6ad97d-6e51-4eb4-bec5-799a16185f39",
@@ -4336,7 +5131,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "2a2c1528-5ea4-4f08-bcb9-9be5e3cc5ded",
@@ -4364,7 +5164,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "d55c2f35-74b5-4b1a-8d52-c90563049fa8",
@@ -4390,7 +5195,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "b3f33ab7-f23b-4fae-89d6-6cb66f4e3829",
@@ -4416,7 +5226,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "b010dc38-420f-4e8f-96d1-30bc6c40cbce",
@@ -4442,7 +5257,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "c8837cf8-f10a-417d-9139-0becf379c5ed",
@@ -4468,7 +5288,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "music"
+      "contentType": "music",
+      "crySuitability": {
+        "hunger": 0.7,
+        "tired": 1,
+        "pain": 0.5
+      }
     },
     {
       "id": "b1ec2975-bf03-476b-a1bb-3b7cf986bd77",
@@ -4495,7 +5320,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2f6eea11-ea0b-40b5-a70e-521edaf0518e",
@@ -4522,7 +5352,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "b8b741af-a655-4274-84bf-2ed689478376",
@@ -4547,7 +5382,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "c13ab80a-8593-4f73-977c-06a6f70e6b47",
@@ -4574,7 +5414,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2cb0e6a4-fcad-494d-aea5-2b96e2276e1a",
@@ -4601,7 +5446,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "cfb14a88-5075-46b1-8d78-46e5370537cf",
@@ -4628,7 +5478,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "190cbe09-3bad-43fa-b34f-ac8071814a46",
@@ -4654,7 +5509,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "558840e8-84fe-4eaf-9ab0-34b18df4dc95",
@@ -4679,7 +5539,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "cbd59e07-cbdf-4007-aa52-49ee81bc11e4",
@@ -4706,7 +5571,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e48af176-0dc6-44fd-8477-20ad1689ee85",
@@ -4732,7 +5602,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a122458d-4af0-46c0-8363-a5ff829b4273",
@@ -4758,7 +5633,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "9869d34f-dc9a-471e-b72e-43c1f9f09891",
@@ -4785,7 +5665,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "7b11b1e5-4edc-4e5e-8c51-91d557fafecc",
@@ -4811,7 +5696,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "07e4bfa8-3d95-4611-83c2-7fc1fecbf81d",
@@ -4837,7 +5727,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "79b9e6b6-ea07-4dd2-a5a6-346ba764cf9b",
@@ -4862,7 +5757,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "e2a217bd-b1ff-401c-a5b5-02b3c554af21",
@@ -4888,7 +5788,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "51f2ee94-6a63-4e5b-bbc9-30b635318699",
@@ -4913,7 +5818,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "07feb2a9-de4b-4b05-b262-9157ba843979",
@@ -4940,7 +5850,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e75d3ad8-5682-4891-9990-360428bda132",
@@ -4963,7 +5878,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f5b01fc3-c3a0-4c33-aabd-2f8d5209c144",
@@ -4990,7 +5910,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "379db27f-6fa6-4aa6-8a59-ad2bc1a409fc",
@@ -5017,7 +5942,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4bcf2de7-e901-4fa3-b419-9877edb6f92c",
@@ -5044,7 +5974,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "7df5f232-4f84-4d7c-902c-7ed7756a24c0",
@@ -5068,7 +6003,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "67e2bbc8-c71a-409a-b077-d7bcb373d442",
@@ -5094,7 +6034,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "ce0eb267-fee2-4d5e-905d-0b35e747bf3a",
@@ -5121,7 +6066,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.3,
+        "pain": 0.1
+      }
     },
     {
       "id": "cea30788-020f-4ac3-9f35-d4b542e15300",
@@ -5144,7 +6094,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "239df248-1f10-4fe1-a780-32dd5f39d1ce",
@@ -5167,7 +6122,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "1df908af-1525-4fe4-9cff-5d6b1c024701",
@@ -5192,7 +6152,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "56e7d125-80d4-4c40-bc3d-293bb6617018",
@@ -5217,7 +6182,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "034bd9e9-a8b4-40ad-a4a9-f876253e87d5",
@@ -5242,7 +6212,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "6c928778-44e6-46dd-b0d7-ff802aeb6c7d",
@@ -5268,7 +6243,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "45818525-2d22-4ca1-91f6-6a0172e7ea69",
@@ -5292,7 +6272,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "474dea8e-9f03-4ff7-8fae-b6619dab38a1",
@@ -5315,7 +6300,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "35ab3c4e-11a6-4c9c-b087-d64fa42c8d37",
@@ -5338,7 +6328,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "79043431-30d2-4cdc-895f-3b75fe4d9f2a",
@@ -5362,7 +6357,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "32a8edad-f593-4ba7-8b84-7099dd9682e3",
@@ -5389,7 +6389,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "c0698423-5660-432d-8227-298992dd3edb",
@@ -5412,7 +6417,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "422d2acc-2067-4c79-9636-62875939f0b5",
@@ -5435,7 +6445,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "567ed05b-c82d-48b2-92e2-d3eb15ce8278",
@@ -5458,7 +6473,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "17cf9bb1-dfd5-45b2-b4cc-a42b4f1f5aa8",
@@ -5481,7 +6501,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a8125769-c2b0-4e8f-8982-2f68b8582c09",
@@ -5504,7 +6529,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "dd65cbae-63f0-49c2-aa6b-29ee5ceefca3",
@@ -5528,7 +6558,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "60bf8f00-17e1-42cd-bd11-c3cbcbb3492f",
@@ -5552,7 +6587,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "9ca4a6ad-e136-48af-b2d4-0a189ab4bc9f",
@@ -5576,7 +6616,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "699cd76e-de1a-4e70-a69a-644e98cc9f65",
@@ -5600,7 +6645,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d6e9aa77-dc79-40c6-8e6a-71c258aaa046",
@@ -5623,7 +6673,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8b108a76-4ecc-4d96-b4f5-f331f90cd3af",
@@ -5647,7 +6702,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4ad4506a-055b-456d-892a-29b25e47b061",
@@ -5671,7 +6731,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "a46bce83-ef6d-4c13-8113-10387c082a33",
@@ -5695,7 +6760,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "38d8abfe-ef93-4514-bac7-15fe4e2707ed",
@@ -5719,7 +6789,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "b19f6d1d-1f9c-41e4-8250-079ee3538fa6",
@@ -5743,7 +6818,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "81300bdc-39c9-4222-90f2-c012bbb45567",
@@ -5767,7 +6847,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "04217c0a-b398-43be-804b-5e00f032d7f3",
@@ -5790,7 +6875,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "68213255-6d17-4ec0-b014-c8392fc447ff",
@@ -5813,7 +6903,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "01044abd-b826-4ec4-9272-5b60415998f1",
@@ -5836,7 +6931,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f464867a-ddd9-4e72-8e0d-26e80f6e3455",
@@ -5860,7 +6960,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "acd3814c-65b2-4f13-8dc0-37fecd73cc05",
@@ -5884,7 +6989,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "086bc5b6-ac91-49f8-b97e-08c0af6b41bd",
@@ -5908,7 +7018,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e8f95d77-c24a-487d-b2b3-7bb7d9d641c2",
@@ -5932,7 +7047,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "afaf4cb7-17d7-427a-aa64-bcb390e9e6ff",
@@ -5956,7 +7076,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "be71689b-dda4-46e1-8366-f4c4510ee819",
@@ -5980,7 +7105,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "6935c6d3-2853-4023-8d80-af722fe5dff4",
@@ -6003,7 +7133,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "c7477491-b58e-4457-9c6e-9928efed81c7",
@@ -6026,7 +7161,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "6a05e6e0-471d-414c-aca6-216f2f4c5861",
@@ -6050,7 +7190,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d6e46f11-b430-4fa6-9458-8c748848b19b",
@@ -6074,7 +7219,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "ced52c6d-a229-48b6-908b-143b313305b9",
@@ -6097,7 +7247,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "d1cb918e-a278-4fb0-9c07-7b844dbd15d1",
@@ -6120,7 +7275,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "50f784a4-c455-4334-8df7-c314f0e20e28",
@@ -6143,7 +7303,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "8af3097f-ef38-441d-89a0-09af1ceec27d",
@@ -6166,7 +7331,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "bf6c833d-ba74-4e65-8d01-612c078bd40d",
@@ -6190,7 +7360,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "25d8c8ea-32af-4e4a-aa3e-3e64cdbebe51",
@@ -6214,7 +7389,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f82448cb-f08a-4a99-b3bc-d5e114f09594",
@@ -6238,7 +7418,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "6e0ca669-5262-40f7-9483-b53d076ddbc2",
@@ -6261,7 +7446,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4e833e9b-767a-4823-9f82-62022d29c7d7",
@@ -6285,7 +7475,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "17aea2ed-b833-4f09-8bef-fe9da9f725a0",
@@ -6309,7 +7504,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "4094727a-1682-4cb9-b9be-815a6fa78aeb",
@@ -6333,7 +7533,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "1447881f-df70-428e-a192-2723466950f4",
@@ -6357,7 +7562,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "53968c5a-4724-4476-8d90-fc6eb9c46cb9",
@@ -6381,7 +7591,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e4fbb509-7c5c-4f18-a6fb-bdd33e9e1797",
@@ -6404,7 +7619,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "f4302b7f-9db1-4d1c-9df4-d99185519075",
@@ -6428,7 +7648,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "e347925f-c68b-4737-8e0c-e6367e24bc65",
@@ -6451,7 +7676,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "0ade9f10-0a08-47f1-9580-833b076be962",
@@ -6474,7 +7704,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "36981a09-f9e5-4160-bd01-2921b913b1ee",
@@ -6497,7 +7732,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2230ed1b-dc0f-4024-86a3-b03b396dfbcd",
@@ -6520,7 +7760,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "2c430523-18da-4cfa-8e70-321ec9804e31",
@@ -6543,7 +7788,12 @@
       "ageRangeMin": 0,
       "ageRangeMax": 36,
       "isPremium": false,
-      "contentType": "audiobook"
+      "contentType": "audiobook",
+      "crySuitability": {
+        "hunger": 0.3,
+        "tired": 0.4,
+        "pain": 0.2
+      }
     },
     {
       "id": "c3ee43b4-f961-49f8-b03e-543babfb35ef",
@@ -6570,7 +7820,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 0.95,
+        "pain": 0.6
+      }
     },
     {
       "id": "137cacb2-cbe4-4eff-8863-4da9bcc63443",
@@ -6597,7 +7852,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.65,
+        "tired": 0.75,
+        "pain": 0.45
+      }
     },
     {
       "id": "3217df6f-d43b-49f0-99ca-3c03d6706415",
@@ -6624,7 +7884,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 1,
+        "pain": 0.6
+      }
     },
     {
       "id": "84a8e0ab-46a6-484f-a4b8-1d1977773ecc",
@@ -6651,7 +7916,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.75,
+        "tired": 1,
+        "pain": 0.6
+      }
     },
     {
       "id": "027e3078-345b-4ba0-9aea-b194c4221b32",
@@ -6677,7 +7947,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "4d13a9b1-0585-4df7-9504-fa50e40656bb",
@@ -6703,7 +7978,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "d45411bb-6822-4cd5-abea-ab238b40331c",
@@ -6729,7 +8009,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "e0ba3d80-60f9-4e9e-844e-01325da57af0",
@@ -6755,7 +8040,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "1cbb40c1-71eb-462d-a43f-02b1ec6bc85a",
@@ -6781,7 +8071,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "b4ba26c0-547f-423a-b0c4-787b196ac898",
@@ -6807,7 +8102,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "dd852e05-0873-4ead-afae-5317129c9fa0",
@@ -6833,7 +8133,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "6723e78f-b12d-4f70-acae-10347ace7950",
@@ -6859,7 +8164,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "fb992af4-0b2c-41d3-8192-1644ceac61bb",
@@ -6885,7 +8195,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.6,
+        "pain": 0.3
+      }
     },
     {
       "id": "c42a6d29-47e8-4847-b472-e38868cdc7cf",
@@ -6911,7 +8226,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "97a10098-f32c-421b-bad6-fdcffbc5852f",
@@ -6936,7 +8256,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "3ce3674e-9434-4f30-a4a2-193d08e75dee",
@@ -6962,7 +8287,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "346c5cc9-588b-4c4a-8091-f5335ae15154",
@@ -6988,7 +8318,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "b0b86c81-5470-4286-87d9-0c8c83ac63b2",
@@ -7014,7 +8349,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "a3da616e-9a76-4f72-acad-968f0dd275c6",
@@ -7040,7 +8380,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     },
     {
       "id": "93df5aa0-c07f-4b0b-b9c4-e8fe670328c0",
@@ -7066,7 +8411,12 @@
       "ageRangeMax": 36,
       "isPremium": false,
       "contentType": "music",
-      "isGenerated": true
+      "isGenerated": true,
+      "crySuitability": {
+        "hunger": 0.6,
+        "tired": 0.7,
+        "pain": 0.35
+      }
     }
   ],
   "categories": {

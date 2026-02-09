@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		10BE3ADAB2D96A4DD55A91B2 /* CryDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */; };
+		11CF4AEBB3E97B5EE66A92C3 /* CryDetectionTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15CBCE8BD4F240B7146FE15 /* CryDetectionTabView.swift */; };
+		16BBD5B4457F1A1906F12456 /* BatteryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25343EB4F3AEE389A91ED73 /* BatteryMonitor.swift */; };
 		22C84F2AF9FD4E1FD1F03BDF /* WatchAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 567869108E01725C3BB01571 /* WatchAudioPlayer.swift */; };
+		2DE1FFE61E0419EE8A0AFBA9 /* SmartPlaylistGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1BAAD2CA781EF9D8B3DBBE /* SmartPlaylistGenerator.swift */; };
 		2F3A374EE5B6F9F53A469C73 /* PlaybackSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */; };
 		361F761D2F0F6C5500F9A131 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 3069EDA3BDDC0886D32F4D88 /* SnapshotTesting */; };
 		361F76252F10907D00F9A131 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 361F76242F10907D00F9A131 /* Intents.framework */; };
@@ -17,12 +21,23 @@
 		3633837E692173ECC9535D89 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559D56AE15E9B5EA1DD5162A /* WatchModels.swift */; };
 		3CE3E531510641868C9A9FE7 /* WatchOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */; };
 		3D6F6FC4DBB0374C802B2258 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CF2B1A1C16E2030AEB1E5B9B /* WatchConnectivity.framework */; };
+		41480589CD00C4089D298FC2 /* InlineCryDetectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23BA91254F9191DC6E855D66 /* InlineCryDetectionCard.swift */; };
 		45281BAD87657278983DC8E3 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C678D15B421B8B28FA0EC0C8 /* NowPlayingView.swift */; };
+		45A0A19BA93A56DD21CB4567 /* EffectivenessSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16160E7D5AE6226087081319 /* EffectivenessSyncService.swift */; };
 		66028A3E62C9A355D42EB679 /* MemoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */; };
+		67A5B8C811E3D95F8C080A22 /* ActionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */; };
 		6B8FA21D1F12E90150830CE6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */; };
+		6FCB453609764516B5CF1F19 /* CryDetectionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */; };
 		717523F2C8DA1A555CB0D764 /* WatchStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */; };
+		7BA2C25929491856221A0414 /* CircularAudioBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270225FA113DFA223F73831B /* CircularAudioBuffer.swift */; };
+		7C242EC8F654BF4EF79D0E2A /* CircularAudioBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */; };
 		7F9EBC73C0DDC9C1A263F393 /* BabyInCarWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */; };
+		81E0F14D44A1113CCEBB61D6 /* MelSpectrogramGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */; };
+		856344B33D1F3785ED8160BD /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */; };
+		88580C330B6DA1F50C1361CF /* FeedbackCollectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */; };
+		8F625D703020E42AB05F010C /* MelSpectrogramGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */; };
 		8F92896B4AAC67A42C0536F6 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */; };
+		916FCD242A6E6BE93C070A62 /* CryTypeChangeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */; };
 		A1000001 /* BabyInCarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* BabyInCarApp.swift */; };
 		A1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* SceneDelegate.swift */; };
 		A1000010 /* Baby.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010 /* Baby.swift */; };
@@ -79,6 +94,7 @@
 		A1000066 /* ResearchKnowledgeBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000066 /* ResearchKnowledgeBase.swift */; };
 		A1000067 /* SmartCarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000067 /* SmartCarPlayController.swift */; };
 		A1000080 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Audio */; };
+		A1000081 /* DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A2000081 /* DeepInfant_V2.mlmodel */; };
 		A1000090 /* AdaptiveLearningEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000090 /* AdaptiveLearningEngine.swift */; };
 		A1000091 /* FreemiumGatekeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000091 /* FreemiumGatekeeper.swift */; };
 		A1000092 /* PremiumBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000092 /* PremiumBadge.swift */; };
@@ -111,6 +127,7 @@
 		A1000312 /* NowPlayingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000312 /* NowPlayingService.swift */; };
 		A1000313 /* AppIntentVocabulary.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2000313 /* AppIntentVocabulary.plist */; };
 		A5D5126CDA20D4ACBCDA5755 /* VoiceCharacteristicsAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */; };
+		B6FCCAAB0E3A95D9D746DD67 /* CryClassificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A6804B54E52F1A249B78686 /* CryClassificationService.swift */; };
 		C318B073148ACC7E8A068F15 /* DebugMemoryOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */; };
 		C5E84D07A0C31B3F0DF9301D /* PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6B4D4590AA16B4858A2EED /* PlaybackContext.swift */; };
 		CF68B8E0F2DF4D3BD3EA95D7 /* PlaybackQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */; };
@@ -119,13 +136,28 @@
 		D9C43D2A296DB73CAFD1DB93 /* WatchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 559D56AE15E9B5EA1DD5162A /* WatchModels.swift */; };
 		DCB1EDAC03CC90EF79D2F003 /* PlaybackQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5F5BAD7791BC1D4D4919F0 /* PlaybackQueueView.swift */; };
 		E3740177B761A7C8AE82E10A /* SleepTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */; };
+		E74478FC37CED068F81ACFB2 /* ActionCategoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */; };
+		E7ADD89C8DF050B8107DFD49 /* CategoryRotationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A81FF96A872234B5E825993 /* CategoryRotationManager.swift */; };
 		EBBF0B6A4747FC6B6869CDB6 /* FavoritesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DFAB23B74432CEB2049442 /* FavoritesListView.swift */; };
 		ECFD668F1DF7447792D9E051 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FFFFCD23053379BDC833504 /* Foundation.framework */; };
 		EMBEDWATCH001 /* BabyInCarWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F07D48AD5DF6751AFA3F4A0D /* CryTypeStabilizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */; };
 		F4A130084F1014B6FC4F75EE /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */; };
 		WATCH00001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = WATCH00002 /* Assets.xcassets */; };
 		WATCH00003 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WATCH00004 /* LibraryView.swift */; };
 		WATCH00011 /* WatchConnectivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WATCH00010 /* WatchConnectivityTests.swift */; };
+		B1000001 /* AIAccuracyBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000001 /* AIAccuracyBadge.swift */; };
+		B1000002 /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000002 /* CategoryDetailView.swift */; };
+		B1000003 /* CryPredictionAccuracyTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000003 /* CryPredictionAccuracyTracker.swift */; };
+		B1000004 /* CryStopAutoDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000004 /* CryStopAutoDetector.swift */; };
+		B1000005 /* CryStopPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000005 /* CryStopPromptView.swift */; };
+		B1000006 /* CryTypeChangePromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000006 /* CryTypeChangePromptView.swift */; };
+		B1000007 /* FilterChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000007 /* FilterChipView.swift */; };
+		B1000008 /* FilterTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000008 /* FilterTag.swift */; };
+		B1000009 /* FilterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000009 /* FilterViewModel.swift */; };
+		B100000A /* LullaShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000A /* LullaShortcuts.swift */; };
+		B100000B /* SmartPlaylistBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000B /* SmartPlaylistBuilder.swift */; };
+		B100000C /* SmartSoothingQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000C /* SmartSoothingQueueView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -186,10 +218,16 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeedbackCollectionService.swift; sourceTree = "<group>"; };
 		11E4EF70A2A971E65CD43CEC /* SmartCarPlayControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartCarPlayControllerTests.swift; sourceTree = "<group>"; };
+		122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionViewModel.swift; sourceTree = "<group>"; };
 		13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SleepTimerView.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
+		16160E7D5AE6226087081319 /* EffectivenessSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessSyncService.swift; sourceTree = "<group>"; };
 		22CFF84D951A77DBCC3FAF96 /* PerformanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
+		23BA91254F9191DC6E855D66 /* InlineCryDetectionCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineCryDetectionCard.swift; sourceTree = "<group>"; };
 		260894FDBF40F49EAB9530C6 /* UltraSmartPlaylistSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelectorTests.swift; sourceTree = "<group>"; };
+		270225FA113DFA223F73831B /* CircularAudioBuffer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularAudioBuffer.swift; sourceTree = "<group>"; };
+		2A81FF96A872234B5E825993 /* CategoryRotationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CategoryRotationManager.swift; sourceTree = "<group>"; };
 		2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCharacteristicsAnalyzer.swift; sourceTree = "<group>"; };
 		361F76232F10907D00F9A131 /* BabyInCarAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BabyInCarAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		361F76242F10907D00F9A131 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
@@ -199,22 +237,31 @@
 		3FFFFCD23053379BDC833504 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		44EB4820C2916DF12EEF6A75 /* ResearchKnowledgeBaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResearchKnowledgeBaseTests.swift; sourceTree = "<group>"; };
 		46F004E9B7B4934EEDC60F91 /* PlaybackVerificationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackVerificationTests.swift; sourceTree = "<group>"; };
+		4E1BAAD2CA781EF9D8B3DBBE /* SmartPlaylistGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartPlaylistGenerator.swift; sourceTree = "<group>"; };
 		559D56AE15E9B5EA1DD5162A /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModels.swift; sourceTree = "<group>"; };
 		567869108E01725C3BB01571 /* WatchAudioPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchAudioPlayer.swift; path = WatchAudioPlayer.swift; sourceTree = "<group>"; };
 		5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackSessionManager.swift; sourceTree = "<group>"; };
 		5CE52DD7C2CEE8F1DA041F68 /* AudioEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioEngineTests.swift; sourceTree = "<group>"; };
+		606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeChangeDetector.swift; sourceTree = "<group>"; };
 		61173870F4BC522E62B4DBE5 /* MemoryMonitorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitorTests.swift; sourceTree = "<group>"; };
 		613B84719A4680A5FC4A135D /* EmergencyCategorySelectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyCategorySelectionTests.swift; sourceTree = "<group>"; };
+		6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGeneratorTests.swift; sourceTree = "<group>"; };
 		686A2521E711469647C81C48 /* FreemiumGatekeeperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeperTests.swift; sourceTree = "<group>"; };
 		6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchOnboardingView.swift; path = WatchOnboardingView.swift; sourceTree = "<group>"; };
 		7728CBB1144588372F2A6EF5 /* ViewSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewSnapshotTests.swift; sourceTree = "<group>"; };
+		7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategoryTests.swift; sourceTree = "<group>"; };
 		7AA044E9768D4DB60AFDC96E /* BabyInCarAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabyInCarAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularAudioBufferTests.swift; sourceTree = "<group>"; };
 		7FFB20DE15A3F7E28683EE7D /* APIContentIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIContentIntegrationTests.swift; sourceTree = "<group>"; };
 		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FavoritesListView.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugMemoryOverlay.swift; sourceTree = "<group>"; };
 		84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		882CE90CC9A0F96675200F13 /* EffectivenessTrackingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessTrackingTests.swift; sourceTree = "<group>"; };
 		8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitor.swift; sourceTree = "<group>"; };
+		9A6804B54E52F1A249B78686 /* CryClassificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryClassificationService.swift; sourceTree = "<group>"; };
+		9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
+		A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionView.swift; sourceTree = "<group>"; };
+		B15CBCE8BD4F240B7146FE15 /* CryDetectionTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionTabView.swift; sourceTree = "<group>"; };
 		A2000001 /* BabyInCarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyInCarApp.swift; sourceTree = "<group>"; };
 		A2000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		A2000010 /* Baby.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Baby.swift; sourceTree = "<group>"; };
@@ -273,6 +320,7 @@
 		A2000070 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000071 /* BabyInCarApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BabyInCarApp.entitlements; sourceTree = "<group>"; };
 		A2000080 /* Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
+		A2000081 /* DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
 		A2000090 /* AdaptiveLearningEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveLearningEngine.swift; sourceTree = "<group>"; };
 		A2000091 /* FreemiumGatekeeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeper.swift; sourceTree = "<group>"; };
 		A2000092 /* PremiumBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumBadge.swift; sourceTree = "<group>"; };
@@ -314,19 +362,35 @@
 		C9441C3D0ADB70B17C07C21E /* IconExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IconExportTests.swift; sourceTree = "<group>"; };
 		CF2B1A1C16E2030AEB1E5B9B /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		CFC78A623ABD7B192B2F969B /* MemoryCleanupToast.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryCleanupToast.swift; sourceTree = "<group>"; };
+		D25343EB4F3AEE389A91ED73 /* BatteryMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryMonitor.swift; sourceTree = "<group>"; };
 		D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BabyInCarWatchApp.swift; path = BabyInCarWatchApp.swift; sourceTree = "<group>"; };
 		D40D47B667157EE4C7845375 /* LibraryChatbotServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LibraryChatbotServiceTests.swift; sourceTree = "<group>"; };
 		D9F762308232F502F5E21483 /* TrialManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrialManagerTests.swift; sourceTree = "<group>"; };
 		DA5F5BAD7791BC1D4D4919F0 /* PlaybackQueueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackQueueView.swift; sourceTree = "<group>"; };
 		DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComprehensiveMemoryTests.swift; sourceTree = "<group>"; };
 		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchConnectivityManager.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
+		E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeStabilizer.swift; sourceTree = "<group>"; };
+		E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGenerator.swift; sourceTree = "<group>"; };
 		F1E195D9EBFD4E8F055D7E07 /* EmergencyResponseIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyResponseIntegrationTests.swift; sourceTree = "<group>"; };
+		F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategory.swift; sourceTree = "<group>"; };
 		F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageFilteringTests.swift; sourceTree = "<group>"; };
 		FB48B79C6512CFA0D678E6ED /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		WATCH00002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		WATCH00004 /* LibraryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LibraryView.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		WATCH00010 /* WatchConnectivityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityTests.swift; sourceTree = "<group>"; };
+		B2000001 /* AIAccuracyBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAccuracyBadge.swift; sourceTree = "<group>"; };
+		B2000002 /* CategoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryDetailView.swift; sourceTree = "<group>"; };
+		B2000003 /* CryPredictionAccuracyTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryPredictionAccuracyTracker.swift; sourceTree = "<group>"; };
+		B2000004 /* CryStopAutoDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryStopAutoDetector.swift; sourceTree = "<group>"; };
+		B2000005 /* CryStopPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryStopPromptView.swift; sourceTree = "<group>"; };
+		B2000006 /* CryTypeChangePromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryTypeChangePromptView.swift; sourceTree = "<group>"; };
+		B2000007 /* FilterChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChipView.swift; sourceTree = "<group>"; };
+		B2000008 /* FilterTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterTag.swift; sourceTree = "<group>"; };
+		B2000009 /* FilterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterViewModel.swift; sourceTree = "<group>"; };
+		B200000A /* LullaShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LullaShortcuts.swift; sourceTree = "<group>"; };
+		B200000B /* SmartPlaylistBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlaylistBuilder.swift; sourceTree = "<group>"; };
+		B200000C /* SmartSoothingQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSoothingQueueView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -463,6 +527,15 @@
 			path = Freemium;
 			sourceTree = "<group>";
 		};
+		59A5343BEBB973702DB8070D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */,
+			);
+			name = Models;
+			path = Models;
+			sourceTree = "<group>";
+		};
 		59CE75591487D9801E21BDE2 /* Snapshots */ = {
 			isa = PBXGroup;
 			children = (
@@ -522,6 +595,7 @@
 				A5000050 /* CarPlay */,
 				A5000060 /* Resources */,
 				A2000109 /* Localizable.xcstrings */,
+				ED4910790977BEEC6DB01002 /* ViewModels */,
 			);
 			path = BabyInCarApp;
 			sourceTree = "<group>";
@@ -541,6 +615,7 @@
 		A5000010 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				B2000008 /* FilterTag.swift */,
 				A2000010 /* Baby.swift */,
 				A2000011 /* AudioTrack.swift */,
 				A2000012 /* TrackEffectiveness.swift */,
@@ -549,6 +624,7 @@
 				A2000015 /* EnvironmentState.swift */,
 				A20000F6 /* TrackMetadata.swift */,
 				A20000F7 /* UserLanguagePreference.swift */,
+				F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -590,6 +666,21 @@
 				8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */,
 				A2000108 /* WatchSyncManager.swift */,
 				2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */,
+				E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */,
+				270225FA113DFA223F73831B /* CircularAudioBuffer.swift */,
+				9A6804B54E52F1A249B78686 /* CryClassificationService.swift */,
+				9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */,
+				E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */,
+				4E1BAAD2CA781EF9D8B3DBBE /* SmartPlaylistGenerator.swift */,
+				2A81FF96A872234B5E825993 /* CategoryRotationManager.swift */,
+				606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */,
+				00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */,
+				16160E7D5AE6226087081319 /* EffectivenessSyncService.swift */,
+				D25343EB4F3AEE389A91ED73 /* BatteryMonitor.swift */,
+				B2000003 /* CryPredictionAccuracyTracker.swift */,
+				B2000004 /* CryStopAutoDetector.swift */,
+				B200000B /* SmartPlaylistBuilder.swift */,
+				B200000A /* LullaShortcuts.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -625,6 +716,10 @@
 				83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */,
 				CFC78A623ABD7B192B2F969B /* MemoryCleanupToast.swift */,
 				A2000107 /* LanguageSelectionView.swift */,
+				A68B41DED524C89EB978B1A3 /* CryDetection */,
+				B2000002 /* CategoryDetailView.swift */,
+				B2000005 /* CryStopPromptView.swift */,
+				B200000C /* SmartSoothingQueueView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -632,6 +727,7 @@
 		A5000031 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				B2000001 /* AIAccuracyBadge.swift */,
 				A20000FB /* CancelButton.swift */,
 				A20000FC /* CurrentTrackCard.swift */,
 				A20000FD /* TrackProgressBar.swift */,
@@ -647,6 +743,7 @@
 		A5000035 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				B2000007 /* FilterChipView.swift */,
 				A2000051 /* ButtonStyles.swift */,
 				A2000052 /* Cards.swift */,
 				A2000053 /* SkeletonLoading.swift */,
@@ -699,8 +796,21 @@
 				A2000071 /* BabyInCarApp.entitlements */,
 				A2000313 /* AppIntentVocabulary.plist */,
 				A2000080 /* Audio */,
+				A2000081 /* DeepInfant_V2.mlmodel */,
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		A68B41DED524C89EB978B1A3 /* CryDetection */ = {
+			isa = PBXGroup;
+			children = (
+				A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */,
+				B15CBCE8BD4F240B7146FE15 /* CryDetectionTabView.swift */,
+				23BA91254F9191DC6E855D66 /* InlineCryDetectionCard.swift */,
+				B2000006 /* CryTypeChangePromptView.swift */,
+			);
+			name = CryDetection;
+			path = CryDetection;
 			sourceTree = "<group>";
 		};
 		A841ED47B8CF2ED5B5D835B4 /* BabyInCarAppTests */ = {
@@ -714,6 +824,7 @@
 				C9441C3D0ADB70B17C07C21E /* IconExportTests.swift */,
 				A2E5EBFF3EF96467E780B601 /* Performance */,
 				BD14390931580E0C6D57CF69 /* Services */,
+				59A5343BEBB973702DB8070D /* Models */,
 			);
 			path = BabyInCarAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -731,6 +842,8 @@
 				F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */,
 				44EB4820C2916DF12EEF6A75 /* ResearchKnowledgeBaseTests.swift */,
 				WATCH00010 /* WatchConnectivityTests.swift */,
+				6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */,
+				7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -756,6 +869,16 @@
 				DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */,
 			);
 			path = Integration;
+			sourceTree = "<group>";
+		};
+		ED4910790977BEEC6DB01002 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */,
+				B2000009 /* FilterViewModel.swift */,
+			);
+			name = ViewModels;
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		F056F97B265EB92793FC9DF6 /* Views */ = {
@@ -993,6 +1116,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				WATCH00011 /* WatchConnectivityTests.swift in Sources */,
+				8F625D703020E42AB05F010C /* MelSpectrogramGeneratorTests.swift in Sources */,
+				7C242EC8F654BF4EF79D0E2A /* CircularAudioBufferTests.swift in Sources */,
+				E74478FC37CED068F81ACFB2 /* ActionCategoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1000,6 +1126,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1000081 /* DeepInfant_V2.mlmodel in Sources */,
 				A1000001 /* BabyInCarApp.swift in Sources */,
 				A1000002 /* SceneDelegate.swift in Sources */,
 				A1000010 /* Baby.swift in Sources */,
@@ -1091,6 +1218,34 @@
 				A1000108 /* WatchSyncManager.swift in Sources */,
 				C5E84D07A0C31B3F0DF9301D /* PlaybackContext.swift in Sources */,
 				A5D5126CDA20D4ACBCDA5755 /* VoiceCharacteristicsAnalyzer.swift in Sources */,
+				81E0F14D44A1113CCEBB61D6 /* MelSpectrogramGenerator.swift in Sources */,
+				7BA2C25929491856221A0414 /* CircularAudioBuffer.swift in Sources */,
+				B6FCCAAB0E3A95D9D746DD67 /* CryClassificationService.swift in Sources */,
+				856344B33D1F3785ED8160BD /* AudioCaptureService.swift in Sources */,
+				F07D48AD5DF6751AFA3F4A0D /* CryTypeStabilizer.swift in Sources */,
+				2DE1FFE61E0419EE8A0AFBA9 /* SmartPlaylistGenerator.swift in Sources */,
+				67A5B8C811E3D95F8C080A22 /* ActionCategory.swift in Sources */,
+				10BE3ADAB2D96A4DD55A91B2 /* CryDetectionView.swift in Sources */,
+				11CF4AEBB3E97B5EE66A92C3 /* CryDetectionTabView.swift in Sources */,
+				E7ADD89C8DF050B8107DFD49 /* CategoryRotationManager.swift in Sources */,
+				916FCD242A6E6BE93C070A62 /* CryTypeChangeDetector.swift in Sources */,
+				88580C330B6DA1F50C1361CF /* FeedbackCollectionService.swift in Sources */,
+				45A0A19BA93A56DD21CB4567 /* EffectivenessSyncService.swift in Sources */,
+				16BBD5B4457F1A1906F12456 /* BatteryMonitor.swift in Sources */,
+				6FCB453609764516B5CF1F19 /* CryDetectionViewModel.swift in Sources */,
+				41480589CD00C4089D298FC2 /* InlineCryDetectionCard.swift in Sources */,
+				B1000001 /* AIAccuracyBadge.swift in Sources */,
+				B1000002 /* CategoryDetailView.swift in Sources */,
+				B1000003 /* CryPredictionAccuracyTracker.swift in Sources */,
+				B1000004 /* CryStopAutoDetector.swift in Sources */,
+				B1000005 /* CryStopPromptView.swift in Sources */,
+				B1000006 /* CryTypeChangePromptView.swift in Sources */,
+				B1000007 /* FilterChipView.swift in Sources */,
+				B1000008 /* FilterTag.swift in Sources */,
+				B1000009 /* FilterViewModel.swift in Sources */,
+				B100000A /* LullaShortcuts.swift in Sources */,
+				B100000B /* SmartPlaylistBuilder.swift in Sources */,
+				B100000C /* SmartSoothingQueueView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

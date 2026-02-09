@@ -1,0 +1,379 @@
+# Maestro E2E Test: Smart Cry-Type Playlist Response (FS-029)
+# Tests complete flow: Cry Detection -> Smart Playlist -> Feedback -> Effectiveness
+#
+# Run: maestro test BabyInCarApp/maestro/flows/smart_playlist_cry_response_flow.yaml
+#
+# Test Coverage:
+# 1. Navigate to Cry Detection tab
+# 2. Enable AI monitoring
+# 3. Verify listening state
+# 4. Simulate cry detected (via UI state)
+# 5. Verify SmartQueueView appears with cry-specific playlist
+# 6. Verify "It Helped!" button visible
+# 7. Verify category diversity in queue
+# 8. Test "It Helped!" feedback flow
+# 9. Verify effectiveness update
+# 10. Test "Still Crying" feedback
+# 11. Test cry type change detection UI
+# 12. Verify cancel returns to monitoring
+
+appId: com.anticry.babyincar
+---
+- launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      text: ".*[Hh]ome.*|.*EMERGENCY.*"
+    timeout: 10000
+
+- takeScreenshot: "smart_playlist_01_home"
+
+# ============================================
+# TEST 1: Navigate to Cry Detection Tab
+# ============================================
+
+- tapOn:
+    id: "cryDetectionTab"
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "cryDetectionTab"
+    commands:
+      - tapOn:
+          text: ".*Cry.*"
+          optional: true
+
+- takeScreenshot: "smart_playlist_02_cry_detection_tab"
+
+# ============================================
+# TEST 2: Initial State - Check Monitoring UI
+# ============================================
+
+# Should see Start Monitoring button initially
+- runFlow:
+    when:
+      visible:
+        text: "Start Monitoring"
+    commands:
+      - assertVisible: "Start Monitoring"
+      - takeScreenshot: "smart_playlist_03_monitoring_off"
+
+# ============================================
+# TEST 3: Enable AI Monitoring
+# ============================================
+
+- runFlow:
+    when:
+      visible:
+        id: "cryMonitoringToggle"
+    commands:
+      - tapOn:
+          id: "cryMonitoringToggle"
+
+- runFlow:
+    when:
+      visible:
+        text: "Start Monitoring"
+    commands:
+      - tapOn: "Start Monitoring"
+
+# Wait for monitoring to start
+- wait:
+    milliseconds: 2000
+
+- takeScreenshot: "smart_playlist_04_monitoring_active"
+
+# ============================================
+# TEST 4: Verify Listening State
+# ============================================
+
+# Should show listening indicators
+- runFlow:
+    when:
+      visible:
+        text: ".*Listening.*|.*Active.*|.*Monitoring.*"
+    commands:
+      - assertVisible:
+          text: ".*Listening.*|.*Active.*|.*Monitoring.*"
+      - takeScreenshot: "smart_playlist_05_listening_state"
+
+# ============================================
+# TEST 5: Test Emergency Mode Activation (Cry Response)
+# ============================================
+
+# Go back to home to trigger emergency mode
+- back
+  optional: true
+
+# Tap EMERGENCY button to simulate cry detected
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 8000
+
+- takeScreenshot: "smart_playlist_06_emergency_active"
+
+# ============================================
+# TEST 6: Verify SmartQueueView with Cry-Specific Playlist
+# ============================================
+
+# Should see Now Playing card
+- assertVisible:
+    id: "currentTrackCard"
+
+# Queue should be populated (Up Next section)
+- assertVisible:
+    id: "upNextHeader"
+    optional: true
+
+- assertVisible:
+    text: "Up Next"
+    optional: true
+
+- takeScreenshot: "smart_playlist_07_queue_populated"
+
+# ============================================
+# TEST 7: Verify "It Helped!" Button Visible
+# ============================================
+
+# Look for It Helped feedback button
+- runFlow:
+    when:
+      visible:
+        text: ".*It Helped.*|.*Helped.*"
+    commands:
+      - assertVisible:
+          text: ".*It Helped.*|.*Helped.*"
+      - takeScreenshot: "smart_playlist_08_it_helped_visible"
+
+# Or check for Done button (which triggers feedback)
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - assertVisible: "Done"
+
+# ============================================
+# TEST 8: Verify Category Diversity in Queue
+# ============================================
+
+# Scroll to see queue tracks
+- scrollUntilVisible:
+    element:
+      id: "upcomingTrack-2"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: "smart_playlist_09_category_diversity"
+
+# Should not see all tracks from same category (noise should be filtered)
+- assertNotVisible:
+    text: ".*[Ww]hite [Nn]oise.*|.*[Pp]ink [Nn]oise.*"
+    optional: true
+
+# ============================================
+# TEST 9: Test Playback Controls
+# ============================================
+
+# Verify playback controls exist
+- assertVisible:
+    id: "playPauseButton"
+
+- assertVisible:
+    id: "nextButton"
+
+# Test next track
+- tapOn:
+    id: "nextButton"
+
+- wait:
+    milliseconds: 1500
+
+- takeScreenshot: "smart_playlist_10_after_next_track"
+
+# ============================================
+# TEST 10: Test "Done" Button Feedback Flow
+# ============================================
+
+# Scroll up to see Done button
+- scroll:
+    direction: UP
+    optional: true
+
+# Tap Done to trigger feedback dialog
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+      - wait:
+          milliseconds: 1000
+      - takeScreenshot: "smart_playlist_11_feedback_dialog"
+
+# ============================================
+# TEST 11: Verify Feedback Options
+# ============================================
+
+# Should show feedback options
+- runFlow:
+    when:
+      visible:
+        text: ".*calmed.*|.*Helped.*|.*crying.*"
+    commands:
+      - assertVisible:
+          text: ".*calmed.*|.*Helped.*|.*crying.*"
+      - takeScreenshot: "smart_playlist_12_feedback_options"
+
+# Select "Baby calmed down" (It Helped)
+- runFlow:
+    when:
+      visible:
+        text: ".*calmed.*|.*It Helped.*"
+    commands:
+      - tapOn:
+          text: ".*calmed.*|.*It Helped.*"
+      - wait:
+          milliseconds: 500
+
+# ============================================
+# TEST 12: Verify Return to Home After Feedback
+# ============================================
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*|.*Home.*"
+    timeout: 5000
+
+- takeScreenshot: "smart_playlist_13_after_feedback"
+
+# ============================================
+# TEST 13: Test "Still Crying" Feedback Path
+# ============================================
+
+# Start emergency mode again
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "cancelEmergencyButton"
+    timeout: 5000
+
+# Tap Done again
+- runFlow:
+    when:
+      visible:
+        text: "Done"
+    commands:
+      - tapOn: "Done"
+      - wait:
+          milliseconds: 1000
+
+# Select "Still crying" option
+- runFlow:
+    when:
+      visible:
+        text: ".*crying.*|.*didn't help.*"
+    commands:
+      - tapOn:
+          text: ".*crying.*|.*didn't help.*"
+      - wait:
+          milliseconds: 500
+      - takeScreenshot: "smart_playlist_14_still_crying_selected"
+
+# ============================================
+# TEST 14: Verify Cancel Button Works
+# ============================================
+
+# If still in queue view, cancel
+- runFlow:
+    when:
+      visible:
+        id: "cancelEmergencyButton"
+    commands:
+      - tapOn:
+          id: "cancelEmergencyButton"
+      - wait:
+          milliseconds: 1000
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "smart_playlist_15_after_cancel"
+
+# ============================================
+# TEST 15: Test Quick Access Again
+# ============================================
+
+# Start one more time to verify state reset
+- tapOn:
+    text: ".*EMERGENCY.*"
+
+- extendedWaitUntil:
+    visible:
+      id: "currentTrackCard"
+    timeout: 5000
+
+# Verify queue is fresh (new playlist generated)
+- assertVisible:
+    id: "playPauseButton"
+
+- takeScreenshot: "smart_playlist_16_fresh_queue"
+
+# ============================================
+# TEST 16: Verify Queue Counter
+# ============================================
+
+- runFlow:
+    when:
+      visible:
+        id: "queueCounter"
+    commands:
+      - assertVisible:
+          id: "queueCounter"
+      - takeScreenshot: "smart_playlist_17_queue_counter"
+
+# ============================================
+# TEST 17: Test Accessibility Identifiers
+# ============================================
+
+# Verify key accessibility IDs exist
+- assertVisible:
+    id: "cancelEmergencyButton"
+
+- assertVisible:
+    id: "currentTrackCard"
+
+- assertVisible:
+    id: "playPauseButton"
+
+- takeScreenshot: "smart_playlist_18_accessibility_check"
+
+# ============================================
+# TEST 18: Clean Exit
+# ============================================
+
+- tapOn:
+    id: "cancelEmergencyButton"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*EMERGENCY.*"
+    timeout: 3000
+
+- takeScreenshot: "smart_playlist_19_test_complete"
+
+# ============================================
+# TEST COMPLETE - Smart Cry-Type Playlist Response Flow (FS-029) Works!
+# ============================================

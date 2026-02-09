@@ -1,0 +1,19 @@
+{
+  "id": "0031",
+  "name": "deepinfant-proper-integration",
+  "title": "DeepInfant V2 Proper Integration",
+  "description": "Comprehensive integration of DeepInfant V2 model with correct audio preprocessing, CoreML for iOS, and Python backend with actual neural network inference",
+  "status": "active",
+  "priority": "critical",
+  "created": "2026-02-02T01:15:00Z",
+  "updated": "2026-02-02T06:33:04.293Z",
+  "tags": [
+    "ml",
+    "coreml",
+    "audio",
+    "cry-detection",
+    "architecture"
+  ],
+  "dependencies": [],
+  "estimatedEffort": "large"
+}

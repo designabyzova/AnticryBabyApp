@@ -41,7 +41,7 @@ final class FilterViewModel: ObservableObject {
         self.contentLibrary = contentLibrary
 
         // Subscribe to track changes
-        contentLibrary.$tracks
+        contentLibrary.$allTracks
             .sink { [weak self] tracks in
                 self?.updateAvailableTags(from: tracks)
                 self?.applyFilters(to: tracks)
@@ -65,7 +65,7 @@ final class FilterViewModel: ObservableObject {
         activePreset = nil
 
         // Apply filters
-        applyFilters(to: contentLibrary.tracks)
+        applyFilters(to: contentLibrary.allTracks)
     }
 
     /// Apply a filter preset (replaces current filters)
@@ -78,10 +78,10 @@ final class FilterViewModel: ObservableObject {
         activePreset = preset
 
         // Apply filters
-        applyFilters(to: contentLibrary.tracks)
+        applyFilters(to: contentLibrary.allTracks)
 
         // Haptic feedback
-        HapticManager.shared.notification(type: .success)
+        HapticManager.shared.success()
     }
 
     /// Clear all filters
@@ -94,7 +94,7 @@ final class FilterViewModel: ObservableObject {
         activePreset = nil
 
         // Reset to all tracks
-        applyFilters(to: contentLibrary.tracks)
+        applyFilters(to: contentLibrary.allTracks)
     }
 
     /// Undo last filter change
@@ -105,13 +105,13 @@ final class FilterViewModel: ObservableObject {
         previousFilterState = nil
         activePreset = nil
 
-        applyFilters(to: contentLibrary.tracks)
+        applyFilters(to: contentLibrary.allTracks)
     }
 
     /// Remove specific tag type filters (e.g., clear all language filters)
     func clearTagType(_ type: FilterTagType) {
         selectedTags = selectedTags.filter { $0.type != type }
-        applyFilters(to: contentLibrary.tracks)
+        applyFilters(to: contentLibrary.allTracks)
     }
 
     // MARK: - Tag Extraction & Counting
@@ -235,13 +235,11 @@ final class FilterViewModel: ObservableObject {
             let parts = tag.value.split(separator: "-").compactMap { Int($0) }
             guard parts.count == 2,
                   let tagMin = parts.first,
-                  let tagMax = parts.last,
-                  let trackMin = track.ageRangeMin,
-                  let trackMax = track.ageRangeMax else {
+                  let tagMax = parts.last else {
                 return false
             }
             // Check overlap
-            return trackMin <= tagMax && trackMax >= tagMin
+            return track.ageRangeMin <= tagMax && track.ageRangeMax >= tagMin
 
         case .calmingLevel:
             switch tag.value {
@@ -281,7 +279,7 @@ final class FilterViewModel: ObservableObject {
             }
 
         case .contentType:
-            return track.sourceType.rawValue == tag.value
+            return false
 
         case .subcategory, .instrument, .mood, .theme, .origin, .author, .collection:
             // These require metadata parsing (not yet implemented in AudioTrack)
@@ -377,7 +375,7 @@ extension FilterViewModel {
     func canApplyPreset(_ preset: FilterPreset) -> Bool {
         // Simulate applying preset and check if any tracks match
         let presetTags = Set(preset.tags)
-        return contentLibrary.tracks.contains { track in
+        return contentLibrary.allTracks.contains { track in
             matchesPresetTags(track, tags: presetTags)
         }
     }

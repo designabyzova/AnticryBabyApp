@@ -377,6 +377,9 @@ class ContentLibraryService: ObservableObject {
                 streamURL = nil
             }
 
+            // Parse crySuitability scores for smart playlist generation
+            let crySuitability = trackData["crySuitability"] as? [String: Double]
+
             let track = AudioTrack(
                 id: UUID(uuidString: id) ?? UUID(),
                 title: title,
@@ -392,7 +395,8 @@ class ContentLibraryService: ObservableObject {
                 fileExtension: isBundled ? fileExtension : nil,
                 streamURL: streamURL,
                 tags: tags,
-                subcategory: subcategory
+                subcategory: subcategory,
+                crySuitability: crySuitability
             )
             tracks.append(track)
         }

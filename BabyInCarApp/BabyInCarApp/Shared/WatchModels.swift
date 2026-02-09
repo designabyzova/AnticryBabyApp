@@ -31,6 +31,8 @@ enum MoodType: String, Codable, CaseIterable, Hashable {
         }
     }
 
+    var icon: String { iconName }
+
     var iconName: String {
         switch self {
         case .hunger: return "fork.knife"

@@ -18,6 +18,7 @@ import music from './routes/music';
 import search from './routes/search';
 import emergency from './routes/emergency';
 import preferences from './routes/preferences';
+import effectiveness from './routes/effectiveness';  // FS-029: Cry-type effectiveness sync
 
 // Import services
 import { handleScheduledCuration } from './services/audio-curator';
@@ -65,6 +66,7 @@ app.route('/music', music);
 app.route('/search', search);
 app.route('/playlists/emergency', emergency);  // FS-017: Emergency playlist selection
 app.route('/preferences', preferences);  // FS-017: User language preferences
+app.route('/effectiveness', effectiveness);  // FS-029: Cry-type effectiveness sync
 
 // 404 handler
 app.notFound((c) => {

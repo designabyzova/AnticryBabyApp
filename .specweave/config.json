@@ -104,5 +104,32 @@
   },
   "limits": {
     "hardCap": 4
+  },
+  "auto": {
+    "enabled": true,
+    "maxRetries": 20,
+    "requireTests": false,
+    "requireValidation": true,
+    "requireJudgeLLM": false,
+    "skipQualityGates": false
+  },
+  "lsp": {
+    "enabled": true,
+    "autoInstallPlugins": true,
+    "marketplace": "boostvolt/claude-code-lsps"
+  },
+  "planning": {
+    "deepInterview": {
+      "enabled": false,
+      "minQuestions": 10,
+      "categories": [
+        "architecture",
+        "integrations",
+        "ui-ux",
+        "performance",
+        "security",
+        "edge-cases"
+      ]
+    }
   }
 }

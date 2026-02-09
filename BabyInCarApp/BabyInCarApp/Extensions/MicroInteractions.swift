@@ -45,6 +45,18 @@ class HapticManager {
         selectionGenerator.selectionChanged()
     }
 
+    /// Impact with UIKit style
+    func impact(style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        switch style {
+        case .light: lightImpactGenerator.impactOccurred()
+        case .medium: mediumImpactGenerator.impactOccurred()
+        case .heavy: heavyImpactGenerator.impactOccurred()
+        case .soft: softImpactGenerator.impactOccurred()
+        case .rigid: rigidImpactGenerator.impactOccurred()
+        @unknown default: mediumImpactGenerator.impactOccurred()
+        }
+    }
+
     /// Light tap (buttons, icons)
     func lightTap() {
         lightImpactGenerator.impactOccurred()

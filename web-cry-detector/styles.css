@@ -1,0 +1,670 @@
+/* Baby Cry Detector - Styles */
+
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #8b5cf6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    /* New colors for two-stage detection */
+    --cry-detected: #10b981;
+    --not-cry: #ef4444;
+    --urgent-color: #dc2626;
+    --needs-color: #f59e0b;
+    --comfort-color: #3b82f6;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Sections */
+section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+section h2 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+section h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+section h4 {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Status Section */
+.status-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: all 0.3s ease;
+}
+
+.status-indicator.listening .status-dot {
+    background: var(--success-color);
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.detecting .status-dot {
+    background: var(--warning-color);
+    animation: pulse 0.5s infinite;
+}
+
+.status-indicator.error .status-dot {
+    background: var(--danger-color);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.model-status {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.model-status.ready {
+    color: var(--success-color);
+}
+
+/* Visualization */
+.visualization-section {
+    text-align: center;
+}
+
+#waveformCanvas {
+    width: 100%;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.audio-level {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.level-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.level-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--success-color), var(--warning-color), var(--danger-color));
+    transition: width 0.1s ease;
+}
+
+/* Controls */
+.controls-section {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--card-border);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #475569;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+}
+
+.btn-outline:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+}
+
+.btn-icon {
+    font-size: 1.1rem;
+}
+
+/* ====== STAGE 1: Cry Detection ====== */
+.stage-1 {
+    border: 2px solid var(--primary-color);
+}
+
+.stage-1 h2 {
+    color: var(--primary-color);
+}
+
+.cry-detection-result {
+    padding: 1rem;
+}
+
+.detection-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.detection-indicator.is-cry {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--cry-detected);
+}
+
+.detection-indicator.not-cry {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--not-cry);
+}
+
+.detection-icon {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    border-radius: 50%;
+}
+
+.detection-info {
+    flex: 1;
+}
+
+.detection-label {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.detection-confidence {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Detection Score Bars */
+.detection-scores {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.score-item {
+    display: grid;
+    grid-template-columns: 1fr 200px 50px;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.score-item span:first-child {
+    color: var(--text-secondary);
+}
+
+.score-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.score-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary-color);
+    transition: all 0.3s ease;
+    border-radius: 3px;
+}
+
+.score-value {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    font-family: monospace;
+}
+
+/* ====== STAGE 2: Cry Type Classification ====== */
+.stage-2 {
+    border: 2px solid var(--secondary-color);
+    animation: fadeIn 0.3s ease;
+}
+
+.stage-2 h2 {
+    color: var(--secondary-color);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Category Mode Toggle */
+.category-mode-toggle {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.category-mode-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.category-mode-toggle input[type="radio"] {
+    accent-color: var(--primary-color);
+}
+
+/* Results Section */
+.current-result {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.cry-type-icon {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    border-radius: 50%;
+}
+
+.cry-type-info {
+    flex: 1;
+}
+
+.cry-type-label {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.confidence {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Probabilities */
+.probabilities {
+    margin-top: 1rem;
+}
+
+.prob-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.prob-item {
+    display: grid;
+    grid-template-columns: 200px 1fr 50px;
+    align-items: center;
+    gap: 1rem;
+}
+
+.prob-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.prob-bar {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.prob-fill {
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 6px;
+}
+
+.prob-value {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: right;
+    font-family: monospace;
+}
+
+/* Simple Mode Colors (3 categories) */
+.urgent-fill {
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.needs-fill {
+    background: linear-gradient(90deg, #d97706, #f59e0b);
+}
+
+.comfort-fill {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+}
+
+/* Detailed Mode Item Colors */
+.prob-item.urgent .prob-fill { background: var(--urgent-color); }
+.prob-item.needs .prob-fill { background: var(--needs-color); }
+.prob-item.comfort .prob-fill { background: var(--comfort-color); }
+
+/* History Section */
+.history-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-icon {
+    font-size: 1.5rem;
+}
+
+.history-info {
+    flex: 1;
+}
+
+.history-type {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: block;
+}
+
+.history-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.history-confidence {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    text-align: right;
+}
+
+.cry-conf {
+    color: var(--success-color);
+}
+
+.type-conf {
+    color: var(--text-muted);
+}
+
+.empty-history {
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+    padding: 1rem;
+}
+
+/* Debug Section */
+.debug-section {
+    background: transparent;
+    border: 1px dashed var(--card-border);
+}
+
+.debug-section summary {
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.debug-content {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    font-family: monospace;
+}
+
+.debug-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.debug-item:last-child {
+    border-bottom: none;
+}
+
+.debug-item span:first-child {
+    color: var(--text-secondary);
+}
+
+.debug-item pre {
+    max-width: 300px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+footer p {
+    margin-bottom: 0.5rem;
+}
+
+.disclaimer {
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* Cry Type Colors (Detailed Mode) */
+.cry-hunger .prob-fill { background: #f59e0b; }
+.cry-tired .prob-fill { background: #8b5cf6; }
+.cry-pain .prob-fill { background: #ef4444; }
+.cry-attention .prob-fill { background: #3b82f6; }
+.cry-discomfort .prob-fill { background: #ec4899; }
+.cry-general .prob-fill { background: #6b7280; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .detection-indicator,
+    .current-result {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .detection-icon,
+    .cry-type-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+
+    .detection-label,
+    .cry-type-label {
+        font-size: 1.2rem;
+    }
+
+    .score-item {
+        grid-template-columns: 1fr 100px 40px;
+        gap: 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .prob-item {
+        grid-template-columns: 150px 1fr 45px;
+        gap: 0.5rem;
+    }
+
+    .controls-section {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .category-mode-toggle {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

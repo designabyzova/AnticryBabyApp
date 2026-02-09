@@ -87,6 +87,8 @@
     </array>
 
     <!-- Privacy Usage Descriptions -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Lulla uses the microphone to detect your baby's cry type and automatically play personalized soothing music.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Lulla can access your photos to set a profile picture for your baby.</string>
     <key>NSCameraUsageDescription</key>

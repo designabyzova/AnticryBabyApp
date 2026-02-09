@@ -49,6 +49,15 @@ class AudioEngine: ObservableObject {
     /// Playback context - determines UI theme and smart queue behavior
     @Published var playbackContext: PlaybackContext?
 
+    // MARK: - Soothing Mode Protection
+    /// When true, playback is protected from interruptions (phone calls, Bluetooth disconnect, etc.)
+    /// Only explicit user action can stop soothing mode playback
+    /// This ensures baby-calming music continues playing no matter what
+    @Published private(set) var isSoothingModeActive: Bool = false
+
+    /// Tracks if we were playing before an interruption occurred (for auto-resume)
+    private var wasPlayingBeforeInterruption: Bool = false
+
     // Playback rate options
     enum PlaybackRate: Float, CaseIterable {
         case half = 0.5
@@ -473,6 +482,13 @@ class AudioEngine: ObservableObject {
         // UNIFIED ARCHITECTURE: Set playback context
         playbackContext = context
 
+        // SOOTHING MODE: Activate unstoppable playback for emergency cry response
+        // When baby is crying, music MUST continue playing no matter what
+        if case .emergencyCry = context {
+            isSoothingModeActive = true
+            print("[AudioEngine] 🛡️ SOOTHING MODE ACTIVATED - playback is now protected from interruptions")
+        }
+
         // Mark the starting track as played for shuffle tracking
         shufflePlayedIndices.insert(startIndex)
 
@@ -622,6 +638,24 @@ class AudioEngine: ObservableObject {
 
         // Clear Now Playing for Control Center / Lock Screen
         NowPlayingService.shared.clearNowPlayingInfo()
+
+        // Clear soothing mode when fully stopped
+        if isSoothingModeActive {
+            isSoothingModeActive = false
+            wasPlayingBeforeInterruption = false
+            playbackContext = nil
+            print("[AudioEngine] 🛡️ SOOTHING MODE DEACTIVATED - playback protection removed")
+        }
+    }
+
+    /// Explicitly stop soothing mode and normal playback
+    /// Call this when user deliberately wants to stop the baby-calming music
+    /// This is the ONLY way to stop music during soothing mode (except for pause which still allows resume)
+    func stopSoothingMode() {
+        print("[AudioEngine] 🛡️ User explicitly stopped soothing mode")
+        isSoothingModeActive = false
+        wasPlayingBeforeInterruption = false
+        stop()
     }
 
     func next() {
@@ -2207,14 +2241,34 @@ class AudioEngine: ObservableObject {
 
         switch type {
         case .began:
-            pause()
+            // SOOTHING MODE PROTECTION: Track state but don't stop - we'll resume automatically
+            if isSoothingModeActive {
+                wasPlayingBeforeInterruption = (playbackState == .playing)
+                print("[AudioEngine] 🛡️ SOOTHING MODE: Interruption began but NOT pausing - will auto-resume")
+                // Still pause audio (iOS requirement during phone calls), but we'll resume after
+                pause()
+            } else {
+                pause()
+            }
+
         case .ended:
-            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+            // SOOTHING MODE: Always auto-resume after interruption ends
+            if isSoothingModeActive && wasPlayingBeforeInterruption {
+                print("[AudioEngine] 🛡️ SOOTHING MODE: Interruption ended - AUTO-RESUMING playback")
+                wasPlayingBeforeInterruption = false
+                // Brief delay to ensure audio session is fully available
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+                    self.configureAudioSession(interruptOtherAudio: true)
+                    self.resume()
+                }
+            } else if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
                 if options.contains(.shouldResume) {
                     resume()
                 }
             }
+
         @unknown default:
             break
         }
@@ -2243,9 +2297,17 @@ class AudioEngine: ObservableObject {
 
         case .oldDeviceUnavailable:
             // Device disconnected (e.g., AirPods removed)
-            // Pause playback - this is standard iOS behavior
-            print("[AudioEngine] 🔌 Audio device disconnected. Pausing. New route: \(outputs)")
-            pause()
+            // SOOTHING MODE: Continue playing on speaker - baby needs calming!
+            if isSoothingModeActive {
+                print("[AudioEngine] 🛡️ SOOTHING MODE: Device disconnected but NOT pausing - continuing on speaker")
+                // Ensure audio continues on the default speaker
+                configureAudioSession(interruptOtherAudio: true)
+                // Don't pause - audio automatically routes to speaker
+            } else {
+                // Normal behavior - pause playback when device disconnects
+                print("[AudioEngine] 🔌 Audio device disconnected. Pausing. New route: \(outputs)")
+                pause()
+            }
 
         case .categoryChange:
             // Another app changed the audio category
@@ -3101,86 +3163,4 @@ class ToneGenerator {
     }
 }
 
-// MARK: - Smart Playlist Builder (Unified Architecture)
-
-/// Smart playlist generation service for unified player architecture
-/// Extracts core logic from emergency queue for reusability
-@MainActor
-class SmartPlaylistBuilder {
-    static let shared = SmartPlaylistBuilder()
-
-    private let contentLibrary = ContentLibraryService.shared
-    private let ultraSmartSelector = UltraSmartPlaylistSelector.shared
-    private let spotifyEngine = SpotifyQueueEngine.shared
-    private let effectivenessManager = EffectivenessManager.shared
-    private let favoritesManager = FavoritesManager.shared
-
-    private init() {}
-
-    // MARK: - Emergency Playlist Generation
-
-    /// Build emergency playlist for cry response
-    /// Returns Playlist with auto-replenishment enabled and smart track selection
-    func buildEmergencyPlaylist(
-        cryType: CryType,
-        babyAge: Int,
-        language: String = "en",
-        maxTracks: Int = 30
-    ) async -> Playlist {
-        print("[SmartPlaylistBuilder] 🚨 Building emergency playlist for \(cryType.displayName), age \(babyAge)mo")
-
-        // Get all tracks from library and filter for emergency use
-        let allTracks = contentLibrary.getAllTracks()
-        let tracks = allTracks.filter { track in
-            track.ageRangeMin <= babyAge &&
-            track.ageRangeMax >= babyAge &&
-            (track.language?.rawValue == language || language == "en")
-        }.prefix(maxTracks)
-
-        // Create metadata for auto-replenishment
-        let metadata = PlaylistGenerationMetadata(
-            babyAge: babyAge,
-            cryType: cryType,
-            language: language,
-            allowGenerated: true  // Emergency mode allows generated sounds
-        )
-
-        return Playlist(
-            name: "Emergency: \(cryType.displayName)",
-            description: "AI-selected tracks to soothe \(cryType.displayName) cry",
-            tracks: Array(tracks),
-            category: nil,
-            targetAgeMonths: babyAge,
-            isSystemGenerated: true,
-            createdAt: Date(),
-            artworkName: nil,
-            updatedAt: nil,
-            isAutoReplenishing: true,  // Enable Spotify-style infinite queue
-            minQueueSize: 3,           // Replenish when <3 tracks remain
-            generationContext: metadata
-        )
-    }
-
-    // MARK: - Queue Replenishment
-
-    /// Generate more tracks for auto-replenishing queue
-    /// Called when queue runs low during playback
-    func generateMoreTracks(
-        context: PlaylistGenerationMetadata,
-        count: Int
-    ) async -> [AudioTrack] {
-        print("[SmartPlaylistBuilder] 🔄 Generating \(count) more tracks")
-
-        // Filter library tracks for suitability
-        let allTracks = contentLibrary.getAllTracks()
-
-        let suitable = allTracks.filter { track in
-            track.ageRangeMin <= context.babyAge &&
-            track.ageRangeMax >= context.babyAge &&
-            (track.language?.rawValue == context.language || context.language == "en")
-        }
-
-        // Randomize for variety
-        return Array(suitable.shuffled().prefix(count))
-    }
-}
+// NOTE: SmartPlaylistBuilder is defined in SmartPlaylistBuilder.swift

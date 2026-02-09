@@ -46,8 +46,10 @@ struct MainTabView: View {
             case 1:
                 LibraryView()
             case 2:
-                FavoritesView()
+                CryDetectionTabView()
             case 3:
+                FavoritesView()
+            case 4:
                 ProfileView()
             default:
                 HomeView()
@@ -119,6 +121,7 @@ struct CustomTabBar: View {
     private let tabConfigs: [(icon: String, selectedIcon: String, labelKey: String)] = [
         ("house", "house.fill", "nav.home"),
         ("books.vertical", "books.vertical.fill", "nav.library"),
+        ("waveform", "waveform", "nav.detect"),
         ("heart", "heart.fill", "nav.favorites"),
         ("person", "person.fill", "nav.profile")
     ]

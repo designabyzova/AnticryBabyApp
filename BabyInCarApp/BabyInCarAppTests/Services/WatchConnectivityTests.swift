@@ -30,8 +30,6 @@ struct WatchCommandTests {
             .requestStateSync,
             .playTrack(trackId: "track-123"),
             .playCategory(categoryId: "Classical Music"),
-            .startEmergencyMode,
-            .stopEmergencyMode,
             .requestLibrarySync
         ]
 
@@ -176,26 +174,10 @@ struct PlaybackStateTests {
     }
 }
 
-// MARK: - Cry Alert Tests
+// MARK: - Cry Type Tests
 
-@Suite("Cry Alerts")
-struct CryAlertTests {
-
-    @Test("Alert initializes with correct values")
-    func alertInitialization() {
-        let alert = CryAlert(
-            cryType: .tired,
-            confidence: 0.85,
-            suggestedAction: "Baby seems tired. Try soothing lullabies.",
-            suggestedPlaylistId: "lullabies"
-        )
-
-        #expect(alert.cryType == .tired)
-        #expect(abs(alert.confidence - 0.85) < 0.01)
-        #expect(alert.suggestedAction.contains("tired"))
-        #expect(alert.suggestedPlaylistId == "lullabies")
-        #expect(alert.id != UUID())  // Should have unique ID
-    }
+@Suite("Cry Type")
+struct CryTypeTests {
 
     @Test("All cry types have display names")
     func cryTypeDisplayNames() {
@@ -218,35 +200,13 @@ struct CryAlertTests {
         }
     }
 
-    @Test("Alert encodes and decodes")
-    func alertCodable() throws {
-        let alert = CryAlert(
-            cryType: .hunger,
-            confidence: 0.92,
-            suggestedAction: "Baby might be hungry",
-            suggestedPlaylistId: nil
-        )
-
-        let encoded = try JSONEncoder().encode(alert)
-        let decoded = try JSONDecoder().decode(CryAlert.self, from: encoded)
-
-        #expect(decoded.cryType == .hunger)
-        #expect(abs(decoded.confidence - 0.92) < 0.01)
-        #expect(decoded.suggestedAction == "Baby might be hungry")
-        #expect(decoded.suggestedPlaylistId == nil)
-    }
-
-    @Test("Alert time ago formatting works")
-    func alertTimeAgo() {
-        let alert = CryAlert(
-            cryType: .general,
-            confidence: 0.7,
-            suggestedAction: "Test",
-            suggestedPlaylistId: nil
-        )
-
-        // timeAgo should return a non-empty formatted string
-        #expect(!alert.timeAgo.isEmpty)
+    @Test("Cry type raw values are unique")
+    func cryTypeRawValues() {
+        var rawValues = Set<String>()
+        for cryType in CryType.allCases {
+            #expect(!rawValues.contains(cryType.rawValue), "Duplicate raw value: \(cryType.rawValue)")
+            rawValues.insert(cryType.rawValue)
+        }
     }
 }
 
@@ -415,55 +375,6 @@ struct WatchLibraryStateTests {
     }
 }
 
-// MARK: - Soothing Strategy Tests
-
-@Suite("Soothing Strategies")
-struct SoothingStrategyTests {
-
-    @Test("All cry types have soothing strategies")
-    func cryTypeSoothingStrategies() {
-        for cryType in CryType.allCases {
-            let strategy = cryType.soothingStrategy
-            #expect(!strategy.rawValue.isEmpty, "\(cryType) should have a soothing strategy")
-        }
-    }
-
-    @Test("Strategies have phases")
-    func strategiesHavePhases() {
-        let strategies: [SoothingStrategy] = [
-            .sleepInduction,
-            .distraction,
-            .comfort,
-            .gentle,
-            .urgent,
-            .adaptive
-        ]
-
-        for strategy in strategies {
-            #expect(!strategy.phases.isEmpty, "\(strategy) should have phases")
-            #expect(strategy.phases.count >= 2, "\(strategy) should have at least 2 phases")
-        }
-    }
-
-    @Test("Tired cry uses sleep induction strategy")
-    func tiredCrySleepInduction() {
-        let strategy = CryType.tired.soothingStrategy
-        #expect(strategy == .sleepInduction)
-    }
-
-    @Test("Hunger cry uses distraction strategy")
-    func hungerCryDistraction() {
-        let strategy = CryType.hunger.soothingStrategy
-        #expect(strategy == .distraction)
-    }
-
-    @Test("Pain cry uses urgent strategy")
-    func painCryUrgent() {
-        let strategy = CryType.pain.soothingStrategy
-        #expect(strategy == .urgent)
-    }
-}
-
 // MARK: - Watch Message Type Tests
 
 @Suite("Watch Message Types")
@@ -474,12 +385,10 @@ struct WatchMessageTypeTests {
         let messageTypes: [WatchMessage] = [
             .playbackState,
             .command,
-            .cryAlert,
             .favoritesUpdate,
             .fileTransferComplete,
             .requestSync,
-            .libraryState,
-            .emergencyState
+            .libraryState
         ]
 
         for messageType in messageTypes {
@@ -491,8 +400,8 @@ struct WatchMessageTypeTests {
     func uniqueRawValues() {
         var rawValues = Set<String>()
         let messageTypes: [WatchMessage] = [
-            .playbackState, .command, .cryAlert, .favoritesUpdate,
-            .fileTransferComplete, .requestSync, .libraryState, .emergencyState
+            .playbackState, .command, .favoritesUpdate,
+            .fileTransferComplete, .requestSync, .libraryState
         ]
 
         for messageType in messageTypes {

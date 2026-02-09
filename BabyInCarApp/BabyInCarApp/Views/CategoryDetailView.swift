@@ -30,7 +30,7 @@ struct CategoryDetailView: View {
                     if !FilterPreset.defaults.isEmpty {
                         FilterPresetSection(
                             presets: FilterPreset.defaults,
-                            isPremiumUser: gatekeeper.isPremiumUser,
+                            isPremiumUser: gatekeeper.hasPremiumAccess,
                             onPresetApply: { preset in
                                 filterVM.applyPreset(preset)
                             }
@@ -190,7 +190,7 @@ struct CategoryDetailView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.appSecondaryBackground)
+                .fill(Color(.secondarySystemBackground))
         )
     }
 
@@ -221,7 +221,7 @@ struct CategoryDetailView: View {
                     .strokeBorder(Color.appPrimary.opacity(0.3), lineWidth: 1.5)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.appSecondaryBackground.opacity(0.5))
+                            .fill(Color(.secondarySystemBackground).opacity(0.5))
                     )
             )
         }
@@ -241,7 +241,7 @@ struct CategoryDetailView: View {
             spacing: 16
         ) {
             ForEach(tracks) { track in
-                TrackCard(
+                CategoryTrackCard(
                     track: track,
                     isLocked: !gatekeeper.canPlayTrack(track),
                     onTap: { handleTrackTap(track) }
@@ -259,7 +259,7 @@ struct CategoryDetailView: View {
                     // Filter presets
                     FilterPresetSection(
                         presets: FilterPreset.defaults,
-                        isPremiumUser: gatekeeper.isPremiumUser,
+                        isPremiumUser: gatekeeper.hasPremiumAccess,
                         onPresetApply: { preset in
                             filterVM.applyPreset(preset)
                             showFilterSheet = false
@@ -384,7 +384,7 @@ struct CategoryDetailView: View {
 
 // MARK: - Track Card Component
 
-private struct TrackCard: View {
+private struct CategoryTrackCard: View {
     let track: AudioTrack
     let isLocked: Bool
     let onTap: () -> Void
@@ -428,15 +428,15 @@ private struct TrackCard: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    if let artist = track.artist {
-                        Text(artist)
+                    if !track.artist.isEmpty {
+                        Text(track.artist)
                             .font(.system(size: 12, weight: .regular))
                             .foregroundColor(.appTextSecondary)
                             .lineLimit(1)
                     }
 
                     // Duration
-                    Text(track.durationFormatted)
+                    Text(track.formattedDuration)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.appTextSecondary)
                 }
@@ -451,7 +451,7 @@ private struct TrackCard: View {
 #Preview {
     NavigationStack {
         CategoryDetailView(category: .classicalMusic)
-            .environmentObject(AudioEngine())
+            .environmentObject(AudioEngine.shared)
             .environmentObject(AppState())
     }
 }

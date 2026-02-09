@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepInfant_V2 - Complete Technical Architecture</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary-color: #ec4899;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-color));
+            padding: 4rem 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header .subtitle {
+            font-size: 1.25rem;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 1.5rem;
+        }
+
+        header .meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        header .meta span {
+            background: rgba(255,255,255,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid var(--border-color);
+        }
+
+        nav h2 {
+            color: var(--primary-light);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        nav ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 0.5rem;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 0;
+            display: block;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--primary-light);
+        }
+
+        nav a::before {
+            content: '→ ';
+            color: var(--primary-color);
+        }
+
+        /* Sections */
+        section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        section h2 {
+            color: var(--primary-light);
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        section h3 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        section h4 {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* Code blocks */
+        pre {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            color: #e6edf3;
+        }
+
+        .code-keyword { color: #ff7b72; }
+        .code-string { color: #a5d6ff; }
+        .code-comment { color: #8b949e; }
+        .code-function { color: #d2a8ff; }
+        .code-type { color: #79c0ff; }
+
+        /* Diagrams */
+        .diagram {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            white-space: pre;
+            color: #7ee787;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+        .badge-info { background: rgba(99, 102, 241, 0.2); color: var(--primary-light); }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Lists */
+        ul, ol {
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        li {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert-info {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* Data Classification */
+        .data-classification {
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .data-classification h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .data-classification ul {
+            list-style: none;
+            padding-left: 1.5rem;
+        }
+
+        .data-classification li::before {
+            content: '├── ';
+            color: var(--text-secondary);
+        }
+
+        .data-classification li:last-child::before {
+            content: '└── ';
+        }
+
+        /* Phase Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.65rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            border: 2px solid var(--dark-bg);
+        }
+
+        .timeline-item h4 {
+            color: var(--primary-light);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            section {
+                padding: 1.25rem;
+            }
+
+            nav ul {
+                grid-template-columns: 1fr;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DeepInfant_V2</h1>
+    <p class="subtitle">Complete Technical Architecture</p>
+    <div class="meta">
+        <span>Version 2.0</span>
+        <span>January 2026</span>
+        <span>Architecture Specification</span>
+    </div>
+</header>
+
+<div class="container">
+
+    <nav>
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#executive-summary">Executive Summary</a></li>
+            <li><a href="#system-overview">System Overview</a></li>
+            <li><a href="#technology-stack">Technology Stack</a></li>
+            <li><a href="#kernel-architecture">Kernel Architecture</a></li>
+            <li><a href="#on-device-vs-cloud">On-Device vs Cloud Inference</a></li>
+            <li><a href="#audio-pipeline">Audio Processing Pipeline</a></li>
+            <li><a href="#decision-engine">Decision & Recommendation Engine</a></li>
+            <li><a href="#personalization">Personalization Layer</a></li>
+            <li><a href="#privacy-security">Privacy & Security</a></li>
+            <li><a href="#safety-boundaries">Safety Boundaries</a></li>
+            <li><a href="#scalability">Scalability & Performance</a></li>
+            <li><a href="#kpis">Key Performance Indicators</a></li>
+            <li><a href="#phased-implementation">Phased Implementation</a></li>
+            <li><a href="#risk-mitigation">Risk Mitigation</a></li>
+            <li><a href="#future">Future Considerations</a></li>
+        </ul>
+    </nav>
+
+    <!-- Executive Summary -->
+    <section id="executive-summary">
+        <h2>1. Executive Summary</h2>
+        <p>DeepInfant_V2 is a next-generation on-device ML system designed to understand infant vocalizations and recommend personalized soothing interventions. The system prioritizes:</p>
+
+        <div class="card-grid">
+            <div class="card">
+                <h4>🔒 Privacy-First</h4>
+                <p>All processing on-device, no raw audio leaves the phone</p>
+            </div>
+            <div class="card">
+                <h4>🛡️ Safety-First</h4>
+                <p>Medical boundary enforcement, no diagnostic claims</p>
+            </div>
+            <div class="card">
+                <h4>✨ Effectiveness-First</h4>
+                <p>Continuous learning from outcomes without experimentation</p>
+            </div>
+        </div>
+
+        <h3>Core Capabilities</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Capability</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Cry Classification</td>
+                    <td>Distinguish hunger, tiredness, discomfort, pain, overstimulation</td>
+                </tr>
+                <tr>
+                    <td>Intensity Analysis</td>
+                    <td>Measure urgency level (1-10 scale)</td>
+                </tr>
+                <tr>
+                    <td>Soothing Recommendation</td>
+                    <td>Suggest tracks/actions based on context</td>
+                </tr>
+                <tr>
+                    <td>Effectiveness Tracking</td>
+                    <td>Learn what works for each baby</td>
+                </tr>
+                <tr>
+                    <td>Parent Insights</td>
+                    <td>Provide actionable, non-medical observations</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- System Overview -->
+    <section id="system-overview">
+        <h2>2. System Overview</h2>
+
+        <div class="diagram">┌─────────────────────────────────────────────────────────────────────────┐
+│                         DeepInfant_V2 System                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────┐    ┌──────────────┐    ┌─────────────────────────┐    │
+│  │   Audio     │───▶│   Feature    │───▶│    ML Inference         │    │
+│  │   Input     │    │  Extraction  │    │    Kernel               │    │
+│  └─────────────┘    └──────────────┘    └───────────┬─────────────┘    │
+│                                                      │                  │
+│                                                      ▼                  │
+│  ┌─────────────┐    ┌──────────────┐    ┌─────────────────────────┐    │
+│  │  Soothing   │◀───│   Decision   │◀───│    Classification       │    │
+│  │  Playback   │    │   Engine     │    │    Results              │    │
+│  └─────────────┘    └──────────────┘    └─────────────────────────┘    │
+│                            │                                            │
+│                            ▼                                            │
+│                     ┌──────────────┐                                    │
+│                     │Personalization│                                   │
+│                     │    Layer     │                                    │
+│                     └──────────────┘                                    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘</div>
+
+        <h3>Data Flow</h3>
+        <ol>
+            <li><strong>Audio Capture</strong> → Microphone captures audio in 2-second windows</li>
+            <li><strong>Feature Extraction</strong> → Mel spectrograms, MFCCs, pitch contours</li>
+            <li><strong>ML Inference</strong> → Core ML model classifies cry type and intensity</li>
+            <li><strong>Decision Engine</strong> → Combines ML output with context and history</li>
+            <li><strong>Soothing Action</strong> → Triggers appropriate audio/notification</li>
+            <li><strong>Effectiveness Tracking</strong> → Monitors if intervention worked</li>
+        </ol>
+    </section>
+
+    <!-- Technology Stack -->
+    <section id="technology-stack">
+        <h2>3. Technology Stack</h2>
+
+        <h3>On-Device (iOS)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Technology</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ML Runtime</td>
+                    <td>Core ML 6+</td>
+                    <td>Model inference</td>
+                </tr>
+                <tr>
+                    <td>Audio Processing</td>
+                    <td>AVFoundation + vDSP</td>
+                    <td>Real-time audio capture</td>
+                </tr>
+                <tr>
+                    <td>Feature Extraction</td>
+                    <td>Accelerate Framework</td>
+                    <td>FFT, spectrograms</td>
+                </tr>
+                <tr>
+                    <td>Local Storage</td>
+                    <td>Core Data + SQLite</td>
+                    <td>Encrypted local DB</td>
+                </tr>
+                <tr>
+                    <td>Background Processing</td>
+                    <td>BGTaskScheduler</td>
+                    <td>Continuous monitoring</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Model Training (Backend)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Technology</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Training Framework</td>
+                    <td>PyTorch 2.x</td>
+                    <td>Model development</td>
+                </tr>
+                <tr>
+                    <td>Data Pipeline</td>
+                    <td>Apache Beam</td>
+                    <td>Preprocessing at scale</td>
+                </tr>
+                <tr>
+                    <td>Experiment Tracking</td>
+                    <td>MLflow</td>
+                    <td>Model versioning</td>
+                </tr>
+                <tr>
+                    <td>Model Conversion</td>
+                    <td>coremltools</td>
+                    <td>PyTorch → Core ML</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Cloud Services (Minimal)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Provider</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Model Updates</td>
+                    <td>Cloudflare R2</td>
+                    <td>OTA model delivery</td>
+                </tr>
+                <tr>
+                    <td>Analytics (Aggregated)</td>
+                    <td>PostHog</td>
+                    <td>Privacy-preserving insights</td>
+                </tr>
+                <tr>
+                    <td>Crash Reporting</td>
+                    <td>Sentry</td>
+                    <td>Error tracking</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Kernel Architecture -->
+    <section id="kernel-architecture">
+        <h2>4. Kernel Architecture</h2>
+        <p>The ML kernel is the core inference engine, designed for:</p>
+        <ul>
+            <li><strong>Low latency:</strong> &lt;50ms inference time</li>
+            <li><strong>Low power:</strong> &lt;5% battery/hour during monitoring</li>
+            <li><strong>High accuracy:</strong> &gt;85% classification accuracy</li>
+        </ul>
+
+        <h3>Model Architecture</h3>
+        <div class="diagram">┌─────────────────────────────────────────────────────────────────┐
+│                    DeepInfant_V2 Model                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Input: Mel Spectrogram (128 bins × 87 frames)                  │
+│         = 2 seconds @ 16kHz, 512 hop                            │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ Encoder Block (Shared)                                  │    │
+│  │ ├── Conv2D(1, 32, 3×3) + BatchNorm + ReLU              │    │
+│  │ ├── Conv2D(32, 64, 3×3) + BatchNorm + ReLU             │    │
+│  │ ├── MaxPool2D(2×2)                                      │    │
+│  │ ├── Conv2D(64, 128, 3×3) + BatchNorm + ReLU            │    │
+│  │ ├── Conv2D(128, 128, 3×3) + BatchNorm + ReLU           │    │
+│  │ ├── GlobalAvgPool2D                                     │    │
+│  │ └── Output: 128-dim embedding                           │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                           │                                      │
+│              ┌────────────┴────────────┐                        │
+│              ▼                         ▼                         │
+│  ┌───────────────────┐    ┌───────────────────┐                 │
+│  │ Cry Type Head     │    │ Intensity Head    │                 │
+│  │ ├── Dense(128,64) │    │ ├── Dense(128,32) │                 │
+│  │ ├── Dropout(0.3)  │    │ ├── Dropout(0.2)  │                 │
+│  │ ├── Dense(64,6)   │    │ ├── Dense(32,1)   │                 │
+│  │ └── Softmax       │    │ └── Sigmoid×10    │                 │
+│  └───────────────────┘    └───────────────────┘                 │
+│         │                          │                             │
+│         ▼                          ▼                             │
+│  Cry Type (6 classes)      Intensity (0-10)                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+        <h3>Cry Type Classes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Class</th>
+                    <th>Description</th>
+                    <th>Typical Characteristics</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>hunger</code></td>
+                    <td>Baby is hungry</td>
+                    <td>Rhythmic, rising pitch, lip smacking</td>
+                </tr>
+                <tr>
+                    <td><code>tired</code></td>
+                    <td>Baby needs sleep</td>
+                    <td>Low-pitched, yawning sounds</td>
+                </tr>
+                <tr>
+                    <td><code>discomfort</code></td>
+                    <td>Physical discomfort</td>
+                    <td>Whiny, intermittent</td>
+                </tr>
+                <tr>
+                    <td><code>pain</code></td>
+                    <td>Acute pain/distress</td>
+                    <td>High-pitched, sudden onset, sustained</td>
+                </tr>
+                <tr>
+                    <td><code>overstimulated</code></td>
+                    <td>Sensory overload</td>
+                    <td>Fussy, turning away</td>
+                </tr>
+                <tr>
+                    <td><code>unknown</code></td>
+                    <td>Uncertain classification</td>
+                    <td>Low confidence catch-all</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Model Specifications</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Model Size</td>
+                    <td>&lt;15 MB</td>
+                    <td>Core ML optimized</td>
+                </tr>
+                <tr>
+                    <td>Inference Time</td>
+                    <td>&lt;50 ms</td>
+                    <td>iPhone 12+</td>
+                </tr>
+                <tr>
+                    <td>RAM Usage</td>
+                    <td>&lt;50 MB</td>
+                    <td>Peak during inference</td>
+                </tr>
+                <tr>
+                    <td>Accuracy</td>
+                    <td>&gt;85%</td>
+                    <td>On held-out test set</td>
+                </tr>
+                <tr>
+                    <td>False Positive Rate</td>
+                    <td>&lt;10%</td>
+                    <td>For pain detection</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- On-Device vs Cloud -->
+    <section id="on-device-vs-cloud">
+        <h2>5. On-Device vs Cloud Inference</h2>
+
+        <div class="alert alert-success">
+            <strong>Decision:</strong> 100% On-Device — All inference runs locally. No audio data is ever transmitted.
+        </div>
+
+        <h3>Rationale</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Factor</th>
+                    <th>On-Device</th>
+                    <th>Cloud</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Privacy</strong></td>
+                    <td><span class="badge badge-success">✓</span> Audio never leaves device</td>
+                    <td><span class="badge badge-danger">✗</span> Audio transmitted</td>
+                </tr>
+                <tr>
+                    <td><strong>Latency</strong></td>
+                    <td><span class="badge badge-success">✓</span> &lt;50ms</td>
+                    <td><span class="badge badge-danger">✗</span> 200-500ms+</td>
+                </tr>
+                <tr>
+                    <td><strong>Offline</strong></td>
+                    <td><span class="badge badge-success">✓</span> Always works</td>
+                    <td><span class="badge badge-danger">✗</span> Requires network</td>
+                </tr>
+                <tr>
+                    <td><strong>Cost</strong></td>
+                    <td><span class="badge badge-success">✓</span> No server costs</td>
+                    <td><span class="badge badge-danger">✗</span> GPU inference costs</td>
+                </tr>
+                <tr>
+                    <td><strong>Trust</strong></td>
+                    <td><span class="badge badge-success">✓</span> Parents trust local</td>
+                    <td><span class="badge badge-danger">✗</span> Data privacy concerns</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Data Classification</h3>
+        <div class="data-classification">
+            <h4>🔴 NEVER STORED (ephemeral only):</h4>
+            <ul>
+                <li>Raw audio samples</li>
+                <li>Mel spectrograms after inference</li>
+                <li>Audio feature vectors</li>
+            </ul>
+        </div>
+
+        <div class="data-classification">
+            <h4>🟡 STORED LOCALLY ONLY (encrypted):</h4>
+            <ul>
+                <li>Baby profile (name, birth date)</li>
+                <li>Effectiveness history (sound → outcome)</li>
+                <li>Feeding/nap schedule</li>
+                <li>User preferences</li>
+            </ul>
+        </div>
+
+        <div class="data-classification">
+            <h4>🟢 MAY BE TRANSMITTED (aggregated, anonymous):</h4>
+            <ul>
+                <li>Model prediction distributions</li>
+                <li>Feature effectiveness rates</li>
+                <li>App usage patterns (time-of-day bins)</li>
+                <li>Crash/error reports (no PII)</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Audio Pipeline -->
+    <section id="audio-pipeline">
+        <h2>6. Audio Processing Pipeline</h2>
+
+        <div class="diagram">┌────────────────────────────────────────────────────────────────────────┐
+│                      Audio Processing Pipeline                          │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Microphone                                                             │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │ 1. Audio Capture                                              │      │
+│  │    └── AVAudioEngine, 16kHz, mono, Float32                    │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │ 2. Pre-Processing                                             │      │
+│  │    ├── Ring buffer (2 sec window, 0.5 sec hop)                │      │
+│  │    ├── Noise gate (threshold: -40 dB)                         │      │
+│  │    └── Normalization (peak normalize to -3 dB)                │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │ 3. Feature Extraction (vDSP/Accelerate)                       │      │
+│  │    ├── STFT: 1024 FFT, 512 hop                                │      │
+│  │    ├── Mel filterbank: 128 bins, 50-8000 Hz                   │      │
+│  │    ├── Log compression: log(mel + 1e-6)                       │      │
+│  │    └── Delta features (optional)                               │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │ 4. ML Inference (Core ML)                                     │      │
+│  │    ├── Input: MLMultiArray [1, 128, 87]                       │      │
+│  │    ├── Inference: ~30ms on Neural Engine                       │      │
+│  │    └── Output: cry_type (6), intensity (1)                    │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│      │                                                                  │
+│      ▼                                                                  │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │ 5. Post-Processing                                            │      │
+│  │    ├── Confidence thresholding (>0.7 for action)              │      │
+│  │    ├── Temporal smoothing (3-window majority vote)            │      │
+│  │    └── Hysteresis (prevent rapid state changes)               │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+│      │                                                                  │
+│      ▼                                                                  │
+│  Decision Engine                                                        │
+│                                                                         │
+└────────────────────────────────────────────────────────────────────────┘</div>
+
+        <h3>Feature Extraction Configuration</h3>
+        <pre><code><span class="code-comment">// Mel Spectrogram Configuration</span>
+<span class="code-keyword">struct</span> <span class="code-type">MelSpectrogramConfig</span> {
+    <span class="code-keyword">let</span> sampleRate: <span class="code-type">Int</span> = 16000
+    <span class="code-keyword">let</span> fftSize: <span class="code-type">Int</span> = 1024
+    <span class="code-keyword">let</span> hopSize: <span class="code-type">Int</span> = 512
+    <span class="code-keyword">let</span> melBins: <span class="code-type">Int</span> = 128
+    <span class="code-keyword">let</span> fMin: <span class="code-type">Float</span> = 50.0
+    <span class="code-keyword">let</span> fMax: <span class="code-type">Float</span> = 8000.0
+    <span class="code-keyword">let</span> windowDuration: <span class="code-type">TimeInterval</span> = 2.0
+
+    <span class="code-keyword">var</span> framesPerWindow: <span class="code-type">Int</span> {
+        <span class="code-comment">// (2.0 * 16000 - 1024) / 512 + 1 ≈ 87 frames</span>
+        <span class="code-keyword">return</span> <span class="code-type">Int</span>((windowDuration * <span class="code-type">Double</span>(sampleRate) - <span class="code-type">Double</span>(fftSize)) / <span class="code-type">Double</span>(hopSize)) + 1
+    }
+}</code></pre>
+    </section>
+
+    <!-- Decision Engine -->
+    <section id="decision-engine">
+        <h2>7. Decision & Recommendation Engine</h2>
+
+        <div class="diagram">┌─────────────────────────────────────────────────────────────────────┐
+│                      Decision Engine                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Inputs:                                                             │
+│  ├── ML Output (cry_type, intensity, confidence)                    │
+│  ├── Context (time_of_day, last_feeding, last_nap)                 │
+│  ├── History (what worked before for this cry type)                 │
+│  └── User Preferences (sound preferences, alert settings)           │
+│                                                                      │
+│                         │                                            │
+│                         ▼                                            │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                   Decision Matrix                            │    │
+│  │                                                               │    │
+│  │  if confidence < 0.7:                                         │    │
+│  │      return "monitoring" (no action)                          │    │
+│  │                                                               │    │
+│  │  if cry_type == "pain" && intensity > 7:                      │    │
+│  │      return "alert_parent" (urgent notification)              │    │
+│  │                                                               │    │
+│  │  if cry_type == "hunger":                                     │    │
+│  │      if time_since_last_feed > 2h:                           │    │
+│  │          return "suggest_feeding" + soothing_sound           │    │
+│  │      else:                                                    │    │
+│  │          return "soothing_sound" (might be comfort cry)      │    │
+│  │                                                               │    │
+│  │  if cry_type == "tired":                                      │    │
+│  │      return "play_lullaby" (best_for_this_baby)              │    │
+│  │                                                               │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                         │                                            │
+│                         ▼                                            │
+│  Output:                                                             │
+│  ├── action: "play_sound" | "alert" | "suggest" | "monitor"         │
+│  ├── sound_id: "lullaby_brahms" (if applicable)                     │
+│  ├── message: "Baby might be tired" (parent-facing)                 │
+│  └── confidence: 0.85                                                │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+        <h3>Recommendation Actions</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>🎵 Play Soothing Sound</h4>
+                <p>Automatically play the most effective sound for this cry type based on history</p>
+            </div>
+            <div class="card">
+                <h4>🚨 Alert Parent (Urgent)</h4>
+                <p>Push notification for suspected pain or high intensity crying</p>
+            </div>
+            <div class="card">
+                <h4>🍼 Suggest Feeding</h4>
+                <p>Context-aware suggestion when hunger detected and time since last feed is long</p>
+            </div>
+            <div class="card">
+                <h4>😴 Suggest Nap</h4>
+                <p>Recommendation when tiredness detected and baby has been awake long</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Personalization -->
+    <section id="personalization">
+        <h2>8. Personalization Layer</h2>
+
+        <div class="alert alert-info">
+            <strong>Key Principle:</strong> The system learns from outcomes WITHOUT experimenting on the baby.
+        </div>
+
+        <h3>Learning Pipeline</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stage</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1. OBSERVE</strong></td>
+                    <td>Never Experiment</td>
+                    <td>Track what sound was played, cry type/intensity, whether crying stopped within 5 minutes</td>
+                </tr>
+                <tr>
+                    <td><strong>2. LEARN</strong></td>
+                    <td>Passive</td>
+                    <td>Build effectiveness matrix, weight recent successes higher (decay: 0.95), require minimum 3 observations</td>
+                </tr>
+                <tr>
+                    <td><strong>3. RECOMMEND</strong></td>
+                    <td>Conservative</td>
+                    <td>Suggest sounds with &gt;60% success rate, fall back to population defaults if insufficient data</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Effectiveness Tracking Code</h3>
+        <pre><code><span class="code-keyword">struct</span> <span class="code-type">EffectivenessRecord</span>: <span class="code-type">Codable</span> {
+    <span class="code-keyword">let</span> id: <span class="code-type">UUID</span>
+    <span class="code-keyword">let</span> timestamp: <span class="code-type">Date</span>
+    <span class="code-keyword">let</span> cryType: <span class="code-type">CryType</span>
+    <span class="code-keyword">let</span> intensity: <span class="code-type">Float</span>
+    <span class="code-keyword">let</span> soundPlayed: <span class="code-type">String</span>
+    <span class="code-keyword">let</span> cryingStoppedWithin: <span class="code-type">TimeInterval</span>?  <span class="code-comment">// nil = didn't stop</span>
+    <span class="code-keyword">let</span> parentFeedback: <span class="code-type">ParentFeedback</span>?     <span class="code-comment">// optional manual input</span>
+}</code></pre>
+    </section>
+
+    <!-- Privacy & Security -->
+    <section id="privacy-security">
+        <h2>9. Privacy & Security</h2>
+
+        <h3>Privacy Principles</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Principle</th>
+                    <th>Implementation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Data Minimization</strong></td>
+                    <td>Only collect what's needed for functionality</td>
+                </tr>
+                <tr>
+                    <td><strong>Local-First</strong></td>
+                    <td>All ML inference on-device</td>
+                </tr>
+                <tr>
+                    <td><strong>No Raw Audio</strong></td>
+                    <td>Audio features discarded after inference</td>
+                </tr>
+                <tr>
+                    <td><strong>Anonymization</strong></td>
+                    <td>All analytics aggregated and anonymized</td>
+                </tr>
+                <tr>
+                    <td><strong>User Control</strong></td>
+                    <td>Full data export and deletion</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>GDPR/CCPA Compliance</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Right</th>
+                    <th>Implementation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Right to Access</td>
+                    <td>In-app data export (JSON)</td>
+                </tr>
+                <tr>
+                    <td>Right to Deletion</td>
+                    <td>Full local data wipe + server request</td>
+                </tr>
+                <tr>
+                    <td>Right to Portability</td>
+                    <td>Export in standard format</td>
+                </tr>
+                <tr>
+                    <td>Right to Opt-Out</td>
+                    <td>Disable all analytics in settings</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Safety Boundaries -->
+    <section id="safety-boundaries">
+        <h2>10. Safety Boundaries</h2>
+
+        <div class="alert alert-danger">
+            <strong>CRITICAL:</strong> The app must NEVER make medical diagnoses or claims. All messaging must be observational, not diagnostic.
+        </div>
+
+        <h3>Safe vs Unsafe Messaging</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Example</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Safe</td>
+                    <td>"Baby might be feeling hungry"</td>
+                    <td><span class="badge badge-success">ALLOWED</span></td>
+                </tr>
+                <tr>
+                    <td>Safe</td>
+                    <td>"Baby seems tired"</td>
+                    <td><span class="badge badge-success">ALLOWED</span></td>
+                </tr>
+                <tr>
+                    <td>Safe</td>
+                    <td>"Consider checking on baby"</td>
+                    <td><span class="badge badge-success">ALLOWED</span></td>
+                </tr>
+                <tr>
+                    <td>Unsafe</td>
+                    <td>"Baby has colic"</td>
+                    <td><span class="badge badge-danger">FORBIDDEN</span></td>
+                </tr>
+                <tr>
+                    <td>Unsafe</td>
+                    <td>"Consult your pediatrician"</td>
+                    <td><span class="badge badge-danger">FORBIDDEN</span></td>
+                </tr>
+                <tr>
+                    <td>Unsafe</td>
+                    <td>"This could indicate an illness"</td>
+                    <td><span class="badge badge-danger">FORBIDDEN</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Safety Thresholds</h3>
+        <div class="card-grid">
+            <div class="card">
+                <h4>Urgent Alert Intensity</h4>
+                <p>8.0+ for 2 minutes triggers parent notification</p>
+            </div>
+            <div class="card">
+                <h4>Pain Alert Delay</h4>
+                <p>0 seconds - immediate notification for suspected pain</p>
+            </div>
+            <div class="card">
+                <h4>Max Unattended Soothing</h4>
+                <p>10 minutes before suggesting parent check</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scalability -->
+    <section id="scalability">
+        <h2>11. Scalability & Performance</h2>
+
+        <h3>Performance Targets</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Inference Latency</td>
+                    <td>&lt;50ms</td>
+                    <td>P99 on iPhone 12</td>
+                </tr>
+                <tr>
+                    <td>Battery (Monitoring)</td>
+                    <td>&lt;5%/hour</td>
+                    <td>1 hour continuous</td>
+                </tr>
+                <tr>
+                    <td>Battery (Active Soothing)</td>
+                    <td>&lt;8%/hour</td>
+                    <td>Playback + monitoring</td>
+                </tr>
+                <tr>
+                    <td>Memory (Peak)</td>
+                    <td>&lt;100MB</td>
+                    <td>During inference</td>
+                </tr>
+                <tr>
+                    <td>App Launch</td>
+                    <td>&lt;2s</td>
+                    <td>Cold start to ready</td>
+                </tr>
+                <tr>
+                    <td>Model Load</td>
+                    <td>&lt;500ms</td>
+                    <td>First inference ready</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Optimization Strategies</h3>
+        <ol>
+            <li><strong>Model Quantization (INT8)</strong> - Reduce model size and improve inference speed</li>
+            <li><strong>Batch Prediction</strong> - Process 4 windows in parallel when catching up</li>
+            <li><strong>Lazy Feature Computation</strong> - Cache mel filterbanks</li>
+            <li><strong>Background Processing Limits</strong> - 30 second budget</li>
+        </ol>
+    </section>
+
+    <!-- KPIs -->
+    <section id="kpis">
+        <h2>12. Key Performance Indicators</h2>
+
+        <h3>ML Model KPIs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>KPI</th>
+                    <th>Target</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Classification Accuracy</td>
+                    <td>&gt;85%</td>
+                    <td>Held-out test set</td>
+                </tr>
+                <tr>
+                    <td>Pain Detection Recall</td>
+                    <td>&gt;95%</td>
+                    <td>Critical - minimize false negatives</td>
+                </tr>
+                <tr>
+                    <td>Pain Detection Precision</td>
+                    <td>&gt;80%</td>
+                    <td>Acceptable false positives</td>
+                </tr>
+                <tr>
+                    <td>Hunger/Tired F1</td>
+                    <td>&gt;80%</td>
+                    <td>Most common classes</td>
+                </tr>
+                <tr>
+                    <td>Unknown Rate</td>
+                    <td>&lt;15%</td>
+                    <td>Model uncertainty</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Product KPIs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>KPI</th>
+                    <th>Target</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Time to Calm (median)</td>
+                    <td>&lt;3 min</td>
+                    <td>After soothing starts</td>
+                </tr>
+                <tr>
+                    <td>Soothing Success Rate</td>
+                    <td>&gt;70%</td>
+                    <td>Crying stops within 5 min</td>
+                </tr>
+                <tr>
+                    <td>Parent Override Rate</td>
+                    <td>&lt;20%</td>
+                    <td>Parent changes recommendation</td>
+                </tr>
+                <tr>
+                    <td>Daily Active Use</td>
+                    <td>&gt;5 sessions</td>
+                    <td>Engaged users</td>
+                </tr>
+                <tr>
+                    <td>Retention (D30)</td>
+                    <td>&gt;40%</td>
+                    <td>Monthly retention</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Phased Implementation -->
+    <section id="phased-implementation">
+        <h2>13. Phased Implementation</h2>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <h4>Phase 1: Foundation (Weeks 1-4)</h4>
+                <p><strong>Goal:</strong> Basic cry detection with pre-trained model</p>
+                <ul>
+                    <li>Audio Pipeline - Real-time capture + feature extraction</li>
+                    <li>Core ML Integration - Load and run inference</li>
+                    <li>Basic UI - Detection indicator + manual sound selection</li>
+                    <li>Baseline Model - Pre-trained on public datasets</li>
+                </ul>
+                <p><strong>Exit Criteria:</strong> App detects crying with &gt;70% accuracy</p>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Phase 2: Classification (Weeks 5-8)</h4>
+                <p><strong>Goal:</strong> Multi-class cry type classification</p>
+                <ul>
+                    <li>Multi-Head Model - 6-class cry type + intensity</li>
+                    <li>Decision Engine - Rule-based recommendations</li>
+                    <li>Parent Feedback - Thumbs up/down on suggestions</li>
+                    <li>A/B Framework - Compare model versions</li>
+                </ul>
+                <p><strong>Exit Criteria:</strong> 5-class F1 &gt;75%, parent feedback collected</p>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Phase 3: Personalization (Weeks 9-12)</h4>
+                <p><strong>Goal:</strong> Learning what works for each baby</p>
+                <ul>
+                    <li>Effectiveness Tracking - Log outcomes per sound/cry type</li>
+                    <li>Personal Model - Bayesian update of priors</li>
+                    <li>Context Integration - Time-of-day, feeding schedule</li>
+                    <li>Insights Dashboard - Show parents what works</li>
+                </ul>
+                <p><strong>Exit Criteria:</strong> Personalized recommendations outperform defaults</p>
+            </div>
+
+            <div class="timeline-item">
+                <h4>Phase 4: Polish (Weeks 13-16)</h4>
+                <p><strong>Goal:</strong> Production-ready quality</p>
+                <ul>
+                    <li>Performance Optimization - &lt;50ms inference, &lt;5% battery</li>
+                    <li>Edge Case Handling - Multi-baby, noisy environments</li>
+                    <li>OTA Updates - Model update pipeline</li>
+                    <li>Privacy Audit - Third-party security review</li>
+                </ul>
+                <p><strong>Exit Criteria:</strong> App Store submission ready</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Risk Mitigation -->
+    <section id="risk-mitigation">
+        <h2>14. Risk Mitigation</h2>
+
+        <h3>Technical Risks</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Risk</th>
+                    <th>Probability</th>
+                    <th>Impact</th>
+                    <th>Mitigation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Model accuracy insufficient</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Fallback to volume detection</td>
+                </tr>
+                <tr>
+                    <td>Battery drain too high</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Aggressive optimization, sampling</td>
+                </tr>
+                <tr>
+                    <td>iOS audio restrictions</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Background modes, interruption handling</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Product Risks</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Risk</th>
+                    <th>Probability</th>
+                    <th>Impact</th>
+                    <th>Mitigation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Parents don't trust AI</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Transparency, explain reasoning</td>
+                </tr>
+                <tr>
+                    <td>False pain alerts</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>High precision threshold</td>
+                </tr>
+                <tr>
+                    <td>Soothing doesn't work</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Quick parent escalation</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Legal/Safety Risks</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Risk</th>
+                    <th>Probability</th>
+                    <th>Impact</th>
+                    <th>Mitigation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Medical device classification</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-danger">Critical</span></td>
+                    <td>Clear disclaimers, no diagnosis</td>
+                </tr>
+                <tr>
+                    <td>Liability for missed pain</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-danger">Critical</span></td>
+                    <td>Always escalate high intensity</td>
+                </tr>
+                <tr>
+                    <td>GDPR/CCPA violation</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Privacy-by-design, no PII</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Future Considerations -->
+    <section id="future">
+        <h2>15. Future Considerations</h2>
+
+        <h3>Potential Enhancements (v3.0+)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>Description</th>
+                    <th>Complexity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Multi-baby detection</td>
+                    <td>Distinguish between siblings</td>
+                    <td><span class="badge badge-danger">High</span></td>
+                </tr>
+                <tr>
+                    <td>Parent voice recognition</td>
+                    <td>Filter out parent talking</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                </tr>
+                <tr>
+                    <td>Sleep stage detection</td>
+                    <td>Detect light vs deep sleep</td>
+                    <td><span class="badge badge-danger">High</span></td>
+                </tr>
+                <tr>
+                    <td>Predictive alerts</td>
+                    <td>"Baby might wake in 10 min"</td>
+                    <td><span class="badge badge-danger">High</span></td>
+                </tr>
+                <tr>
+                    <td>Watch app</td>
+                    <td>Wrist notifications</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                </tr>
+                <tr>
+                    <td>CarPlay integration</td>
+                    <td>In-car monitoring</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Platform Expansion</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Platform</th>
+                    <th>Feasibility</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Android</td>
+                    <td><span class="badge badge-success">High</span></td>
+                    <td>Core ML → TensorFlow Lite</td>
+                </tr>
+                <tr>
+                    <td>Web</td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td>No background audio access</td>
+                </tr>
+                <tr>
+                    <td>Smart Speaker</td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Privacy concerns</td>
+                </tr>
+                <tr>
+                    <td>Baby Monitor</td>
+                    <td><span class="badge badge-success">High</span></td>
+                    <td>Partnership opportunity</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Research Directions</h3>
+        <ul>
+            <li><strong>Transfer Learning:</strong> Adapt model to individual baby's voice</li>
+            <li><strong>Federated Learning:</strong> Improve model without collecting data</li>
+            <li><strong>Multi-Modal:</strong> Combine audio with video (with consent)</li>
+            <li><strong>Longitudinal:</strong> Track development over months</li>
+        </ul>
+    </section>
+
+</div>
+
+<footer>
+    <p><strong>DeepInfant_V2 Architecture</strong> v2.0</p>
+    <p>Document generated: January 2026</p>
+</footer>
+
+</body>
+</html>

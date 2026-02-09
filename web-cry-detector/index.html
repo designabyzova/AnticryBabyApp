@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Cry Detector - Two-Stage Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Baby Cry Detector</h1>
+            <p class="subtitle">Two-Stage Detection: Cry Detection + Type Classification</p>
+        </header>
+
+        <main>
+            <!-- Status Section -->
+            <section class="status-section">
+                <div class="status-indicator" id="statusIndicator">
+                    <div class="status-dot"></div>
+                    <span id="statusText">Ready</span>
+                </div>
+                <div class="model-status" id="modelStatus">
+                    Initializing audio system...
+                </div>
+            </section>
+
+            <!-- Audio Visualization -->
+            <section class="visualization-section">
+                <canvas id="waveformCanvas" width="600" height="150"></canvas>
+                <div class="audio-level">
+                    <span>Audio Level:</span>
+                    <div class="level-bar">
+                        <div class="level-fill" id="levelFill"></div>
+                    </div>
+                    <span id="levelValue">0 dB</span>
+                </div>
+            </section>
+
+            <!-- Controls -->
+            <section class="controls-section">
+                <button id="startBtn" class="btn btn-primary" disabled>
+                    <span class="btn-icon">🎤</span>
+                    Start Detection
+                </button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>
+                    <span class="btn-icon">⏹️</span>
+                    Stop
+                </button>
+                <button id="uploadBtn" class="btn btn-outline">
+                    <span class="btn-icon">📁</span>
+                    Upload Audio
+                </button>
+                <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
+            </section>
+
+            <!-- STAGE 1: Cry Detection -->
+            <section class="results-section stage-1">
+                <h2>Stage 1: Is This a Baby Cry?</h2>
+
+                <div class="cry-detection-result" id="cryDetectionResult">
+                    <div class="detection-indicator" id="detectionIndicator">
+                        <div class="detection-icon" id="detectionIcon">❓</div>
+                        <div class="detection-info">
+                            <span class="detection-label" id="detectionLabel">Waiting for audio...</span>
+                            <span class="detection-confidence" id="detectionConfidence">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Detection Score Breakdown -->
+                    <div class="detection-scores" id="detectionScores">
+                        <h4>Detection Scores</h4>
+                        <div class="score-item">
+                            <span>F0 in Infant Range (250-600Hz)</span>
+                            <div class="score-bar"><div class="score-fill" id="scoreF0"></div></div>
+                            <span class="score-value" id="scoreF0Val">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Harmonic Energy Pattern</span>
+                            <div class="score-bar"><div class="score-fill" id="scoreHarmonic"></div></div>
+                            <span class="score-value" id="scoreHarmonicVal">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Cry Formants</span>
+                            <div class="score-bar"><div class="score-fill" id="scoreFormants"></div></div>
+                            <span class="score-value" id="scoreFormantsVal">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Temporal Pattern</span>
+                            <div class="score-bar"><div class="score-fill" id="scoreTemporal"></div></div>
+                            <span class="score-value" id="scoreTemporalVal">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Non-Music Score</span>
+                            <div class="score-bar"><div class="score-fill" id="scoreAntiMusic"></div></div>
+                            <span class="score-value" id="scoreAntiMusicVal">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STAGE 2: Cry Type Classification (only visible when cry detected) -->
+            <section class="results-section stage-2" id="stage2Section" style="display: none;">
+                <h2>Stage 2: Cry Type Classification</h2>
+
+                <div class="current-result" id="currentResult">
+                    <div class="cry-type-icon" id="cryTypeIcon">👶</div>
+                    <div class="cry-type-info">
+                        <span class="cry-type-label" id="cryTypeLabel">Analyzing cry type...</span>
+                        <span class="confidence" id="confidenceValue">--</span>
+                    </div>
+                </div>
+
+                <!-- Category Mode Toggle -->
+                <div class="category-mode-toggle">
+                    <label>
+                        <input type="radio" name="categoryMode" value="simple" checked>
+                        Simple (3 categories)
+                    </label>
+                    <label>
+                        <input type="radio" name="categoryMode" value="detailed">
+                        Detailed (6 categories)
+                    </label>
+                </div>
+
+                <!-- Simple Mode: 3 Categories -->
+                <div class="probabilities simple-mode" id="simpleProbabilities">
+                    <h3>Cry Categories (Simplified)</h3>
+                    <div class="prob-bars">
+                        <div class="prob-item urgent">
+                            <span class="prob-label">🚨 Urgent (Pain/Discomfort)</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill urgent-fill" id="probUrgent" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probUrgentVal">0%</span>
+                        </div>
+                        <div class="prob-item needs">
+                            <span class="prob-label">🍼 Basic Needs (Hunger/Tired)</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill needs-fill" id="probNeeds" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probNeedsVal">0%</span>
+                        </div>
+                        <div class="prob-item comfort">
+                            <span class="prob-label">🤗 Comfort-Seeking (Attention)</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill comfort-fill" id="probComfort" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probComfortVal">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Mode: 6 Categories -->
+                <div class="probabilities detailed-mode" id="detailedProbabilities" style="display: none;">
+                    <h3>Cry Categories (Detailed)</h3>
+                    <div class="prob-bars">
+                        <div class="prob-item">
+                            <span class="prob-label">🍼 Hunger</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probHunger" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probHungerVal">0%</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">😴 Tired</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probTired" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probTiredVal">0%</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">😣 Pain</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probPain" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probPainVal">0%</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">👋 Attention</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probAttention" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probAttentionVal">0%</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">😖 Discomfort</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probDiscomfort" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probDiscomfortVal">0%</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">😢 General</span>
+                            <div class="prob-bar">
+                                <div class="prob-fill" id="probGeneral" style="width: 0%"></div>
+                            </div>
+                            <span class="prob-value" id="probGeneralVal">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Classification History -->
+            <section class="history-section">
+                <h2>Detection History</h2>
+                <div class="history-list" id="historyList">
+                    <p class="empty-history">No detections yet</p>
+                </div>
+                <button id="clearHistoryBtn" class="btn btn-outline btn-small">Clear History</button>
+            </section>
+
+            <!-- Debug Info -->
+            <section class="debug-section">
+                <details>
+                    <summary>Debug Information</summary>
+                    <div class="debug-content">
+                        <div class="debug-item">
+                            <span>Sample Rate:</span>
+                            <span id="debugSampleRate">--</span>
+                        </div>
+                        <div class="debug-item">
+                            <span>Buffer Size:</span>
+                            <span id="debugBufferSize">--</span>
+                        </div>
+                        <div class="debug-item">
+                            <span>Stage 1 Time:</span>
+                            <span id="debugDetectionTime">--</span>
+                        </div>
+                        <div class="debug-item">
+                            <span>Stage 2 Time:</span>
+                            <span id="debugInferenceTime">--</span>
+                        </div>
+                        <div class="debug-item">
+                            <span>Audio Features:</span>
+                            <pre id="debugFeatures">--</pre>
+                        </div>
+                    </div>
+                </details>
+            </section>
+        </main>
+
+        <footer>
+            <p>Baby Cry Detector | Two-Stage Detection Pipeline</p>
+            <p class="disclaimer">Stage 1: Binary cry detection (Is this a cry?) | Stage 2: Cry type classification (What type?)</p>
+        </footer>
+    </div>
+
+    <script src="audio-processor.js"></script>
+    <script src="cry-detector.js"></script>
+    <script src="cry-classifier.js"></script>
+    <script src="api-client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

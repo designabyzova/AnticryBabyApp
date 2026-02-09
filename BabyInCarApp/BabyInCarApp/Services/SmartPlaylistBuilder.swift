@@ -13,6 +13,7 @@ class SmartPlaylistBuilder {
 
     private let contentLibrary = ContentLibraryService.shared
     private let ultraSmartSelector = UltraSmartPlaylistSelector.shared
+    private let smartPlaylistGenerator = SmartPlaylistGenerator.shared
     private let spotifyEngine = SpotifyQueueEngine.shared
     private let effectivenessManager = EffectivenessManager.shared
     private let favoritesManager = FavoritesManager.shared
@@ -31,13 +32,22 @@ class SmartPlaylistBuilder {
     ) async -> Playlist {
         print("[SmartPlaylistBuilder] 🚨 Building emergency playlist for \(cryType.displayName), age \(babyAge)mo")
 
-        // Use UltraSmartPlaylistSelector for intelligent track selection
-        let tracks = await ultraSmartSelector.buildSmartPlaylist(
-            cryType: cryType,
+        // Use SmartPlaylistGenerator for multi-criteria cry-type-specific selection (FS-029)
+        let allTracks = contentLibrary.allTracks
+        let favoriteIds = Set(favoritesManager.favoriteTracks)
+
+        let tracks = smartPlaylistGenerator.generatePlaylist(
+            for: cryType,
             babyAge: babyAge,
-            language: language,
+            allTracks: allTracks,
+            favoriteIds: favoriteIds,
+            isPremium: SubscriptionManager.shared.isPremium,
             maxTracks: maxTracks
         )
+
+        // Log AI reasoning for debugging
+        let insights = smartPlaylistGenerator.getGenerationInsights()
+        print("[SmartPlaylistBuilder] AI reasoning: \(insights.reasoning) (confidence: \(insights.confidence))")
 
         // Create metadata for auto-replenishment
         let metadata = PlaylistGenerationMetadata(
@@ -75,13 +85,75 @@ class SmartPlaylistBuilder {
 
         let cryType = context.cryType ?? .general
 
-        // Use Spotify-style selection engine
-        return await spotifyEngine.selectNextTracks(
-            count: count,
-            cryType: cryType,
+        // Use SmartPlaylistGenerator for consistent multi-criteria selection (FS-029)
+        let allTracks = contentLibrary.allTracks
+        let favoriteIds = Set(favoritesManager.favoriteTracks)
+
+        let newTracks = smartPlaylistGenerator.generatePlaylist(
+            for: cryType,
             babyAge: context.babyAge,
-            language: context.language,
-            excludeRecent: true  // Avoid repetition
+            allTracks: allTracks,
+            favoriteIds: favoriteIds,
+            isPremium: SubscriptionManager.shared.isPremium,
+            maxTracks: count
+        )
+
+        return newTracks
+    }
+
+    // MARK: - Cry Type Change Handling (FS-029)
+
+    /// Build new playlist when cry type changes during playback
+    /// Maintains continuity by keeping current track position
+    func buildPlaylistForCryTypeChange(
+        newCryType: CryType,
+        previousCryType: CryType,
+        babyAge: Int,
+        maxTracks: Int = 25
+    ) async -> Playlist {
+        print("[SmartPlaylistBuilder] 🔄 Rebuilding playlist: \(previousCryType.displayName) → \(newCryType.displayName)")
+
+        // Record the playlist change in CategoryRotationManager
+        CategoryRotationManager.shared.resetSession()
+
+        // Use SmartPlaylistGenerator for new cry type
+        let allTracks = contentLibrary.allTracks
+        let favoriteIds = Set(favoritesManager.favoriteTracks)
+
+        let tracks = smartPlaylistGenerator.generatePlaylist(
+            for: newCryType,
+            babyAge: babyAge,
+            allTracks: allTracks,
+            favoriteIds: favoriteIds,
+            isPremium: SubscriptionManager.shared.isPremium,
+            maxTracks: maxTracks
+        )
+
+        // Log the change
+        let insights = smartPlaylistGenerator.getGenerationInsights()
+        print("[SmartPlaylistBuilder] New playlist: \(tracks.count) tracks for \(newCryType.displayName) (reason: \(insights.reasoning))")
+
+        // Create metadata for continued auto-replenishment
+        let metadata = PlaylistGenerationMetadata(
+            babyAge: babyAge,
+            cryType: newCryType,
+            language: "en",
+            allowGenerated: true
+        )
+
+        return Playlist(
+            name: "Soothing: \(newCryType.displayName)",
+            description: "AI-adapted tracks for changed cry pattern",
+            tracks: tracks,
+            category: nil,
+            targetAgeMonths: babyAge,
+            isSystemGenerated: true,
+            createdAt: Date(),
+            artworkName: nil,
+            updatedAt: nil,
+            isAutoReplenishing: true,
+            minQueueSize: 3,
+            generationContext: metadata
         )
     }
 }
