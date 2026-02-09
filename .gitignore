@@ -1,17 +1,31 @@
 # SpecWeave
 .specweave/cache/
-.specweave/increments/*/logs/       # Gitignored, but structure preserved
+.specweave/increments/*/logs/
 .specweave/increments/*/test-results/
 .specweave/state/
+.specweave/jobs/
+.specweave/docs-site-internal/
+.specweave/logs/
 BabyInCarApp/.specweave/state/
-.specweave/jobs/                    # Background job checkpoints and state
-.specweave/docs-site-internal/      # Generated Docusaurus site for internal docs
-.claude-plugin/                     # Plugin marketplace (framework files)
-plugins/                            # Plugin implementations (framework files)
+BabyInCarApp/.specweave/logs/
+.claude-plugin/
+plugins/
 
-# Temporary scripts (one-off automation in root/app folders)
+# Claude Code local settings
+.claude/
+
+# Backup files
+*.bak
+*.backup
+*.backup[0-9]*
+
+# Apple API keys (SENSITIVE)
+BabyInCarApp/fastlane/keys/
+
+# Temporary scripts (one-off automation)
 /*.py
 /*.rb
+/*.swift
 /BabyInCarApp/*.py
 /BabyInCarApp/*.rb
 /BabyInCarApp/fastlane/*.rb
@@ -27,12 +41,12 @@ BabyInCarApp/fastlane/Preview.html
 BabyInCarApp/fastlane/screenshots/
 BabyInCarApp/fastlane/README.md
 
-# Dependencies (framework-agnostic)
-node_modules/          # JavaScript/TypeScript
+# Dependencies
+node_modules/
 .pnpm-store/
 .yarn/
 .npm/
-__pycache__/           # Python
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -40,22 +54,22 @@ __pycache__/           # Python
 venv/
 env/
 ENV/
-target/                # Rust
+target/
 Cargo.lock
-vendor/                # Go
+vendor/
 go.sum
 
-# Build outputs (framework-agnostic)
-.next/                 # NextJS
-dist/                  # Generic
-build/                 # Generic
-out/                   # Generic
-.output/               # Nuxt
-*.egg-info/            # Python
-__pypackages__/        # Python
-*.class                # Java
-*.jar                  # Java
-bin/                   # Go, Java
+# Build outputs
+.next/
+dist/
+build/
+out/
+.output/
+*.egg-info/
+__pypackages__/
+*.class
+*.jar
+bin/
 
 # Environment
 .env
@@ -63,35 +77,26 @@ bin/                   # Go, Java
 .env.*.local
 *.env
 
-# Database (framework-agnostic)
+# Database
 *.db
 *.sqlite
 *.sqlite3
 *.db-shm
 *.db-wal
-prisma/migrations/*/migration.sql   # Prisma (TypeScript)
-*/migrations/__pycache__/           # Django (Python)
+prisma/migrations/*/migration.sql
+*/migrations/__pycache__/
 
-# Testing (framework-agnostic)
-coverage/              # Generic
-.nyc_output/           # JavaScript
-.coverage              # Python
-htmlcov/               # Python
-*.cover                # Python
-.pytest_cache/         # Python
-test-results/          # Playwright
-playwright-report/     # Playwright HTML reports
+# Testing
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+*.cover
+.pytest_cache/
+test-results/
+playwright-report/
 
-# Claude Code local settings
-.claude/
-
-# Backup files
-*.bak
-
-# SpecWeave logs
-.specweave/logs/
-BabyInCarApp/.specweave/logs/
-
+# IDE
 .idea/
 *.swp
 *.swo
@@ -102,6 +107,9 @@ xcuserdata/
 *.xcuserstate
 *.xcscmblueprint
 *.xccheckout
+*.xcuserdatad
+project.xcworkspace/xcuserdata/
+DerivedData/
 
 # OS
 .DS_Store
@@ -111,6 +119,7 @@ desktop.ini
 
 # Logs
 *.log
+*.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -120,30 +129,22 @@ yarn-error.log*
 .temp/
 tmp/
 
-# Swift Package Manager build
+# Swift Package Manager
 .build/
 .swiftpm/
-
-# Xcode user data
-*.xcuserstate
-*.xcuserdatad
-xcuserdata/
-project.xcworkspace/xcuserdata/
-DerivedData/
 
 # Xcode backup files
 *.pbxproj.backup*
 *.pbxproj.bak
 
-# Audio files (stored in Cloudflare R2 bucket: anticrybaby)
-# All audio content is hosted on R2 for streaming
-# Upload script: cd babyincar-api && ./scripts/batch-upload-category.sh <category>
-# R2 path format: audio/<category>/<filename>
+# Audio files (all stored in Cloudflare R2, streamed not bundled)
 BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.wav
 BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.mp3
 BabyInCarApp/BabyInCarApp/Resources/Audio/**/*.m4a
 BabyInCarApp/BabyInCarApp/Resources/Audio/podcasts/
 BabyInCarApp/BabyInCarApp/Resources/Audio/fairytales/
+babyincar-api/audio-library/downloaded/
+lullabies/
 
 # R2 upload tracking
 babyincar-api/r2-uploaded-files.json
@@ -151,13 +152,15 @@ babyincar-api/r2-uploaded-files.json
 # Cloudflare Wrangler cache
 .wrangler/
 .mf/
-node_modules/.cache/
 
 # Xcode build directory
 BabyInCarApp/build/
 
 # Downloaded audio for R2 upload
 babyincar-api/audio-library/downloads/
+
+# App Store and Fastlane screenshots
+AppStoreScreenshots/
 
 # Maestro screenshots/artifacts
 screenshots/
@@ -172,6 +175,7 @@ BabyInCarApp.xcarchive/
 
 # Certificate files (sensitive)
 *.p12
+*.p8
 *.cer
 *.certSigningRequest
 *.mobileprovision
@@ -182,7 +186,6 @@ ExportOptions.plist
 
 # Generated icons (can be regenerated)
 icon_*.png
-# But keep app icons in Assets.xcassets
 !**/Assets.xcassets/**/icon_*.png
 
 # Markdown reports in root (should be in increment folders)
