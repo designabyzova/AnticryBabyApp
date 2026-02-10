@@ -14,19 +14,19 @@ import Combine
 /// Configuration for cry type stability detection
 struct StabilityConfiguration {
     /// Time window for initial detection (seconds)
-    var initialDetectionWindow: TimeInterval = 20.0
+    var initialDetectionWindow: TimeInterval = 10.0
 
     /// Time window for detecting changes after initial stability (seconds)
-    var changeDetectionWindow: TimeInterval = 30.0
+    var changeDetectionWindow: TimeInterval = 15.0
 
     /// Minimum percentage agreement required for stability (0.0-1.0)
-    var minimumAgreement: Double = 0.70
+    var minimumAgreement: Double = 0.55
 
     /// Minimum confidence threshold for counting predictions
-    var minimumConfidence: Double = 0.70
+    var minimumConfidence: Double = 0.40
 
     /// Minimum number of predictions needed before declaring stability
-    var minimumPredictionCount: Int = 5
+    var minimumPredictionCount: Int = 3
 
     /// Default configuration
     static let `default` = StabilityConfiguration()
@@ -124,20 +124,19 @@ class CryTypeStabilizer: ObservableObject {
     ///   - cryType: The predicted cry type
     ///   - confidence: Confidence level (0.0-1.0)
     func addPrediction(_ cryType: CryType, confidence: Double) {
-        // Skip low-confidence predictions
-        guard confidence >= configuration.minimumConfidence else {
-            print("[CryTypeStabilizer] Skipping low-confidence prediction: \(cryType) @ \(Int(confidence * 100))%")
-            return
-        }
-
         let now = Date()
-        let record = PredictionRecord(cryType: cryType, confidence: confidence, timestamp: now)
-        predictionHistory.append(record)
 
-        // Clean old predictions
+        // Always clean old predictions and re-evaluate (even for low-confidence inputs)
+        // This ensures stale predictions age out when audio stops
         cleanOldPredictions(now: now)
 
-        // Evaluate stability
+        // Only add to history if above confidence threshold
+        if confidence >= configuration.minimumConfidence {
+            let record = PredictionRecord(cryType: cryType, confidence: confidence, timestamp: now)
+            predictionHistory.append(record)
+        }
+
+        // Always evaluate — detects instability when predictions age out
         evaluateStability(now: now)
     }
 
@@ -189,6 +188,10 @@ class CryTypeStabilizer: ObservableObject {
     private func evaluateStability(now: Date) {
         guard predictionHistory.count >= configuration.minimumPredictionCount else {
             stabilityProgress = Double(predictionHistory.count) / Double(configuration.minimumPredictionCount) * 0.5
+            // If we were stable but predictions aged out (e.g., crying stopped), mark unstable
+            if isStable {
+                handleUnstable()
+            }
             return
         }
 

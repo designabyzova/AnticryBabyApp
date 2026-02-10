@@ -15,8 +15,6 @@ import Combine
 /// Displays audio waveform, detection progress, and detected cry type
 struct CryDetectionView: View {
     @ObservedObject private var viewModel = CryDetectionViewModel.shared
-    @EnvironmentObject var audioEngine: AudioEngine
-    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -90,48 +88,11 @@ struct CryDetectionView: View {
             .onDisappear {
                 viewModel.stopDetection()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .startSmartSoothingPlaylist)) { notification in
-                handleStartSoothingPlaylist(notification: notification)
-            }
-        }
-    }
-
-    // MARK: - Start Soothing Playlist Handler
-
-    private func handleStartSoothingPlaylist(notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let cryType = userInfo["cryType"] as? CryType else {
-            print("[CryDetectionView] Invalid notification userInfo")
-            return
-        }
-
-        let confidence = userInfo["confidence"] as? Double ?? 0.8
-
-        print("[CryDetectionView] Starting soothing playlist for \(cryType.displayName) (confidence: \(Int(confidence * 100))%)")
-
-        // Get baby age from app state
-        let babyAge = appState.currentBaby?.ageInMonths ?? 6
-
-        // Build and play emergency playlist
-        Task {
-            let playlist = await SmartPlaylistBuilder.shared.buildEmergencyPlaylist(
-                cryType: cryType,
-                babyAge: babyAge,
-                language: "en",
-                maxTracks: 30
-            )
-
-            // Play the playlist with EMERGENCY CONTEXT
-            // This activates SOOTHING MODE - making playback unstoppable by interruptions
-            // Music will continue through phone calls, Bluetooth disconnects, etc.
-            audioEngine.play(
-                playlist: playlist,
-                context: .emergencyCry(type: cryType, babyAge: babyAge)
-            )
-
-            // Dismiss the view
-            await MainActor.run {
-                dismiss()
+            .onChange(of: viewModel.state) { newState in
+                // Auto-dismiss modal when soothing playlist starts
+                if case .playingSoothing = newState {
+                    dismiss()
+                }
             }
         }
     }
@@ -235,7 +196,7 @@ struct CryDetectionView: View {
 
                     Spacer()
 
-                    Text("~\(Int((1 - viewModel.stabilityProgress) * 20)) sec remaining")
+                    Text("~\(Int((1 - viewModel.stabilityProgress) * 10)) sec remaining")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -504,19 +465,10 @@ struct AudioWaveformView: View {
 
 // Note: CryDetectionError and CryDetectionViewModel are defined in ViewModels/CryDetectionViewModel.swift
 
-// MARK: - Notification Names
-
-extension Notification.Name {
-    /// Posted when user wants to start a smart soothing playlist for a detected cry type
-    static let startSmartSoothingPlaylist = Notification.Name("startSmartSoothingPlaylist")
-}
-
 // Note: Color.init(hex:) is defined in Extensions/Colors.swift
 
 // MARK: - Preview
 
 #Preview {
     CryDetectionView()
-        .environmentObject(AudioEngine.shared)
-        .environmentObject(AppState())
 }

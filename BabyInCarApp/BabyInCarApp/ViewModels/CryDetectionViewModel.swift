@@ -134,6 +134,15 @@ final class CryDetectionViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var pulseTimer: Timer?
 
+    /// Baby age in months, read from persisted baby profile
+    private var currentBabyAge: Int {
+        if let babyData = UserDefaults.standard.data(forKey: "currentBaby"),
+           let baby = try? JSONDecoder().decode(Baby.self, from: babyData) {
+            return baby.ageInMonths
+        }
+        return 6
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -199,11 +208,13 @@ final class CryDetectionViewModel: ObservableObject {
     }
 
     func selectCryType(_ cryType: CryType) {
-        stabilizer.forceType(cryType)
+        // Set state directly — don't call stabilizer.forceType() because
+        // it emits a .stabilized event that would trigger startSoothingPlaylist() again
         stableCryType = cryType
         stableConfidence = 1.0
         isStable = true
-        state = .detected(cryType: cryType, confidence: 1.0)
+        // Start music immediately for manual selection
+        startSoothingPlaylist()
     }
 
     func toggleManualOverride() {
@@ -211,21 +222,35 @@ final class CryDetectionViewModel: ObservableObject {
     }
 
     func startSoothingPlaylist() {
+        // Guard against double-calling (manual select + event handler)
+        if case .playingSoothing = state { return }
+
         // Stop detection
         stopDetection()
 
         // Update state to playing
         state = .playingSoothing(cryType: stableCryType, track: nil)
 
-        // Post notification to start playlist with detected cry type
-        NotificationCenter.default.post(
-            name: .startSmartSoothingPlaylist,
-            object: nil,
-            userInfo: [
-                "cryType": stableCryType,
-                "confidence": stableConfidence
-            ]
-        )
+        // Build and play emergency playlist directly (no notification needed)
+        let cryType = stableCryType
+        let confidence = stableConfidence
+        let babyAge = currentBabyAge
+
+        Task {
+            print("[CryDetectionViewModel] Starting soothing playlist for \(cryType.displayName) (confidence: \(Int(confidence * 100))%)")
+
+            let playlist = await SmartPlaylistBuilder.shared.buildEmergencyPlaylist(
+                cryType: cryType,
+                babyAge: babyAge,
+                language: "en",
+                maxTracks: 30
+            )
+
+            AudioEngine.shared.play(
+                playlist: playlist,
+                context: .emergencyCry(type: cryType, babyAge: babyAge)
+            )
+        }
     }
 
     /// Called when AudioEngine starts playing a track
@@ -299,10 +324,21 @@ final class CryDetectionViewModel: ObservableObject {
     }
 
     private func processAudioSamples(_ samples: [Float]) async {
+        // Gate: skip classification when no valid audio is detected (silence/ambient noise)
+        // DeepInfant V2 has no "no_cry" class, so it always outputs a cry type —
+        // feeding silence into the model produces false positives (e.g. "pain")
+        guard captureService.isAudioDetected else {
+            // Feed unknown/low-confidence to dilute any prior false predictions
+            stabilizer.addPrediction(.unknown, confidence: 0.0)
+            return
+        }
+
         do {
             let result = try await classificationService.classify(audioSamples: samples)
-            stabilizer.addPrediction(from: result)
 
+            print("[CryDetectionViewModel] Prediction: \(result.cryType.displayName) @ \(Int(result.confidence * 100))%")
+
+            stabilizer.addPrediction(from: result)
             dominantConfidence = result.confidence
         } catch {
             print("[CryDetectionViewModel] Classification error: \(error)")
@@ -312,13 +348,16 @@ final class CryDetectionViewModel: ObservableObject {
     private func handleStabilityEvent(_ event: StabilityEvent) {
         switch event {
         case .stabilized(let cryType, let confidence):
+            // Never treat "unknown" as a valid detection
+            guard cryType != .unknown else { return }
+
             isStable = true
             stableCryType = cryType
             stableConfidence = confidence
             stopPulseAnimation()
             state = .detected(cryType: cryType, confidence: confidence)
 
-            // AUTO-START: Only start soothing playlist if enabled (not in tab view display-only mode)
+            // AUTO-START: start soothing playlist when cry type is confirmed
             if autoStartPlaylist {
                 print("[CryDetectionViewModel] Cry type stabilized - AUTO-STARTING soothing playlist")
                 startSoothingPlaylist()

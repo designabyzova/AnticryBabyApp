@@ -71,7 +71,7 @@ class CryClassificationService: ObservableObject {
     // MARK: - Constants
 
     /// Minimum confidence threshold for accepting a prediction
-    static let minimumConfidenceThreshold: Double = 0.70
+    static let minimumConfidenceThreshold: Double = 0.40
 
     /// Sample rate required by the model (16kHz)
     static let requiredSampleRate: Double = 16000.0

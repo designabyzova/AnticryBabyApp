@@ -58,15 +58,11 @@ struct CryDetectionTabView: View {
         }
         .onAppear {
             isActive = true
-            // Disable auto-start playlist - this tab is display-only
-            viewModel.autoStartPlaylist = false
             viewModel.startDetection()
         }
         .onDisappear {
             isActive = false
             viewModel.stopDetection()
-            // Re-enable auto-start for other views (modal)
-            viewModel.autoStartPlaylist = true
         }
     }
 
@@ -169,7 +165,7 @@ struct CryDetectionTabView: View {
 
                     Spacer()
 
-                    Text("~\(Int((1 - viewModel.stabilityProgress) * 20)) sec remaining")
+                    Text("~\(Int((1 - viewModel.stabilityProgress) * 10)) sec remaining")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

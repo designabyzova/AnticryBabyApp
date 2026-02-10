@@ -82,10 +82,10 @@ class AudioCaptureService: ObservableObject {
     static let ringBufferSize = 32000
 
     /// Interval between predictions in seconds
-    static let predictionInterval: TimeInterval = 2.0
+    static let predictionInterval: TimeInterval = 1.0
 
-    /// Noise gate threshold in dB (ignore audio below this level)
-    static let noiseGateThresholdDB: Float = -40.0
+    /// Noise gate threshold in dB (for UI indicator only — does NOT block predictions)
+    static let noiseGateThresholdDB: Float = -50.0
 
     // MARK: - Published State
 
@@ -426,15 +426,40 @@ class AudioCaptureService: ObservableObject {
     }
 
     /// Trigger callback with current audio samples
+    /// Note: Does NOT gate on isAudioDetected — let the ML model and stabilizer
+    /// handle filtering. The noise gate was blocking predictions for quiet but valid cries.
     private func triggerPredictionCallback() {
-        guard state == .capturing, isAudioDetected else { return }
+        guard state == .capturing else { return }
 
         guard let samples = getCurrentSamples() else {
-            print("[AudioCaptureService] Not enough samples for prediction")
+            print("[AudioCaptureService] Not enough samples for prediction (\(ringBuffer.count)/\(Self.samplesPerPrediction))")
             return
         }
 
-        onAudioSamplesReady?(samples)
+        // Normalize audio to standard peak level before classification
+        // This ensures the model gets consistent amplitude regardless of mic distance/volume
+        let normalized = Self.normalizeAudio(samples)
+        onAudioSamplesReady?(normalized)
+    }
+
+    /// Normalize audio samples to a target peak amplitude
+    /// Boosts quiet audio so the ML model receives consistent signal levels
+    private static func normalizeAudio(_ samples: [Float], targetPeak: Float = 0.9) -> [Float] {
+        // Find peak absolute value
+        var peak: Float = 0
+        for sample in samples {
+            let abs = sample < 0 ? -sample : sample
+            if abs > peak { peak = abs }
+        }
+
+        // Skip normalization if effectively silent (below -60dB)
+        guard peak > 0.001 else { return samples }
+
+        let gain = targetPeak / peak
+        // Cap gain to avoid amplifying pure noise excessively (max ~40dB boost)
+        let clampedGain = min(gain, 100.0)
+
+        return samples.map { $0 * clampedGain }
     }
 
     // MARK: - Notifications
