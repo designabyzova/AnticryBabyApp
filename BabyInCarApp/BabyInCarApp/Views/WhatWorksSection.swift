@@ -12,9 +12,9 @@ import SwiftUI
 
 /// Section showing tracks with proven effectiveness for the baby
 struct WhatWorksSection: View {
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
-    @StateObject private var babyProfile = BabyProfileManager.shared
-    @StateObject private var contentLibrary = ContentLibraryService.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
+    @ObservedObject private var babyProfile = BabyProfileManager.shared
+    @ObservedObject private var contentLibrary = ContentLibraryService.shared
     @EnvironmentObject var audioEngine: AudioEngine
 
     @State private var selectedCryType: CryType? = nil
@@ -308,7 +308,7 @@ struct WhatWorksEmptyState: View {
 /// Full screen view showing all effective tracks with filtering
 struct WhatWorksFullListView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
     @EnvironmentObject var audioEngine: AudioEngine
 
     @State var selectedCryType: CryType?

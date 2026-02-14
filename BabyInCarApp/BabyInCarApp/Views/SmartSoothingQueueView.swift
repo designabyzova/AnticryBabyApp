@@ -18,9 +18,9 @@ struct SmartSoothingQueueView: View {
     let cryType: CryType
     let confidence: Double
 
-    @StateObject private var feedbackService = FeedbackCollectionService.shared
-    @StateObject private var autoDetector = CryStopAutoDetector.shared
-    @StateObject private var changeDetector = CryTypeChangeDetector.shared
+    @ObservedObject private var feedbackService = FeedbackCollectionService.shared
+    @ObservedObject private var autoDetector = CryStopAutoDetector.shared
+    @ObservedObject private var changeDetector = CryTypeChangeDetector.shared
     @EnvironmentObject var audioEngine: AudioEngine
     @Environment(\.dismiss) private var dismiss
 

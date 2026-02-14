@@ -231,19 +231,17 @@ struct BabyInCarApp: App {
     }
 
     /// Setup memory pressure monitoring to prevent iOS from killing the app
+    /// MEMORY FIX (0030): Consolidated into single MemoryMonitor (was duplicated with MemoryPressureMonitor)
     private func setupMemoryMonitoring() {
-        let memoryMonitor = MemoryPressureMonitor.shared
+        let memoryMonitor = MemoryMonitor.shared
 
-        // Warning level: reduce non-essential features
         memoryMonitor.onWarningLevel = {
             print("[MemoryMonitor] ⚠️ Warning level - reducing features")
         }
 
-        // Critical level: aggressive cleanup
         memoryMonitor.onCriticalLevel = {
             print("[MemoryMonitor] 🔴 Critical level - aggressive cleanup")
             Task { @MainActor in
-                // Only clear caches if audio is not playing
                 if !AudioEngine.shared.playbackState.isPlaying {
                     Task { await AudioCacheService.shared.clearAllCache() }
                 } else {
@@ -252,12 +250,9 @@ struct BabyInCarApp: App {
             }
         }
 
-        // Emergency level: stop non-essential services
-        // Audio is the PRIMARY PURPOSE of the app - baby calming should continue
         memoryMonitor.onEmergencyLevel = {
             print("[MemoryMonitor] 🚨 Emergency level")
             Task { @MainActor in
-                // Only clear caches if audio is not playing
                 if !AudioEngine.shared.playbackState.isPlaying {
                     Task { await AudioCacheService.shared.clearAllCache() }
                     print("[MemoryMonitor] Cache cleared to prevent crash")
@@ -267,8 +262,8 @@ struct BabyInCarApp: App {
             }
         }
 
-        // Start monitoring (check every 2 seconds for faster response)
-        memoryMonitor.startMonitoring(interval: 2.0)
+        // Single 15s monitoring interval (was 2s with MemoryPressureMonitor - too aggressive)
+        memoryMonitor.startMonitoring()
     }
 
     // MARK: - Siri Intent Handlers

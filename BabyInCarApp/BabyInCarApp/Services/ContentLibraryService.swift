@@ -18,9 +18,10 @@ class ContentLibraryService: ObservableObject {
     @Published var loadingError: String?
     @Published var lastSyncDate: Date?
 
-    // Server-fetched tracks
-    @Published var serverTracks: [AudioTrack] = []
-    @Published var serverPlaylists: [Playlist] = []
+    // MEMORY FIX (0030): Removed @Published — no views observe these, saves SwiftUI invalidation overhead
+    // These are only used for UserDefaults caching, not for UI binding
+    private var serverTracks: [AudioTrack] = []
+    private var serverPlaylists: [Playlist] = []
 
     private let apiClient = APIClient.shared
     private let cacheService = AudioCacheService.shared

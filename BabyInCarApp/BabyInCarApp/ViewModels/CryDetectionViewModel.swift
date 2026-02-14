@@ -200,6 +200,8 @@ final class CryDetectionViewModel: ObservableObject {
         isListening = false
         stopPulseAnimation()
         state = .idle
+        // MEMORY FIX (0030): Unload CoreML model when not detecting to save ~5MB
+        classificationService.unloadModel()
     }
 
     func retryDetection() {

@@ -72,7 +72,7 @@ struct MemoryCleanupToast: View {
 
 /// View modifier to add memory cleanup toast to any view
 struct MemoryCleanupToastModifier: ViewModifier {
-    @StateObject private var memoryMonitor = MemoryMonitor.shared
+    @ObservedObject private var memoryMonitor = MemoryMonitor.shared
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var toastLevel: MemoryMonitor.MemoryWarningLevel = .normal

@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct ChatbotView: View {
-    @StateObject private var chatHistory = ChatHistory.shared
-    @StateObject private var chatbotService = LibraryChatbotService.shared
-    @StateObject private var audioEngine = AudioEngine.shared
+    @ObservedObject private var chatHistory = ChatHistory.shared
+    @ObservedObject private var chatbotService = LibraryChatbotService.shared
+    @ObservedObject private var audioEngine = AudioEngine.shared
 
     @State private var inputText: String = ""
     @State private var isVoiceInputActive: Bool = false
@@ -119,7 +119,7 @@ struct ChatbotView: View {
 
 struct NowPlayingBar: View {
     let track: AudioTrack
-    @StateObject private var audioEngine = AudioEngine.shared
+    @ObservedObject private var audioEngine = AudioEngine.shared
 
     var body: some View {
         HStack(spacing: 12) {

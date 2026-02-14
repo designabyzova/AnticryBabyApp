@@ -81,7 +81,9 @@ class AudioDownloadManager: NSObject, ObservableObject {
     private var urlSession: URLSession!
     private var downloadTasks: [String: URLSessionDownloadTask] = [:]
     private var progressHandlers: [String: (Double) -> Void] = [:]
-    private var completionHandlers: [String: (Result<URL, Error>) -> Void] = [:]
+    // MEMORY FIX (0030): Changed from single handler to array to prevent continuation leak
+    // Previously, waitForDownload() would overwrite startDownload()'s continuation, leaking it
+    private var completionHandlers: [String: [(Result<URL, Error>) -> Void]] = [:]
 
     // Note: cacheDirectory needs to be nonisolated for URLSessionDelegate methods
     // FileManager.default is accessed directly in nonisolated methods to avoid Sendable issues
@@ -200,6 +202,11 @@ class AudioDownloadManager: NSObject, ObservableObject {
             task.cancel()
             downloadTasks.removeValue(forKey: trackId)
         }
+        // MEMORY FIX (0030): Resume all waiting continuations with cancellation error
+        for handler in completionHandlers[trackId] ?? [] {
+            handler(.failure(DownloadError.downloadFailed))
+        }
+        completionHandlers.removeValue(forKey: trackId)
         downloadStates[trackId] = .notDownloaded
         activeDownloads.removeAll { $0.trackId == trackId }
         updateTotalProgress()
@@ -211,6 +218,13 @@ class AudioDownloadManager: NSObject, ObservableObject {
             task.cancel()
             downloadStates[trackId] = .notDownloaded
         }
+        // MEMORY FIX (0030): Resume all waiting continuations before clearing
+        for (_, handlers) in completionHandlers {
+            for handler in handlers {
+                handler(.failure(DownloadError.downloadFailed))
+            }
+        }
+        completionHandlers.removeAll()
         downloadTasks.removeAll()
         activeDownloads.removeAll()
         isDownloading = false
@@ -306,14 +320,15 @@ class AudioDownloadManager: NSObject, ObservableObject {
             task.taskDescription = trackId
 
             downloadTasks[trackId] = task
-            completionHandlers[trackId] = { result in
+            // MEMORY FIX (0030): Append to array instead of overwriting to prevent continuation leak
+            completionHandlers[trackId, default: []].append({ result in
                 switch result {
                 case .success(let localURL):
                     continuation.resume(returning: localURL)
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
-            }
+            })
 
             // Update state
             downloadStates[trackId] = .downloading(progress: 0)
@@ -365,14 +380,15 @@ class AudioDownloadManager: NSObject, ObservableObject {
 
     private func waitForDownload(trackId: String) async throws -> URL {
         return try await withCheckedThrowingContinuation { continuation in
-            completionHandlers[trackId] = { result in
+            // MEMORY FIX (0030): Append to array instead of overwriting previous continuation
+            completionHandlers[trackId, default: []].append({ result in
                 switch result {
                 case .success(let localURL):
                     continuation.resume(returning: localURL)
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
-            }
+            })
         }
     }
 
@@ -476,7 +492,10 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
                     self.pendingTrackMetadata.removeValue(forKey: trackId)
                 }
 
-                self.completionHandlers[trackId]?(.success(destinationURL))
+                // MEMORY FIX (0030): Resume ALL waiting continuations, not just one
+                for handler in self.completionHandlers[trackId] ?? [] {
+                    handler(.success(destinationURL))
+                }
                 self.completionHandlers.removeValue(forKey: trackId)
             }
         } catch {
@@ -492,7 +511,10 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
                 self.updateTotalProgress()
                 self.pendingTrackMetadata.removeValue(forKey: trackId)
 
-                self.completionHandlers[trackId]?(.failure(error))
+                // MEMORY FIX (0030): Resume ALL waiting continuations, not just one
+                for handler in self.completionHandlers[trackId] ?? [] {
+                    handler(.failure(error))
+                }
                 self.completionHandlers.removeValue(forKey: trackId)
             }
         }
@@ -533,7 +555,10 @@ extension AudioDownloadManager: URLSessionDownloadDelegate {
             self.activeDownloads.removeAll { $0.trackId == trackId }
             self.updateTotalProgress()
 
-            self.completionHandlers[trackId]?(.failure(error))
+            // MEMORY FIX (0030): Resume ALL waiting continuations
+            for handler in self.completionHandlers[trackId] ?? [] {
+                handler(.failure(error))
+            }
             self.completionHandlers.removeValue(forKey: trackId)
         }
     }

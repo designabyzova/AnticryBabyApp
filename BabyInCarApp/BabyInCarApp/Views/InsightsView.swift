@@ -13,8 +13,8 @@ import Charts
 
 /// Dashboard showing effectiveness insights and statistics
 struct InsightsView: View {
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
-    @StateObject private var babyProfile = BabyProfileManager.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
+    @ObservedObject private var babyProfile = BabyProfileManager.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -408,7 +408,7 @@ private struct TopTrackRow: View {
 
 private struct RecentFeedbackRow: View {
     let record: EffectivenessFeedbackRecord
-    @StateObject private var contentLibrary = ContentLibraryService.shared
+    @ObservedObject private var contentLibrary = ContentLibraryService.shared
 
     var body: some View {
         HStack(spacing: DesignTokens.spacingM) {

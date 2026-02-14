@@ -6,8 +6,8 @@ struct CategoryDetailView: View {
     let category: AudioCategory
 
     @StateObject private var filterVM = FilterViewModel()
-    @StateObject private var contentLibrary = ContentLibraryService.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    @ObservedObject private var contentLibrary = ContentLibraryService.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
     @EnvironmentObject var audioEngine: AudioEngine
     @EnvironmentObject var appState: AppState
 

@@ -10,9 +10,9 @@ import SwiftUI
 
 /// Shows a clear comparison between Free and Premium tiers
 struct FreePremiumComparisonView: View {
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
-    @StateObject private var trialManager = TrialManager.shared
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var trialManager = TrialManager.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
     @Environment(\.dismiss) var dismiss
 
     // Personalization data

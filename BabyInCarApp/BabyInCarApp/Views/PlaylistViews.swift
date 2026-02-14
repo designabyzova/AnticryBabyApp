@@ -430,8 +430,8 @@ struct StatBadge: View {
 
 // MARK: - Create Playlist Sheet (Enhanced with Templates)
 struct CreatePlaylistSheet: View {
-    @StateObject private var playlistManager = PlaylistManager.shared
-    @StateObject private var contentLibrary = ContentLibraryService.shared
+    @ObservedObject private var playlistManager = PlaylistManager.shared
+    @ObservedObject private var contentLibrary = ContentLibraryService.shared
     @Environment(\.dismiss) var dismiss
 
     @State private var name = ""
@@ -796,7 +796,7 @@ struct PlaylistTemplate: Identifiable {
 struct EditPlaylistSheet: View {
     let playlist: Playlist
 
-    @StateObject private var playlistManager = PlaylistManager.shared
+    @ObservedObject private var playlistManager = PlaylistManager.shared
     @Environment(\.dismiss) var dismiss
 
     @State private var name: String
@@ -890,7 +890,7 @@ struct EditPlaylistSheet: View {
 struct AddToPlaylistSheet: View {
     let track: AudioTrack
 
-    @StateObject private var playlistManager = PlaylistManager.shared
+    @ObservedObject private var playlistManager = PlaylistManager.shared
     @Environment(\.dismiss) var dismiss
 
     @State private var showingCreatePlaylist = false
@@ -980,7 +980,7 @@ struct AddToPlaylistSheet: View {
 
 // MARK: - User Playlists Section (for Library View)
 struct UserPlaylistsSection: View {
-    @StateObject private var playlistManager = PlaylistManager.shared
+    @ObservedObject private var playlistManager = PlaylistManager.shared
     @EnvironmentObject var audioEngine: AudioEngine
 
     @State private var showingCreatePlaylist = false

@@ -109,14 +109,14 @@ class AudioEngine: ObservableObject {
         !playbackHistory.isEmpty || currentPlaylist != nil
     }
 
-    // MARK: - LRU Buffer Cache (Increment 0028, Enhanced 0029)
+    // MARK: - LRU Buffer Cache (Increment 0028, Enhanced 0029, Fixed 0030)
     /// LRU cache for recently played audio buffers
     /// Stores AVPlayer instances to avoid re-loading recently played tracks
-    /// MEMORY OPTIMIZATION: Reduced from 5 to 3, dynamically reduced to 1 under memory pressure
-    private var recentlyPlayedBuffers: [(trackId: UUID, player: AVPlayer)] = []
-    private var maxRecentBuffers = 3  // Dynamic - reduced under memory pressure
-    private let defaultMaxRecentBuffers = 3
-    private let emergencyMaxRecentBuffers = 1
+    /// MEMORY FIX (0030): Reduced from 3→1 to save ~40-60MB (each AVPlayer buffers 10-30MB)
+    private var recentlyPlayedBuffers: [(trackId: UUID, player: AVPlayer, timeObserver: Any?)] = []
+    private var maxRecentBuffers = 1  // Dynamic - reduced under memory pressure
+    private let defaultMaxRecentBuffers = 1
+    private let emergencyMaxRecentBuffers = 0  // No cache under memory pressure
 
     /// Memory pressure level tracking for cache decisions
     private var isUnderMemoryPressure: Bool = false
@@ -173,6 +173,10 @@ class AudioEngine: ObservableObject {
     private var progressTimer: Timer?
     private var sleepTimerInstance: Timer?
     private var fadeTimer: Timer?
+
+    // MARK: - Notification Observers (MEMORY FIX 0030)
+    /// Stored observer tokens for proper cleanup
+    private var notificationObservers: [Any] = []
 
     // MARK: - Settings
     private let maxSafeVolume: Float = 1.0 // Full system volume
@@ -308,9 +312,10 @@ class AudioEngine: ObservableObject {
     }
 
     private func setupNotifications() {
-        // CRITICAL FIX: Use DispatchQueue.main.async instead of Task { @MainActor }
-        // to avoid "Publishing changes from within view updates" warnings
-        NotificationCenter.default.addObserver(
+        // MEMORY FIX (0030): Store observer tokens for proper cleanup
+        let nc = NotificationCenter.default
+
+        notificationObservers.append(nc.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: nil,
             queue: .main
@@ -318,9 +323,9 @@ class AudioEngine: ObservableObject {
             DispatchQueue.main.async {
                 self?.handleInterruption(notification)
             }
-        }
+        })
 
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(nc.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
             queue: .main
@@ -328,10 +333,9 @@ class AudioEngine: ObservableObject {
             DispatchQueue.main.async {
                 self?.handleRouteChange(notification)
             }
-        }
+        })
 
-        // MEMORY OPTIMIZATION (Increment 0022): Clean up on memory warnings
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(nc.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
@@ -340,26 +344,23 @@ class AudioEngine: ObservableObject {
                 print("[AudioEngine] ⚠️ Memory warning received - cleaning up")
                 self?.cleanup()
             }
-        }
+        })
 
-        // MEMORY OPTIMIZATION (Increment 0022, Enhanced 0029): Respond to MemoryMonitor cleanup requests
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(nc.addObserver(
             forName: NSNotification.Name("MemoryCleanupRequested"),
             object: nil,
             queue: .main
         ) { [weak self] notification in
             DispatchQueue.main.async {
                 if let level = notification.userInfo?["level"] as? String {
-                    // Use aggressive cleanup for critical and emergency levels
                     let isAggressive = (level == "critical" || level == "emergency")
                     print("[AudioEngine] 🧹 Memory cleanup requested (\(level), aggressive: \(isAggressive))")
                     self?.cleanup(aggressive: isAggressive)
                 }
             }
-        }
+        })
 
-        // MEMORY OPTIMIZATION (Increment 0029): Restore normal limits when memory stabilizes
-        NotificationCenter.default.addObserver(
+        notificationObservers.append(nc.addObserver(
             forName: NSNotification.Name("MemoryPressureNormalized"),
             object: nil,
             queue: .main
@@ -367,7 +368,7 @@ class AudioEngine: ObservableObject {
             DispatchQueue.main.async {
                 self?.restoreNormalCacheLimits()
             }
-        }
+        })
     }
 
     // MARK: - Playback Control
@@ -1790,6 +1791,10 @@ class AudioEngine: ObservableObject {
             let cached = recentlyPlayedBuffers.remove(at: index)
             recentlyPlayedBuffers.append(cached)
             print("[AudioEngine] 🎯 LRU cache HIT for track \(trackId)")
+            // Restore the time observer reference so cleanup works properly
+            if cached.timeObserver != nil {
+                timeObserver = cached.timeObserver
+            }
             return cached.player
         }
         print("[AudioEngine] ❌ LRU cache MISS for track \(trackId)")
@@ -1802,23 +1807,31 @@ class AudioEngine: ObservableObject {
     ///   - player: AVPlayer instance
     private func cacheBuffer(trackId: UUID, player: AVPlayer) {
         // MEMORY OPTIMIZATION (Increment 0029): Skip caching during memory pressure
-        if isUnderMemoryPressure {
-            print("[AudioEngine] ⏭️ Skipping cache - under memory pressure")
+        if isUnderMemoryPressure || maxRecentBuffers <= 0 {
+            print("[AudioEngine] ⏭️ Skipping cache - under memory pressure or cache disabled")
             return
         }
 
         // Remove if already exists (to update position)
         if let index = recentlyPlayedBuffers.firstIndex(where: { $0.trackId == trackId }) {
-            recentlyPlayedBuffers.remove(at: index)
+            let old = recentlyPlayedBuffers.remove(at: index)
+            // Clean up the old time observer if it exists
+            if let observer = old.timeObserver {
+                old.player.removeTimeObserver(observer)
+            }
         }
 
-        // Add to end (most recent)
-        recentlyPlayedBuffers.append((trackId: trackId, player: player))
+        // Add to end (most recent) - capture current time observer
+        recentlyPlayedBuffers.append((trackId: trackId, player: player, timeObserver: timeObserver))
 
         // Evict oldest if over limit (use autoreleasepool for immediate deallocation)
         autoreleasepool {
             while recentlyPlayedBuffers.count > maxRecentBuffers {
                 let evicted = recentlyPlayedBuffers.removeFirst()
+                // MEMORY FIX (0030): Remove time observer to prevent leak
+                if let observer = evicted.timeObserver {
+                    evicted.player.removeTimeObserver(observer)
+                }
                 // Clean up evicted player thoroughly
                 evicted.player.pause()
                 if let currentItem = evicted.player.currentItem {
@@ -1841,6 +1854,10 @@ class AudioEngine: ObservableObject {
         let count = recentlyPlayedBuffers.count
         autoreleasepool {
             for cached in recentlyPlayedBuffers {
+                // MEMORY FIX (0030): Remove time observer to prevent leak
+                if let observer = cached.timeObserver {
+                    cached.player.removeTimeObserver(observer)
+                }
                 cached.player.pause()
                 if let currentItem = cached.player.currentItem {
                     NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: currentItem)
@@ -1863,7 +1880,7 @@ class AudioEngine: ObservableObject {
         var clearedCount = 0
 
         autoreleasepool {
-            var buffersToKeep: [(trackId: UUID, player: AVPlayer)] = []
+            var buffersToKeep: [(trackId: UUID, player: AVPlayer, timeObserver: Any?)] = []
 
             for cached in recentlyPlayedBuffers {
                 if keepCurrent && cached.trackId == currentTrackId {
@@ -1871,6 +1888,10 @@ class AudioEngine: ObservableObject {
                     buffersToKeep.append(cached)
                     keptCount += 1
                 } else {
+                    // MEMORY FIX (0030): Remove time observer to prevent leak
+                    if let observer = cached.timeObserver {
+                        cached.player.removeTimeObserver(observer)
+                    }
                     // Release this buffer
                     cached.player.pause()
                     if let currentItem = cached.player.currentItem {
@@ -2106,11 +2127,12 @@ class AudioEngine: ObservableObject {
                     oldPlayerNode?.stop()
                     oldNoiseGenerator?.stop()
 
-                    // Clean up old stream player that was being faded out
+                    // MEMORY FIX (0030): Clean up old stream player thoroughly
                     if let oldStreamObserver = self.crossfadeOldTimeObserver {
                         self.crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
                     }
                     self.crossfadeOldStreamPlayer?.pause()
+                    self.crossfadeOldStreamPlayer?.replaceCurrentItem(with: nil)
                     self.crossfadeOldStreamPlayer = nil
                     self.crossfadeOldTimeObserver = nil
 
@@ -2149,11 +2171,12 @@ class AudioEngine: ObservableObject {
         fadeTimer?.invalidate()
         fadeTimer = nil
 
-        // Stop and clean up the OLD stream player (the one being faded out)
+        // MEMORY FIX (0030): Thoroughly clean up the OLD stream player (fading out)
         if let oldStreamObserver = crossfadeOldTimeObserver {
             crossfadeOldStreamPlayer?.removeTimeObserver(oldStreamObserver)
         }
         crossfadeOldStreamPlayer?.pause()
+        crossfadeOldStreamPlayer?.replaceCurrentItem(with: nil)
         crossfadeOldStreamPlayer = nil
         crossfadeOldTimeObserver = nil
 

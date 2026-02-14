@@ -47,18 +47,28 @@ final class WatchSyncManager: NSObject, ObservableObject {
         observeFavorites()
     }
 
+    // MEMORY FIX (0030): Combined readiness check to prevent spam on unpaired devices
+    private var isReadyToSync: Bool {
+        guard let session = session,
+              session.activationState == .activated,
+              session.isPaired else { return false }
+        return true
+    }
+
     /// Observe favorites changes and auto-sync to Watch
     private func observeFavorites() {
         FavoritesManager.shared.$favoriteTracks
             .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.syncFavoritesFromManager()
+                guard let self = self, self.isReadyToSync else { return }
+                self.syncFavoritesFromManager()
             }
             .store(in: &cancellables)
     }
 
     /// Sync current favorites to Watch
     func syncFavoritesFromManager() {
+        guard isReadyToSync else { return }
         let favorites = FavoritesManager.shared.getFavoriteTracks()
         let watchTracks = favorites.map { $0.toWatchTrack() }
         syncFavorites(watchTracks)
@@ -81,10 +91,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
 
     /// Sync current playback state to watch
     func syncPlaybackState(_ state: PlaybackState) {
-        guard let session = session, session.activationState == .activated else {
-            print("[WatchSync] Cannot sync - session not activated")
-            return
-        }
+        guard isReadyToSync, let session = session else { return }
 
         do {
             let data = try JSONEncoder().encode(state)
@@ -102,10 +109,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
 
     /// Sync favorites list to watch (metadata only, files transferred separately)
     func syncFavorites(_ favorites: [WatchTrack]) {
-        guard let session = session, session.activationState == .activated else {
-            print("[WatchSync] Cannot sync favorites - session not activated")
-            return
-        }
+        guard isReadyToSync, let session = session else { return }
 
         // Limit to 20 tracks for watch storage
         let limitedFavorites = Array(favorites.prefix(20))
@@ -125,10 +129,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
 
     /// Transfer audio file to watch
     func transferAudioFile(trackId: String, fileURL: URL, metadata: WatchTrack) {
-        guard let session = session, session.activationState == .activated else {
-            print("[WatchSync] Cannot transfer - session not activated")
-            return
-        }
+        guard isReadyToSync, let session = session else { return }
 
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             print("[WatchSync] File does not exist: \(fileURL.path)")
@@ -289,10 +290,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
         }
         lastLibrarySyncTime = now
 
-        guard let session = session, session.activationState == .activated else {
-            print("[WatchSync] Cannot sync library - session not activated")
-            return
-        }
+        guard isReadyToSync, let session = session else { return }
 
         let library = ContentLibraryService.shared
 
@@ -457,9 +455,9 @@ extension WatchSyncManager: WCSessionDelegate {
                 print("[WatchSync] Activation failed: \(error)")
             } else {
                 print("[WatchSync] Activation complete: \(activationState.rawValue)")
-                if activationState == .activated {
+                if activationState == .activated && session.isPaired {
                     self.sendCurrentState()
-                    self.syncLibraryState()  // Sync library on activation
+                    self.syncLibraryState()
                 }
             }
         }
@@ -480,9 +478,9 @@ extension WatchSyncManager: WCSessionDelegate {
             self.isWatchReachable = session.isReachable
             print("[WatchSync] Reachability changed: \(session.isReachable)")
 
-            if session.isReachable {
+            if session.isReachable && session.isPaired {
                 self.sendCurrentState()
-                self.syncLibraryState()  // Sync library when Watch reconnects
+                self.syncLibraryState()
             }
         }
     }

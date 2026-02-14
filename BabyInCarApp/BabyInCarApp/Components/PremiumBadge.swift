@@ -91,7 +91,7 @@ struct TrackCardWithBadge: View {
     let showBadge: Bool
     let onTap: () -> Void
 
-    @StateObject private var gatekeeper = FreemiumGatekeeper.shared
+    @ObservedObject private var gatekeeper = FreemiumGatekeeper.shared
 
     var body: some View {
         Button(action: onTap) {

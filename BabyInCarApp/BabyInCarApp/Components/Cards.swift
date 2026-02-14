@@ -155,7 +155,7 @@ struct TrackCardView: View {
     var showEffectiveness: Bool = true
     var onFavoriteToggle: (() -> Void)?
 
-    @StateObject private var effectivenessManager = EffectivenessManager.shared
+    @ObservedObject private var effectivenessManager = EffectivenessManager.shared
     @State private var showingEffectivenessDetail = false
 
     private var effectiveness: TrackEffectiveness? {

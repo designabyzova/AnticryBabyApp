@@ -142,10 +142,10 @@ class CryClassificationService: ObservableObject {
 
     // MARK: - Initialization
 
+    // MEMORY FIX (0030): Don't load model eagerly on init - saves ~5MB when cry detection is off
+    // Model loads lazily on first classify() call (~45ms)
     private init() {
-        Task {
-            await loadModel()
-        }
+        // Model loaded on demand via ensureModelLoaded()
     }
 
     // MARK: - Model Management
@@ -248,6 +248,10 @@ class CryClassificationService: ObservableObject {
     /// - Parameter audioSamples: Array of 15600 Float audio samples at 16kHz
     /// - Returns: Classification result with cry type and confidence
     func classify(audioSamples: [Float]) async throws -> CryClassificationResult {
+        // MEMORY FIX (0030): Lazy model loading - loads on first classify() call
+        if model == nil {
+            await loadModel()
+        }
         guard let model = model else {
             throw CryClassificationError.modelNotLoaded
         }

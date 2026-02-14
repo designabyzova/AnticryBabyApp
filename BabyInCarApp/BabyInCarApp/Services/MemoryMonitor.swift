@@ -50,16 +50,17 @@ class MemoryMonitor: ObservableObject {
         }
     }
 
+    // MARK: - Callbacks (MEMORY FIX 0030: Merged from MemoryPressureMonitor)
+    var onWarningLevel: (() -> Void)?
+    var onCriticalLevel: (() -> Void)?
+    var onEmergencyLevel: (() -> Void)?
+
     // MARK: - Private Properties
 
     private var timer: Timer?
     private let logger = Logger(subsystem: "com.anticry.babyincar", category: "MemoryMonitor")
 
-    // Memory thresholds (in MB) - FIXED for realistic iOS limits
-    // iOS typically allows 150-300MB for foreground media apps with ML features
-    // Previous thresholds (80/90/100) were FAR too aggressive and disabled ML features
-    // when the app was operating perfectly normally!
-    // These thresholds match MemoryPressureMonitor.swift for consistency
+    // Memory thresholds (in MB)
     private let normalThreshold: Double = 150.0
     private let warningThreshold: Double = 180.0
     private let criticalThreshold: Double = 220.0
@@ -68,6 +69,33 @@ class MemoryMonitor: ObservableObject {
 
     private init() {
         logger.info("MemoryMonitor initialized")
+        setupSystemMemoryWarningObserver()
+    }
+
+    /// Listen for iOS system memory warnings (merged from MemoryPressureMonitor)
+    private func setupSystemMemoryWarningObserver() {
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.handleSystemMemoryWarning()
+            }
+        }
+    }
+
+    private func handleSystemMemoryWarning() {
+        let memoryMB = getMemoryUsageMB()
+        logger.fault("🚨 SYSTEM MEMORY WARNING received! Current usage: \(Int(memoryMB))MB")
+        warningLevel = .emergency
+        currentMemoryMB = memoryMB
+        onEmergencyLevel?()
+        NotificationCenter.default.post(
+            name: NSNotification.Name("MemoryCleanupRequested"),
+            object: nil,
+            userInfo: ["level": "emergency", "memoryMB": memoryMB, "source": "SystemWarning"]
+        )
     }
 
     // MARK: - Public Methods
@@ -142,7 +170,6 @@ class MemoryMonitor: ObservableObject {
         switch currentMemoryMB {
         case 0..<normalThreshold:
             warningLevel = .normal
-            // MEMORY OPTIMIZATION (Increment 0029): Notify when returning to normal
             if previousLevel != .normal && previousLevel != .warning {
                 notifyMemoryNormalized()
             }
@@ -151,8 +178,8 @@ class MemoryMonitor: ObservableObject {
             warningLevel = .warning
             if previousLevel != .warning {
                 logWarning()
+                onWarningLevel?()
             }
-            // Notify if coming down from critical/emergency
             if previousLevel == .critical || previousLevel == .emergency {
                 notifyMemoryNormalized()
             }
@@ -161,12 +188,14 @@ class MemoryMonitor: ObservableObject {
             warningLevel = .critical
             if previousLevel != .critical {
                 triggerAutoCleanup()
+                onCriticalLevel?()
             }
 
         default: // >= criticalThreshold
             warningLevel = .emergency
             if previousLevel != .emergency {
                 triggerAggressiveCleanup()
+                onEmergencyLevel?()
             }
         }
     }

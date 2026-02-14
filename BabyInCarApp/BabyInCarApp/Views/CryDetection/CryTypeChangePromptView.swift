@@ -163,7 +163,7 @@ struct CryTypeChangePromptView: View {
 /// Modifier to show cry type change prompt as an overlay
 struct CryTypeChangePromptOverlay: ViewModifier {
 
-    @StateObject private var changeDetector = CryTypeChangeDetector.shared
+    @ObservedObject private var changeDetector = CryTypeChangeDetector.shared
     @State private var isShowing: Bool = false
     @State private var detectedNewType: CryType = .unknown
     @State private var detectedConfidence: Double = 0.0
@@ -224,7 +224,7 @@ extension View {
 /// Shows progress toward cry type change detection (optional)
 struct CryTypeChangeProgressView: View {
 
-    @StateObject private var changeDetector = CryTypeChangeDetector.shared
+    @ObservedObject private var changeDetector = CryTypeChangeDetector.shared
 
     var body: some View {
         if let newType = changeDetector.potentialNewType,

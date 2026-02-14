@@ -10,7 +10,7 @@ import SwiftUI
 
 struct CryStopPromptView: View {
 
-    @StateObject private var autoDetector = CryStopAutoDetector.shared
+    @ObservedObject private var autoDetector = CryStopAutoDetector.shared
     @Environment(\.colorScheme) private var colorScheme
 
     var onConfirm: () -> Void
@@ -95,7 +95,7 @@ struct CryStopPromptView: View {
 /// Modifier to show cry stop prompt as an overlay
 struct CryStopPromptOverlay: ViewModifier {
 
-    @StateObject private var autoDetector = CryStopAutoDetector.shared
+    @ObservedObject private var autoDetector = CryStopAutoDetector.shared
     @State private var isShowing: Bool = false
 
     func body(content: Content) -> some View {
@@ -143,7 +143,7 @@ extension View {
 /// Shows progress toward cry stop detection (optional, for debugging/premium)
 struct CryStopProgressView: View {
 
-    @StateObject private var autoDetector = CryStopAutoDetector.shared
+    @ObservedObject private var autoDetector = CryStopAutoDetector.shared
 
     var body: some View {
         if autoDetector.isInQuietPeriod && !autoDetector.shouldShowPrompt {

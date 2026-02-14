@@ -11,7 +11,7 @@ import SwiftUI
 /// Shows audio waveform, detection progress, and identified cry type
 /// No playlist actions - just detection display
 struct CryDetectionTabView: View {
-    @StateObject private var viewModel = CryDetectionViewModel.shared
+    @ObservedObject private var viewModel = CryDetectionViewModel.shared
     @State private var isActive = false
 
     var body: some View {
