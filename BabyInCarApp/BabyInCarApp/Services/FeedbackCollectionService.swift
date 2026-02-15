@@ -90,6 +90,7 @@ class FeedbackCollectionService: ObservableObject {
         let entry = PlayedTrackEntry(
             trackId: track.id,
             title: track.title,
+            category: track.category,
             startedAt: Date()
         )
 
@@ -131,11 +132,10 @@ class FeedbackCollectionService: ObservableObject {
 
         // Record effectiveness for each track
         for trackEntry in recentTracks {
-            // Create a minimal AudioTrack for the effectiveness manager
             let track = AudioTrack(
                 id: trackEntry.trackId,
                 title: trackEntry.title,
-                category: .lullabies,
+                category: trackEntry.category,
                 duration: 180,
                 audioSourceType: .streamed
             )
@@ -162,7 +162,7 @@ class FeedbackCollectionService: ObservableObject {
             let track = AudioTrack(
                 id: lastTrack.trackId,
                 title: lastTrack.title,
-                category: .lullabies,
+                category: lastTrack.category,
                 duration: 180,
                 audioSourceType: .streamed
             )
@@ -191,16 +191,17 @@ class FeedbackCollectionService: ObservableObject {
                 let track = AudioTrack(
                     id: trackEntry.trackId,
                     title: trackEntry.title,
-                    category: .lullabies,
+                    category: trackEntry.category,
                     duration: 180,
                     audioSourceType: .streamed
                 )
 
-                // Use lower confidence weight for auto-detected
+                // Record with actual play duration (auto-detect vs manual distinction
+                // is already captured in session outcome)
                 effectivenessManager.recordHelped(
                     track: track,
                     cryType: session.cryType,
-                    playDuration: (trackEntry.playDuration ?? 0) * Self.autoDetectConfidenceWeight
+                    playDuration: trackEntry.playDuration
                 )
             }
 
@@ -288,14 +289,27 @@ struct PlayedTrackEntry: Codable, Identifiable {
     let id: UUID
     let trackId: UUID
     let title: String
+    let category: AudioCategory
     let startedAt: Date
     var endedAt: Date?
 
-    init(trackId: UUID, title: String, startedAt: Date) {
+    init(trackId: UUID, title: String, category: AudioCategory, startedAt: Date) {
         self.id = UUID()
         self.trackId = trackId
         self.title = title
+        self.category = category
         self.startedAt = startedAt
+    }
+
+    // Backwards-compatible decoding (old data may lack "category")
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        trackId = try container.decode(UUID.self, forKey: .trackId)
+        title = try container.decode(String.self, forKey: .title)
+        category = try container.decodeIfPresent(AudioCategory.self, forKey: .category) ?? .lullabies
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endedAt = try container.decodeIfPresent(Date.self, forKey: .endedAt)
     }
 
     var playDuration: TimeInterval? {

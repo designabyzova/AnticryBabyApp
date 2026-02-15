@@ -34,9 +34,9 @@ struct CryClassificationServiceTests {
         #expect(duration == Double(15600) / 16000.0)
     }
 
-    @Test("Minimum confidence threshold is 70%")
+    @Test("Minimum confidence threshold is 40%")
     func confidenceThreshold() async {
-        #expect(CryClassificationService.minimumConfidenceThreshold == 0.70)
+        #expect(CryClassificationService.minimumConfidenceThreshold == 0.40)
     }
 
     // MARK: - State Tests

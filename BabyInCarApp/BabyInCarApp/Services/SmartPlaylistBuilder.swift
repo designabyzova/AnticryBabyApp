@@ -12,9 +12,7 @@ class SmartPlaylistBuilder {
     static let shared = SmartPlaylistBuilder()
 
     private let contentLibrary = ContentLibraryService.shared
-    private let ultraSmartSelector = UltraSmartPlaylistSelector.shared
     private let smartPlaylistGenerator = SmartPlaylistGenerator.shared
-    private let spotifyEngine = SpotifyQueueEngine.shared
     private let effectivenessManager = EffectivenessManager.shared
     private let favoritesManager = FavoritesManager.shared
 

@@ -3,7 +3,7 @@
   "name": "voice-interaction-car-mode",
   "title": "Voice Interaction & Car Drive Mode",
   "description": "Implements hands-free voice interaction for CarPlay and driving scenarios. Uses speech recognition (SFSpeechRecognizer) to listen for user responses when the app asks questions like 'Switch playlist?' or 'Did the music help?' - enabling safe, touch-free operation while driving.",
-  "status": "planning",
+  "status": "active",
   "createdAt": "2026-01-18T12:00:00Z",
   "updatedAt": "2026-01-18T12:00:00Z",
   "features": ["FS-030"],

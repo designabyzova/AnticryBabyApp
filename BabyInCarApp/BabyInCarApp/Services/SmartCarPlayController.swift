@@ -60,13 +60,22 @@ class SmartCarPlayController: ObservableObject {
 
         isActive = true
         statusMessage = "CarPlay Active"
-        speakFeedback("CarPlay mode activated")
+
+        // Update voice mode status and announce CarPlay connection
+        VoiceInteractionService.shared.updateVoiceModeStatus()
+        speakFeedback("CarPlay connected. Voice commands active.")
+
+        // Ensure the VoiceInteractionCoordinator is initialized and listening
+        _ = VoiceInteractionCoordinator.shared
     }
 
     func deactivate() {
         isActive = false
         currentVolumeMultiplier = 1.0
         statusMessage = "CarPlay Inactive"
+
+        // Update voice mode status after CarPlay disconnects
+        VoiceInteractionService.shared.updateVoiceModeStatus()
         speakFeedback("CarPlay mode deactivated")
     }
 

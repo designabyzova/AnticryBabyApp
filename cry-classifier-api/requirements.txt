@@ -12,9 +12,13 @@ numpy>=1.24.0
 scipy>=1.11.0
 soundfile>=0.12.1
 
+# ONNX Runtime for cross-platform model inference (no PyTorch dependency)
+onnxruntime>=1.16.0
+
 # Testing
 pytest>=7.4.0
+httpx>=0.25.0
 
-# Note: coremltools only works on macOS
-# If running locally on Mac and you have the DeepInfant .mlmodel file:
+# Note: coremltools only works on macOS (preferred backend)
+# If running locally on Mac with the DeepInfant .mlmodel file:
 # pip install coremltools>=7.0

@@ -1,14 +1,14 @@
 # DeepInfant V2 Integration - Tasks
 
 ## Overview
-Total Tasks: 32 | Completed: 0 | In Progress: 0 | Pending: 32
+Total Tasks: 32 | Completed: 22 | In Progress: 0 | Pending: 4 | Not Needed: 6
 
 ---
 
 ## Phase 1: Audio Preprocessing Foundation
 
 ### T-001: Create MelSpectrogramGenerator for iOS
-**User Story**: US-001 | **Satisfies ACs**: AC-US1-03, AC-US1-04, AC-US1-05, AC-US1-06 | **Status**: [ ] pending
+**User Story**: US-001 | **Satisfies ACs**: AC-US1-03, AC-US1-04, AC-US1-05, AC-US1-06 | **Status**: [x] completed (pre-existing, NOT used — model has internal VGGish preprocessing)
 **Test**: Given 7-second audio buffer → When generateMelSpectrogram() called → Then returns (80, 431) Float array normalized to [0,1]
 
 **Implementation**:
@@ -27,7 +27,7 @@ class MelSpectrogramGenerator {
 ```
 
 ### T-002: Implement FFT using Accelerate framework
-**User Story**: US-001 | **Satisfies ACs**: AC-US1-03 | **Status**: [ ] pending
+**User Story**: US-001 | **Satisfies ACs**: AC-US1-03 | **Status**: [x] completed (pre-existing in MelSpectrogramGenerator, not needed for current model)
 **Test**: Given 1024 samples → When FFT applied → Then returns 513 frequency bins
 
 **Implementation**:
@@ -36,11 +36,11 @@ class MelSpectrogramGenerator {
 - Apply windowing (Hann window)
 
 ### T-003: Create Mel Filterbank
-**User Story**: US-001 | **Satisfies ACs**: AC-US1-03, AC-US1-04 | **Status**: [ ] pending
+**User Story**: US-001 | **Satisfies ACs**: AC-US1-03, AC-US1-04 | **Status**: [x] completed (pre-existing, not needed for current model)
 **Test**: Given fMin=20Hz, fMax=8000Hz, 80 bands → When filterbank created → Then shape is (80, 513)
 
 ### T-004: Update Python backend preprocessing
-**User Story**: US-003 | **Satisfies ACs**: AC-US3-03 | **Status**: [ ] pending
+**User Story**: US-003 | **Satisfies ACs**: AC-US3-03 | **Status**: [x] completed (updated to 15,600 samples, 3-tier inference)
 **Test**: Given WAV file → When preprocessed → Then mel-spectrogram matches DeepInfant specs
 
 **Changes to `cry-classifier-api/main.py`**:
@@ -62,7 +62,7 @@ mel_spec = librosa.feature.melspectrogram(
 ```
 
 ### T-005: Create CircularAudioBuffer for iOS
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-01, AC-US4-02 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-01, AC-US4-02 | **Status**: [x] completed (pre-existing, now wired into AudioCaptureService)
 **Test**: Given continuous audio stream → When buffer fills → Then contains exactly 7 seconds in correct order
 
 **Implementation**:
@@ -80,7 +80,7 @@ class CircularAudioBuffer {
 ```
 
 ### T-006: Unit tests for audio preprocessing
-**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [ ] pending
+**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [x] completed (pre-existing tests for MelSpectrogramGenerator and CircularAudioBuffer)
 **Test**: All preprocessing unit tests pass
 
 **Test file**: `BabyInCarAppTests/Services/MelSpectrogramGeneratorTests.swift`
@@ -90,7 +90,7 @@ class CircularAudioBuffer {
 ## Phase 2: Model Integration
 
 ### T-007: Download and convert DeepInfant weights to CoreML
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-01 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-01 | **Status**: [N/A] not needed (model already bundled, built with Apple Create ML)
 **Test**: Given PyTorch/TF model → When converted with coremltools → Then .mlmodel validates
 
 **Steps**:
@@ -100,7 +100,7 @@ class CircularAudioBuffer {
 4. Validate output shape: (5,) probabilities
 
 ### T-008: Create CoreML model wrapper
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-02, AC-US2-03 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-02, AC-US2-03 | **Status**: [N/A] not needed (CryClassificationService already wraps model correctly)
 **Test**: Given mel-spectrogram input → When predict() called → Then returns 5 probabilities
 
 **Implementation**:
@@ -120,7 +120,7 @@ class DeepInfantModel {
 ```
 
 ### T-009: Load PyTorch model in Python backend
-**User Story**: US-003 | **Satisfies ACs**: AC-US3-01, AC-US3-06 | **Status**: [ ] pending
+**User Story**: US-003 | **Satisfies ACs**: AC-US3-01, AC-US3-06 | **Status**: [x] completed (3-tier: CoreML → ONNX → rule-based)
 **Test**: Given model weights file → When loaded → Then inference works
 
 **Implementation**:
@@ -140,13 +140,13 @@ async def load_model():
 ```
 
 ### T-010: Define DeepInfant CNN-LSTM architecture
-**User Story**: US-003 | **Satisfies ACs**: AC-US3-01 | **Status**: [ ] pending
+**User Story**: US-003 | **Satisfies ACs**: AC-US3-01 | **Status**: [N/A] not needed (model is VGGish CNN + GLM, not CNN-LSTM; ONNX converter created instead)
 **Test**: Given architecture definition → When instantiated → Then matches paper specs
 
 **File**: `cry-classifier-api/model.py`
 
 ### T-011: Replace mock model in iOS
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-01 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-01 | **Status**: [N/A] not needed (no mock model exists, real model already in use)
 **Test**: Given real CoreML model → When used instead of mock → Then inference returns valid results
 
 **Changes**:
@@ -155,7 +155,7 @@ async def load_model():
 - Update sample count to 112,000
 
 ### T-012: Add model weights to app bundle
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-02 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-02 | **Status**: [N/A] not needed (model already bundled at 5.1MB)
 **Test**: Given .mlmodel file → When added to Xcode → Then builds and loads at runtime
 
 ---
@@ -163,7 +163,7 @@ async def load_model():
 ## Phase 3: Cry Type Mapping & Integration
 
 ### T-013: Create ActionCategory enum
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-06 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-06 | **Status**: [x] completed (pre-existing in ActionCategory.swift)
 **Test**: Given model output → When mapped → Then returns correct ActionCategory
 
 **Implementation**:
@@ -192,7 +192,7 @@ enum ActionCategory: String {
 ```
 
 ### T-014: Update CryClassificationService
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-05 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-05 | **Status**: [x] completed (added ActionCategory bridge + memory pressure handling)
 **Test**: Given audio stream → When processed → Then returns CryResult with type and category
 
 **Changes to `CryClassificationService.swift`**:
@@ -202,7 +202,7 @@ enum ActionCategory: String {
 - Return both raw `DeepInfantCryType` and `ActionCategory`
 
 ### T-015: Create playlist mapping service
-**User Story**: US-002 | **Satisfies ACs**: AC-US2-06 | **Status**: [ ] pending
+**User Story**: US-002 | **Satisfies ACs**: AC-US2-06 | **Status**: [x] completed (pre-existing CryResponsePlaylist in ActionCategory.swift)
 **Test**: Given ActionCategory → When requested → Then returns appropriate playlist
 
 **Implementation**:
@@ -219,7 +219,7 @@ class CryResponsePlaylistService {
 ```
 
 ### T-016: Update Python API response format
-**User Story**: US-003 | **Satisfies ACs**: AC-US3-04, AC-US3-05 | **Status**: [ ] pending
+**User Story**: US-003 | **Satisfies ACs**: AC-US3-04, AC-US3-05 | **Status**: [x] completed (5 probabilities + action_category + model_used)
 **Test**: Given classification result → When formatted → Then includes 5 probabilities and action_category
 
 **Response format**:
@@ -244,11 +244,11 @@ class CryResponsePlaylistService {
 ## Phase 4: Memory Optimization
 
 ### T-017: Implement memory-efficient audio capture
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-01, AC-US4-02 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-01, AC-US4-02 | **Status**: [x] completed (CircularAudioBuffer wired into AudioCaptureService, zero-copy append)
 **Test**: Given 1 hour monitoring → When profiled → Then memory constant at ~2MB for buffer
 
 ### T-018: Add memory pressure handling
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-03 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-03 | **Status**: [x] completed (3-level: warning/critical/emergency in CryClassificationService)
 **Test**: Given low memory warning → When received → Then non-critical caches released
 
 ```swift
@@ -261,11 +261,11 @@ NotificationCenter.default.addObserver(
 ```
 
 ### T-019: Implement lazy model loading
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-03 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-03 | **Status**: [x] completed (pre-existing: loads on first classify(), unloads on stop)
 **Test**: Given app launch → When model not needed → Then model not loaded until first use
 
 ### T-020: Add background audio capture
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-05 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-05 | **Status**: [x] completed (UIBackgroundModes: audio, fetch, processing already in Info.plist)
 **Test**: Given app in background → When cry detected → Then notification sent
 
 **Requirements**:
@@ -273,7 +273,7 @@ NotificationCenter.default.addObserver(
 - Low-power audio session configuration
 
 ### T-021: Memory profiling with Instruments
-**User Story**: US-004 | **Satisfies ACs**: AC-US4-03, AC-US4-04 | **Status**: [ ] pending
+**User Story**: US-004 | **Satisfies ACs**: AC-US4-03, AC-US4-04 | **Status**: [ ] pending (manual verification needed)
 **Test**: Given 1-hour stress test → When profiled → Then no memory leaks, peak < 100MB
 
 ---
@@ -281,15 +281,15 @@ NotificationCenter.default.addObserver(
 ## Phase 5: Testing Suite
 
 ### T-022: Create unit tests for MelSpectrogramGenerator
-**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [ ] pending
+**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [x] completed (pre-existing: 180 lines, 8 test groups)
 **Test**: All mel-spectrogram unit tests pass
 
 ### T-023: Create unit tests for DeepInfantModel
-**User Story**: US-005 | **Satisfies ACs**: AC-US5-02 | **Status**: [ ] pending
+**User Story**: US-005 | **Satisfies ACs**: AC-US5-02 | **Status**: [x] completed (pre-existing: CryClassificationServiceTests 283 lines)
 **Test**: All model inference tests pass with mock inputs
 
 ### T-024: Create integration tests for CryClassificationService
-**User Story**: US-005 | **Satisfies ACs**: AC-US5-03 | **Status**: [ ] pending
+**User Story**: US-005 | **Satisfies ACs**: AC-US5-03 | **Status**: [ ] pending (needs test audio files)
 **Test**: Given test audio files → When classified → Then correct types returned
 
 ### T-025: Download donateacry-corpus test files
@@ -324,7 +324,7 @@ appId: com.anticry.babyincar
 ```
 
 ### T-028: Python API unit tests
-**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [ ] pending
+**User Story**: US-005 | **Satisfies ACs**: AC-US5-01 | **Status**: [x] completed (63 tests passing)
 **Test**: All preprocessing and inference tests pass
 
 ```python
@@ -344,7 +344,7 @@ def test_mel_spectrogram_shape():
 ## Phase 6: Documentation & Polish
 
 ### T-030: Update CLAUDE.md with DeepInfant specs
-**User Story**: - | **Satisfies ACs**: - | **Status**: [ ] pending
+**User Story**: - | **Satisfies ACs**: - | **Status**: [ ] pending (needs update with correct model architecture)
 **Test**: Documentation reflects actual implementation
 
 ### T-031: Create API documentation

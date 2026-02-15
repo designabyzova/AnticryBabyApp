@@ -85,6 +85,9 @@ class CryTypeChangeDetector: ObservableObject {
     /// Whether a change prompt should be shown
     @Published private(set) var shouldShowChangePrompt: Bool = false
 
+    /// Agreement level when change was confirmed (actual confidence)
+    @Published private(set) var confirmedAgreement: Double = 0.0
+
     /// Whether detection is paused (after rejection)
     @Published private(set) var isPaused: Bool = false
 
@@ -321,6 +324,7 @@ class CryTypeChangeDetector: ObservableObject {
 
     private func confirmChange(newType: CryType, confidence: Double) {
         shouldShowChangePrompt = true
+        confirmedAgreement = confidence
 
         eventPublisher.send(.changeConfirmed(from: currentCryType, to: newType, confidence: confidence))
 

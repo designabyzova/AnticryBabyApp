@@ -327,37 +327,41 @@ class EffectivenessSyncService: ObservableObject {
         // Group by track ID
         let groupedByTrack = Dictionary(grouping: cloudRecords) { $0.trackId }
 
+        var mergedData: [UUID: TrackEffectiveness] = [:]
+
         for (trackIdString, records) in groupedByTrack {
             guard let trackId = UUID(uuidString: trackIdString) else { continue }
 
             // Get or create local effectiveness data
             var localData = effectivenessManager.effectivenessData[trackId]
-
-            if localData == nil {
-                localData = TrackEffectiveness(trackId: trackId)
-            }
+                ?? TrackEffectiveness(trackId: trackId)
 
             // Merge each cry-type record
             for record in records {
-                var stats = localData!.cryTypeBreakdown[record.cryType] ?? CryTypeStats()
+                var stats = localData.cryTypeBreakdown[record.cryType] ?? CryTypeStats()
 
                 // Take the maximum of local and cloud counts (simple conflict resolution)
                 stats.helpedCount = max(stats.helpedCount, record.helpedCount)
                 stats.totalCount = max(stats.totalCount, record.helpedCount + record.notHelpedCount)
 
-                localData!.cryTypeBreakdown[record.cryType] = stats
+                localData.cryTypeBreakdown[record.cryType] = stats
             }
 
             // Recalculate totals from breakdown
-            let totalHelped = localData!.cryTypeBreakdown.values.reduce(0) { $0 + $1.helpedCount }
-            let totalPlays = localData!.cryTypeBreakdown.values.reduce(0) { $0 + $1.totalCount }
+            let totalHelped = localData.cryTypeBreakdown.values.reduce(0) { $0 + $1.helpedCount }
+            let totalPlays = localData.cryTypeBreakdown.values.reduce(0) { $0 + $1.totalCount }
 
-            localData!.helpedCount = max(localData!.helpedCount, totalHelped)
-            localData!.totalPlays = max(localData!.totalPlays, totalPlays)
+            localData.helpedCount = max(localData.helpedCount, totalHelped)
+            localData.totalPlays = max(localData.totalPlays, totalPlays)
 
-            // Note: Can't update effectivenessManager directly as it's read-only
-            // This would need EffectivenessManager to expose a merge method
+            mergedData[trackId] = localData
             print("[EffectivenessSync] 📥 Merged data for track: \(trackId)")
+        }
+
+        // Persist merged data via EffectivenessManager
+        if !mergedData.isEmpty {
+            effectivenessManager.mergeEffectivenessData(mergedData)
+            print("[EffectivenessSync] 💾 Saved \(mergedData.count) merged records")
         }
     }
 }

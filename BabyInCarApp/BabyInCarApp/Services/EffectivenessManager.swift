@@ -117,8 +117,12 @@ class EffectivenessManager: ObservableObject {
     ///   - track: The audio track that didn't help
     ///   - cryType: Optional cry type if detected
     func recordDidNotHelp(track: AudioTrack, cryType: CryType? = nil) {
-        // Only record if we have existing data for this track
-        guard effectivenessData[track.id] != nil else { return }
+        // Ensure track has an entry (create if first time)
+        if effectivenessData[track.id] == nil {
+            var effectiveness = TrackEffectiveness(trackId: track.id)
+            effectiveness.recordPlay(cryType: cryType)
+            effectivenessData[track.id] = effectiveness
+        }
 
         let record = EffectivenessFeedbackRecord(
             trackId: track.id,
@@ -291,6 +295,17 @@ class EffectivenessManager: ObservableObject {
     /// Get total "It Helped!" count
     var totalHelpedCount: Int {
         return effectivenessData.values.reduce(0) { $0 + $1.helpedCount }
+    }
+
+    // MARK: - Merge Methods (for cloud sync)
+
+    /// Merge cloud effectiveness data into local store
+    /// Used by EffectivenessSyncService after pulling from cloud
+    func mergeEffectivenessData(_ mergedData: [UUID: TrackEffectiveness]) {
+        for (trackId, cloudData) in mergedData {
+            effectivenessData[trackId] = cloudData
+        }
+        saveData()
     }
 
     // MARK: - Reset Methods

@@ -1,0 +1,74 @@
+appId: com.babyincar.app
+---
+# FS-030 T-023: Voice & Hands-Free Settings E2E Flow
+# Verifies voice interaction settings are accessible and toggleable
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load
+- waitForAnimationToEnd
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+- waitForAnimationToEnd
+
+# Scroll down to find Voice & Hands-Free setting under Audio Settings
+- scrollUntilVisible:
+    element: "Voice & Hands-Free"
+    direction: DOWN
+    timeout: 10000
+
+# Tap to enter Voice & Hands-Free settings
+- tapOn: "Voice & Hands-Free"
+- waitForAnimationToEnd
+
+# Verify settings view loaded with expected toggles
+- assertVisible: "Enable Hands-Free Mode"
+- assertVisible: "Voice Prompts"
+- assertVisible: "Voice Responses"
+
+# Scroll to see CarPlay section
+- scrollUntilVisible:
+    element: "Auto-enable in CarPlay"
+    direction: DOWN
+    timeout: 5000
+- assertVisible: "Auto-enable in CarPlay"
+
+# Voice Volume should be visible since Voice Responses is on by default
+- scrollUntilVisible:
+    element: "Voice Volume"
+    direction: UP
+    timeout: 5000
+- assertVisible: "Voice Volume"
+
+# Take screenshot of initial state
+- takeScreenshot: "voice_settings_initial"
+
+# Scroll back to top to toggle hands-free mode
+- scrollUntilVisible:
+    element: "Enable Hands-Free Mode"
+    direction: UP
+    timeout: 5000
+
+# Toggle Hands-Free Mode ON
+- tapOn:
+    id: "handsFreeModeToggle"
+- waitForAnimationToEnd
+- takeScreenshot: "voice_settings_handsfree_enabled"
+
+# Toggle Hands-Free Mode OFF
+- tapOn:
+    id: "handsFreeModeToggle"
+- waitForAnimationToEnd
+- takeScreenshot: "voice_settings_handsfree_disabled"
+
+# Verify Permissions section is visible
+- scrollUntilVisible:
+    element: "Configure Speech Recognition"
+    direction: DOWN
+    timeout: 5000
+- assertVisible: "Configure Speech Recognition"
+
+# Take final screenshot
+- takeScreenshot: "voice_settings_complete"

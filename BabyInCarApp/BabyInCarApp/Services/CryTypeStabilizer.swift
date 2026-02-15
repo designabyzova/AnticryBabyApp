@@ -314,6 +314,8 @@ class CryTypeStabilizer: ObservableObject {
         print("[CryTypeStabilizer] ⚠️ Stability lost")
 
         isStable = false
+        stableCryType = .unknown
+        stableConfidence = 0.0
         stabilityStartTime = nil
         changeDetectionStartTime = nil
         potentialNewType = nil

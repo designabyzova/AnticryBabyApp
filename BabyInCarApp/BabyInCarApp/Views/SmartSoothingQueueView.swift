@@ -29,6 +29,15 @@ struct SmartSoothingQueueView: View {
     @State private var animateHeart = false
     @State private var currentCryType: CryType
 
+    /// Baby age in months, read from persisted baby profile
+    private var babyAge: Int {
+        if let babyData = UserDefaults.standard.data(forKey: "currentBaby"),
+           let baby = try? JSONDecoder().decode(Baby.self, from: babyData) {
+            return baby.ageInMonths
+        }
+        return 6
+    }
+
     init(cryType: CryType, confidence: Double) {
         self.cryType = cryType
         self.confidence = confidence
@@ -95,7 +104,7 @@ struct SmartSoothingQueueView: View {
         }
         .onAppear {
             // Start feedback session
-            feedbackService.startSession(cryType: cryType, babyAge: 6)
+            feedbackService.startSession(cryType: cryType, babyAge: babyAge)
             // Start auto-detection
             autoDetector.startMonitoring()
             // Start cry type change detection
@@ -123,14 +132,11 @@ struct SmartSoothingQueueView: View {
         currentCryType = newType
 
         // Update feedback session for new cry type
-        let babyAge = 6 // Default age in months
         feedbackService.endSession(outcome: .cryTypeChanged)
         feedbackService.startSession(cryType: newType, babyAge: babyAge)
 
         // Generate new playlist for the changed cry type
         Task {
-            let babyAge = 6 // Default age in months
-
             let newPlaylist = await SmartPlaylistBuilder.shared.buildPlaylistForCryTypeChange(
                 newCryType: newType,
                 previousCryType: previousType,
@@ -484,7 +490,7 @@ struct SmartSoothingQueueView: View {
                             Spacer()
 
                             // Position in queue (2/7, 3/7, etc.)
-                            Text("\(index + 2)/7")
+                            Text("\(index + 2)/\(min(upcoming.count, 6) + 1)")
                                 .font(.caption2.bold())
                                 .foregroundColor(.white.opacity(0.3))
                         }
@@ -530,7 +536,6 @@ struct SmartSoothingQueueView: View {
     }
 
     private var aiReasoningText: String {
-        let babyAge = 6 // Default age in months
         var reasoning = "Selected tracks optimized for \(currentCryType.displayName.lowercased())"
 
         if babyAge < 6 {
@@ -612,13 +617,13 @@ struct SmartSoothingQueueView: View {
             animateHeart = false
         }
 
-        // Record feedback
-        feedbackService.recordItHelped()
-
-        // Record current track for effectiveness
+        // Record current track in session BEFORE ending it
         if let track = audioEngine.currentTrack {
             feedbackService.recordTrackPlayed(track)
         }
+
+        // Record feedback (this ends the session)
+        feedbackService.recordItHelped()
 
         // Show confirmation
         feedbackMessage = "Thanks! Saving what works"

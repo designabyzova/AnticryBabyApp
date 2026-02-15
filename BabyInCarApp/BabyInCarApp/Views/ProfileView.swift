@@ -207,6 +207,15 @@ struct ProfileView: View {
                     title: "CarPlay",
                     isOn: .constant(true)
                 )
+
+                NavigationLink(destination: VoiceInteractionSettingsView()) {
+                    SettingsRow(
+                        icon: "waveform.and.mic",
+                        title: "Voice & Hands-Free",
+                        value: UserDefaults.standard.bool(forKey: "handsFreeModeEnabled") ? "On" : "Off",
+                        showChevron: true
+                    )
+                }
             }
 
             // Content Settings

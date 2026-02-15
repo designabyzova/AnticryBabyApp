@@ -29,6 +29,7 @@ enum AudioSessionPriority: Int, Comparable {
 enum AudioSessionMode: Equatable {
     case playbackOnly           // Normal music playback
     case emergencyPlayback      // Emergency playback (same as playback, different priority)
+    case voiceInteraction       // Voice prompts + speech recognition (TTS + mic)
     case inactive               // No audio needed
 
     // Legacy compatibility aliases
@@ -39,13 +40,20 @@ enum AudioSessionMode: Equatable {
         switch self {
         case .playbackOnly, .emergencyPlayback:
             return .playback
+        case .voiceInteraction:
+            return .playAndRecord
         case .inactive:
             return .ambient
         }
     }
 
     var mode: AVAudioSession.Mode {
-        return .default
+        switch self {
+        case .voiceInteraction:
+            return .voiceChat
+        default:
+            return .default
+        }
     }
 
     var options: AVAudioSession.CategoryOptions {
@@ -54,6 +62,12 @@ enum AudioSessionMode: Equatable {
             // Exclusive playback - pauses other apps (like Spotify, YouTube)
             // No mixing, no ducking - we want full control
             return []
+        case .voiceInteraction:
+            // Voice interaction: .defaultToSpeaker routes audio to speaker (not earpiece)
+            // CRITICAL: NO .allowBluetooth (degrades to HFP mono)
+            // CRITICAL: NO .mixWithOthers (must pause other apps)
+            // CRITICAL: NO .duckOthers (we want exclusive control)
+            return [.defaultToSpeaker]
         case .inactive:
             return []
         }

@@ -5,11 +5,23 @@
 //  Wrapper service for DeepInfant V2 CoreML model inference
 //  Handles cry type classification from audio input
 //
+//  DeepInfant V2 Model Input:
+//    - audioSamples: MLMultiArray [15600] Float32 (raw audio at 16kHz, ~975ms)
+//    - The model has INTERNAL feature extraction — it expects raw waveform, NOT mel-spectrograms
+//
+//  Pipeline (Increment 0031):
+//    Microphone → AVAudioEngine → CircularAudioBuffer (7s/112K samples)
+//    → Extract last 15,600 samples → Normalize → DeepInfant_V2 model → CryType
+//
+//  Note: MelSpectrogramGenerator exists for future model upgrades that may accept
+//  spectrogram input. It is NOT used in the current inference pipeline.
+//
 
 import Foundation
 import CoreML
 import AVFoundation
 import Combine
+import UIKit
 
 // MARK: - CryClassificationResult
 
@@ -146,6 +158,60 @@ class CryClassificationService: ObservableObject {
     // Model loads lazily on first classify() call (~45ms)
     private init() {
         // Model loaded on demand via ensureModelLoaded()
+        setupMemoryPressureHandling()
+    }
+
+    // MARK: - Memory Pressure Handling
+
+    /// Listen for memory pressure notifications and unload model when critical
+    private func setupMemoryPressureHandling() {
+        // Listen for centralized memory cleanup requests (from MemoryMonitor/MemoryPressureMonitor)
+        NotificationCenter.default.publisher(for: NSNotification.Name("MemoryCleanupRequested"))
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                let level = notification.userInfo?["level"] as? String ?? "unknown"
+                self.handleMemoryPressure(level: level)
+            }
+            .store(in: &cancellables)
+
+        // Listen for iOS system memory warnings directly
+        NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.handleMemoryPressure(level: "emergency")
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Handle memory pressure by reducing memory footprint
+    /// - Parameter level: Pressure level ("warning", "critical", "emergency")
+    private func handleMemoryPressure(level: String) {
+        switch level {
+        case "critical":
+            // At critical level, clear inference history to save memory
+            inferenceTimeHistory.removeAll(keepingCapacity: false)
+            print("[CryClassificationService] Memory pressure (critical): cleared inference history")
+
+        case "emergency":
+            // At emergency level, unload model if not actively classifying
+            // The model will lazy-load again on next classify() call
+            if !isListening {
+                unloadModel()
+                print("[CryClassificationService] Memory pressure (emergency): unloaded model (~5MB freed)")
+            } else {
+                // If actively listening, at least clear non-essential data
+                inferenceTimeHistory.removeAll(keepingCapacity: false)
+                print("[CryClassificationService] Memory pressure (emergency): active — cleared history only")
+            }
+
+        default:
+            // Warning level: just trim history
+            if inferenceTimeHistory.count > 20 {
+                inferenceTimeHistory = Array(inferenceTimeHistory.suffix(20))
+            }
+        }
     }
 
     // MARK: - Model Management
@@ -445,6 +511,26 @@ class CryClassificationService: ObservableObject {
         default:
             return .unknown
         }
+    }
+
+    // MARK: - Action Category Bridge
+
+    /// Get the ActionCategory for the current stable classification
+    /// Maps the legacy CryType to the 3-category ActionCategory system (hungry/uncomfortable/tired)
+    var currentActionCategory: ActionCategory {
+        ActionCategory.from(currentCryType)
+    }
+
+    /// Convert a CryClassificationResult to a DeepInfantClassificationResult with action category
+    /// Returns nil if the model output string doesn't map to a DeepInfantCryType (e.g., scared, lonely)
+    func toDeepInfantResult(_ result: CryClassificationResult) -> DeepInfantClassificationResult? {
+        return DeepInfantClassificationResult(
+            cryTypeString: result.cryType.rawValue,
+            confidence: result.confidence,
+            probabilityStrings: result.probabilities.reduce(into: [:]) { dict, pair in
+                dict[pair.key.rawValue] = pair.value
+            }
+        )
     }
 }
 

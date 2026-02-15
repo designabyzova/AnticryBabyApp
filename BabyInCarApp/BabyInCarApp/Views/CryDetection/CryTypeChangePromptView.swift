@@ -199,7 +199,7 @@ struct CryTypeChangePromptOverlay: ViewModifier {
             .onReceive(changeDetector.$shouldShowChangePrompt) { shouldShow in
                 if shouldShow, let newType = changeDetector.potentialNewType {
                     detectedNewType = newType
-                    detectedConfidence = changeDetector.changeProgress
+                    detectedConfidence = changeDetector.confirmedAgreement
                     withAnimation(.spring(response: 0.4)) {
                         isShowing = true
                     }

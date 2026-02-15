@@ -267,11 +267,13 @@ struct FeedbackFlowIntegrationTests {
         let entry = PlayedTrackEntry(
             trackId: trackId,
             title: "Test Entry",
+            category: .lullabies,
             startedAt: Date()
         )
 
         #expect(entry.trackId == trackId)
         #expect(entry.title == "Test Entry")
+        #expect(entry.category == .lullabies)
         #expect(entry.endedAt == nil)
         #expect(entry.playDuration == nil)
     }
@@ -282,6 +284,7 @@ struct FeedbackFlowIntegrationTests {
         var entry = PlayedTrackEntry(
             trackId: UUID(),
             title: "Duration Test",
+            category: .lullabies,
             startedAt: startTime
         )
 
@@ -303,6 +306,7 @@ struct FeedbackFlowIntegrationTests {
         var entry = PlayedTrackEntry(
             trackId: UUID(),
             title: "Codable Test",
+            category: .classicalMusic,
             startedAt: Date()
         )
         entry.endedAt = Date()

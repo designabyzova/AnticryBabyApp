@@ -5,6 +5,11 @@
 //  Audio capture pipeline for cry classification
 //  Captures audio from microphone and provides samples for CryClassificationService
 //
+//  Increment 0031: Replaced manual ring buffer with CircularAudioBuffer for:
+//  - Zero allocation after init (448 KB fixed footprint)
+//  - Thread-safe O(1) append via NSLock
+//  - 7-second window (112,000 samples) for better cry context
+//
 
 import Foundation
 import AVFoundation
@@ -75,11 +80,8 @@ class AudioCaptureService: ObservableObject {
     /// Required sample rate for DeepInfant V2 model (16kHz)
     static let targetSampleRate: Double = 16000.0
 
-    /// Number of samples required per prediction
+    /// Number of samples required per prediction (DeepInfant V2 expects 15,600)
     static let samplesPerPrediction = CryClassificationService.requiredSampleCount // 15600
-
-    /// Buffer size for audio capture (approx 2 seconds at 16kHz)
-    static let ringBufferSize = 32000
 
     /// Interval between predictions in seconds
     static let predictionInterval: TimeInterval = 1.0
@@ -97,6 +99,9 @@ class AudioCaptureService: ObservableObject {
 
     /// Whether audio is above noise gate threshold
     @Published private(set) var isAudioDetected: Bool = false
+
+    /// Fill ratio of the circular buffer (0.0 - 1.0), for UI progress during warmup
+    @Published private(set) var bufferFillRatio: Double = 0.0
 
     // MARK: - Callbacks
 
@@ -117,9 +122,10 @@ class AudioCaptureService: ObservableObject {
     /// Format converter for resampling
     private var formatConverter: AVAudioConverter?
 
-    /// Ring buffer for accumulating audio samples
-    private var ringBuffer: [Float] = []
-    private let bufferLock = NSLock()
+    /// Circular buffer for continuous audio capture (7 seconds at 16kHz = 112,000 samples)
+    /// Replaces the old Array-based ring buffer to eliminate per-append allocations.
+    /// Memory footprint: 112,000 x 4 bytes = 448 KB (fixed, zero growth)
+    private var circularBuffer: CircularAudioBuffer?
 
     /// Timer for periodic prediction callbacks
     private var predictionTimer: Timer?
@@ -167,6 +173,10 @@ class AudioCaptureService: ObservableObject {
             throw AudioCaptureError.audioSessionSetupFailed(error)
         }
 
+        // Initialize circular buffer (7 seconds at 16kHz for DeepInfant V2)
+        circularBuffer = CircularAudioBuffer.forDeepInfantV2()
+        print("[AudioCaptureService] CircularAudioBuffer initialized: \(circularBuffer?.memoryFootprintDescription ?? "?") for 7s window")
+
         // Setup audio engine
         do {
             try setupAudioEngine()
@@ -201,10 +211,8 @@ class AudioCaptureService: ObservableObject {
         inputNode = nil
         formatConverter = nil
 
-        // Clear buffer - use removeAll(keepingCapacity: false) to release memory
-        bufferLock.lock()
-        ringBuffer.removeAll(keepingCapacity: false)
-        bufferLock.unlock()
+        // Release circular buffer to free 448 KB
+        circularBuffer = nil
 
         // CRITICAL: Clear Combine subscriptions to prevent memory leak
         cancellables.removeAll()
@@ -216,6 +224,7 @@ class AudioCaptureService: ObservableObject {
         state = .idle
         currentLevel = 0.0
         isAudioDetected = false
+        bufferFillRatio = 0.0
 
         // Release audio session
         audioSessionManager.releaseSession(serviceId: "AudioCaptureService")
@@ -241,17 +250,21 @@ class AudioCaptureService: ObservableObject {
         print("[AudioCaptureService] Resumed capture")
     }
 
-    /// Get current audio samples for manual classification
+    /// Get the most recent audio samples for classification from the circular buffer
+    /// Returns the last `samplesPerPrediction` (15,600) samples from the 7-second window
     func getCurrentSamples() -> [Float]? {
-        bufferLock.lock()
-        defer { bufferLock.unlock() }
+        guard let buffer = circularBuffer else { return nil }
 
-        guard ringBuffer.count >= Self.samplesPerPrediction else {
+        // Need at least one prediction window of data
+        guard buffer.validSampleCount >= Self.samplesPerPrediction else {
             return nil
         }
 
-        // Return the most recent samples needed for prediction
-        return Array(ringBuffer.suffix(Self.samplesPerPrediction))
+        // Get full ordered buffer and extract the most recent prediction window
+        let ordered = buffer.getOrderedSamples()
+        let validCount = buffer.validSampleCount
+        let startIndex = validCount - Self.samplesPerPrediction
+        return Array(ordered[startIndex..<validCount])
     }
 
     // MARK: - Private Methods
@@ -381,37 +394,33 @@ class AudioCaptureService: ObservableObject {
         // Extract Float samples
         guard let floatData = processedBuffer.floatChannelData else { return }
         let frameLength = Int(processedBuffer.frameLength)
-        let samples = Array(UnsafeBufferPointer(start: floatData[0], count: frameLength))
 
-        // Calculate RMS level for visualization
-        let rms = calculateRMS(samples)
+        // Calculate RMS level for visualization (directly from pointer, no allocation)
+        let ptr = floatData[0]
+        var sumSquares: Float = 0
+        for i in 0..<frameLength {
+            let s = ptr[i]
+            sumSquares += s * s
+        }
+        let rms = sqrt(sumSquares / max(Float(frameLength), 1))
         let dbLevel = 20 * log10(max(rms, 0.00001))
         let normalizedLevel = max(0, min(1, (dbLevel + 60) / 60)) // Normalize -60dB to 0dB -> 0.0 to 1.0
+
+        // Append directly to CircularAudioBuffer using pointer (zero-copy, O(1) per sample)
+        // CircularAudioBuffer is internally thread-safe via NSLock
+        circularBuffer?.append(from: ptr, count: frameLength)
+
+        // Capture fill ratio for UI
+        let fillRatio = circularBuffer?.fillRatio ?? 0
 
         // Update published properties on main thread
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.currentLevel = normalizedLevel
             self.isAudioDetected = dbLevel > Self.noiseGateThresholdDB
+            self.bufferFillRatio = fillRatio
             self.onAudioLevelUpdate?(normalizedLevel)
         }
-
-        // Add to ring buffer
-        bufferLock.lock()
-        ringBuffer.append(contentsOf: samples)
-
-        // Trim buffer to max size
-        if ringBuffer.count > Self.ringBufferSize {
-            ringBuffer.removeFirst(ringBuffer.count - Self.ringBufferSize)
-        }
-        bufferLock.unlock()
-    }
-
-    /// Calculate RMS (root mean square) of audio samples
-    private func calculateRMS(_ samples: [Float]) -> Float {
-        guard !samples.isEmpty else { return 0 }
-        let sumSquares = samples.reduce(0) { $0 + $1 * $1 }
-        return sqrt(sumSquares / Float(samples.count))
     }
 
     /// Start timer for periodic prediction callbacks
@@ -432,7 +441,8 @@ class AudioCaptureService: ObservableObject {
         guard state == .capturing else { return }
 
         guard let samples = getCurrentSamples() else {
-            print("[AudioCaptureService] Not enough samples for prediction (\(ringBuffer.count)/\(Self.samplesPerPrediction))")
+            let validCount = circularBuffer?.validSampleCount ?? 0
+            print("[AudioCaptureService] Not enough samples for prediction (\(validCount)/\(Self.samplesPerPrediction))")
             return
         }
 
@@ -486,16 +496,27 @@ class AudioCaptureService: ObservableObject {
 
 #if DEBUG
 extension AudioCaptureService {
-    /// Simulate audio input for testing
+    /// Simulate audio input for testing by feeding samples into the circular buffer
     func simulateAudioSamples(_ samples: [Float]) {
-        bufferLock.lock()
-        ringBuffer = samples
-        bufferLock.unlock()
+        if circularBuffer == nil {
+            circularBuffer = CircularAudioBuffer.forDeepInfantV2()
+        }
+        circularBuffer?.append(samples)
     }
 
     /// Force trigger prediction callback for testing
     func forceTriggerPrediction() {
         triggerPredictionCallback()
+    }
+
+    /// Get current buffer fill ratio (for test assertions)
+    var testBufferFillRatio: Double {
+        circularBuffer?.fillRatio ?? 0
+    }
+
+    /// Check if circular buffer has enough data for prediction
+    var testHasSufficientSamples: Bool {
+        (circularBuffer?.validSampleCount ?? 0) >= Self.samplesPerPrediction
     }
 }
 #endif

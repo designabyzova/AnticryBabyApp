@@ -16,8 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY main.py .
 
-# Create models directory (for optional CoreML model)
+# Copy ONNX model and class labels (if available)
 RUN mkdir -p models
+COPY models/ models/
 
 # Expose port
 EXPOSE 8000
