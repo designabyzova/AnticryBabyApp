@@ -210,11 +210,26 @@ final class CryDetectionViewModel: ObservableObject {
     }
 
     func selectCryType(_ cryType: CryType) {
+        print("[CryDetectionViewModel] Manual selection: \(cryType.displayName)")
+
         // Set state directly — don't call stabilizer.forceType() because
         // it emits a .stabilized event that would trigger startSoothingPlaylist() again
         stableCryType = cryType
         stableConfidence = 1.0
         isStable = true
+
+        // Record currently playing track so SmartPlaylistGenerator avoids repeating it
+        if let currentTrack = AudioEngine.shared.currentTrack {
+            SmartPlaylistGenerator.shared.recordTrackPlayed(currentTrack.id)
+        }
+
+        // If already playing, stop current playback and reset state
+        // so startSoothingPlaylist() guard doesn't block the new playlist
+        if case .playingSoothing = state {
+            AudioEngine.shared.stop()
+            state = .detected(cryType: cryType, confidence: 1.0)
+        }
+
         // Start music immediately for manual selection
         startSoothingPlaylist()
     }
@@ -248,10 +263,17 @@ final class CryDetectionViewModel: ObservableObject {
                 maxTracks: 30
             )
 
+            print("[CryDetectionViewModel] Playlist built: \(playlist.tracks.count) tracks, first: \(playlist.tracks.first?.title ?? "none")")
+
             AudioEngine.shared.play(
                 playlist: playlist,
                 context: .emergencyCry(type: cryType, babyAge: babyAge)
             )
+
+            // Record first track as recently played for future recency penalty
+            if let firstTrack = playlist.tracks.first {
+                SmartPlaylistGenerator.shared.recordTrackPlayed(firstTrack.id)
+            }
         }
     }
 

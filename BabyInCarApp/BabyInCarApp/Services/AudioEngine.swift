@@ -1089,6 +1089,9 @@ class AudioEngine: ObservableObject {
 
     // MARK: - Smart Queue Auto-Replenishment (Unified Architecture)
 
+    /// Flag to prevent multiple concurrent replenishment tasks
+    private var isReplenishing = false
+
     /// Monitor queue and trigger replenishment when needed (Spotify-style infinite queue)
     private func monitorQueueForReplenishment() {
         // This is called periodically to check if we need more tracks
@@ -1103,6 +1106,12 @@ class AudioEngine: ObservableObject {
             return
         }
 
+        // Don't start another replenishment if one is already in progress
+        guard !isReplenishing else {
+            print("[AudioEngine] 🔍 Replenishment already in progress, skipping")
+            return
+        }
+
         // Calculate how many tracks remain
         let remainingInPlaylist = playlist.tracks.count - (currentPlaylistIndex + 1)
         let remainingInQueue = upNextQueue.count
@@ -1112,9 +1121,14 @@ class AudioEngine: ObservableObject {
 
         // If below threshold, replenish
         if totalRemaining < playlist.minQueueSize {
-            print("[AudioEngine] 🎵 Queue below threshold - replenishing...")
+            let tracksNeeded = playlist.minQueueSize - totalRemaining + 2 // +2 buffer
+            print("[AudioEngine] 🎵 Queue below threshold - replenishing \(tracksNeeded) tracks...")
+            isReplenishing = true
             Task {
-                await replenishQueue(context: context, tracksNeeded: playlist.minQueueSize - totalRemaining)
+                await replenishQueue(context: context, tracksNeeded: tracksNeeded)
+                await MainActor.run {
+                    self.isReplenishing = false
+                }
             }
         }
     }
@@ -1131,6 +1145,20 @@ class AudioEngine: ObservableObject {
             addToQueue(newTracks)
             print("[AudioEngine] ✅ Added \(newTracks.count) tracks to queue")
         }
+    }
+
+    /// Unified view of upcoming tracks: upNextQueue + remaining playlist tracks
+    /// Used by queue views to show what's coming next (Spotify-like queue)
+    var upcomingTracks: [AudioTrack] {
+        var upcoming: [AudioTrack] = []
+        upcoming.append(contentsOf: upNextQueue)
+        if let playlist = currentPlaylist {
+            let startIndex = currentPlaylistIndex + 1
+            if startIndex < playlist.tracks.count {
+                upcoming.append(contentsOf: playlist.tracks[startIndex...])
+            }
+        }
+        return upcoming
     }
 
     /// Get remaining tracks count (queue + remaining playlist)

@@ -208,7 +208,11 @@ class SmartPlaylistGenerator: ObservableObject {
         }
 
         // 2. Cry Type Score (0.35 weight - highest!)
-        let cryScore = track.suitabilityFor(cryType)
+        // Apply category multiplier to create meaningfully different playlists per cry type
+        // Without this, all tracks rank identically (tired > hunger > pain for every track)
+        let baseCryScore = track.suitabilityFor(cryType)
+        let categoryMultiplier = cryTypeCategoryMultiplier(cryType: cryType, category: track.category)
+        let cryScore = min(1.0, baseCryScore * categoryMultiplier)
         score += cryScore * Weights.cryType
         if cryScore > 0.8 {
             reasons.append("excellent for \(cryType.rawValue)")
@@ -297,6 +301,71 @@ class SmartPlaylistGenerator: ObservableObject {
         return penalty
     }
 
+    /// Category preference multiplier per cry type
+    /// Creates meaningfully different playlists by boosting categories that match the cry type
+    /// Research basis: Different cry types respond to different sound characteristics
+    private func cryTypeCategoryMultiplier(cryType: CryType, category: AudioCategory) -> Double {
+        switch cryType {
+        case .hunger:
+            // Hunger: Rhythmic lullabies and engaging content work best (distraction + comfort)
+            switch category {
+            case .lullabies: return 1.4
+            case .childrenSongs: return 1.3
+            case .fairyTales: return 1.2     // Stories distract from hunger
+            case .ambient: return 0.9
+            case .classicalMusic: return 0.7
+            case .instrumental: return 0.8
+            default: return 0.8
+            }
+        case .tired:
+            // Tired: Classical, piano, ambient — sleep-inducing, low stimulation
+            switch category {
+            case .classicalMusic: return 1.4
+            case .instrumental: return 1.4   // Modern piano
+            case .ambient: return 1.3
+            case .lullabies: return 1.0
+            case .childrenSongs: return 0.5  // Too stimulating for sleep
+            case .fairyTales: return 0.6
+            default: return 0.8
+            }
+        case .pain:
+            // Pain: Most calming, gentle, consistent sounds
+            switch category {
+            case .ambient: return 1.5
+            case .lullabies: return 1.3
+            case .instrumental: return 1.2
+            case .classicalMusic: return 0.8
+            case .childrenSongs: return 0.4  // Too stimulating for pain
+            case .fairyTales: return 0.3     // Stories don't help with pain
+            default: return 0.7
+            }
+        case .discomfort:
+            // Discomfort: Similar to pain but less extreme
+            switch category {
+            case .ambient: return 1.3
+            case .lullabies: return 1.3
+            case .instrumental: return 1.1
+            case .classicalMusic: return 0.9
+            case .childrenSongs: return 0.6
+            case .fairyTales: return 0.5
+            default: return 0.8
+            }
+        case .attention:
+            // Attention: Engaging content — stories, children's songs
+            switch category {
+            case .fairyTales: return 1.5
+            case .childrenSongs: return 1.4
+            case .lullabies: return 0.8
+            case .classicalMusic: return 0.7
+            case .ambient: return 0.6
+            case .instrumental: return 0.7
+            default: return 0.8
+            }
+        case .general, .unknown:
+            return 1.0  // No preference
+        }
+    }
+
     // MARK: - Track Filtering
 
     /// Filter tracks to eligible pool
@@ -325,10 +394,11 @@ class SmartPlaylistGenerator: ObservableObject {
         }
     }
 
-    // MARK: - Category Diversity
+    // MARK: - Category Diversity with Weighted Randomization
 
-    /// Apply category diversity constraint
+    /// Apply category diversity constraint with weighted random selection
     /// Ensures no single category exceeds maxCategoryPercentage of playlist
+    /// Uses weighted random selection so high-scoring tracks are preferred but order varies each session
     private func applyCategoryDiversity(
         scoredTracks: [(track: AudioTrack, score: Double, reasoning: String)],
         maxTracks: Int
@@ -337,24 +407,51 @@ class SmartPlaylistGenerator: ObservableObject {
         var categoryCount: [AudioCategory: Int] = [:]
         let maxPerCategory = max(1, Int(ceil(Double(maxTracks) * Self.maxCategoryPercentage)))
 
-        for item in scoredTracks {
-            if result.count >= maxTracks {
-                break
+        // Create a mutable pool of candidates
+        var candidates = scoredTracks
+
+        for _ in 0..<maxTracks {
+            // Filter candidates by category constraint
+            let eligible = candidates.filter { item in
+                let count = categoryCount[item.track.category] ?? 0
+                return count < maxPerCategory
             }
 
-            let category = item.track.category
-            let currentCount = categoryCount[category] ?? 0
+            guard !eligible.isEmpty else { break }
 
-            if currentCount < maxPerCategory {
-                result.append(item)
-                categoryCount[category] = currentCount + 1
+            // Weighted random selection from eligible candidates
+            guard let selected = weightedRandomSelect(from: eligible) else { break }
 
-                // Record category play for rotation tracking
-                categoryRotationManager.recordCategoryPlayed(category)
-            }
+            result.append(selected)
+            categoryCount[selected.track.category, default: 0] += 1
+            categoryRotationManager.recordCategoryPlayed(selected.track.category)
+
+            // Remove selected from candidates
+            candidates.removeAll { $0.track.id == selected.track.id }
         }
 
         return result
+    }
+
+    /// Weighted random selection — higher scored tracks are more likely but order varies
+    /// 60% top 3 (strong bias to proven effective), 30% top 8 (exploration), 10% random
+    private func weightedRandomSelect(
+        from scores: [(track: AudioTrack, score: Double, reasoning: String)]
+    ) -> (track: AudioTrack, score: Double, reasoning: String)? {
+        guard !scores.isEmpty else { return nil }
+
+        let sorted = scores.sorted { $0.score > $1.score }
+        let random = Double.random(in: 0...1)
+
+        if random < 0.60 {
+            let topN = min(3, sorted.count)
+            return sorted[Int.random(in: 0..<topN)]
+        } else if random < 0.90 {
+            let topN = min(8, sorted.count)
+            return sorted[Int.random(in: 0..<topN)]
+        } else {
+            return sorted.randomElement()
+        }
     }
 
     // MARK: - Reasoning

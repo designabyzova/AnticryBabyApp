@@ -53,7 +53,7 @@ enum PlaybackContext: Equatable, Hashable {
     var minQueueSize: Int {
         switch self {
         case .emergencyCry:
-            return 3  // Always keep 3 tracks ahead (emergency)
+            return 6  // Always keep 6 tracks ahead (7 total visible including current)
         default:
             return 0  // No auto-replenish
         }

@@ -68,7 +68,7 @@ class SmartPlaylistBuilder {
             artworkName: nil,
             updatedAt: nil,
             isAutoReplenishing: true,  // Enable Spotify-style infinite queue
-            minQueueSize: 3,           // Replenish when <3 tracks remain
+            minQueueSize: 6,           // Replenish when <6 tracks remain (always show 6 upcoming)
             generationContext: metadata
         )
     }
@@ -152,7 +152,7 @@ class SmartPlaylistBuilder {
             artworkName: nil,
             updatedAt: nil,
             isAutoReplenishing: true,
-            minQueueSize: 3,
+            minQueueSize: 6,
             generationContext: metadata
         )
     }

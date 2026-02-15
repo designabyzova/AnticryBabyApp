@@ -55,10 +55,8 @@ struct SmartSoothingQueueView: View {
                     // Feedback buttons section
                     feedbackSection
 
-                    // Queue preview
-                    if !audioEngine.upNextQueue.isEmpty {
-                        upcomingSection
-                    }
+                    // Queue preview (always show — queue is auto-replenished to 6 upcoming)
+                    upcomingSection
 
                     // AI reasoning
                     aiReasoningSection
@@ -276,8 +274,35 @@ struct SmartSoothingQueueView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
+                // Progress bar
+                if audioEngine.duration > 0 {
+                    VStack(spacing: 4) {
+                        ProgressView(value: audioEngine.currentTime, total: audioEngine.duration)
+                            .tint(.white)
+
+                        HStack {
+                            Text(formatTime(audioEngine.currentTime))
+                            Spacer()
+                            Text("-\(formatTime(audioEngine.duration - audioEngine.currentTime))")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.5))
+                    }
+                    .padding(.horizontal, 20)
+                }
+
                 // Playback controls
-                HStack(spacing: 40) {
+                HStack(spacing: 32) {
+                    // Stop button
+                    Button {
+                        audioEngine.stopSoothingMode()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "stop.fill")
+                            .font(.title3)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+
                     Button {
                         audioEngine.previous()
                     } label: {
@@ -312,6 +337,10 @@ struct SmartSoothingQueueView: View {
                             .font(.title2)
                             .foregroundColor(.white.opacity(0.8))
                     }
+
+                    // Invisible spacer to balance the stop button
+                    Color.clear
+                        .frame(width: 24, height: 24)
                 }
             }
         }
@@ -391,7 +420,10 @@ struct SmartSoothingQueueView: View {
     // MARK: - Upcoming Section
 
     private var upcomingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let upcoming = audioEngine.upcomingTracks
+        let displayCount = min(upcoming.count, 6)
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "list.bullet")
                     .foregroundColor(.white.opacity(0.7))
@@ -401,48 +433,68 @@ struct SmartSoothingQueueView: View {
 
                 Spacer()
 
-                Text("\(min(audioEngine.upNextQueue.count, 5)) tracks")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
+                if !upcoming.isEmpty {
+                    Text("\(displayCount) tracks")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.5))
+                }
             }
 
-            LazyVStack(spacing: 8) {
-                ForEach(Array(audioEngine.upNextQueue.prefix(5).enumerated()), id: \.element.id) { index, track in
-                    HStack(spacing: 12) {
-                        Text("\(index + 1)")
-                            .font(.caption.bold())
-                            .foregroundColor(.white.opacity(0.4))
-                            .frame(width: 20)
+            if upcoming.isEmpty {
+                Text("Queue will replenish automatically...")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.4))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(Array(upcoming.prefix(6).enumerated()), id: \.element.id) { index, track in
+                        HStack(spacing: 12) {
+                            Text("\(index + 1)")
+                                .font(.caption.bold())
+                                .foregroundColor(.white.opacity(0.4))
+                                .frame(width: 20)
 
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.forCategory(track.category).opacity(0.2))
-                                .frame(width: 40, height: 40)
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.forCategory(track.category).opacity(0.2))
+                                    .frame(width: 40, height: 40)
 
-                            Image(systemName: track.category.icon)
-                                .font(.system(size: 16))
-                                .foregroundColor(Color.forCategory(track.category))
+                                Image(systemName: track.category.icon)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color.forCategory(track.category))
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(track.title)
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .lineLimit(1)
+
+                                HStack(spacing: 6) {
+                                    Text(track.artist)
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Text(track.formattedDuration)
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.4))
+                                }
+                            }
+
+                            Spacer()
+
+                            // Position in queue (2/7, 3/7, etc.)
+                            Text("\(index + 2)/7")
+                                .font(.caption2.bold())
+                                .foregroundColor(.white.opacity(0.3))
                         }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(track.title)
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-
-                            Text(track.formattedDuration)
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.5))
-                        }
-
-                        Spacer()
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(.white.opacity(0.05))
+                        )
                     }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(.white.opacity(0.05))
-                    )
                 }
             }
         }
@@ -539,6 +591,14 @@ struct SmartSoothingQueueView: View {
 
             Spacer()
         }
+    }
+
+    // MARK: - Helpers
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 
     // MARK: - Actions
