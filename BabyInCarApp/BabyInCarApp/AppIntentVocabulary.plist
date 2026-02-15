@@ -2,8 +2,36 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Intent vocabulary removed - using App Intents framework instead -->
-    <!-- INPlayMediaIntent and INSearchForMediaIntent vocabularies are deprecated -->
-    <!-- Custom vocabularies are now handled via AppShortcuts and @AppIntent -->
+    <key>IntentPhrases</key>
+    <array>
+        <dict>
+            <key>IntentName</key>
+            <string>INPlayMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Play lullabies in Lulla</string>
+                <string>Play classical music in Lulla</string>
+                <string>Play calming music in Lulla</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INSearchForMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Find Mozart in Lulla</string>
+                <string>Search for lullabies in Lulla</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INAddMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Add to favorites in Lulla</string>
+                <string>Save this song in Lulla</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

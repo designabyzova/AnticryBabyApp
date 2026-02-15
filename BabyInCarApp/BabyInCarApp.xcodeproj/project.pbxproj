@@ -1425,6 +1425,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BabyInCarAppIntentsUI;
@@ -1453,6 +1454,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BabyInCarAppIntentsUI;
@@ -1639,6 +1641,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;
@@ -1673,6 +1676,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;

@@ -10,7 +10,7 @@
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
-    <string>6</string>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundlePackageType</key>
@@ -89,6 +89,8 @@
     <!-- Privacy Usage Descriptions -->
     <key>NSMicrophoneUsageDescription</key>
     <string>Lulla uses the microphone to detect your baby's cry type and automatically play personalized soothing music.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Lulla uses speech recognition for hands-free voice commands while driving, so you can control playback without touching your phone.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Lulla can access your photos to set a profile picture for your baby.</string>
     <key>NSCameraUsageDescription</key>
