@@ -18,16 +18,12 @@ struct LullaShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: CalmBabyIntent(),
             phrases: [
-                "Calm baby",
-                "Calm my baby",
-                "Baby crying",
-                "Baby is crying",
-                "Soothe baby",
-                "Soothe my baby",
-                "Help baby",
-                "Help my baby",
-                "Baby won't stop crying",
-                "Calm down baby"
+                "Calm baby in \(.applicationName)",
+                "Calm my baby with \(.applicationName)",
+                "Baby crying \(.applicationName)",
+                "Soothe baby in \(.applicationName)",
+                "Soothe my baby with \(.applicationName)",
+                "Help baby with \(.applicationName)"
             ],
             shortTitle: "Calm Baby",
             systemImageName: "heart.fill"
@@ -37,11 +33,9 @@ struct LullaShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayLullabiesIntent(),
             phrases: [
-                "Play lullabies",
-                "Play baby lullabies",
-                "Play lullaby music",
-                "Baby lullabies",
-                "Sleep music for baby"
+                "Play lullabies in \(.applicationName)",
+                "Play baby lullabies with \(.applicationName)",
+                "Play lullaby music in \(.applicationName)"
             ],
             shortTitle: "Play Lullabies",
             systemImageName: "moon.stars.fill"
@@ -51,10 +45,9 @@ struct LullaShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayClassicalIntent(),
             phrases: [
-                "Play classical for baby",
-                "Play Mozart for baby",
-                "Baby classical music",
-                "Calm music for baby"
+                "Play classical for baby in \(.applicationName)",
+                "Play Mozart for baby in \(.applicationName)",
+                "Calm music for baby in \(.applicationName)"
             ],
             shortTitle: "Classical Music",
             systemImageName: "music.note"
