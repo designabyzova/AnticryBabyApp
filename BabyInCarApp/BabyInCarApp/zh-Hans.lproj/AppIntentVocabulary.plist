@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>IntentPhrases</key>
+    <array>
+        <dict>
+            <key>IntentName</key>
+            <string>INPlayMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>用Lulla播放摇篮曲</string>
+                <string>用Lulla播放古典音乐</string>
+                <string>用Lulla播放舒缓音乐</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INSearchForMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>在Lulla中搜索莫扎特</string>
+                <string>在Lulla中搜索摇篮曲</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INAddMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>在Lulla中添加到收藏</string>
+                <string>在Lulla中保存这首歌</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

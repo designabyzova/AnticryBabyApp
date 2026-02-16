@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>IntentPhrases</key>
+    <array>
+        <dict>
+            <key>IntentName</key>
+            <string>INPlayMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Включи колыбельные в Lulla</string>
+                <string>Включи классическую музыку в Lulla</string>
+                <string>Включи спокойную музыку в Lulla</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INSearchForMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Найди Моцарта в Lulla</string>
+                <string>Найди колыбельные в Lulla</string>
+            </array>
+        </dict>
+        <dict>
+            <key>IntentName</key>
+            <string>INAddMediaIntent</string>
+            <key>IntentExamples</key>
+            <array>
+                <string>Добавить в избранное в Lulla</string>
+                <string>Сохрани эту песню в Lulla</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

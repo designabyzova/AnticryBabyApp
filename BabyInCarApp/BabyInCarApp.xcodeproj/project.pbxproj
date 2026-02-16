@@ -97,8 +97,8 @@
 		A1000065 /* LibraryChatbotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000065 /* LibraryChatbotService.swift */; };
 		A1000066 /* ResearchKnowledgeBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000066 /* ResearchKnowledgeBase.swift */; };
 		A1000067 /* SmartCarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000067 /* SmartCarPlayController.swift */; };
-		A1000080 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Audio */; };
-		A1000081 /* DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A2000081 /* DeepInfant_V2.mlmodel */; };
+		A1000080 /* Resources/Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Resources/Audio */; };
+		A1000081 /* Resources/DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A2000081 /* Resources/DeepInfant_V2.mlmodel */; };
 		A1000090 /* AdaptiveLearningEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000090 /* AdaptiveLearningEngine.swift */; };
 		A1000091 /* FreemiumGatekeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000091 /* FreemiumGatekeeper.swift */; };
 		A1000092 /* PremiumBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000092 /* PremiumBadge.swift */; };
@@ -229,7 +229,7 @@
 		00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeedbackCollectionService.swift; sourceTree = "<group>"; };
 		11E4EF70A2A971E65CD43CEC /* SmartCarPlayControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartCarPlayControllerTests.swift; sourceTree = "<group>"; };
 		122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionViewModel.swift; sourceTree = "<group>"; };
-		13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SleepTimerView.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
+		13D3EEAA86DECDD20A3D84A4 /* SleepTimerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SleepTimerView.swift; sourceTree = "<group>"; };
 		16160E7D5AE6226087081319 /* EffectivenessSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessSyncService.swift; sourceTree = "<group>"; };
 		186C6D085FAD3DC99B79BDA4 /* VoiceInteractionSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceInteractionSettingsView.swift; sourceTree = "<group>"; };
 		22CFF84D951A77DBCC3FAF96 /* PerformanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
@@ -250,7 +250,7 @@
 		4E1BAAD2CA781EF9D8B3DBBE /* SmartPlaylistGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartPlaylistGenerator.swift; sourceTree = "<group>"; };
 		52FCCA3D23197293F81417CF /* VoiceInteractionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceInteractionService.swift; sourceTree = "<group>"; };
 		559D56AE15E9B5EA1DD5162A /* WatchModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModels.swift; sourceTree = "<group>"; };
-		567869108E01725C3BB01571 /* WatchAudioPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchAudioPlayer.swift; path = WatchAudioPlayer.swift; sourceTree = "<group>"; };
+		567869108E01725C3BB01571 /* WatchAudioPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchAudioPlayer.swift; sourceTree = "<group>"; };
 		5C4B8680813B902CE4DA2B3E /* PlaybackSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackSessionManager.swift; sourceTree = "<group>"; };
 		5CE52DD7C2CEE8F1DA041F68 /* AudioEngineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioEngineTests.swift; sourceTree = "<group>"; };
 		606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeChangeDetector.swift; sourceTree = "<group>"; };
@@ -258,14 +258,14 @@
 		613B84719A4680A5FC4A135D /* EmergencyCategorySelectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyCategorySelectionTests.swift; sourceTree = "<group>"; };
 		6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGeneratorTests.swift; sourceTree = "<group>"; };
 		686A2521E711469647C81C48 /* FreemiumGatekeeperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeperTests.swift; sourceTree = "<group>"; };
-		6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchOnboardingView.swift; path = WatchOnboardingView.swift; sourceTree = "<group>"; };
+		6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchOnboardingView.swift; sourceTree = "<group>"; };
 		719457390ECCFEC855DEA8A6 /* VoiceInteractionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceInteractionCoordinator.swift; sourceTree = "<group>"; };
 		7728CBB1144588372F2A6EF5 /* ViewSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewSnapshotTests.swift; sourceTree = "<group>"; };
 		7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategoryTests.swift; sourceTree = "<group>"; };
 		7AA044E9768D4DB60AFDC96E /* BabyInCarAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabyInCarAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularAudioBufferTests.swift; sourceTree = "<group>"; };
 		7FFB20DE15A3F7E28683EE7D /* APIContentIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIContentIntegrationTests.swift; sourceTree = "<group>"; };
-		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FavoritesListView.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
+		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugMemoryOverlay.swift; sourceTree = "<group>"; };
 		84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		882CE90CC9A0F96675200F13 /* EffectivenessTrackingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessTrackingTests.swift; sourceTree = "<group>"; };
@@ -330,8 +330,8 @@
 		A2000067 /* SmartCarPlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartCarPlayController.swift; sourceTree = "<group>"; };
 		A2000070 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000071 /* BabyInCarApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BabyInCarApp.entitlements; sourceTree = "<group>"; };
-		A2000080 /* Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
-		A2000081 /* DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
+		A2000080 /* Resources/Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
+		A2000081 /* Resources/DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
 		A2000090 /* AdaptiveLearningEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveLearningEngine.swift; sourceTree = "<group>"; };
 		A2000091 /* FreemiumGatekeeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeper.swift; sourceTree = "<group>"; };
 		A2000092 /* PremiumBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumBadge.swift; sourceTree = "<group>"; };
@@ -362,7 +362,16 @@
 		A2000300 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
 		A2000311 /* SiriShortcutsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriShortcutsService.swift; sourceTree = "<group>"; };
 		A2000312 /* NowPlayingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingService.swift; sourceTree = "<group>"; };
-		A2000313 /* AppIntentVocabulary.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = en; path = en.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130B /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = ar; path = ar.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = de; path = de.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130D /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = es; path = es.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130E /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = fr; path = fr.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130F /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = it; path = it.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130G /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = ja; path = ja.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130H /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = pt; path = pt.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130I /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = ru; path = ru.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
+		A20003130J /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "zh-Hans"; path = "zh-Hans.lproj/AppIntentVocabulary.plist"; sourceTree = "<group>"; };
 		A3000000 /* BabyInCarApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		B15CBCE8BD4F240B7146FE15 /* CryDetectionTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionTabView.swift; sourceTree = "<group>"; };
@@ -384,40 +393,40 @@
 		B3230E77EBC9A453DF9310E8 /* VoiceInteractionCoordinatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceInteractionCoordinatorTests.swift; sourceTree = "<group>"; };
 		B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackQueueManager.swift; sourceTree = "<group>"; };
 		BF6B4D4590AA16B4858A2EED /* PlaybackContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlaybackContext.swift; path = BabyInCarApp/Models/PlaybackContext.swift; sourceTree = SOURCE_ROOT; };
-		C678D15B421B8B28FA0EC0C8 /* NowPlayingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NowPlayingView.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
-		C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchStorageManager.swift; path = WatchStorageManager.swift; sourceTree = "<group>"; };
+		C678D15B421B8B28FA0EC0C8 /* NowPlayingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
+		C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStorageManager.swift; sourceTree = "<group>"; };
 		C9441C3D0ADB70B17C07C21E /* IconExportTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IconExportTests.swift; sourceTree = "<group>"; };
 		CF2B1A1C16E2030AEB1E5B9B /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WatchConnectivity.framework; sourceTree = SDKROOT; };
 		CFC78A623ABD7B192B2F969B /* MemoryCleanupToast.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryCleanupToast.swift; sourceTree = "<group>"; };
 		D25343EB4F3AEE389A91ED73 /* BatteryMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryMonitor.swift; sourceTree = "<group>"; };
-		D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BabyInCarWatchApp.swift; path = BabyInCarWatchApp.swift; sourceTree = "<group>"; };
+		D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabyInCarWatchApp.swift; sourceTree = "<group>"; };
 		D40D47B667157EE4C7845375 /* LibraryChatbotServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LibraryChatbotServiceTests.swift; sourceTree = "<group>"; };
 		D9F762308232F502F5E21483 /* TrialManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrialManagerTests.swift; sourceTree = "<group>"; };
 		DA35E5A99F03E12510CE02A1 /* VoicePromptTemplates.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoicePromptTemplates.swift; sourceTree = "<group>"; };
 		DA5F5BAD7791BC1D4D4919F0 /* PlaybackQueueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackQueueView.swift; sourceTree = "<group>"; };
 		DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComprehensiveMemoryTests.swift; sourceTree = "<group>"; };
-		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchConnectivityManager.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
+		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeStabilizer.swift; sourceTree = "<group>"; };
 		E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGenerator.swift; sourceTree = "<group>"; };
 		F1E195D9EBFD4E8F055D7E07 /* EmergencyResponseIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyResponseIntegrationTests.swift; sourceTree = "<group>"; };
 		F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategory.swift; sourceTree = "<group>"; };
 		F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageFilteringTests.swift; sourceTree = "<group>"; };
 		FB48B79C6512CFA0D678E6ED /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		WATCH00002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		WATCH00004 /* LibraryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LibraryView.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		WATCH00004 /* LibraryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		WATCH00010 /* WatchConnectivityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		361F76432F10907D00F9A131 /* Exceptions for "BabyInCarAppIntents" folder in "BabyInCarAppIntents" target */ = {
+		361F76432F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 361F76222F10907D00F9A131 /* BabyInCarAppIntents */;
 		};
-		361F76452F10907D00F9A131 /* Exceptions for "BabyInCarAppIntentsUI" folder in "BabyInCarAppIntentsUI" target */ = {
+		361F76452F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -427,30 +436,8 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		361F76262F10907D00F9A131 /* BabyInCarAppIntents */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				361F76432F10907D00F9A131 /* Exceptions for "BabyInCarAppIntents" folder in "BabyInCarAppIntents" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = BabyInCarAppIntents;
-			sourceTree = "<group>";
-		};
-		361F76312F10907D00F9A131 /* BabyInCarAppIntentsUI */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				361F76452F10907D00F9A131 /* Exceptions for "BabyInCarAppIntentsUI" folder in "BabyInCarAppIntentsUI" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = BabyInCarAppIntentsUI;
-			sourceTree = "<group>";
-		};
+		361F76262F10907D00F9A131 /* BabyInCarAppIntents */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (361F76432F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BabyInCarAppIntents; sourceTree = "<group>"; };
+		361F76312F10907D00F9A131 /* BabyInCarAppIntentsUI */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (361F76452F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BabyInCarAppIntentsUI; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -515,7 +502,6 @@
 				567869108E01725C3BB01571 /* WatchAudioPlayer.swift */,
 				C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */,
 			);
-			name = Services;
 			path = Services;
 			sourceTree = "<group>";
 		};
@@ -548,7 +534,6 @@
 			children = (
 				7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */,
 			);
-			name = Models;
 			path = Models;
 			sourceTree = "<group>";
 		};
@@ -817,8 +802,8 @@
 				A2000071 /* BabyInCarApp.entitlements */,
 				A2000313 /* AppIntentVocabulary.plist */,
 				B200000E /* PrivacyInfo.xcprivacy */,
-				A2000080 /* Audio */,
-				A2000081 /* DeepInfant_V2.mlmodel */,
+				A2000080 /* Resources/Audio */,
+				A2000081 /* Resources/DeepInfant_V2.mlmodel */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -831,7 +816,6 @@
 				23BA91254F9191DC6E855D66 /* InlineCryDetectionCard.swift */,
 				B2000006 /* CryTypeChangePromptView.swift */,
 			);
-			name = CryDetection;
 			path = CryDetection;
 			sourceTree = "<group>";
 		};
@@ -880,7 +864,6 @@
 				F056F97B265EB92793FC9DF6 /* Views */,
 				D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */,
 			);
-			name = BabyInCarWatchApp;
 			path = BabyInCarWatchApp;
 			sourceTree = "<group>";
 		};
@@ -901,7 +884,6 @@
 				122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */,
 				B2000009 /* FilterViewModel.swift */,
 			);
-			name = ViewModels;
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
@@ -915,7 +897,6 @@
 				6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */,
 				WATCH00004 /* LibraryView.swift */,
 			);
-			name = Views;
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -1058,6 +1039,15 @@
 			knownRegions = (
 				en,
 				Base,
+				ar,
+				de,
+				es,
+				fr,
+				it,
+				ja,
+				pt,
+				ru,
+				"zh-Hans",
 			);
 			mainGroup = A5000000;
 			packageReferences = (
@@ -1112,7 +1102,7 @@
 			files = (
 				A1000060 /* Assets.xcassets in Resources */,
 				A1000061 /* LaunchScreen.storyboard in Resources */,
-				A1000080 /* Audio in Resources */,
+				A1000080 /* Resources/Audio in Resources */,
 				A1000313 /* AppIntentVocabulary.plist in Resources */,
 				A1000109 /* Localizable.xcstrings in Resources */,
 				B100000E /* PrivacyInfo.xcprivacy in Resources */,
@@ -1153,7 +1143,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000081 /* DeepInfant_V2.mlmodel in Sources */,
+				A1000081 /* Resources/DeepInfant_V2.mlmodel in Sources */,
 				A1000001 /* BabyInCarApp.swift in Sources */,
 				A1000002 /* SceneDelegate.swift in Sources */,
 				A1000010 /* Baby.swift in Sources */,
@@ -1324,6 +1314,26 @@
 			targetProxy = WATCHPROXY001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		A2000313 /* AppIntentVocabulary.plist */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A20003130A /* en */,
+				A20003130B /* ar */,
+				A20003130C /* de */,
+				A20003130D /* es */,
+				A20003130E /* fr */,
+				A20003130F /* it */,
+				A20003130G /* ja */,
+				A20003130H /* pt */,
+				A20003130I /* ru */,
+				A20003130J /* zh-Hans */,
+			);
+			name = AppIntentVocabulary.plist;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		32593FE242A147BBFEAA11CF /* Debug */ = {
