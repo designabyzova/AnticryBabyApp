@@ -26,7 +26,6 @@ class UltraSmartPlaylistSelector: ObservableObject {
     /// Sounds to avoid for newborns (0-3 months) - too stimulating
     static let avoidForNewborns: Set<GeneratorType> = [
         .chimes,
-        .chimes,
         .bells,
         .aquarium,
         .softPiano,
@@ -43,26 +42,16 @@ class UltraSmartPlaylistSelector: ObservableObject {
         .womb,              // 90% of newborns calm within 3 min
         .shushing,          // Dr. Harvey Karp's 5 S's research
 
-        // Gentle nature sounds (all ages) - Research: Alvarsson 2010
-        .aquarium,             // Rhythmic, matches relaxed breathing
-        .aquarium,         // Reduces sleep onset by 25%
-        .aquarium,             // Continuous, non-startling
-        .bells,            // Complex nature soundscape
-        .chimes,             // Signals safe environment
-        .chimes,          // Relaxing night sounds
+        // Gentle sounds (all ages) - Research: Alvarsson 2010
+        .aquarium,          // Gentle bubbles, rhythmic
+        .bells,             // Resonant, calming decay
+        .chimes,            // Gentle, non-fatiguing
 
         // Musical sounds (all ages) - Research: Standley 2002
         .lullaby,           // Cross-cultural calming effect
         .musicBox,          // Classic 3-12mo favorite
         .softPiano,         // Reduces cortisol
         .gentleGuitar,      // Warm harmonics 200-2000Hz
-        .chimes,            // Gentle, non-fatiguing
-        .bells,             // Resonant, calming decay
-
-        // Other gentle sounds
-        .softPiano,         // Cozy, warm crackling
-        .softPiano,          // Night ambience
-        .aquarium,          // Gentle bubbles
     ]
 
     // MARK: - Scoring Weights (ML-style hyperparameters)
@@ -220,7 +209,7 @@ class UltraSmartPlaylistSelector: ObservableObject {
             switch sound {
             case .lullaby, .musicBox, .softPiano, .heartbeat, .womb:
                 return 0.95
-            case .aquarium, .aquarium, .aquarium:
+            case .aquarium, .shushing:
                 return 0.85
             case .gentleGuitar, .chimes:
                 return 0.75
@@ -248,7 +237,7 @@ class UltraSmartPlaylistSelector: ObservableObject {
                 return 0.95
             case .lullaby, .aquarium:
                 return 0.85
-            case .aquarium, .softPiano:
+            case .softPiano, .shushing:
                 return 0.75
             default:
                 return 0.3
@@ -257,11 +246,11 @@ class UltraSmartPlaylistSelector: ObservableObject {
         case .discomfort:
             // For discomfort: soothing, consistent sounds
             switch sound {
-            case .aquarium, .aquarium, .musicBox:
+            case .aquarium, .womb, .musicBox:
                 return 0.90
-            case .lullaby, .heartbeat, .womb:
+            case .lullaby, .heartbeat, .shushing:
                 return 0.85
-            case .aquarium, .softPiano:
+            case .softPiano, .gentleGuitar:
                 return 0.75
             default:
                 return 0.4
@@ -354,9 +343,9 @@ class UltraSmartPlaylistSelector: ObservableObject {
             switch sound {
             case .lullaby, .musicBox, .womb, .heartbeat, .aquarium:
                 return 1.0
-            case .softPiano, .aquarium, .gentleGuitar:
+            case .softPiano, .gentleGuitar:
                 return 0.9
-            case .aquarium:
+            case .shushing:
                 return 0.85
             case .chimes, .bells:
                 return 0.6 // Might be too stimulating
@@ -367,9 +356,9 @@ class UltraSmartPlaylistSelector: ObservableObject {
             switch sound {
             case .aquarium, .lullaby, .musicBox:
                 return 0.95
-            case .softPiano, .aquarium:
+            case .softPiano, .heartbeat:
                 return 0.85
-            case .aquarium:
+            case .womb, .shushing:
                 return 0.80
             default:
                 return 0.6
@@ -401,7 +390,7 @@ class UltraSmartPlaylistSelector: ObservableObject {
                 return 1.0 // Immediate comfort
             case .aquarium, .lullaby:
                 return 0.9
-            case .aquarium, .softPiano:
+            case .shushing, .softPiano:
                 return 0.8
             default:
                 return 0.5
@@ -413,9 +402,9 @@ class UltraSmartPlaylistSelector: ObservableObject {
             switch sound {
             case .musicBox, .lullaby, .aquarium:
                 return 0.95
-            case .softPiano, .aquarium, .heartbeat:
+            case .softPiano, .heartbeat, .womb:
                 return 0.85
-            case .aquarium, .gentleGuitar:
+            case .gentleGuitar, .chimes:
                 return 0.75
             default:
                 return 0.6
@@ -574,14 +563,10 @@ class UltraSmartPlaylistSelector: ObservableObject {
     }
 
     /// Get list of forbidden sounds with reasons
+    /// All harsh/mechanical sounds have been removed from the codebase entirely,
+    /// so this now returns an empty list.
     func getForbiddenSoundsInfo() -> [(sound: GeneratorType, reason: String)] {
-        return [
-            (.aquarium, "Too loud and scary for babies"),
-            (.aquarium, "Sudden sounds startle babies"),
-            (.aquarium, "Low rumble can be frightening"),
-            (.shushing, "Often too harsh and loud"),
-            (.womb, "Often too harsh and loud"),
-        ]
+        return []
     }
 }
 

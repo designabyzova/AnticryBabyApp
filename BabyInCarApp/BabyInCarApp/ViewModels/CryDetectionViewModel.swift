@@ -134,6 +134,12 @@ final class CryDetectionViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var pulseTimer: Timer?
 
+    /// Tracks the current playlist-building Task so it can be cancelled on cry type change
+    private var playlistTask: Task<Void, Never>?
+
+    /// Monotonic generation ID to discard stale playlist results
+    private var playlistGenerationId: UInt = 0
+
     /// Baby age in months, read from persisted baby profile
     private var currentBabyAge: Int {
         if let babyData = UserDefaults.standard.data(forKey: "currentBaby"),
@@ -212,6 +218,10 @@ final class CryDetectionViewModel: ObservableObject {
     func selectCryType(_ cryType: CryType) {
         print("[CryDetectionViewModel] Manual selection: \(cryType.displayName)")
 
+        // Cancel any in-flight playlist build to prevent stale results from playing
+        playlistTask?.cancel()
+        playlistTask = nil
+
         // Set state directly — don't call stabilizer.forceType() because
         // it emits a .stabilized event that would trigger startSoothingPlaylist() again
         stableCryType = cryType
@@ -223,12 +233,9 @@ final class CryDetectionViewModel: ObservableObject {
             SmartPlaylistGenerator.shared.recordTrackPlayed(currentTrack.id)
         }
 
-        // If already playing, stop current playback and reset state
-        // so startSoothingPlaylist() guard doesn't block the new playlist
-        if case .playingSoothing = state {
-            AudioEngine.shared.stop()
-            state = .detected(cryType: cryType, confidence: 1.0)
-        }
+        // Always stop current playback and reset state for a fresh start
+        AudioEngine.shared.stop()
+        state = .detected(cryType: cryType, confidence: 1.0)
 
         // Start music immediately for manual selection
         startSoothingPlaylist()
@@ -242,8 +249,15 @@ final class CryDetectionViewModel: ObservableObject {
         // Guard against double-calling (manual select + event handler)
         if case .playingSoothing = state { return }
 
-        // Stop detection
-        stopDetection()
+        // Cancel any previous playlist Task to prevent stale results
+        playlistTask?.cancel()
+        playlistTask = nil
+
+        // Stop detection (capture + model) without resetting UI state
+        captureService.stopCapture()
+        isListening = false
+        stopPulseAnimation()
+        classificationService.unloadModel()
 
         // Update state to playing
         state = .playingSoothing(cryType: stableCryType, track: nil)
@@ -253,7 +267,11 @@ final class CryDetectionViewModel: ObservableObject {
         let confidence = stableConfidence
         let babyAge = currentBabyAge
 
-        Task {
+        // Increment generation ID so stale Tasks can detect they're outdated
+        playlistGenerationId &+= 1
+        let currentGenerationId = playlistGenerationId
+
+        playlistTask = Task {
             print("[CryDetectionViewModel] Starting soothing playlist for \(cryType.displayName) (confidence: \(Int(confidence * 100))%)")
 
             let playlist = await SmartPlaylistBuilder.shared.buildEmergencyPlaylist(
@@ -262,6 +280,20 @@ final class CryDetectionViewModel: ObservableObject {
                 language: "en",
                 maxTracks: 30
             )
+
+            // Discard result if a newer cry type selection happened while building
+            guard !Task.isCancelled, currentGenerationId == playlistGenerationId else {
+                print("[CryDetectionViewModel] Discarding stale playlist for \(cryType.displayName)")
+                return
+            }
+
+            if playlist.tracks.isEmpty {
+                // Fallback: play a generated emergency track instead of silence
+                print("[CryDetectionViewModel] ⚠️ Empty playlist — falling back to generated emergency track")
+                let fallbackTrack = AudioTrack.defaultEmergencyTrack()
+                AudioEngine.shared.play(track: fallbackTrack)
+                return
+            }
 
             print("[CryDetectionViewModel] Playlist built: \(playlist.tracks.count) tracks, first: \(playlist.tracks.first?.title ?? "none")")
 
@@ -286,6 +318,8 @@ final class CryDetectionViewModel: ObservableObject {
 
     /// Reset to idle state
     func reset() {
+        playlistTask?.cancel()
+        playlistTask = nil
         stopDetection()
         state = .idle
         stableCryType = .unknown
