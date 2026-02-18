@@ -219,6 +219,13 @@ class AudioEngine: ObservableObject {
     private var lastSessionConfigTime: Date = .distantPast
     private let sessionConfigThrottleInterval: TimeInterval = 0.5 // 500ms minimum between reconfigs
 
+    /// Reset the audio session config throttle so the next configureAudioSession() call
+    /// is guaranteed to run. Call this when transitioning from capture mode (.playAndRecord)
+    /// to playback mode (.playback) — the throttle would otherwise skip the reconfiguration.
+    func resetSessionConfigThrottle() {
+        lastSessionConfigTime = .distantPast
+    }
+
     @discardableResult
     func configureAudioSession(interruptOtherAudio: Bool = false) -> Bool {
         // 🚨 PERFORMANCE FIX (2026-01-09): Throttle session reconfigurations
@@ -292,20 +299,22 @@ class AudioEngine: ObservableObject {
     private func ensureAudioSessionActive() {
         let session = AVAudioSession.sharedInstance()
 
-        // Check if session is already active with correct category
-        // .playAndRecord is ALSO valid for playback - it supports both input AND output
-        if session.category == .playback || session.category == .playAndRecord {
-            // Session appears to be configured correctly
-            print("[AudioEngine] ✅ Audio session already configured: \(session.category.rawValue)")
+        // Only accept .playback as valid — NOT .playAndRecord.
+        // After cry detection stops, the session is left in .playAndRecord mode
+        // with the recording hardware released. AVPlayer may produce no sound in
+        // this state because the audio route can be misconfigured (e.g., earpiece
+        // instead of speaker). Always switch to .playback for music playback.
+        if session.category == .playback {
+            print("[AudioEngine] ✅ Audio session already configured: .playback")
             return
         }
 
-        // Session not active or wrong category - activate it now!
-        print("[AudioEngine] ⚠️ Audio session not active - activating now!")
+        // Session is in wrong category (.playAndRecord, .ambient, etc.) - fix it
+        print("[AudioEngine] ⚠️ Audio session category is \(session.category.rawValue) - switching to .playback")
         do {
             try session.setCategory(.playback, mode: .default, options: [])
             try session.setActive(true)
-            print("[AudioEngine] ✅ Audio session activated in ensureAudioSessionActive()")
+            print("[AudioEngine] ✅ Audio session switched to .playback in ensureAudioSessionActive()")
         } catch {
             print("[AudioEngine] ❌ Failed to activate audio session: \(error)")
         }
@@ -472,6 +481,26 @@ class AudioEngine: ObservableObject {
     func play(playlist: Playlist, startIndex: Int = 0, context: PlaybackContext? = nil) {
         guard !playlist.tracks.isEmpty else { return }
 
+        // SOOTHING MODE: Activate unstoppable playback for emergency cry response
+        // When baby is crying, music MUST continue playing no matter what
+        if case .emergencyCry = context {
+            // CRITICAL FIX: Reset audio session throttle so configureAudioSession()
+            // properly switches from .playAndRecord → .playback after cry capture stops.
+            // Without this, the 500ms throttle can silently skip reconfiguration, leaving
+            // the session in capture mode where AVPlayer may produce no sound.
+            lastSessionConfigTime = .distantPast
+
+            // Fully stop any existing playback for a clean start — emergency response
+            // must be instant. Uses stopCurrentPlayback + state reset (not stop() which
+            // would clear isSoothingModeActive we're about to set).
+            stopCurrentPlayback()
+            currentTrack = nil
+            playbackState = .loading
+
+            isSoothingModeActive = true
+            print("[AudioEngine] 🛡️ SOOTHING MODE ACTIVATED - playback is now protected from interruptions")
+        }
+
         // Store original order before any shuffle
         originalPlaylistOrder = playlist.tracks
         shufflePlayedIndices.removeAll()
@@ -482,13 +511,6 @@ class AudioEngine: ObservableObject {
 
         // UNIFIED ARCHITECTURE: Set playback context
         playbackContext = context
-
-        // SOOTHING MODE: Activate unstoppable playback for emergency cry response
-        // When baby is crying, music MUST continue playing no matter what
-        if case .emergencyCry = context {
-            isSoothingModeActive = true
-            print("[AudioEngine] 🛡️ SOOTHING MODE ACTIVATED - playback is now protected from interruptions")
-        }
 
         // Mark the starting track as played for shuffle tracking
         shufflePlayedIndices.insert(startIndex)

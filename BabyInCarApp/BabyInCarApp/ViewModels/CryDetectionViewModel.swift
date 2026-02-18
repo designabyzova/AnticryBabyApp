@@ -259,6 +259,18 @@ final class CryDetectionViewModel: ObservableObject {
         stopPulseAnimation()
         classificationService.unloadModel()
 
+        // CRITICAL: Stop any existing playback for a clean start.
+        // After capture stops, AudioEngine may still hold an old track in a paused/stale
+        // state. Stopping ensures play(playlist:) takes the fresh-start branch instead of
+        // the crossfade branch, which can fail silently.
+        AudioEngine.shared.stop()
+
+        // CRITICAL: Reset session config throttle so the next configureAudioSession() call
+        // properly switches from .playAndRecord (capture) to .playback (music).
+        // The throttle can silently skip reconfiguration, leaving AVPlayer in a mode
+        // where it buffers but produces no sound.
+        AudioEngine.shared.resetSessionConfigThrottle()
+
         // Update state to playing
         state = .playingSoothing(cryType: stableCryType, track: nil)
 
@@ -291,7 +303,7 @@ final class CryDetectionViewModel: ObservableObject {
                 // Fallback: play a generated emergency track instead of silence
                 print("[CryDetectionViewModel] ⚠️ Empty playlist — falling back to generated emergency track")
                 let fallbackTrack = AudioTrack.defaultEmergencyTrack()
-                AudioEngine.shared.play(track: fallbackTrack)
+                AudioEngine.shared.playImmediateWithoutFade(track: fallbackTrack)
                 return
             }
 
