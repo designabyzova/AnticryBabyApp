@@ -127,8 +127,7 @@ final class CryDetectionViewModel: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let captureService = AudioCaptureService.shared
-    private let classificationService = CryClassificationService.shared
+    private let detector = SoundAnalysisCryDetector.shared
     private let stabilizer = CryTypeStabilizer.shared
 
     private var cancellables = Set<AnyCancellable>()
@@ -167,19 +166,20 @@ final class CryDetectionViewModel: ObservableObject {
 
         Task {
             do {
-                // Start audio capture
-                try await captureService.startCapture()
+                // Start Sound Analysis detection (capture + classification)
+                try await detector.startDetection()
                 isListening = true
                 startPulseAnimation()
 
-                // Set up audio samples callback
-                captureService.onAudioSamplesReady = { [weak self] samples in
+                // Set up classification result callback
+                // Sound Analysis delivers results directly — no manual classify() needed
+                detector.onClassificationResult = { [weak self] result in
                     Task { @MainActor in
-                        await self?.processAudioSamples(samples)
+                        self?.processClassificationResult(result)
                     }
                 }
 
-                captureService.onAudioLevelUpdate = { [weak self] level in
+                detector.onAudioLevelUpdate = { [weak self] level in
                     Task { @MainActor in
                         self?.audioLevel = level
                     }
@@ -202,12 +202,10 @@ final class CryDetectionViewModel: ObservableObject {
     }
 
     func stopDetection() {
-        captureService.stopCapture()
+        detector.stopDetection()
         isListening = false
         stopPulseAnimation()
         state = .idle
-        // MEMORY FIX (0030): Unload CoreML model when not detecting to save ~5MB
-        classificationService.unloadModel()
     }
 
     func retryDetection() {
@@ -253,22 +251,16 @@ final class CryDetectionViewModel: ObservableObject {
         playlistTask?.cancel()
         playlistTask = nil
 
-        // Stop detection (capture + model) without resetting UI state
-        captureService.stopCapture()
+        // Stop detection (capture + model) without resetting UI state.
+        // stopDetection() now transitions audio session from .playAndRecord → .playback.
+        detector.stopDetection()
         isListening = false
         stopPulseAnimation()
-        classificationService.unloadModel()
 
-        // CRITICAL: Stop any existing playback for a clean start.
-        // After capture stops, AudioEngine may still hold an old track in a paused/stale
-        // state. Stopping ensures play(playlist:) takes the fresh-start branch instead of
-        // the crossfade branch, which can fail silently.
+        // Stop any existing playback for a clean start.
         AudioEngine.shared.stop()
 
-        // CRITICAL: Reset session config throttle so the next configureAudioSession() call
-        // properly switches from .playAndRecord (capture) to .playback (music).
-        // The throttle can silently skip reconfiguration, leaving AVPlayer in a mode
-        // where it buffers but produces no sound.
+        // Reset session config throttle so play(playlist:) can reconfigure cleanly.
         AudioEngine.shared.resetSessionConfigThrottle()
 
         // Update state to playing
@@ -284,6 +276,14 @@ final class CryDetectionViewModel: ObservableObject {
         let currentGenerationId = playlistGenerationId
 
         playlistTask = Task {
+            // CRITICAL FIX: Give the HAL 50ms to finish tearing down the cry detection
+            // audio engine. Without this, rapid setCategory calls while the old engine is
+            // still releasing hardware resources cause HALC_ProxyIOContext overload,
+            // which makes AVPlayer buffer without producing sound.
+            try? await Task.sleep(nanoseconds: 50_000_000)
+
+            guard !Task.isCancelled, currentGenerationId == playlistGenerationId else { return }
+
             print("[CryDetectionViewModel] Starting soothing playlist for \(cryType.displayName) (confidence: \(Int(confidence * 100))%)")
 
             let playlist = await SmartPlaylistBuilder.shared.buildEmergencyPlaylist(
@@ -351,8 +351,8 @@ final class CryDetectionViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Subscribe to capture service state
-        captureService.$isAudioDetected
+        // Subscribe to detector audio detection state
+        detector.$isAudioDetected
             .receive(on: DispatchQueue.main)
             .assign(to: &$isAudioDetected)
 
@@ -393,26 +393,20 @@ final class CryDetectionViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func processAudioSamples(_ samples: [Float]) async {
-        // Gate: skip classification when no valid audio is detected (silence/ambient noise)
+    private func processClassificationResult(_ result: CryClassificationResult) {
+        // Gate: skip when no valid audio is detected (silence/ambient noise)
         // DeepInfant V2 has no "no_cry" class, so it always outputs a cry type —
         // feeding silence into the model produces false positives (e.g. "pain")
-        guard captureService.isAudioDetected else {
+        guard detector.isAudioDetected else {
             // Feed unknown/low-confidence to dilute any prior false predictions
             stabilizer.addPrediction(.unknown, confidence: 0.0)
             return
         }
 
-        do {
-            let result = try await classificationService.classify(audioSamples: samples)
+        print("[CryDetectionViewModel] Prediction: \(result.cryType.displayName) @ \(Int(result.confidence * 100))%")
 
-            print("[CryDetectionViewModel] Prediction: \(result.cryType.displayName) @ \(Int(result.confidence * 100))%")
-
-            stabilizer.addPrediction(from: result)
-            dominantConfidence = result.confidence
-        } catch {
-            print("[CryDetectionViewModel] Classification error: \(error)")
-        }
+        stabilizer.addPrediction(from: result)
+        dominantConfidence = result.confidence
     }
 
     private func handleStabilityEvent(_ event: StabilityEvent) {

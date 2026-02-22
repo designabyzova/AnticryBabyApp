@@ -463,10 +463,8 @@ struct InsightRow: View {
 // MARK: - Previews
 
 #Preview("Accuracy Badge") {
-    let tracker = CryPredictionAccuracyTracker.shared
-    return AIAccuracyBadge(tracker: tracker)
+    AIAccuracyBadge(tracker: CryPredictionAccuracyTracker.shared)
         .padding()
-        .previewLayout(.sizeThatFits)
 }
 
 #Preview("Accuracy Detail") {

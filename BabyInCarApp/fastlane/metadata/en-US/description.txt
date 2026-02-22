@@ -9,7 +9,7 @@ BABY MOOD INTELLIGENCE
 Learns your baby's unique preferences over time for personalized recommendations
 
 PREMIUM SOUND LIBRARY
-Lullabies, nature sounds, classical music, fairy tales, and more - over 340 tracks
+Lullabies, classical music, fairy tales, ambient sounds, and more - over 270 tracks
 
 CARPLAY INTEGRATION
 Full CarPlay support for safe, distraction-free driving
@@ -23,10 +23,9 @@ Track what works for your baby to build a personalized soothing profile
 SOUND CATEGORIES:
 - Lullabies (Brahms, Twinkle Twinkle, Mozart)
 - Classical (117 tracks - Chopin, Debussy, Bach, Beethoven)
-- Nature (ocean waves, birds, gentle streams)
 - Fairy Tales (English and Russian stories)
 - Children's Songs
-- Ambient & Acoustic
+- Ambient & Modern Piano
 
 WHY PARENTS LOVE US:
 - Hands-free operation while driving

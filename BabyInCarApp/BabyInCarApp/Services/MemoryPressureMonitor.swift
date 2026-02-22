@@ -18,9 +18,9 @@ import os.log
 /// Memory pressure levels based on available memory
 enum MemoryPressureLevel: String {
     case normal = "Normal"
-    case warning = "Warning"      // > 150MB - start monitoring
-    case critical = "Critical"    // > 180MB - reduce ML features
-    case emergency = "Emergency"  // > 220MB - aggressive cleanup
+    case warning = "Warning"      // > 350MB - start monitoring
+    case critical = "Critical"    // > 450MB - reduce caches
+    case emergency = "Emergency"  // > 550MB - aggressive cleanup
 }
 
 /// Monitors app memory usage and triggers cleanup actions
@@ -37,11 +37,11 @@ class MemoryPressureMonitor: ObservableObject {
 
     // MARK: - Configuration
     // Memory thresholds adjusted for realistic iOS limits
-    // Modern iOS allows 150-200MB for foreground media apps
-    // Original thresholds (80/100/130) were too aggressive and stopped audio unnecessarily
-    private let warningThresholdMB: Double = 150   // 150 MB - start monitoring closely
-    private let criticalThresholdMB: Double = 180  // 180 MB - reduce ML features
-    private let emergencyThresholdMB: Double = 220 // 220 MB - aggressive ML cleanup (but KEEP audio!)
+    // Modern iOS allows 500-700MB for foreground media apps
+    // Previous thresholds (150/180/220) triggered false alarms at normal usage (~180MB)
+    private let warningThresholdMB: Double = 350   // 350 MB - start monitoring closely
+    private let criticalThresholdMB: Double = 450  // 450 MB - reduce caches
+    private let emergencyThresholdMB: Double = 550 // 550 MB - aggressive cleanup (but KEEP audio!)
 
     // MARK: - Callbacks
     var onWarningLevel: (() -> Void)?

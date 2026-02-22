@@ -26,10 +26,10 @@ class MemoryMonitor: ObservableObject {
     // MARK: - Memory Warning Levels
 
     enum MemoryWarningLevel: String {
-        case normal      // < 150MB - healthy for modern iOS app with ML
-        case warning     // 150-180MB - approaching limit, monitor closely
-        case critical    // 180-220MB - reduce ML features
-        case emergency   // > 220MB - aggressive cleanup needed
+        case normal      // < 350MB - healthy for media app with ML on modern iOS
+        case warning     // 350-450MB - approaching limit, monitor closely
+        case critical    // 450-550MB - reduce caches, stop non-essential work
+        case emergency   // > 550MB - aggressive cleanup needed
 
         var color: Color {
             switch self {
@@ -61,9 +61,14 @@ class MemoryMonitor: ObservableObject {
     private let logger = Logger(subsystem: "com.anticry.babyincar", category: "MemoryMonitor")
 
     // Memory thresholds (in MB)
-    private let normalThreshold: Double = 150.0
-    private let warningThreshold: Double = 180.0
-    private let criticalThreshold: Double = 220.0
+    // iOS allows 500-700MB for foreground media apps on modern iPhones.
+    // A media app with CoreML, AVAudioEngine, AVPlayer, and SwiftUI typically uses
+    // 250-350MB at baseline (system frameworks alone account for ~200MB).
+    // Previous thresholds (250/350/450) triggered false alarms and cleanup attempts
+    // that freed 0 bytes because the memory was held by system frameworks.
+    private let normalThreshold: Double = 350.0
+    private let warningThreshold: Double = 450.0
+    private let criticalThreshold: Double = 550.0
 
     // MARK: - Initialization
 
@@ -234,10 +239,10 @@ class MemoryMonitor: ObservableObject {
             let reduction = beforeCleanup - afterCleanup
             self.logger.info("🧹 Cleanup complete: \(String(format: "%.1f", beforeCleanup)) MB → \(String(format: "%.1f", afterCleanup)) MB (reduced \(String(format: "%.1f", reduction)) MB)")
 
-            if afterCleanup < 35.0 {
-                self.logger.info("✅ Memory successfully reduced below 35MB target")
-            } else if reduction > 5.0 {
-                self.logger.info("⚠️ Cleanup helped but memory still high: \(String(format: "%.1f", afterCleanup)) MB")
+            if afterCleanup < self.normalThreshold {
+                self.logger.info("✅ Memory reduced below normal threshold (\(Int(self.normalThreshold))MB)")
+            } else if reduction > 10.0 {
+                self.logger.info("⚠️ Cleanup helped (\(String(format: "%.1f", reduction))MB freed) but still at \(String(format: "%.1f", afterCleanup)) MB")
             } else {
                 self.logger.warning("❌ Cleanup had minimal effect: \(String(format: "%.1f", reduction)) MB reduction")
             }
@@ -268,10 +273,10 @@ class MemoryMonitor: ObservableObject {
             let reduction = beforeCleanup - afterCleanup
             self.logger.info("🧹 AGGRESSIVE cleanup complete: \(String(format: "%.1f", beforeCleanup)) MB → \(String(format: "%.1f", afterCleanup)) MB (reduced \(String(format: "%.1f", reduction)) MB)")
 
-            if afterCleanup < 30.0 {
-                self.logger.info("✅ Emergency cleanup SUCCESSFUL - memory reduced below 30MB target")
-            } else if afterCleanup < 40.0 {
-                self.logger.warning("⚠️ Partial success - memory at \(String(format: "%.1f", afterCleanup)) MB (target: < 30MB)")
+            if afterCleanup < self.normalThreshold {
+                self.logger.info("✅ Emergency cleanup SUCCESSFUL - memory below \(Int(self.normalThreshold))MB")
+            } else if afterCleanup < self.warningThreshold {
+                self.logger.warning("⚠️ Partial success - memory at \(String(format: "%.1f", afterCleanup)) MB")
             } else {
                 self.logger.error("❌ CRITICAL: Aggressive cleanup FAILED - memory still at \(String(format: "%.1f", afterCleanup)) MB")
                 self.logger.error("⚠️ App may be killed by iOS if memory continues to grow")

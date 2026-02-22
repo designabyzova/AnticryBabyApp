@@ -119,7 +119,7 @@ class CryTypeStabilizer: ObservableObject {
 
     // MARK: - Public API
 
-    /// Add a new prediction from CryClassificationService
+    /// Add a new prediction from SoundAnalysisCryDetector
     /// - Parameters:
     ///   - cryType: The predicted cry type
     ///   - confidence: Confidence level (0.0-1.0)

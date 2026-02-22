@@ -164,9 +164,6 @@
         }
       }
     },
-    "%lld/7" : {
-
-    },
     "%lld%%" : {
 
     },
@@ -10870,6 +10867,12 @@
 
     },
     "Version 1.0.0" : {
+
+    },
+    "Voice & Hands-Free" : {
+
+    },
+    "Voice Volume" : {
 
     },
     "Waiting for audio..." : {

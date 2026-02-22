@@ -32,14 +32,10 @@
 		717523F2C8DA1A555CB0D764 /* WatchStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */; };
 		77FFCB5A1117B4F3120D7C08 /* VoiceInteractionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52FCCA3D23197293F81417CF /* VoiceInteractionService.swift */; };
 		7A0B080E2D5B858FEE9EA165 /* VoiceInteractionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C70621791F0AD01F21FA76 /* VoiceInteractionServiceTests.swift */; };
-		7BA2C25929491856221A0414 /* CircularAudioBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270225FA113DFA223F73831B /* CircularAudioBuffer.swift */; };
-		7C242EC8F654BF4EF79D0E2A /* CircularAudioBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */; };
+		7BA2C259294918562S0A0001 /* SoundAnalysisCryDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270225FA113DFA2S0A0002 /* SoundAnalysisCryDetector.swift */; };
 		7F9EBC73C0DDC9C1A263F393 /* BabyInCarWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33E34F41500D3F82035ECB6 /* BabyInCarWatchApp.swift */; };
 		80193AB0EA9DC2D687151EE8 /* VoicePromptTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA35E5A99F03E12510CE02A1 /* VoicePromptTemplates.swift */; };
-		81E0F14D44A1113CCEBB61D6 /* MelSpectrogramGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */; };
-		856344B33D1F3785ED8160BD /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */; };
 		88580C330B6DA1F50C1361CF /* FeedbackCollectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */; };
-		8F625D703020E42AB05F010C /* MelSpectrogramGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */; };
 		8F92896B4AAC67A42C0536F6 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF7E9387AD2952D91BA1EBB /* WatchConnectivity.framework */; };
 		916FCD242A6E6BE93C070A62 /* CryTypeChangeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */; };
 		A1000001 /* BabyInCarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* BabyInCarApp.swift */; };
@@ -145,7 +141,6 @@
 		B100000C /* SmartSoothingQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000C /* SmartSoothingQueueView.swift */; };
 		B100000D /* ReleaseLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000D /* ReleaseLogger.swift */; };
 		B100000E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B200000E /* PrivacyInfo.xcprivacy */; };
-		B6FCCAAB0E3A95D9D746DD67 /* CryClassificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A6804B54E52F1A249B78686 /* CryClassificationService.swift */; };
 		C318B073148ACC7E8A068F15 /* DebugMemoryOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */; };
 		C5E84D07A0C31B3F0DF9301D /* PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6B4D4590AA16B4858A2EED /* PlaybackContext.swift */; };
 		CF68B8E0F2DF4D3BD3EA95D7 /* PlaybackQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CCB5736E37D31BD689AD99 /* PlaybackQueueManager.swift */; };
@@ -235,7 +230,7 @@
 		22CFF84D951A77DBCC3FAF96 /* PerformanceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		23BA91254F9191DC6E855D66 /* InlineCryDetectionCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InlineCryDetectionCard.swift; sourceTree = "<group>"; };
 		260894FDBF40F49EAB9530C6 /* UltraSmartPlaylistSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UltraSmartPlaylistSelectorTests.swift; sourceTree = "<group>"; };
-		270225FA113DFA223F73831B /* CircularAudioBuffer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularAudioBuffer.swift; sourceTree = "<group>"; };
+		270225FA113DFA2S0A0002 /* SoundAnalysisCryDetector.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoundAnalysisCryDetector.swift; sourceTree = "<group>"; };
 		2A81FF96A872234B5E825993 /* CategoryRotationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CategoryRotationManager.swift; sourceTree = "<group>"; };
 		2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCharacteristicsAnalyzer.swift; sourceTree = "<group>"; };
 		361F76232F10907D00F9A131 /* BabyInCarAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BabyInCarAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -256,22 +251,18 @@
 		606A16B1BAFB9773A18A31E4 /* CryTypeChangeDetector.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeChangeDetector.swift; sourceTree = "<group>"; };
 		61173870F4BC522E62B4DBE5 /* MemoryMonitorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitorTests.swift; sourceTree = "<group>"; };
 		613B84719A4680A5FC4A135D /* EmergencyCategorySelectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyCategorySelectionTests.swift; sourceTree = "<group>"; };
-		6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGeneratorTests.swift; sourceTree = "<group>"; };
 		686A2521E711469647C81C48 /* FreemiumGatekeeperTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeperTests.swift; sourceTree = "<group>"; };
 		6B985733DB27D2F36A1F3FC6 /* WatchOnboardingView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchOnboardingView.swift; sourceTree = "<group>"; };
 		719457390ECCFEC855DEA8A6 /* VoiceInteractionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceInteractionCoordinator.swift; sourceTree = "<group>"; };
 		7728CBB1144588372F2A6EF5 /* ViewSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ViewSnapshotTests.swift; sourceTree = "<group>"; };
 		7A5D6788C504335CA35A2E6B /* ActionCategoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategoryTests.swift; sourceTree = "<group>"; };
 		7AA044E9768D4DB60AFDC96E /* BabyInCarAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabyInCarAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CircularAudioBufferTests.swift; sourceTree = "<group>"; };
 		7FFB20DE15A3F7E28683EE7D /* APIContentIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIContentIntegrationTests.swift; sourceTree = "<group>"; };
 		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugMemoryOverlay.swift; sourceTree = "<group>"; };
 		84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		882CE90CC9A0F96675200F13 /* EffectivenessTrackingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessTrackingTests.swift; sourceTree = "<group>"; };
 		8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitor.swift; sourceTree = "<group>"; };
-		9A6804B54E52F1A249B78686 /* CryClassificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryClassificationService.swift; sourceTree = "<group>"; };
-		9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
 		A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionView.swift; sourceTree = "<group>"; };
 		A2000001 /* BabyInCarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabyInCarApp.swift; sourceTree = "<group>"; };
 		A2000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -407,7 +398,6 @@
 		DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComprehensiveMemoryTests.swift; sourceTree = "<group>"; };
 		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeStabilizer.swift; sourceTree = "<group>"; };
-		E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MelSpectrogramGenerator.swift; sourceTree = "<group>"; };
 		F1E195D9EBFD4E8F055D7E07 /* EmergencyResponseIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyResponseIntegrationTests.swift; sourceTree = "<group>"; };
 		F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategory.swift; sourceTree = "<group>"; };
 		F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageFilteringTests.swift; sourceTree = "<group>"; };
@@ -667,10 +657,7 @@
 				8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */,
 				A2000108 /* WatchSyncManager.swift */,
 				2B1F46680BFB09F73F3E2D0C /* VoiceCharacteristicsAnalyzer.swift */,
-				E78BA6F5AA0728F970C9A1A1 /* MelSpectrogramGenerator.swift */,
-				270225FA113DFA223F73831B /* CircularAudioBuffer.swift */,
-				9A6804B54E52F1A249B78686 /* CryClassificationService.swift */,
-				9BE6C19C910E8E6BC1A05823 /* AudioCaptureService.swift */,
+				270225FA113DFA2S0A0002 /* SoundAnalysisCryDetector.swift */,
 				E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */,
 				4E1BAAD2CA781EF9D8B3DBBE /* SmartPlaylistGenerator.swift */,
 				2A81FF96A872234B5E825993 /* CategoryRotationManager.swift */,
@@ -848,8 +835,6 @@
 				F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */,
 				44EB4820C2916DF12EEF6A75 /* ResearchKnowledgeBaseTests.swift */,
 				WATCH00010 /* WatchConnectivityTests.swift */,
-				6579221E2A06AAF7F53817A9 /* MelSpectrogramGeneratorTests.swift */,
-				7D7152C3B4D331750DF966C3 /* CircularAudioBufferTests.swift */,
 				42C70621791F0AD01F21FA76 /* VoiceInteractionServiceTests.swift */,
 				B3230E77EBC9A453DF9310E8 /* VoiceInteractionCoordinatorTests.swift */,
 			);
@@ -1131,8 +1116,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				WATCH00011 /* WatchConnectivityTests.swift in Sources */,
-				8F625D703020E42AB05F010C /* MelSpectrogramGeneratorTests.swift in Sources */,
-				7C242EC8F654BF4EF79D0E2A /* CircularAudioBufferTests.swift in Sources */,
 				E74478FC37CED068F81ACFB2 /* ActionCategoryTests.swift in Sources */,
 				7A0B080E2D5B858FEE9EA165 /* VoiceInteractionServiceTests.swift in Sources */,
 				D0608AB992FB47F71DAE98CA /* VoiceInteractionCoordinatorTests.swift in Sources */,
@@ -1235,10 +1218,7 @@
 				A1000108 /* WatchSyncManager.swift in Sources */,
 				C5E84D07A0C31B3F0DF9301D /* PlaybackContext.swift in Sources */,
 				A5D5126CDA20D4ACBCDA5755 /* VoiceCharacteristicsAnalyzer.swift in Sources */,
-				81E0F14D44A1113CCEBB61D6 /* MelSpectrogramGenerator.swift in Sources */,
-				7BA2C25929491856221A0414 /* CircularAudioBuffer.swift in Sources */,
-				B6FCCAAB0E3A95D9D746DD67 /* CryClassificationService.swift in Sources */,
-				856344B33D1F3785ED8160BD /* AudioCaptureService.swift in Sources */,
+				7BA2C259294918562S0A0001 /* SoundAnalysisCryDetector.swift in Sources */,
 				F07D48AD5DF6751AFA3F4A0D /* CryTypeStabilizer.swift in Sources */,
 				2DE1FFE61E0419EE8A0AFBA9 /* SmartPlaylistGenerator.swift in Sources */,
 				67A5B8C811E3D95F8C080A22 /* ActionCategory.swift in Sources */,
@@ -1343,7 +1323,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				"CODE_SIGN_IDENTITY[sdk=watchsimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarWatchApp/Info.plist;
@@ -1373,7 +1353,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarAppIntents/BabyInCarAppIntents.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntents/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BabyInCarAppIntents;
@@ -1403,7 +1383,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarAppIntents/BabyInCarAppIntents.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntents/Info.plist;
@@ -1434,7 +1414,7 @@
 			buildSettings = {
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
@@ -1463,7 +1443,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
@@ -1494,7 +1474,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1650,7 +1630,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1685,7 +1665,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;

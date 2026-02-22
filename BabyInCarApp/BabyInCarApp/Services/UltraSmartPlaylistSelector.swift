@@ -349,8 +349,6 @@ class UltraSmartPlaylistSelector: ObservableObject {
                 return 0.85
             case .chimes, .bells:
                 return 0.6 // Might be too stimulating
-            default:
-                return 0.5
             }
         } else if isNapTime {
             switch sound {

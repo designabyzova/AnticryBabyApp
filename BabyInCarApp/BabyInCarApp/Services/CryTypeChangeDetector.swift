@@ -119,8 +119,7 @@ class CryTypeChangeDetector: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let audioCaptureService = AudioCaptureService.shared
-    private let classificationService = CryClassificationService.shared
+    private let detector = SoundAnalysisCryDetector.shared
 
     // MARK: - Initialization
 
@@ -228,35 +227,28 @@ class CryTypeChangeDetector: ObservableObject {
     private func performCheck() async {
         guard isMonitoring && !isPaused else { return }
 
-        // Check if AudioCaptureService is active and has audio
-        guard audioCaptureService.state == .capturing,
-              audioCaptureService.isAudioDetected else {
+        // Gate: detector must be active and detecting audio
+        guard detector.state == .capturing,
+              detector.isAudioDetected else {
             return
         }
 
-        // Get current audio samples
-        guard let samples = audioCaptureService.getCurrentSamples() else {
+        // Use the latest classification result from the detector
+        // instead of manually fetching samples and classifying
+        guard let result = detector.lastResult,
+              result.confidence >= configuration.minimumConfidence else {
             return
         }
 
-        // Classify
-        do {
-            let result = try await classificationService.classify(audioSamples: samples)
+        // Only use recent results (within 2x check interval)
+        let age = Date().timeIntervalSince(result.timestamp)
+        guard age < configuration.checkInterval * 2 else { return }
 
-            // Only process high-confidence predictions
-            guard result.confidence >= configuration.minimumConfidence else {
-                return
-            }
+        // Add to history
+        addPrediction(cryType: result.cryType, confidence: result.confidence)
 
-            // Add to history
-            addPrediction(cryType: result.cryType, confidence: result.confidence)
-
-            // Evaluate for potential change
-            evaluateForChange()
-
-        } catch {
-            print("[CryTypeChangeDetector] Classification error: \(error)")
-        }
+        // Evaluate for potential change
+        evaluateForChange()
     }
 
     private func addPrediction(cryType: CryType, confidence: Double) {

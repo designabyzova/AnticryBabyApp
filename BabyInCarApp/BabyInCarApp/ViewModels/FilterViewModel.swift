@@ -37,11 +37,11 @@ final class FilterViewModel: ObservableObject {
 
     // MARK: - Initialization
 
-    init(contentLibrary: ContentLibraryService = .shared) {
-        self.contentLibrary = contentLibrary
+    init(contentLibrary: ContentLibraryService? = nil) {
+        self.contentLibrary = contentLibrary ?? ContentLibraryService.shared
 
         // Subscribe to track changes
-        contentLibrary.$allTracks
+        self.contentLibrary.$allTracks
             .sink { [weak self] tracks in
                 self?.updateAvailableTags(from: tracks)
                 self?.applyFilters(to: tracks)
@@ -189,7 +189,7 @@ final class FilterViewModel: ObservableObject {
         let tagsByType = Dictionary(grouping: selectedTags, by: { $0.type })
 
         // For each tag type, track must match at least ONE tag (OR logic within type)
-        for (type, tags) in tagsByType {
+        for (_, tags) in tagsByType {
             let matchesAnyInType = tags.contains { tag in
                 matchesTag(track, tag)
             }

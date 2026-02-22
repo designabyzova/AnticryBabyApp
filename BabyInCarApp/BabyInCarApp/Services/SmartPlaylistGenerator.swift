@@ -85,7 +85,7 @@ class SmartPlaylistGenerator: ObservableObject {
         allTracks: [AudioTrack],
         favoriteIds: Set<UUID> = [],
         isPremium: Bool = false,
-        maxTracks: Int = defaultPlaylistSize
+        maxTracks: Int = 10
     ) -> [AudioTrack] {
         let startTime = Date()
         print("[SmartPlaylistGenerator] 🧠 Generating playlist for \(cryType.rawValue), age=\(babyAge)mo")

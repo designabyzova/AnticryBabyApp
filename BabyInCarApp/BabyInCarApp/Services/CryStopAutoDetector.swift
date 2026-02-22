@@ -120,8 +120,7 @@ class CryStopAutoDetector: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let audioCaptureService = AudioCaptureService.shared
-    private let cryClassificationService = CryClassificationService.shared
+    private let detector = SoundAnalysisCryDetector.shared
     private let feedbackCollectionService = FeedbackCollectionService.shared
 
     // MARK: - Initialization
@@ -205,8 +204,8 @@ class CryStopAutoDetector: ObservableObject {
     // MARK: - Private Methods
 
     private func setupAudioLevelObserver() {
-        // Observe audio level changes from AudioCaptureService
-        audioCaptureService.$currentLevel
+        // Observe audio level changes from SoundAnalysisCryDetector
+        detector.$currentLevel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] level in
                 self?.currentAudioLevel = level
@@ -271,10 +270,9 @@ class CryStopAutoDetector: ObservableObject {
 
         // Secondary check: If audio is detected but cry confidence is low
         // (baby might be awake but not crying)
-        if audioCaptureService.isAudioDetected {
-            // Get classification confidence from recent predictions
-            let cryType = cryClassificationService.currentCryType
-            let confidence = cryClassificationService.confidence
+        if detector.isAudioDetected {
+            let cryType = detector.currentCryType
+            let confidence = detector.confidence
 
             // If we can classify but confidence is below threshold, consider quiet
             if cryType != .unknown && confidence < configuration.cryConfidenceThreshold {

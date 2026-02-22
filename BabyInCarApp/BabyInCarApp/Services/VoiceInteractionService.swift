@@ -110,7 +110,7 @@ final class VoiceInteractionService: NSObject, ObservableObject {
     var isVoiceModeActive: Bool {
         SmartCarPlayController.shared.isActive ||
         handsFreeModeEnabled ||
-        CryClassificationService.shared.isListening
+        SoundAnalysisCryDetector.shared.isListening
     }
 
     /// Reads the hands-free mode setting from UserDefaults
