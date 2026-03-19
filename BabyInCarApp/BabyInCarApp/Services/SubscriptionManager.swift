@@ -23,17 +23,13 @@ class SubscriptionManager: ObservableObject {
     enum ProductID: String, CaseIterable {
         case monthlyPremium = "com.babyincar.premium.monthly"
         case yearlyPremium = "com.babyincar.premium.yearly"
-        case lifetimePremium = "com.babyincar.premium.lifetime"
-        case familyMonthly = "com.babyincar.family.monthly"
-        case familyYearly = "com.babyincar.family.yearly"
+        case lifetimePremium = "com.babyincar.premium.lifetime.v2"
 
         var displayName: String {
             switch self {
             case .monthlyPremium: return "Premium Monthly"
             case .yearlyPremium: return "Premium Yearly"
             case .lifetimePremium: return "Premium Lifetime"
-            case .familyMonthly: return "Family Monthly"
-            case .familyYearly: return "Family Yearly"
             }
         }
     }
@@ -44,7 +40,9 @@ class SubscriptionManager: ObservableObject {
         var product: Product?
         let name: String
         let description: String
-        let monthlyPrice: String
+        let billedPrice: String       // Primary: actual amount charged (most prominent)
+        let billedPeriod: String      // e.g. "/month", "/year", "one-time"
+        let equivalentPrice: String?  // Secondary: calculated equivalent (subordinate)
         let features: [String]
         let isBestValue: Bool
         let savings: String?
@@ -57,7 +55,9 @@ class SubscriptionManager: ObservableObject {
                 product: products.first { $0.id == ProductID.monthlyPremium.rawValue },
                 name: "Premium",
                 description: "Monthly subscription",
-                monthlyPrice: "$6.99",
+                billedPrice: "$6.99",
+                billedPeriod: "/month",
+                equivalentPrice: nil,
                 features: [
                     "100% content access",
                     "Unlimited offline downloads",
@@ -73,10 +73,11 @@ class SubscriptionManager: ObservableObject {
                 product: products.first { $0.id == ProductID.yearlyPremium.rawValue },
                 name: "Premium Yearly",
                 description: "Best value",
-                monthlyPrice: "$4.17/mo",
+                billedPrice: "$49.99",
+                billedPeriod: "/year",
+                equivalentPrice: "$4.17/mo",
                 features: [
                     "Everything in Premium",
-                    "Billed as $49.99/year",
                     "Save 40%"
                 ],
                 isBestValue: true,
@@ -87,7 +88,9 @@ class SubscriptionManager: ObservableObject {
                 product: products.first { $0.id == ProductID.lifetimePremium.rawValue },
                 name: "Lifetime",
                 description: "One-time purchase",
-                monthlyPrice: "$149.99",
+                billedPrice: "$149.99",
+                billedPeriod: " one-time",
+                equivalentPrice: nil,
                 features: [
                     "Everything in Premium",
                     "Never pay again",
@@ -305,15 +308,7 @@ struct SubscriptionView: View {
                     // Subscribe button
                     Button {
                         Task {
-                            // If no products, retry loading instead of purchasing
-                            if !hasValidProducts {
-                                isLoadingProducts = true
-                                await subscriptionManager.loadProducts()
-                                if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
-                                    selectedPlan = bestValue.id
-                                }
-                                isLoadingProducts = false
-                            } else if await subscriptionManager.purchase(planId: selectedPlan) {
+                            if await subscriptionManager.purchase(planId: selectedPlan) {
                                 dismiss()
                             }
                         }
@@ -322,12 +317,8 @@ struct SubscriptionView: View {
                             if subscriptionManager.isLoading || isLoadingProducts {
                                 ProgressView()
                                     .tint(.white)
-                                Text(isLoadingProducts ? "Loading..." : "Processing...")
+                                Text(isLoadingProducts ? "Loading plans..." : "Processing...")
                                     .padding(.leading, 8)
-                            } else if !hasValidProducts {
-                                Image(systemName: "exclamationmark.triangle")
-                                Text("Retry Loading")
-                                    .padding(.leading, 4)
                             } else {
                                 Text("Subscribe Now")
                             }
@@ -338,10 +329,12 @@ struct SubscriptionView: View {
                         .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(buttonBackgroundColor)
+                                .fill(subscriptionManager.isLoading || isLoadingProducts || selectedPlan.isEmpty
+                                      ? Color.appPrimary.opacity(0.5)
+                                      : Color.appPrimary)
                         )
                     }
-                    .disabled(isButtonDisabled)
+                    .disabled(subscriptionManager.isLoading || isLoadingProducts || selectedPlan.isEmpty)
                     .padding(.horizontal, 20)
                     .accessibilityIdentifier("subscribeNowButton")
 
@@ -370,12 +363,22 @@ struct SubscriptionView: View {
                     }
 
                     // Legal text
-                    Text("Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period.")
+                    VStack(spacing: 8) {
+                        Text("Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.appTextSecondary)
+                            .multilineTextAlignment(.center)
+
+                        HStack(spacing: 4) {
+                            Link("Privacy Policy", destination: URL(string: "https://lulla-app.pages.dev/privacy")!)
+                            Text("and")
+                                .foregroundColor(.appTextSecondary)
+                            Link("Terms of Use (EULA)", destination: URL(string: "https://lulla-app.pages.dev/terms")!)
+                        }
                         .font(.system(size: 11))
-                        .foregroundColor(.appTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                 }
             }
             .background(Color.appBackground)
@@ -418,45 +421,25 @@ struct SubscriptionView: View {
             isLoadingProducts = false
         }
         .task {
-            // Ensure products are loaded when view appears
-            if subscriptionManager.products.isEmpty {
+            // Auto-retry product loading with backoff (fixes Guideline 2.1 sandbox issue)
+            var retryCount = 0
+            let maxRetries = 3
+            while subscriptionManager.products.isEmpty && retryCount < maxRetries {
                 await subscriptionManager.loadProducts()
-                // Select best value after loading
-                if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
-                    selectedPlan = bestValue.id
+                if !subscriptionManager.products.isEmpty { break }
+                retryCount += 1
+                if retryCount < maxRetries {
+                    try? await Task.sleep(nanoseconds: UInt64(retryCount) * 2_000_000_000)
                 }
+            }
+            if let bestValue = subscriptionManager.availablePlans.first(where: { $0.isBestValue && $0.product != nil }) {
+                selectedPlan = bestValue.id
             }
             isLoadingProducts = false
         }
     }
 
-    // MARK: - Computed Properties for Button State
-
-    private var hasValidProducts: Bool {
-        subscriptionManager.products.contains { product in
-            subscriptionManager.availablePlans.contains { $0.id == product.id }
-        }
-    }
-
-    private var isButtonDisabled: Bool {
-        if isLoadingProducts || subscriptionManager.isLoading {
-            return true
-        }
-        if !hasValidProducts {
-            return false // Allow tap to retry
-        }
-        return selectedPlan.isEmpty
-    }
-
-    private var buttonBackgroundColor: Color {
-        if isLoadingProducts || subscriptionManager.isLoading {
-            return Color.appPrimary.opacity(0.7)
-        }
-        if !hasValidProducts {
-            return Color.orange // Retry state
-        }
-        return selectedPlan.isEmpty ? Color.appPrimary.opacity(0.5) : Color.appPrimary
-    }
+    // (Button state is computed inline)
 
     // MARK: - Trial Banner
 
@@ -547,9 +530,22 @@ struct PlanCard: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(plan.monthlyPrice)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.appPrimary)
+                    // Billed amount is the MOST prominent (Apple Guideline 3.1.2)
+                    HStack(alignment: .firstTextBaseline, spacing: 1) {
+                        Text(plan.billedPrice)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.appText)
+                        Text(plan.billedPeriod)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.appTextSecondary)
+                    }
+
+                    // Calculated equivalent in subordinate position
+                    if let equivalent = plan.equivalentPrice {
+                        Text(equivalent)
+                            .font(.system(size: 11))
+                            .foregroundColor(.appTextSecondary)
+                    }
 
                     if let savings = plan.savings {
                         Text("Save \(savings)")

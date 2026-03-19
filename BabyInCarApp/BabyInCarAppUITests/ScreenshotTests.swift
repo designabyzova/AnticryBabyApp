@@ -10,77 +10,50 @@ final class ScreenshotTests: XCTestCase {
     }
 
     func testTakeAppStoreScreenshots() throws {
-        // Wait for app to load
-        sleep(2)
+        // Wait for splash screen to dismiss
+        sleep(5)
 
         // Screenshot 1: Home Screen
-        let homeScreenshot = XCUIScreen.main.screenshot()
-        let homeAttachment = XCTAttachment(screenshot: homeScreenshot)
-        homeAttachment.name = "1_home_APP_IPHONE_67_0"
-        homeAttachment.lifetime = .keepAlways
-        add(homeAttachment)
+        saveScreenshot(name: "1_home_APP_IPHONE_67_0")
 
         // Tap on Library tab
         let libraryTab = app.tabBars.buttons["Library"]
-        if libraryTab.exists {
+        if libraryTab.waitForExistence(timeout: 3) {
             libraryTab.tap()
-            sleep(1)
+            sleep(2)
+            saveScreenshot(name: "2_library_APP_IPHONE_67_0")
+        }
 
-            // Screenshot 2: Library Screen
-            let libraryScreenshot = XCUIScreen.main.screenshot()
-            let libraryAttachment = XCTAttachment(screenshot: libraryScreenshot)
-            libraryAttachment.name = "2_library_APP_IPHONE_67_0"
-            libraryAttachment.lifetime = .keepAlways
-            add(libraryAttachment)
+        // Tap on Detect tab
+        let detectTab = app.tabBars.buttons["Detect"]
+        if detectTab.waitForExistence(timeout: 3) {
+            detectTab.tap()
+            sleep(2)
+            saveScreenshot(name: "3_detect_APP_IPHONE_67_0")
         }
 
         // Tap on Favorites tab
         let favoritesTab = app.tabBars.buttons["Favorites"]
-        if favoritesTab.exists {
+        if favoritesTab.waitForExistence(timeout: 3) {
             favoritesTab.tap()
-            sleep(1)
-
-            // Screenshot 3: Favorites Screen
-            let favoritesScreenshot = XCUIScreen.main.screenshot()
-            let favoritesAttachment = XCTAttachment(screenshot: favoritesScreenshot)
-            favoritesAttachment.name = "3_favorites_APP_IPHONE_67_0"
-            favoritesAttachment.lifetime = .keepAlways
-            add(favoritesAttachment)
+            sleep(2)
+            saveScreenshot(name: "4_favorites_APP_IPHONE_67_0")
         }
 
         // Tap on Profile tab
         let profileTab = app.tabBars.buttons["Profile"]
-        if profileTab.exists {
+        if profileTab.waitForExistence(timeout: 3) {
             profileTab.tap()
-            sleep(1)
-
-            // Screenshot 4: Profile Screen
-            let profileScreenshot = XCUIScreen.main.screenshot()
-            let profileAttachment = XCTAttachment(screenshot: profileScreenshot)
-            profileAttachment.name = "4_profile_APP_IPHONE_67_0"
-            profileAttachment.lifetime = .keepAlways
-            add(profileAttachment)
+            sleep(2)
+            saveScreenshot(name: "5_profile_APP_IPHONE_67_0")
         }
+    }
 
-        // Go back to Home to find a music category
-        let homeTab = app.tabBars.buttons["Home"]
-        if homeTab.exists {
-            homeTab.tap()
-            sleep(1)
-
-            // Tap on a category to show content
-            let classicalCategory = app.staticTexts["Classical..."]
-            if classicalCategory.exists {
-                classicalCategory.tap()
-                sleep(1)
-
-                // Screenshot 5: Category/Content Screen
-                let categoryScreenshot = XCUIScreen.main.screenshot()
-                let categoryAttachment = XCTAttachment(screenshot: categoryScreenshot)
-                categoryAttachment.name = "5_category_APP_IPHONE_67_0"
-                categoryAttachment.lifetime = .keepAlways
-                add(categoryAttachment)
-            }
-        }
+    private func saveScreenshot(name: String) {
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 }

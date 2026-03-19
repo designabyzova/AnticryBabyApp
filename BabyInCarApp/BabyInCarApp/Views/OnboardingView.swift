@@ -670,7 +670,7 @@ struct PermissionRow: View {
                     .font(.system(size: 24))
                     .foregroundColor(.appSuccess)
             } else {
-                Button("Allow") {
+                Button("Continue") {
                     action()
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -808,7 +808,13 @@ struct OnboardingNavigationButtons: View {
                         currentPage += 1
                     }
                 } else {
-                    onComplete()
+                    // Always request microphone permission before completing onboarding
+                    // per Apple Guideline 5.1.1 - user must proceed to permission request
+                    AVAudioSession.sharedInstance().requestRecordPermission { _ in
+                        DispatchQueue.main.async {
+                            onComplete()
+                        }
+                    }
                 }
             } label: {
                 HStack(spacing: DesignTokens.spacingS) {

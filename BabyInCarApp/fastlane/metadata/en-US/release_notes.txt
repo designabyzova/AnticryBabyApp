@@ -1,10 +1,9 @@
-Welcome to Lulla 1.0!
+Welcome to Lulla 1.0.1!
 
-This is our first release, packed with features to help soothe your baby:
-- Smart cry detection with AI
-- 270+ premium sounds
-- CarPlay support
-- Voice commands
-- Personalized recommendations
+This update includes important improvements:
+- Improved onboarding experience
+- Enhanced subscription display
+- Stability and performance improvements
+- 270+ premium soothing sounds
 
 We can't wait to hear from you!

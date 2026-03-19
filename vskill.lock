@@ -1,17 +1,37 @@
 {
   "version": 1,
   "agents": [
-    "claude-code"
+    "claude-code",
+    "cursor"
   ],
   "skills": {
-    "sw": {
-      "version": "1.0.225",
-      "sha": "9c2e1ff0c65e",
-      "tier": "BUNDLED",
-      "installedAt": "2026-02-22T20:37:40.944Z",
-      "source": "local:specweave"
+    "marketing-skills": {
+      "version": "0.0.0",
+      "sha": "d18cf033668c",
+      "tier": "VERIFIED",
+      "installedAt": "2026-02-28T05:40:38.708Z",
+      "source": "github:coreyhaines31/marketingskills#plugin:marketing-skills",
+      "scope": "project"
+    },
+    "email-worker": {
+      "version": "1.0.0",
+      "sha": "",
+      "tier": "LOCAL",
+      "installedAt": "2026-02-28T14:30:00.000Z",
+      "source": "local:email-worker",
+      "marketplace": "local",
+      "pluginDir": true,
+      "scope": "project"
+    },
+    "skill-creator": {
+      "version": "0.0.0",
+      "sha": "dcd4803e61e9",
+      "tier": "VERIFIED",
+      "installedAt": "2026-03-19T18:00:20.373Z",
+      "source": "github:anthropics/skills",
+      "scope": "project"
     }
   },
   "createdAt": "2026-02-22T20:37:40.047Z",
-  "updatedAt": "2026-02-22T20:37:40.944Z"
+  "updatedAt": "2026-03-19T18:00:20.374Z"
 }

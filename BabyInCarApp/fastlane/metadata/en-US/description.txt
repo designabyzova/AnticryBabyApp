@@ -32,6 +32,16 @@ WHY PARENTS LOVE US:
 - Works offline once downloaded
 - Scientifically-backed soothing sounds
 - Beautiful, calming interface
-- Privacy-first - all processing on device
+- Privacy-first - all AI processing on device, no data sent externally
+
+SUBSCRIPTION OPTIONS:
+- Premium Monthly ($6.99/month)
+- Premium Yearly ($49.99/year - save 40%)
+- Lifetime ($149.99 one-time)
+
+Payment will be charged to your Apple ID account. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in App Store account settings.
+
+Privacy Policy: https://lulla-app.pages.dev/privacy
+Terms of Use (EULA): https://lulla-app.pages.dev/terms
 
 Download now and enjoy peaceful car rides with your little one!

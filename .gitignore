@@ -14,6 +14,24 @@ plugins/
 # Claude Code local settings
 .claude/
 
+# IDE / Editor config
+.cursor/
+
+# Local agent state
+.agents/
+
+# SpecWeave skill memories (local)
+.specweave/skill-memories/
+
+# Large ML model files (use Git LFS or download separately)
+*.onnx
+*.onnx.data
+scripts/DeepInfant_V2_INT8_backup.mlmodel
+BabyInCarApp/BabyInCarApp/Resources/DeepInfant_V2_INT8.mlmodel
+
+# Misc analysis files
+skillup_soccer_subscription_analysis.txt
+
 # Backup files
 *.bak
 *.backup
