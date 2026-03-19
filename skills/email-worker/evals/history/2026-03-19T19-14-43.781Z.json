@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-03-19T19:14:43.781Z",
+  "model": "sonnet",
+  "skill_name": "email-worker",
+  "cases": [],
+  "overall_pass_rate": 0,
+  "type": "comparison",
+  "provider": "claude-cli",
+  "verdict": "DEGRADING",
+  "comparison": {
+    "skillPassRate": 0,
+    "baselinePassRate": 0,
+    "skillRubricAvg": 0,
+    "baselineRubricAvg": 0,
+    "delta": 0
+  },
+  "actionItems": {
+    "recommendation": "remove",
+    "summary": "The skill produced zero passing assertions and scored 0.0/5 on all rubric dimensions with no cases where it outperformed baseline, indicating it actively degrades or fails to improve output. With no evidence of value and a 0% pass rate, removal is warranted.",
+    "weaknesses": [
+      "Zero assertion pass rate across all eval cases — the skill failed every measurable test",
+      "Rubric average of 0.0/5 matches baseline at 0.0/5 with no positive delta, meaning the skill adds no value",
+      "The skill content references a hardcoded local path (/Users/aabyzovext/Projects/Webstudio/cloudflare-email-worker/) that won't exist in other environments, making it non-portable",
+      "The skill description is overly broad ('Also use when the user mentions email') which likely causes false triggers on unrelated tasks",
+      "No per-case data exists to identify even partial wins or edge cases where the skill helped",
+      "The skill content appears truncated ('Adapt to whatever framework or language the proj...') suggesting the SKILL.md itself is incomplete"
+    ],
+    "strengths": [
+      "The skill has a clear, specific integration workflow concept (CORS → client integration → deploy) that could be valuable if properly implemented",
+      "The description correctly identifies the reuse pattern across multiple projects as the core value proposition"
+    ],
+    "suggestedFocus": "Fix the truncated SKILL.md content first, replace the hardcoded absolute path with a configurable or relative reference, then re-run evals — the 0% pass rate may stem from the skill file being incomplete rather than a fundamentally flawed approach."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-03-19T19:12:35.469Z",
+  "model": "sonnet",
+  "skill_name": "email-worker",
+  "cases": [
+    {
+      "eval_id": 3,
+      "eval_name": "Edge case: user requests email with file attachments",
+      "status": "pass",
+      "error_message": null,
+      "pass_rate": 1,
+      "durationMs": 32980,
+      "tokens": null,
+      "assertions": [
+        {
+          "id": "states-no-attachment-support",
+          "text": "Response explicitly states that the current worker does not support file attachments",
+          "pass": true,
+          "reasoning": "The response explicitly states 'No — the current worker doesn't support attachments' in its opening sentence, directly and unambiguously asserting that the current worker does not support file attachments."
+        },
+        {
+          "id": "suggests-alternative",
+          "text": "Response suggests an alternative approach or service for sending emails with attachments (e.g., direct SendGrid API, a different service, or a future enhancement)",
+          "pass": true,
+          "reasoning": "The response explicitly suggests two alternative approaches: Option 1 (hosting PDF and linking to it) and Option 2 (calling SendGrid's API directly from the backend with base64-encoded attachments). Both qualify as alternative approaches for sending emails with attachments, and Option 2 specifically mentions using the direct SendGrid API as an alternative service/method."
+        }
+      ],
+      "comparisonDetail": {
+        "skillDurationMs": 32980,
+        "skillTokens": null,
+        "baselineDurationMs": 35540,
+        "baselineTokens": null,
+        "skillContentScore": 4,
+        "skillStructureScore": 5,
+        "baselineContentScore": 4,
+        "baselineStructureScore": 4,
+        "winner": "skill"
+      }
+    }
+  ],
+  "overall_pass_rate": 1,
+  "type": "comparison",
+  "provider": "claude-cli",
+  "verdict": "MARGINAL",
+  "comparison": {
+    "skillPassRate": 1,
+    "baselinePassRate": 1,
+    "skillRubricAvg": 4.5,
+    "baselineRubricAvg": 4,
+    "delta": 0
+  },
+  "actionItems": {
+    "recommendation": "keep",
+    "summary": "The skill consistently outperforms baseline across all tested cases with a +0.5 delta and 100% assertion pass rate; it provides concrete, actionable integration guidance that baseline responses lack.",
+    "weaknesses": [
+      "Only one eval case was tested (edge case: file attachments), making statistical confidence low — a single case cannot confirm consistent performance across the full range of integration scenarios",
+      "The skill file is truncated in the provided content, suggesting the full instructions may be cut off, which could cause incomplete guidance in practice",
+      "Content scores tied with baseline (4/4) in the only tested case — the skill's edge came entirely from structure, not substantive content depth"
+    ],
+    "strengths": [
+      "Perfect assertion pass rate (2/2) in the tested case demonstrates the skill reliably produces outputs that meet defined requirements",
+      "Structure score improvement (+1 over baseline: 5 vs 4) shows the skill produces better-organized, more navigable responses",
+      "The skill encodes domain-specific knowledge (CORS whitelisting, wrangler.toml, worker URL pattern) that a baseline model cannot know without context"
+    ],
+    "suggestedFocus": "Add 3–5 more diverse eval cases covering the core use cases (contact form, transactional email, order confirmation) to validate that the +0.5 delta holds beyond the single edge-case test."
+  }
+}

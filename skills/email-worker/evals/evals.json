@@ -1,0 +1,107 @@
+{
+  "skill_name": "email-worker",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Vanilla JS contact form integration",
+      "prompt": "I have a plain HTML/CSS/JS website at https://myportfolio.dev and I want to add a contact form so visitors can reach me at hello@myportfolio.dev. The form should collect name, email, and message. I already have the email worker deployed at https://email-service.myaccount.workers.dev. Wire it up.",
+      "expected_output": "Step-by-step integration including: adding myportfolio.dev to ALLOWED_ORIGINS in wrangler.toml, a complete HTML form, a JavaScript fetch POST to the /send endpoint with the correct payload shape, an HTML email template, client-side validation, and loading/success/error UX handling.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "includes-cors-step",
+          "text": "Response instructs the user to add myportfolio.dev to ALLOWED_ORIGINS in wrangler.toml",
+          "type": "boolean"
+        },
+        {
+          "id": "includes-redeploy-command",
+          "text": "Response includes a command to redeploy the worker (e.g., npm run deploy)",
+          "type": "boolean"
+        },
+        {
+          "id": "includes-fetch-post",
+          "text": "Response includes a JavaScript fetch call using POST method targeting the /send endpoint",
+          "type": "boolean"
+        },
+        {
+          "id": "payload-has-correct-fields",
+          "text": "The fetch payload in the response includes 'to', 'from', 'subject', and 'html' fields",
+          "type": "boolean"
+        },
+        {
+          "id": "includes-reply-to",
+          "text": "Response includes a replyTo field set to the visitor's email so the owner can reply directly",
+          "type": "boolean"
+        },
+        {
+          "id": "includes-html-email-template",
+          "text": "Response includes an HTML string for the email body rather than sending raw plain text user input",
+          "type": "boolean"
+        },
+        {
+          "id": "includes-ux-feedback",
+          "text": "Response mentions showing a success or error message to the user after form submission",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "React 'Request a Quote' form integration",
+      "prompt": "I'm building a React app for a plumbing company at https://quickplumb.co. I need a 'Request a Quote' form that collects customer name, phone, service type (dropdown: Leak Repair, Drain Cleaning, Installation), and preferred date. When submitted it should email quotes@quickplumb.co. The worker URL is https://email-service.plumbingco.workers.dev. Use React with useState for form state.",
+      "expected_output": "A complete React component with controlled form inputs, a POST to the worker's /send endpoint, CORS setup instructions for quickplumb.co, a branded HTML email template that includes all form fields, and proper loading/disabled-button/error state handling.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "cors-origin-mentioned",
+          "text": "Response mentions adding quickplumb.co to ALLOWED_ORIGINS in wrangler.toml",
+          "type": "boolean"
+        },
+        {
+          "id": "uses-react-usestate",
+          "text": "Response includes React useState hook for managing form field values",
+          "type": "boolean"
+        },
+        {
+          "id": "post-to-send-endpoint",
+          "text": "Response includes a fetch or axios POST to https://email-service.plumbingco.workers.dev/send",
+          "type": "boolean"
+        },
+        {
+          "id": "email-to-quotes-address",
+          "text": "The 'to' field in the POST payload is set to quotes@quickplumb.co",
+          "type": "boolean"
+        },
+        {
+          "id": "template-includes-service-type",
+          "text": "The HTML email template in the response includes the service type field from the form",
+          "type": "boolean"
+        },
+        {
+          "id": "submit-button-disabled-during-send",
+          "text": "Response includes logic to disable the submit button while the request is in flight",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Edge case: user requests email with file attachments",
+      "prompt": "I need to send emails from my website with PDF attachments — users submit a form and we email them a receipt PDF. Can I use your Cloudflare email worker for this?",
+      "expected_output": "A clear explanation that the current email worker does not support attachments, with a suggestion to use an alternative approach or service for attachment support.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "states-no-attachment-support",
+          "text": "Response explicitly states that the current worker does not support file attachments",
+          "type": "boolean"
+        },
+        {
+          "id": "suggests-alternative",
+          "text": "Response suggests an alternative approach or service for sending emails with attachments (e.g., direct SendGrid API, a different service, or a future enhancement)",
+          "type": "boolean"
+        }
+      ]
+    }
+  ]
+}

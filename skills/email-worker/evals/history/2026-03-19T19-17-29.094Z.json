@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-03-19T19:17:29.094Z",
+  "model": "sonnet",
+  "skill_name": "email-worker",
+  "cases": [
+    {
+      "eval_id": 2,
+      "eval_name": "React 'Request a Quote' form integration",
+      "status": "pass",
+      "error_message": null,
+      "pass_rate": 1,
+      "durationMs": 150381,
+      "tokens": null,
+      "assertions": [
+        {
+          "id": "cors-origin-mentioned",
+          "text": "Response mentions adding quickplumb.co to ALLOWED_ORIGINS in wrangler.toml",
+          "pass": true,
+          "reasoning": "The response explicitly mentions adding 'https://quickplumb.co' to ALLOWED_ORIGINS in wrangler.toml in Step 1, and again in the checklist table (item #1)."
+        },
+        {
+          "id": "uses-react-usestate",
+          "text": "Response includes React useState hook for managing form field values",
+          "pass": true,
+          "reasoning": "The response includes `const [form, setForm] = useState(INITIAL)` which is a React useState hook specifically for managing form field values (name, phone, service, date)."
+        },
+        {
+          "id": "post-to-send-endpoint",
+          "text": "Response includes a fetch or axios POST to https://email-service.plumbingco.workers.dev/send",
+          "pass": true,
+          "reasoning": "The LLM output includes a fetch POST call to `${WORKER_URL}/send` where `WORKER_URL` is defined as `'https://email-service.plumbingco.workers.dev'`, making the full URL `https://email-service.plumbingco.workers.dev/send`."
+        },
+        {
+          "id": "email-to-quotes-address",
+          "text": "The 'to' field in the POST payload is set to quotes@quickplumb.co",
+          "pass": true,
+          "reasoning": "The code sets `const RECIPIENT = 'quotes@quickplumb.co'` and uses it in the fetch POST body as `to: RECIPIENT`, so the 'to' field is indeed set to 'quotes@quickplumb.co'."
+        },
+        {
+          "id": "template-includes-service-type",
+          "text": "The HTML email template in the response includes the service type field from the form",
+          "pass": true,
+          "reasoning": "The HTML email template in `buildEmailHtml` includes a table row with 'SERVICE' as the label and `${service}` as the value, which renders the service type field from the form data passed to the function."
+        },
+        {
+          "id": "submit-button-disabled-during-send",
+          "text": "Response includes logic to disable the submit button while the request is in flight",
+          "pass": true,
+          "reasoning": "The code sets `const loading = status === 'loading'` and applies `disabled={loading}` to the submit button, along with `opacity: loading ? 0.7 : 1` for visual feedback. The `status` is set to `'loading'` at the start of `handleSubmit` and only changes away from it upon success or error, effectively disabling the button for the entire duration of the in-flight request."
+        }
+      ],
+      "comparisonDetail": {
+        "skillDurationMs": 150381,
+        "skillTokens": null,
+        "baselineDurationMs": 64432,
+        "baselineTokens": null,
+        "skillContentScore": 3,
+        "skillStructureScore": 4,
+        "baselineContentScore": 4,
+        "baselineStructureScore": 4,
+        "winner": "baseline"
+      }
+    }
+  ],
+  "overall_pass_rate": 1,
+  "type": "comparison",
+  "provider": "claude-cli",
+  "verdict": "MARGINAL",
+  "comparison": {
+    "skillPassRate": 1,
+    "baselinePassRate": 0.5,
+    "skillRubricAvg": 3.5,
+    "baselineRubricAvg": 4,
+    "delta": 0.5
+  },
+  "actionItems": {
+    "recommendation": "improve",
+    "summary": "The skill underperformed baseline on content quality (3 vs 4) in the only tested case, suggesting the instructions produce verbose or less-targeted output despite passing all assertions. The skill has solid structural guidance but likely over-prescribes implementation details that dilute response quality.",
+    "weaknesses": [
+      "Content score (3/5) lost to baseline (4/5) in the React form case — the skill likely generates boilerplate-heavy responses that are less concise than what a model produces naturally",
+      "Only one eval case was run, making the -0.5 delta statistically weak but still a red flag",
+      "The skill description is overly broad ('any website, app, or project') which may cause the model to over-apply it and produce generic rather than context-specific integration code",
+      "The SKILL.md appears truncated ('Build the form or trigger...') — incomplete instructions likely cause the model to fill gaps inconsistently"
+    ],
+    "strengths": [
+      "100% assertion pass rate — all functional requirements (correct endpoint, CORS step, deployment command) are consistently produced",
+      "Structure score tied baseline (4/4) — the step-by-step workflow (CORS → client code → deploy) is well-organized and survives the eval"
+    ],
+    "suggestedFocus": "Trim the skill to only the non-obvious facts the model can't know (worker URL pattern, CORS config location, wrangler.toml path) and remove any prescriptive prose that the model already handles well on its own."
+  }
+}
