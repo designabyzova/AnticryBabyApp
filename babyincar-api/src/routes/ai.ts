@@ -1,13 +1,29 @@
 import { Hono } from 'hono';
 import type { Env, Baby, Track, DevelopmentalStage, AudioCategory } from '../types';
 import { authMiddleware } from '../middleware/auth';
-import { calculateAgeMonths, getDevelopmentalStage, getRecommendedCategories } from '../utils/helpers';
+import { calculateAgeMonths, getDevelopmentalStage, getRateLimitKey, checkRateLimit } from '../utils/helpers';
 import { callGeminiChat } from '../lib/gemini';
 
 const ai = new Hono<{ Bindings: Env }>();
 
 // All AI routes require authentication
 ai.use('*', authMiddleware);
+
+// Rate limit: 10 AI requests per minute per user/IP
+ai.use('*', async (c, next) => {
+  const identifier = c.get('userId') || c.req.header('CF-Connecting-IP') || 'anonymous';
+  const key = getRateLimitKey(identifier, 'ai');
+  const { allowed, remaining } = await checkRateLimit(c.env.CACHE, key, 10);
+
+  c.header('X-RateLimit-Limit', '10');
+  c.header('X-RateLimit-Remaining', remaining.toString());
+
+  if (!allowed) {
+    return c.json({ success: false, error: 'Rate limit exceeded', retry_after: 60 }, 429);
+  }
+
+  await next();
+});
 
 // System prompt for the baby soothing AI
 const SYSTEM_PROMPT = `You are an expert pediatric sleep consultant and child development specialist AI assistant for the "Baby in Car" app. Your role is to provide personalized audio recommendations to calm babies during car rides.
@@ -30,6 +46,9 @@ Always respond in JSON format with structured recommendations.`;
 
 // POST /ai/recommend - Get AI-powered personalized recommendations
 ai.post('/recommend', async (c) => {
+  if (!c.env.GEMINI_API_KEY) {
+    return c.json({ error: 'AI features temporarily unavailable' }, 503);
+  }
   const userId = c.get('userId');
   const body = await c.req.json<{
     baby_id: string;
@@ -191,6 +210,9 @@ Please provide personalized recommendations in the following JSON format:
 
 // POST /ai/emergency-advice - Get AI advice for emergency cry-stop
 ai.post('/emergency-advice', async (c) => {
+  if (!c.env.GEMINI_API_KEY) {
+    return c.json({ error: 'AI features temporarily unavailable' }, 503);
+  }
   const userId = c.get('userId');
   const body = await c.req.json<{
     baby_id: string;
@@ -275,6 +297,9 @@ Provide IMMEDIATE actionable advice in JSON format:
 
 // POST /ai/analyze-effectiveness - Analyze why certain tracks work
 ai.post('/analyze-effectiveness', async (c) => {
+  if (!c.env.GEMINI_API_KEY) {
+    return c.json({ error: 'AI features temporarily unavailable' }, 503);
+  }
   const userId = c.get('userId');
   const body = await c.req.json<{
     baby_id: string;
@@ -383,6 +408,9 @@ Provide analysis in JSON format:
 
 // POST /ai/generate-story - Generate a custom bedtime story
 ai.post('/generate-story', async (c) => {
+  if (!c.env.GEMINI_API_KEY) {
+    return c.json({ error: 'AI features temporarily unavailable' }, 503);
+  }
   const userId = c.get('userId');
   const user = c.get('user');
 

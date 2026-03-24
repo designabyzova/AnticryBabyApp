@@ -599,7 +599,11 @@ SCORE: [0-10]
 REASONING: [1-2 sentences]`;
 
     try {
-      const text = await callGemini(this.env.GEMINI_API_KEY, prompt, 150);
+      const text = await callGemini(this.env.GEMINI_API_KEY, prompt, 150, this.env.CACHE);
+      if (!text) {
+        // Daily quota exceeded — fall back to neutral score
+        return { score: 0.5, reasoning: 'Daily AI quota reached, using default score.' };
+      }
 
       const scoreMatch = text.match(/SCORE:\s*(\d+(?:\.\d+)?)/i);
       const reasoningMatch = text.match(/REASONING:\s*(.+)/is);

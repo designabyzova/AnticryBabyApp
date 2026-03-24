@@ -100,12 +100,13 @@ export default {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     console.log('[Cron] Cron trigger fired at:', new Date(event.scheduledTime).toISOString());
 
-    // Run audio scraping
-    console.log('[Cron] Running audio scraping...');
-    ctx.waitUntil(scrapeAudioContent(env));
-
-    // Run audio curation (Gemini-powered AI analysis when GEMINI_API_KEY is set)
-    console.log('[Cron] Running audio curation...');
-    ctx.waitUntil(handleScheduledCuration(env));
+    // Run scraper first, then curator sequentially (curator depends on scraped data)
+    console.log('[Cron] Running audio scraping then curation...');
+    ctx.waitUntil(
+      scrapeAudioContent(env).then(() => {
+        console.log('[Cron] Scraping complete, starting curation...');
+        return handleScheduledCuration(env);
+      })
+    );
   },
 };
