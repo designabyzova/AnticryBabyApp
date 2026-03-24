@@ -2,13 +2,9 @@ import { Hono } from 'hono';
 import type { Env, Baby, Track, DevelopmentalStage, AudioCategory } from '../types';
 import { authMiddleware } from '../middleware/auth';
 import { calculateAgeMonths, getDevelopmentalStage, getRecommendedCategories } from '../utils/helpers';
+import { callGeminiChat } from '../lib/gemini';
 
-// Extended Env with AI binding
-interface AIEnv extends Env {
-  AI: Ai;
-}
-
-const ai = new Hono<{ Bindings: AIEnv }>();
+const ai = new Hono<{ Bindings: Env }>();
 
 // All AI routes require authentication
 ai.use('*', authMiddleware);
@@ -115,21 +111,17 @@ Please provide personalized recommendations in the following JSON format:
 `;
 
   try {
-    // Call Cloudflare Workers AI with Llama 3.1
-    const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt }
-      ],
-      max_tokens: 1024,
-      temperature: 0.7,
-    });
+    // Call Gemini 2.0 Flash
+    const responseText = await callGeminiChat(
+      c.env.GEMINI_API_KEY,
+      SYSTEM_PROMPT,
+      userPrompt,
+      1024,
+    );
 
     // Parse AI response
     let aiRecommendation;
     try {
-      // Extract JSON from response
-      const responseText = response.response || '';
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         aiRecommendation = JSON.parse(jsonMatch[0]);
@@ -174,7 +166,7 @@ Please provide personalized recommendations in the following JSON format:
       },
       ai_recommendation: aiRecommendation,
       recommended_tracks: recommendedTracks,
-      model_used: '@cf/meta/llama-3.1-8b-instruct',
+      model_used: 'gemini-2.0-flash',
     });
   } catch (error) {
     console.error('AI recommendation failed:', error);
@@ -244,18 +236,15 @@ Provide IMMEDIATE actionable advice in JSON format:
 `;
 
   try {
-    const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: emergencyPrompt }
-      ],
-      max_tokens: 512,
-      temperature: 0.5, // Lower temperature for more consistent emergency advice
-    });
+    const responseText = await callGeminiChat(
+      c.env.GEMINI_API_KEY,
+      SYSTEM_PROMPT,
+      emergencyPrompt,
+      512,
+    );
 
     let advice;
     try {
-      const responseText = response.response || '';
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         advice = JSON.parse(jsonMatch[0]);
@@ -352,18 +341,15 @@ Provide analysis in JSON format:
 `;
 
   try {
-    const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: analysisPrompt }
-      ],
-      max_tokens: 768,
-      temperature: 0.6,
-    });
+    const responseText = await callGeminiChat(
+      c.env.GEMINI_API_KEY,
+      SYSTEM_PROMPT,
+      analysisPrompt,
+      768,
+    );
 
     let analysis;
     try {
-      const responseText = response.response || '';
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0]);
@@ -464,16 +450,12 @@ Generate ONLY the story text, ready to be read aloud or converted to speech.
 `;
 
   try {
-    const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-      messages: [
-        { role: 'system', content: 'You are a children\'s author specializing in soothing bedtime stories for babies and toddlers. Write gentle, calming stories with simple vocabulary.' },
-        { role: 'user', content: storyPrompt }
-      ],
-      max_tokens: body.length === 'long' ? 700 : body.length === 'medium' ? 450 : 250,
-      temperature: 0.8,
-    });
-
-    const story = response.response || '';
+    const story = await callGeminiChat(
+      c.env.GEMINI_API_KEY,
+      'You are a children\'s author specializing in soothing bedtime stories for babies and toddlers. Write gentle, calming stories with simple vocabulary.',
+      storyPrompt,
+      body.length === 'long' ? 700 : body.length === 'medium' ? 450 : 250,
+    );
 
     return c.json({
       success: true,

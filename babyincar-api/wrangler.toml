@@ -11,8 +11,8 @@ binding = "AI"
 [vars]
 ENVIRONMENT = "development"
 APP_NAME = "Baby in Car API"
-# Note: Set these secrets via: wrangler secret put SUNO_API_KEY
-# Available music generation API keys (configure one):
+# Secrets (set via wrangler secret put <NAME>):
+# - GEMINI_API_KEY: Gemini 2.0 Flash free tier key (https://aistudio.google.com/apikey)
 # - SUNO_API_KEY: Get from https://sunoapi.org/
 # - AIML_API_KEY: Get from https://aimlapi.com/
 
@@ -53,10 +53,9 @@ bucket_name = "anticrybaby"
 # simple = { limit = 100, period = 60 }
 
 # Scheduled triggers for automated audio curation
-# Free tier limit: 5 cron triggers per account
-# Runs every 6 hours: 0:00, 6:00, 12:00, 18:00 UTC
+# Runs daily at 9:00 UTC (Gemini free tier = no AI cost concerns)
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["0 9 * * *"]
 
 # Production environment
 [env.production]

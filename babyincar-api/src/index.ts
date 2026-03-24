@@ -96,15 +96,15 @@ export default {
   // HTTP request handler
   fetch: app.fetch,
 
-  // Cron job handler - runs every 6 hours
+  // Cron job handler - runs daily at 9:00 UTC
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    console.log('[Cron] 🕐 Cron trigger fired at:', new Date(event.scheduledTime).toISOString());
+    console.log('[Cron] Cron trigger fired at:', new Date(event.scheduledTime).toISOString());
 
-    // Run 24/7 audio scraping (every 6 hours)
-    console.log('[Cron] Running 24/7 audio scraping...');
+    // Run audio scraping
+    console.log('[Cron] Running audio scraping...');
     ctx.waitUntil(scrapeAudioContent(env));
 
-    // Also run legacy audio curation
+    // Run audio curation (Gemini-powered AI analysis when GEMINI_API_KEY is set)
     console.log('[Cron] Running audio curation...');
     ctx.waitUntil(handleScheduledCuration(env));
   },

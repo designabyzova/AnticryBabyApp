@@ -5,7 +5,8 @@ export interface Env {
   CACHE: KVNamespace;
   AUDIO_BUCKET: R2Bucket;
   IMAGES_BUCKET: R2Bucket;
-  AI: Ai;  // Workers AI binding for Llama 3.1
+  AI: Ai;  // Workers AI binding (kept as emergency fallback)
+  GEMINI_API_KEY: string;  // Gemini 2.0 Flash — primary AI provider (free tier)
   ENVIRONMENT: string;
   JWT_SECRET: string;
   APPLE_TEAM_ID: string;

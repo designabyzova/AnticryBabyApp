@@ -13,6 +13,7 @@
  */
 
 import type { Env } from '../types';
+import { callGemini } from '../lib/gemini';
 
 // Audio source configurations
 export const AUDIO_SOURCES = {
@@ -438,6 +439,61 @@ export class AudioCurator {
   }
 
   /**
+   * Check if AI curation is enabled (Gemini free tier — enabled by default)
+   */
+  private isAIEnabled(): boolean {
+    return !!this.env.GEMINI_API_KEY;
+  }
+
+  /**
+   * Keyword-based scoring fallback (no AI calls, zero cost)
+   */
+  private keywordScore(audio: DiscoveredAudio, category: string): { score: number; reasoning: string } {
+    const text = [audio.title, audio.description, ...audio.tags].join(' ').toLowerCase();
+
+    let score = 0.5;
+    const hits: string[] = [];
+
+    // Positive signals
+    const positiveKeywords = [
+      'calm', 'peaceful', 'relaxing', 'soothing', 'gentle', 'soft',
+      'quiet', 'lullaby', 'baby', 'sleep', 'ambient', 'meditative',
+      'serene', 'tranquil', 'dreamy', 'nursery', 'infant', 'newborn',
+    ];
+    for (const kw of positiveKeywords) {
+      if (text.includes(kw)) { score += 0.04; hits.push(`+${kw}`); }
+    }
+
+    // Negative signals
+    const negativeKeywords = [
+      'loud', 'intense', 'scary', 'horror', 'explosion', 'alarm',
+      'siren', 'scream', 'harsh', 'aggressive', 'metal', 'rock',
+      'electronic', 'beat', 'bass', 'energetic', 'fast', 'upbeat',
+    ];
+    for (const kw of negativeKeywords) {
+      if (text.includes(kw)) { score -= 0.08; hits.push(`-${kw}`); }
+    }
+
+    // Category match bonus
+    const categoryKeywords: Record<string, string[]> = {
+      white_noise: ['noise', 'fan', 'vacuum', 'womb', 'shush', 'hum'],
+      nature_sounds: ['rain', 'ocean', 'river', 'forest', 'wind', 'water', 'thunder', 'cricket'],
+      classical_music: ['classical', 'piano', 'mozart', 'brahms', 'debussy', 'chopin', 'bach'],
+      instrumental: ['music box', 'harp', 'guitar', 'chimes', 'bells'],
+    };
+    for (const kw of (categoryKeywords[category] || [])) {
+      if (text.includes(kw)) { score += 0.05; hits.push(`cat:${kw}`); }
+    }
+
+    score = Math.max(0, Math.min(1, score));
+    const reasoning = hits.length > 0
+      ? `Keyword scoring: ${hits.join(', ')} -> ${(score * 10).toFixed(1)}/10`
+      : 'Keyword scoring: no strong signals, neutral score.';
+
+    return { score, reasoning };
+  }
+
+  /**
    * Analyze audio using AI to determine quality and fit
    */
   async analyzeAudio(audio: DiscoveredAudio, category: string): Promise<AudioAnalysis> {
@@ -446,17 +502,26 @@ export class AudioCurator {
     const qualityScore = this.calculateQualityScore(audio);
     const babyFitScore = this.calculateBabyFitScore(audio, category);
 
-    // Use Workers AI for deeper analysis
     let aiReasoning = '';
     let aiScore = 0.5;
 
-    try {
-      const aiAnalysis = await this.getAIAnalysis(audio, category);
-      aiReasoning = aiAnalysis.reasoning;
-      aiScore = aiAnalysis.score;
-    } catch (error) {
-      console.error('[AudioCurator] AI analysis failed:', error);
-      aiReasoning = 'AI analysis unavailable, using metadata-based scoring.';
+    if (this.isAIEnabled()) {
+      // AI path: check cache first, then call Workers AI
+      try {
+        const aiAnalysis = await this.getAIAnalysis(audio, category);
+        aiReasoning = aiAnalysis.reasoning;
+        aiScore = aiAnalysis.score;
+      } catch (error) {
+        console.error('[AudioCurator] AI analysis failed, falling back to keywords:', error);
+        const fallback = this.keywordScore(audio, category);
+        aiReasoning = fallback.reasoning;
+        aiScore = fallback.score;
+      }
+    } else {
+      // Default: keyword-based scoring (no AI cost)
+      const kw = this.keywordScore(audio, category);
+      aiReasoning = kw.reasoning;
+      aiScore = kw.score;
     }
 
     // Calculate calming score
@@ -498,9 +563,21 @@ export class AudioCurator {
   }
 
   /**
-   * Use Workers AI to analyze audio metadata
+   * Use Gemini to analyze audio metadata (with KV cache to avoid duplicate calls)
    */
   async getAIAnalysis(audio: DiscoveredAudio, category: string): Promise<{ score: number; reasoning: string }> {
+    // Check KV cache first
+    const cacheKey = `ai_analysis:${audio.id}`;
+    try {
+      const cached = await this.env.CACHE.get(cacheKey, 'json') as { score: number; reasoning: string } | null;
+      if (cached) {
+        console.log(`[AudioCurator] Cache hit for ${audio.id}`);
+        return cached;
+      }
+    } catch {
+      // Cache miss or read error, proceed to AI
+    }
+
     const prompt = `Analyze this audio content for a baby soothing app:
 
 Title: ${audio.title}
@@ -522,21 +599,24 @@ SCORE: [0-10]
 REASONING: [1-2 sentences]`;
 
     try {
-      const response = await this.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-        prompt,
-        max_tokens: 150,
-      });
+      const text = await callGemini(this.env.GEMINI_API_KEY, prompt, 150);
 
-      const text = (response as any).response || '';
       const scoreMatch = text.match(/SCORE:\s*(\d+(?:\.\d+)?)/i);
       const reasoningMatch = text.match(/REASONING:\s*(.+)/is);
 
       const score = scoreMatch ? parseFloat(scoreMatch[1]) / 10 : 0.5;
       const reasoning = reasoningMatch ? reasoningMatch[1].trim() : 'Analysis completed.';
 
-      return { score: Math.min(1, Math.max(0, score)), reasoning };
+      const result = { score: Math.min(1, Math.max(0, score)), reasoning };
+
+      // Cache result for 30 days to avoid re-analyzing
+      await this.env.CACHE.put(cacheKey, JSON.stringify(result), {
+        expirationTtl: 86400 * 30,
+      });
+
+      return result;
     } catch (error) {
-      console.error('[AudioCurator] AI analysis error:', error);
+      console.error('[AudioCurator] Gemini analysis error:', error);
       return { score: 0.5, reasoning: 'AI analysis unavailable.' };
     }
   }
