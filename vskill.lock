@@ -6,7 +6,7 @@
   ],
   "skills": {
     "marketing-skills": {
-      "version": "0.0.0",
+      "version": "1.0.0",
       "sha": "d18cf033668c",
       "tier": "VERIFIED",
       "installedAt": "2026-02-28T05:40:38.708Z",
@@ -24,7 +24,7 @@
       "scope": "project"
     },
     "skill-creator": {
-      "version": "0.0.0",
+      "version": "1.0.0",
       "sha": "dcd4803e61e9",
       "tier": "VERIFIED",
       "installedAt": "2026-03-19T18:00:20.373Z",
@@ -33,5 +33,5 @@
     }
   },
   "createdAt": "2026-02-22T20:37:40.047Z",
-  "updatedAt": "2026-03-19T18:00:20.374Z"
+  "updatedAt": "2026-04-08T21:59:01.092Z"
 }
