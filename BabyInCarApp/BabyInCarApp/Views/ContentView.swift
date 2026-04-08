@@ -27,6 +27,7 @@ struct MainTabView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var selectedTab = 0
+    @State private var showFullPlayer = false
 
     // Calculate the total height of bottom overlay for proper insets
     // Tab bar: ~60pt (8 top padding + 44 content + 6 bottom padding)
@@ -61,8 +62,8 @@ struct MainTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 // Mini Player - ALWAYS visible (floats above tab bar)
-                // Default playlist is loaded on app start, player ready for cry detection or manual play
-                MiniPlayerView()
+                // Tap artwork/title area to expand full player; play/skip buttons keep own tap targets
+                MiniPlayerView(onExpand: { showFullPlayer = true })
                     .transition(.asymmetric(
                         insertion: .move(edge: .bottom).combined(with: .opacity),
                         removal: .move(edge: .bottom).combined(with: .opacity)
@@ -74,6 +75,10 @@ struct MainTabView: View {
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: audioEngine.playbackState)
         }
         .ignoresSafeArea(.keyboard)
+        .fullScreenCover(isPresented: $showFullPlayer) {
+            PlaybackQueueView(queueManager: PlaybackQueueManager.shared)
+                .environmentObject(audioEngine)
+        }
         .onAppear {
             // Configure audio session on app launch
             audioEngine.configureAudioSession()
@@ -389,6 +394,7 @@ struct PremiumTabBarButton: View {
 struct MiniPlayerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var playButtonScale: CGFloat = 1.0
+    var onExpand: (() -> Void)?
 
     // Haptic feedback
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -415,18 +421,17 @@ struct MiniPlayerView: View {
 
     private var miniPlayerContent: some View {
         HStack(spacing: 12) {
-            // Artwork + track info area
+            // Artwork + track info area — tappable to expand full player
             HStack(spacing: 12) {
-                // Artwork with progress ring
                 artworkWithProgressRing
-
-                // Track Info
                 trackInfo
             }
+            .contentShape(Rectangle())
+            .onTapGesture { onExpand?() }
 
             Spacer(minLength: 8)
 
-            // Playback Controls
+            // Playback Controls — keep their own tap targets
             playbackControls
         }
         .padding(.leading, 8)

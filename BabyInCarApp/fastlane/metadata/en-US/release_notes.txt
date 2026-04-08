@@ -1,9 +1,8 @@
-Welcome to Lulla 1.0.1!
+What's New in Lulla 1.1.0
 
-This update includes important improvements:
-- Improved onboarding experience
-- Enhanced subscription display
+- NEW: Tap the mini player to expand into a full-screen Now Playing view with detailed track info, progress scrubber, and playback controls
+- Quick Try suggestions and Up Next queue accessible from the expanded player
+- 270+ premium soothing sounds for your baby
 - Stability and performance improvements
-- 270+ premium soothing sounds
 
-We can't wait to hear from you!
+We love hearing from you — leave a review!

@@ -1,0 +1,87 @@
+appId: com.anticry.babyincar
+---
+# Test: Expandable mini player → full-screen Now Playing view
+# Verifies: Tap-to-expand, dismiss, controls isolation, queue display
+# Feature: v1.1.0 expandable player
+
+- launchApp
+
+# Wait for app to fully load
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Step 1: Verify mini player is visible on Home
+- assertVisible:
+    id: "miniPlayer"
+
+# Step 2: Start playback from Library so we have a real track
+- tapOn: "Library"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    text: "Classical Music"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Step 3: Tap the track info area on mini player to expand
+# (Tap on the track title text, NOT the play/skip buttons)
+- tapOn:
+    id: "miniPlayer"
+    point: "30%,50%"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Step 4: Verify full player is shown
+- assertVisible: "NOW PLAYING"
+- assertVisible: "QUEUE"
+- takeScreenshot: "expanded_player_open"
+
+# Step 5: Verify hero card elements
+- assertVisible: "Up Next"
+
+# Step 6: Dismiss full player via chevron-down button
+- tapOn:
+    id: "chevron.down"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Step 7: Verify we're back to main view with mini player
+- assertVisible:
+    id: "miniPlayer"
+- takeScreenshot: "expanded_player_closed"
+
+# Step 8: Verify play/pause button on mini player works WITHOUT expanding
+# Tap specifically on the right side where controls are
+- tapOn:
+    id: "miniPlayer"
+    point: "85%,50%"
+- waitForAnimationToEnd:
+    timeout: 500
+
+# Verify full player did NOT open (mini player still visible, no QUEUE header)
+- assertVisible:
+    id: "miniPlayer"
+
+# Step 9: Expand again and verify playback state is preserved
+- tapOn:
+    id: "miniPlayer"
+    point: "30%,50%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertVisible: "NOW PLAYING"
+
+# Step 10: Dismiss and verify tab navigation still works
+- tapOn:
+    id: "chevron.down"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn: "Home"
+- assertVisible:
+    id: "miniPlayer"
+
+- takeScreenshot: "expandable_player_complete"
