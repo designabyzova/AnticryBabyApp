@@ -42,6 +42,10 @@
   --primary-light:#F5D985;
   --secondary:#9B8DC7;
   --tertiary:#F4B8C5;
+  /* Peach dawn — logo NW corner (added 0034 ultrathink pass) */
+  --peach:#F5C89A;
+  --peach-light:#FBE5D0;
+  --peach-dark:#E5A878;
   --bg:#FDF6E8;
   --bg-warm:#F8EBCC;
   --card:#FFFFFF;
@@ -128,8 +132,9 @@ body::after{
 .logo-mark{
   width:50px;height:50px;flex-shrink:0;border-radius:22%;object-fit:cover;
   padding:3px;
-  background:linear-gradient(135deg,var(--secondary) 0%,var(--tertiary) 55%,var(--primary-light) 100%);
-  box-shadow:0 6px 20px rgba(232,168,56,.45),0 0 26px rgba(245,217,133,.25),0 1px 2px rgba(43,36,25,.25);
+  /* Mirrors the real logo tile: peach NW → cream middle → lavender SE */
+  background:linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 28%,var(--primary-light) 55%,var(--secondary) 100%);
+  box-shadow:0 6px 20px rgba(232,168,56,.45),0 0 26px rgba(245,200,154,.3),0 1px 2px rgba(43,36,25,.25);
 }
 .nav-logo{font-size:1.5rem}
 .nav.scrolled .logo-mark{width:42px;height:42px;box-shadow:0 4px 14px rgba(232,168,56,.35),0 1px 2px rgba(43,36,25,.2)}
@@ -143,17 +148,18 @@ body::after{
 .nav.scrolled .nav-links a:hover{color:var(--charcoal)}
 .nav-cta{
   padding:11px 22px;border-radius:var(--r-full);
-  background:linear-gradient(135deg,var(--primary-light) 0%,var(--primary) 50%,var(--primary-dark) 100%);
+  /* Golden-hour sweep: peach dawn → honey noon → amber dusk */
+  background:linear-gradient(135deg,var(--peach-light) 0%,var(--primary-light) 28%,var(--primary) 62%,var(--primary-dark) 100%);
   color:var(--ink);
   font-size:.9rem;font-weight:700;letter-spacing:-.01em;
-  box-shadow:0 8px 22px rgba(26,17,8,.35),0 0 0 1px rgba(122,78,20,.35),inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow:0 8px 22px rgba(26,17,8,.35),0 0 0 1px rgba(122,78,20,.35),0 0 24px rgba(245,200,154,.15),inset 0 1px 0 rgba(255,255,255,.4);
   transition:transform .25s,box-shadow .25s,background-position .35s;
   background-size:180% 180%;background-position:0% 50%;
 }
 .nav-cta:hover{
   transform:translateY(-2px);
   background-position:100% 50%;
-  box-shadow:0 14px 32px rgba(26,17,8,.45),0 0 0 1px rgba(122,78,20,.5),inset 0 1px 0 rgba(255,255,255,.4);
+  box-shadow:0 14px 32px rgba(26,17,8,.45),0 0 0 1px rgba(122,78,20,.5),0 0 32px rgba(245,200,154,.22),inset 0 1px 0 rgba(255,255,255,.45);
 }
 
 /* === HERO === */
@@ -178,10 +184,14 @@ body::after{
 .hero-overlay{
   position:absolute;inset:0;z-index:-1;
   background:
-    radial-gradient(55% 45% at 28% 45%,rgba(232,168,56,.28),transparent 62%),
-    radial-gradient(40% 60% at 85% 80%,rgba(155,141,199,.22),transparent 70%),
-    linear-gradient(100deg,rgba(38,28,58,.60) 0%,rgba(30,20,35,.28) 42%,rgba(26,17,8,.08) 75%),
-    linear-gradient(180deg,rgba(38,28,58,.22) 0%,rgba(26,17,8,.48) 55%,rgba(18,12,22,.92) 100%);
+    /* Peach dawn glow — mirrors logo NW corner */
+    radial-gradient(38% 42% at 18% 22%,rgba(245,200,154,.24),transparent 68%),
+    /* Honey halo — behind the headline */
+    radial-gradient(52% 45% at 30% 50%,rgba(232,168,56,.22),transparent 62%),
+    /* Lavender dusk — mirrors logo SE corner */
+    radial-gradient(42% 60% at 85% 82%,rgba(155,141,199,.26),transparent 70%),
+    linear-gradient(100deg,rgba(38,28,58,.58) 0%,rgba(30,20,35,.26) 42%,rgba(26,17,8,.06) 75%),
+    linear-gradient(180deg,rgba(38,28,58,.2) 0%,rgba(26,17,8,.46) 55%,rgba(18,12,22,.92) 100%);
 }
 .hero-overlay::after{
   content:"";position:absolute;inset:0;pointer-events:none;
@@ -196,10 +206,10 @@ body::after{
   display:inline-flex;align-items:center;gap:10px;
   padding:8px 16px;border-radius:var(--r-full);
   background:rgba(26,17,8,.55);
-  border:1px solid rgba(245,217,133,.55);
+  border:1px solid rgba(245,200,154,.55);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
-  font-weight:600;color:var(--primary-light);
+  font-weight:600;color:var(--peach);
   margin-bottom:28px;
   box-shadow:0 4px 14px rgba(0,0,0,.25);
 }
@@ -258,7 +268,11 @@ body::after{
   font-size:.82rem;color:rgba(253,246,232,.62);font-weight:500;
 }
 .hero-trust-row span{display:inline-flex;align-items:center;gap:8px}
-.hero-trust-row svg{flex-shrink:0;opacity:.8}
+.hero-trust-row svg{flex-shrink:0;opacity:.95;filter:drop-shadow(0 0 6px rgba(0,0,0,.35))}
+/* Tint each trust-row icon with one of the logo's four corners */
+.hero-trust-row span:nth-child(1) svg{color:var(--secondary)}   /* shield = lavender dusk */
+.hero-trust-row span:nth-child(2) svg{color:var(--peach)}       /* bolt   = peach dawn */
+.hero-trust-row span:nth-child(3) svg{color:var(--primary-light)} /* check  = honey gold */
 
 /* Three-beat H1 rhythm */
 .hero-title .line-a{display:inline-block;color:var(--text-light);opacity:.92}
@@ -278,7 +292,7 @@ body::after{
   border:1px solid transparent;
   background-image:
     linear-gradient(rgba(10,6,18,.82),rgba(10,6,18,.82)),
-    linear-gradient(135deg,var(--secondary) 0%,var(--tertiary) 50%,var(--primary-light) 100%);
+    linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 30%,var(--primary-light) 55%,var(--secondary) 100%);
   background-origin:border-box;background-clip:padding-box,border-box;
   backdrop-filter:blur(14px) saturate(1.2);
   -webkit-backdrop-filter:blur(14px) saturate(1.2);
@@ -293,8 +307,9 @@ body::after{
   width:60px;height:60px;flex-shrink:0;
   border-radius:18px;
   padding:3px;
-  background:linear-gradient(135deg,var(--secondary) 0%,var(--tertiary) 55%,var(--primary-light) 100%);
-  box-shadow:0 6px 18px rgba(232,168,56,.4),0 0 20px rgba(155,141,199,.25);
+  /* Four-corner logo palette: peach NW → cream → lavender SE */
+  background:linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 30%,var(--primary-light) 55%,var(--secondary) 100%);
+  box-shadow:0 6px 18px rgba(232,168,56,.4),0 0 20px rgba(245,200,154,.28);
 }
 .hero-badge strong{font-weight:600;color:var(--primary-light);letter-spacing:-.005em}
 @keyframes heroBadgeFloat{
@@ -309,7 +324,7 @@ body::after{
   font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600;
   display:flex;flex-direction:column;align-items:center;gap:10px;
 }
-.scroll-hint .line{width:1px;height:36px;background:linear-gradient(to bottom,transparent,var(--primary-light));animation:heroParallaxFloat 2.4s ease-in-out infinite}
+.scroll-hint .line{width:1px;height:36px;background:linear-gradient(to bottom,transparent 0%,var(--peach) 40%,var(--primary-light) 65%,var(--secondary) 100%);animation:heroParallaxFloat 2.4s ease-in-out infinite}
 
 /* Hero flare */
 .hero-flare{
