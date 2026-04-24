@@ -59,12 +59,17 @@ struct CryStopPromptView: View {
                         )
                 }
 
-                // Confirm button
+                // Confirm button — honey-drop feedback
                 Button {
+                    HiveReserveStore.shared.addDrop()
+                    HapticManager.shared.impact(style: .light)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        HapticManager.shared.impact(style: .light)
+                    }
                     onConfirm()
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "hand.thumbsup.fill")
+                        Image(systemName: "drop.fill")
                         Text("It Helped!")
                     }
                     .font(.headline)
@@ -73,7 +78,7 @@ struct CryStopPromptView: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.green)
+                            .fill(Color.appPrimary)
                     )
                 }
             }

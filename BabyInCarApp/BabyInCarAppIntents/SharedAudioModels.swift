@@ -51,7 +51,7 @@ enum IntentAction: String {
 /// Shared user activity type identifiers
 /// NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter, not user activities
 struct IntentActivityType {
-    static let playMedia = "com.lulla.playMedia"
-    static let searchMedia = "com.lulla.searchMedia"
-    static let addToFavorites = "com.lulla.addToFavorites"
+    static let playMedia = "com.soothbee.playMedia"
+    static let searchMedia = "com.soothbee.searchMedia"
+    static let addToFavorites = "com.soothbee.addToFavorites"
 }

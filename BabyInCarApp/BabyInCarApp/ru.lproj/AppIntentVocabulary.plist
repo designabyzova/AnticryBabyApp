@@ -9,9 +9,9 @@
             <string>INPlayMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Включи колыбельные в Lulla</string>
-                <string>Включи классическую музыку в Lulla</string>
-                <string>Включи спокойную музыку в Lulla</string>
+                <string>Включи колыбельные в Soothbee</string>
+                <string>Включи классическую музыку в Soothbee</string>
+                <string>Включи спокойную музыку в Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -19,8 +19,8 @@
             <string>INSearchForMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Найди Моцарта в Lulla</string>
-                <string>Найди колыбельные в Lulla</string>
+                <string>Найди Моцарта в Soothbee</string>
+                <string>Найди колыбельные в Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -28,8 +28,8 @@
             <string>INAddMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Добавить в избранное в Lulla</string>
-                <string>Сохрани эту песню в Lulla</string>
+                <string>Добавить в избранное в Soothbee</string>
+                <string>Сохрани эту песню в Soothbee</string>
             </array>
         </dict>
     </array>

@@ -244,7 +244,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         }
         sections.append(CPListSection(items: Array(recentPlaylists), header: "Playlists", sectionIndexTitle: nil))
 
-        let template = CPListTemplate(title: "Lulla", sections: sections)
+        let template = CPListTemplate(title: "Soothbee", sections: sections)
         template.tabImage = UIImage(systemName: "house.fill")
 
         return template

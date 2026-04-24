@@ -47,7 +47,15 @@ struct HomeView: View {
     // MARK: - Hero Header with Time-Aware Greeting
     private var heroHeader: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: DesignTokens.spacingM) {
+                Image("BrandLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .shadow(color: Color.appPrimary.opacity(0.18), radius: 6, x: 0, y: 3)
+                    .accessibilityHidden(true)
+
                 VStack(alignment: .leading, spacing: DesignTokens.spacingXS) {
                     Text(timeBasedGreeting)
                         .font(.appTitle)

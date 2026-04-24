@@ -20,12 +20,12 @@ struct CryDetectionView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background gradient
+                // Background gradient — Soothbee hive cream → light honey → lavender
                 LinearGradient(
                     colors: [
-                        Color(hex: "E8F4FD"),
-                        Color(hex: "F5E6FF"),
-                        Color(hex: "FFF0F5")
+                        Color(hex: "FDF6E8"),
+                        Color(hex: "FBEAC2"),
+                        Color(hex: "E8E0F0")
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -139,22 +139,28 @@ struct CryDetectionView: View {
         )
     }
 
-    // MARK: - Waveform Section
+    // MARK: - Waveform / Honeycomb Section
 
     private var waveformSection: some View {
-        VStack(spacing: 12) {
-            Text("Audio Level")
-                .font(.headline)
-                .foregroundColor(.secondary)
+        VStack(spacing: 16) {
+            // Soothbee signature: honeycomb pulse tied to live confidence
+            HoneycombPulseView(
+                confidence: viewModel.isStable ? viewModel.stableConfidence : viewModel.dominantConfidence,
+                detectedCryType: viewModel.isStable ? viewModel.stableCryType : viewModel.dominantCryType,
+                isListening: viewModel.isListening
+            )
+            .frame(height: 220)
+            .padding(.top, 4)
 
-            // Waveform visualization
+            // Compact audio-level strip beneath the hive — shows raw mic activity
             AudioWaveformView(level: viewModel.audioLevel, isActive: viewModel.isListening)
-                .frame(height: 60)
+                .frame(height: 36)
+                .opacity(0.7)
 
             // Audio detected indicator
             HStack {
                 Circle()
-                    .fill(viewModel.isAudioDetected ? Color.green : Color.gray.opacity(0.3))
+                    .fill(viewModel.isAudioDetected ? Color.appSuccess : Color.gray.opacity(0.3))
                     .frame(width: 8, height: 8)
 
                 Text(viewModel.isAudioDetected ? "Sound detected" : "Waiting for audio...")
@@ -166,7 +172,7 @@ struct CryDetectionView: View {
                 if viewModel.isListening {
                     Text("Listening...")
                         .font(.caption)
-                        .foregroundColor(.purple)
+                        .foregroundColor(.appPrimary)
                 }
             }
         }

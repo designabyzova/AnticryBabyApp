@@ -1,0 +1,13 @@
+{
+  "id": "0032",
+  "name": "soothbee-rebrand",
+  "title": "Soothbee Rebrand — Full Visual + Brand Refresh",
+  "type": "feature",
+  "priority": "P1",
+  "status": "ready-for-review",
+  "closed": "2026-04-17",
+  "project": "BabyInCarApp",
+  "created": "2026-04-17",
+  "description": "Rebrand iOS app from Lulla to Soothbee with Honeycomb Dusk design system, bee mark icon (placeholder), honeycomb cry-detection pulse, bee empty states, honey-drop feedback, and 'unlock the hive' paywall. Preserves bundle ID com.babyincar.app and App Store ID 6756977992.",
+  "tags": ["ios", "branding", "design-system", "rebrand"]
+}

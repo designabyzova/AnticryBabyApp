@@ -59,7 +59,8 @@ platform :ios do
       force: true,
       app_identifier: "com.babyincar.app",
       run_precheck_before_submit: false,
-      precheck_include_in_app_purchases: false
+      precheck_include_in_app_purchases: false,
+      ignore_language_directory_validation: true
     )
   end
 
@@ -81,7 +82,8 @@ platform :ios do
       force: true,
       app_identifier: "com.babyincar.app",
       run_precheck_before_submit: false,
-      precheck_include_in_app_purchases: false
+      precheck_include_in_app_purchases: false,
+      ignore_language_directory_validation: true
     )
   end
 
@@ -105,6 +107,7 @@ platform :ios do
       run_precheck_before_submit: false,
       precheck_include_in_app_purchases: false,
       automatic_release: false,
+      ignore_language_directory_validation: true,
       submission_information: {
         export_compliance_uses_encryption: false,
         add_id_info_uses_idfa: false
@@ -293,22 +296,22 @@ platform :ios do
     # App IDs we need to register/update
     app_ids = {
       "com.babyincar.app" => {
-        name: "Lulla - Calm Baby",
+        name: "Soothbee - Calm Baby",
         platform: "IOS",
         capabilities: ["SIRI", "APP_GROUPS"]
       },
       "com.babyincar.app.watchkitapp" => {
-        name: "Lulla Watch App",
+        name: "Soothbee Watch App",
         platform: "IOS",  # watchOS bundles register as iOS in Apple's system
         capabilities: ["APP_GROUPS"]
       },
       "com.babyincar.app.BabyInCarAppIntents" => {
-        name: "Lulla Intents Extension",
+        name: "Soothbee Intents Extension",
         platform: "IOS",
         capabilities: ["SIRI", "APP_GROUPS"]
       },
       "com.babyincar.app.BabyInCarAppIntentsUI" => {
-        name: "Lulla IntentsUI Extension",
+        name: "Soothbee IntentsUI Extension",
         platform: "IOS",
         capabilities: ["APP_GROUPS"]
       }

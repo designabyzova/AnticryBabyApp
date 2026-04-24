@@ -58,17 +58,22 @@ struct SoftPaywallSheet: View {
                         .stroke(Color.appPrimary.opacity(0.3), lineWidth: 2)
                 )
 
-                // Lock icon overlay
-                VStack {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.white)
+                // Hive-lock overlay
+                VStack(spacing: 4) {
+                    Image(systemName: "hexagon.fill")
+                        .font(.system(size: 34))
+                        .foregroundColor(.appPrimary)
+                        .overlay(
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.hiveCharcoal)
+                        )
 
-                    Text("Premium")
-                        .font(.system(size: 14, weight: .semibold))
+                    Text("Hive")
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white)
                 }
-                .padding(16)
+                .padding(14)
                 .background(
                     Circle()
                         .fill(Color.black.opacity(0.5))
@@ -154,6 +159,27 @@ struct SoftPaywallSheet: View {
 
             Spacer()
 
+            // Headline + bullets
+            VStack(spacing: 12) {
+                Image("BrandLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: Color.appPrimary.opacity(0.25), radius: 10, x: 0, y: 4)
+                    .accessibilityHidden(true)
+
+                Text("Unlock the hive")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.appText)
+
+                Text("Every lullaby. Every fairy tale. Every sound your baby trusts.")
+                    .font(.system(size: 14))
+                    .foregroundColor(.appTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
+
             // Action buttons
             VStack(spacing: 12) {
                 // Upgrade button
@@ -163,20 +189,20 @@ struct SoftPaywallSheet: View {
                     dismiss()
                 } label: {
                     HStack {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 16))
+                        Image(systemName: "hexagon.fill")
+                            .font(.system(size: 14))
 
-                        Text("Unlock with Premium")
+                        Text("Open the hive")
                             .font(.system(size: 17, weight: .semibold))
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.hiveCharcoal)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.appPrimary, Color.appSecondary],
+                                    colors: [Color.appPrimaryLight, Color.appPrimary],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -200,7 +226,14 @@ struct SoftPaywallSheet: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
         }
-        .background(Color.appBackground)
+        .background(
+            ZStack {
+                Color.appBackground
+                HoneycombPattern()
+                    .stroke(Color.honeyDeep.opacity(0.08), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+        )
         .onDisappear {
             stopPreview()
         }
@@ -345,7 +378,14 @@ struct EngagementUpgradeSheet: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
         }
-        .background(Color.appBackground)
+        .background(
+            ZStack {
+                Color.appBackground
+                HoneycombPattern()
+                    .stroke(Color.honeyDeep.opacity(0.08), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+        )
         .overlay(
             // Confetti overlay for celebration style
             Group {

@@ -1,0 +1,27 @@
+# Soothbee rebrand smoke test
+# Verifies: launch screen + onboarding + home show the new brand.
+# Run: ~/.maestro/bin/maestro test maestro/flows/rebrand_smoke.yaml
+
+appId: com.babyincar.app
+---
+- launchApp:
+    clearState: true
+
+# Launch screen / splash
+- takeScreenshot: "rebrand_01_launch"
+
+# At least one of the new brand surfaces should appear within 5s
+- extendedWaitUntil:
+    visible:
+      text: "Soothbee"
+    timeout: 5000
+
+- takeScreenshot: "rebrand_02_brand_visible"
+
+# Explicit negative: no "Lulla" wordmark
+- assertNotVisible: "Lulla"
+
+# Tagline on launch screen is a nice-to-have; optional
+- assertVisible:
+    text: "The hum that calms your baby."
+    optional: true

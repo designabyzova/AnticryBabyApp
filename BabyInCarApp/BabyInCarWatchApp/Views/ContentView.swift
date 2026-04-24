@@ -74,7 +74,7 @@ struct ContentView: View {
         HStack(spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.caption2)
-            Text("Open Lulla on iPhone")
+            Text("Open Soothbee on iPhone")
                 .font(.system(size: 10))
         }
         .foregroundColor(.white)

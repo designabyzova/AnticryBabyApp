@@ -1,8 +1,8 @@
 //
 //  BabyInCarApp.swift
-//  Lulla
+//  Soothbee
 //
-//  Lulla - Calm Baby, Anywhere
+//  Soothbee - The hum that calms your baby.
 //  AI-powered baby calming for car, home, and everywhere
 //
 
@@ -16,7 +16,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // NOTE: Siri authorization is NOT requested on launch to avoid threading issues.
         // iOS automatically prompts for Siri authorization when the user first invokes
-        // a Siri intent for this app (e.g., "Hey Siri, play lullabies in Lulla").
+        // a Siri intent for this app (e.g., "Hey Siri, play lullabies in Soothbee").
         // Requesting it proactively can cause crashes due to MainActor isolation.
         return true
     }
@@ -88,13 +88,13 @@ struct BabyInCarApp: App {
                     }
                     // SIRI INTENT HANDLING
                     // Handle user activities from Intents Extension
-                    .onContinueUserActivity("com.lulla.playMedia") { userActivity in
+                    .onContinueUserActivity("com.soothbee.playMedia") { userActivity in
                         handlePlayMediaActivity(userActivity)
                     }
-                    .onContinueUserActivity("com.lulla.searchMedia") { userActivity in
+                    .onContinueUserActivity("com.soothbee.searchMedia") { userActivity in
                         handleSearchMediaActivity(userActivity)
                     }
-                    .onContinueUserActivity("com.lulla.addToFavorites") { userActivity in
+                    .onContinueUserActivity("com.soothbee.addToFavorites") { userActivity in
                         handleAddToFavoritesActivity(userActivity)
                     }
                     // NOTE: Pause/Resume/Skip are handled by MPRemoteCommandCenter
@@ -427,7 +427,7 @@ struct BabyInCarApp: App {
 
         let playlist = Playlist(
             id: UUID(),
-            name: "Siri: Lulla Music",
+            name: "Siri: Soothbee Music",
             tracks: Array(tracks.prefix(20)),
             createdAt: Date()
         )

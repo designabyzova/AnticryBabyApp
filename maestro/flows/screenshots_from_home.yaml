@@ -1,0 +1,36 @@
+appId: com.babyincar.app
+---
+# Assumes app is already launched and at Home. Does NOT clear state.
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ===== Screenshot 1: Home =====
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/1_home_APP_IPHONE_67_0
+
+# ===== Screenshot 2: Library =====
+- tapOn:
+    text: "Library"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/2_library_APP_IPHONE_67_0
+
+# ===== Screenshot 3: Detect =====
+- tapOn:
+    text: "Detect"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/3_cry_detection_APP_IPHONE_67_0
+
+# ===== Screenshot 4: Favorites =====
+- tapOn:
+    text: "Favorites"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/4_favorites_APP_IPHONE_67_0
+
+# ===== Screenshot 5: Profile =====
+- tapOn:
+    text: "Profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/5_profile_APP_IPHONE_67_0

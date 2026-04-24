@@ -4,19 +4,19 @@
 //
 //  Handles Siri Media Intents for voice control.
 //
-//  Supported Commands (ALWAYS include "in Lulla" to avoid Spotify/other app conflicts):
-//    - "Hey Siri, play lullabies in Lulla"
-//    - "Hey Siri, play classical in Lulla"
-//    - "Hey Siri, calm baby in Lulla"
-//    - "Hey Siri, find Mozart in Lulla"
-//    - "Hey Siri, add to favorites in Lulla"
-//    - "Hey Siri, pause Lulla" (only works when Lulla is the Now Playing app)
-//    - "Hey Siri, resume Lulla" (only works when Lulla is the Now Playing app)
-//    - "Hey Siri, next in Lulla" / "Hey Siri, skip in Lulla"
+//  Supported Commands (ALWAYS include "in Soothbee" to avoid Spotify/other app conflicts):
+//    - "Hey Siri, play lullabies in Soothbee"
+//    - "Hey Siri, play classical in Soothbee"
+//    - "Hey Siri, calm baby in Soothbee"
+//    - "Hey Siri, find Mozart in Soothbee"
+//    - "Hey Siri, add to favorites in Soothbee"
+//    - "Hey Siri, pause Soothbee" (only works when Soothbee is the Now Playing app)
+//    - "Hey Siri, resume Soothbee" (only works when Soothbee is the Now Playing app)
+//    - "Hey Siri, next in Soothbee" / "Hey Siri, skip in Soothbee"
 //
 //  IMPORTANT: Pause/Resume/Skip go to whichever app is currently "Now Playing".
-//  If Spotify was playing last, "Hey Siri, pause" will pause Spotify, not Lulla.
-//  Users should say "pause Lulla" or start playback in Lulla first.
+//  If Spotify was playing last, "Hey Siri, pause" will pause Spotify, not Soothbee.
+//  Users should say "pause Soothbee" or start playback in Soothbee first.
 //
 
 import Foundation
@@ -96,7 +96,7 @@ class SiriIntentHandler: NSObject,
             // Success with no specific item - will play default
             return [.success(with: INMediaItem(
                 identifier: "default",
-                title: "Lulla Music",
+                title: "Soothbee Music",
                 type: .music,
                 artwork: nil
             ))]
@@ -145,7 +145,7 @@ class SiriIntentHandler: NSObject,
 
     // MARK: - INSearchForMediaIntentHandling
 
-    /// Handle search intent from Siri - "Hey Siri, find Mozart in Lulla"
+    /// Handle search intent from Siri - "Hey Siri, find Mozart in Soothbee"
     nonisolated func handle(intent: INSearchForMediaIntent) async -> INSearchForMediaIntentResponse {
         print("🎤 Siri: Received INSearchForMediaIntent")
 
@@ -181,7 +181,7 @@ class SiriIntentHandler: NSObject,
 
     // MARK: - INAddMediaIntentHandling
 
-    /// Handle add to favorites intent from Siri - "Hey Siri, add to favorites in Lulla"
+    /// Handle add to favorites intent from Siri - "Hey Siri, add to favorites in Soothbee"
     nonisolated func handle(intent: INAddMediaIntent) async -> INAddMediaIntentResponse {
         print("🎤 Siri: Received INAddMediaIntent")
 
@@ -310,7 +310,7 @@ class SiriIntentHandler: NSObject,
 
         let playlist = Playlist(
             id: UUID(),
-            name: "Siri: Lulla Music",
+            name: "Siri: Soothbee Music",
             tracks: Array(tracks.prefix(20)),
             createdAt: Date()
         )

@@ -93,6 +93,9 @@
     "%lld helped" : {
 
     },
+    "%lld helpful tracks" : {
+
+    },
     "%lld percent %@" : {
       "localizations" : {
         "en" : {
@@ -1010,61 +1013,61 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - أحلام حلوة في كل رحلة"
+            "value" : "Soothbee - أحلام حلوة في كل رحلة"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Süße Träume bei jeder Fahrt"
+            "value" : "Soothbee - Süße Träume bei jeder Fahrt"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Sweet Dreams on Every Ride"
+            "value" : "Soothbee - Sweet Dreams on Every Ride"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Dulces sueños en cada viaje"
+            "value" : "Soothbee - Dulces sueños en cada viaje"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Doux rêves à chaque trajet"
+            "value" : "Soothbee - Doux rêves à chaque trajet"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Sogni d'oro in ogni viaggio"
+            "value" : "Soothbee - Sogni d'oro in ogni viaggio"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - 毎回の移動で甘い夢を"
+            "value" : "Soothbee - 毎回の移動で甘い夢を"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Doces sonhos em cada viagem"
+            "value" : "Soothbee - Doces sonhos em cada viagem"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - Сладкие сны в каждой поездке"
+            "value" : "Soothbee - Сладкие сны в каждой поездке"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla - 每次出行都有甜蜜的梦"
+            "value" : "Soothbee - 每次出行都有甜蜜的梦"
           }
         }
       }
@@ -2381,22 +2384,19 @@
     "Confidence" : {
 
     },
+    "Confidence %lld percent" : {
+
+    },
     "Continue" : {
 
     },
     "Create" : {
 
     },
-    "Create a playlist to organize\nyour favorite sounds" : {
-
-    },
     "Create New Playlist" : {
 
     },
     "Create Playlist" : {
-
-    },
-    "Create your first playlist" : {
 
     },
     "Cry Detection" : {
@@ -3743,6 +3743,9 @@
     "Error" : {
 
     },
+    "Every lullaby. Every fairy tale. Every sound your baby trusts." : {
+
+    },
     "Favorite Playlists" : {
 
     },
@@ -4032,6 +4035,12 @@
 
     },
     "Highly Calming" : {
+
+    },
+    "Hive" : {
+
+    },
+    "Hive reserve" : {
 
     },
     "home.active" : {
@@ -5814,6 +5823,9 @@
     "Library" : {
 
     },
+    "Listening for cry" : {
+
+    },
     "Listening..." : {
 
     },
@@ -5827,9 +5839,6 @@
 
     },
     "Loading..." : {
-
-    },
-    "Lulla" : {
 
     },
     "Manage Downloads" : {
@@ -6717,13 +6726,7 @@
     "No Downloads" : {
 
     },
-    "No favorites yet" : {
-
-    },
     "No Insights Yet" : {
-
-    },
-    "No playlists yet" : {
 
     },
     "No recent activity" : {
@@ -6749,6 +6752,9 @@
 
     },
     "Not enough data yet. Keep using the app!" : {
+
+    },
+    "Not listening" : {
 
     },
     "Not Now" : {
@@ -6837,61 +6843,61 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لولا"
+            "value" : "سوثبي"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lulla"
+            "value" : "Soothbee"
           }
         }
       }
@@ -7292,61 +7298,61 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أحلام سعيدة في كل رحلة"
+            "value" : "الهمهمة التي تُهدّئ طفلك."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Süße Träume bei jeder Fahrt"
+            "value" : "Das sanfte Summen, das Ihr Baby beruhigt."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sweet Dreams on Every Ride"
+            "value" : "The hum that calms your baby."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dulces sueños en cada viaje"
+            "value" : "El zumbido que calma a tu bebé."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Doux rêves à chaque trajet"
+            "value" : "Le doux bourdon qui apaise votre bébé."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sogni d'oro in ogni viaggio"
+            "value" : "Il ronzio che calma il tuo bambino."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "すべての旅に甘い夢を"
+            "value" : "赤ちゃんを落ち着かせる、やさしいハミング。"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sonhos doces em cada viagem"
+            "value" : "O zumbido que acalma o seu bebé."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сладкие сны в каждой поездке"
+            "value" : "Тихий гул, что успокаивает малыша."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每次旅程都有甜美的梦"
+            "value" : "轻柔的嗡嗡声，安抚宝宝入眠。"
           }
         }
       }
@@ -7482,6 +7488,9 @@
       }
     },
     "Open Settings" : {
+
+    },
+    "Open the hive" : {
 
     },
     "Or select manually:" : {
@@ -8224,7 +8233,7 @@
     "Privacy Policy" : {
 
     },
-    "Privacy Policy for Lulla\n\nLast updated: March 2026\n\nWe take your privacy seriously. This app is designed with children's safety in mind.\n\nAI & Audio Processing:\nAll cry detection and AI analysis is performed entirely on your device using Apple's CoreML framework. No audio data is ever recorded, stored, or transmitted to any external server. The app does NOT use any third-party AI service.\n\nData Stored Locally:\n• Baby's name and birth date (for personalization)\n• Selected language preferences\n• Listening history and effectiveness ratings\n\nAudio Content:\nSoothing sounds are streamed from Cloudflare CDN. Streaming is not tracked or linked to user identity.\n\nData We DO NOT Collect:\n• Audio recordings\n• Location data\n• Advertising identifiers\n• Third-party analytics data\n\nThird-Party Services:\n• Apple StoreKit: For subscription management (managed entirely by Apple)\n• Cloudflare R2 CDN: For streaming audio content (anonymous, no tracking)\n\nChildren's Privacy:\nThis app is designed for parents to use with their children. We do not knowingly collect personal information from children. All baby-related data is stored locally on the parent's device.\n\nYour Rights:\n• Access: All data is on your device\n• Delete: Uninstall the app to remove all local data\n• Control: Manage all permissions in iOS Settings\n\nContact:\nFor any privacy concerns, please contact us at privacy@lulla.app\n\nFull policy: https://lulla-app.pages.dev/privacy" : {
+    "Privacy Policy for Soothbee\n\nLast updated: March 2026\n\nWe take your privacy seriously. This app is designed with children's safety in mind.\n\nAI & Audio Processing:\nAll cry detection and AI analysis is performed entirely on your device using Apple's CoreML framework. No audio data is ever recorded, stored, or transmitted to any external server. The app does NOT use any third-party AI service.\n\nData Stored Locally:\n• Baby's name and birth date (for personalization)\n• Selected language preferences\n• Listening history and effectiveness ratings\n\nAudio Content:\nSoothing sounds are streamed from Cloudflare CDN. Streaming is not tracked or linked to user identity.\n\nData We DO NOT Collect:\n• Audio recordings\n• Location data\n• Advertising identifiers\n• Third-party analytics data\n\nThird-Party Services:\n• Apple StoreKit: For subscription management (managed entirely by Apple)\n• Cloudflare R2 CDN: For streaming audio content (anonymous, no tracking)\n\nChildren's Privacy:\nThis app is designed for parents to use with their children. We do not knowingly collect personal information from children. All baby-related data is stored locally on the parent's device.\n\nYour Rights:\n• Access: All data is on your device\n• Delete: Uninstall the app to remove all local data\n• Control: Manage all permissions in iOS Settings\n\nContact:\nFor any privacy concerns, please contact us at anton.abyzov@gmail.com\n\nFull policy: https://soothbee.com/privacy" : {
 
     },
     "Processing..." : {
@@ -8426,9 +8435,6 @@
       }
     },
     "QUEUE" : {
-
-    },
-    "Queue will replenish automatically..." : {
 
     },
     "Quick Picks" : {
@@ -10367,6 +10373,9 @@
     "Shuffle On" : {
 
     },
+    "Soothbee" : {
+
+    },
     "Soothing for" : {
 
     },
@@ -10634,9 +10643,6 @@
     "Tap 'It Helped!' when a track calms your baby.\nWe'll learn what works best." : {
 
     },
-    "Tap the heart icon on any track\nto add it to your favorites" : {
-
-    },
     "Tap to start listening" : {
 
     },
@@ -10652,7 +10658,7 @@
     "Terms of Use (EULA)" : {
 
     },
-    "Terms of Use (EULA) for Lulla\n\nLast updated: March 2026\n\nBy using this app, you agree to the following terms:\n\n1. Use of Service\nThis app is designed to help calm babies. It is not a substitute for proper child care and supervision.\n\n2. Safety Notice\nNever let this app distract you from safe driving. Always keep your eyes on the road.\n\n3. Audio Safety\nThe app limits maximum volume to protect your baby's hearing. Do not attempt to bypass these safety measures.\n\n4. Subscriptions\nPremium features require a subscription. Payment will be charged to your Apple ID account. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel subscriptions in your App Store account settings.\n\n5. AI Processing\nAll cry detection is performed on-device using Apple's CoreML. No audio is transmitted externally. The app does not use any third-party AI service.\n\n6. Content\nAudio content is streamed from our CDN or generated on-device. We do not guarantee the effectiveness of any specific sound for calming your baby.\n\n7. Disclaimer\nThis app is provided \"as is\" without warranties. We are not responsible for any issues arising from the use of this app.\n\nContact:\nFor questions, please contact support@lulla.app\n\nFull terms: https://lulla-app.pages.dev/terms" : {
+    "Terms of Use (EULA) for Soothbee\n\nLast updated: March 2026\n\nBy using this app, you agree to the following terms:\n\n1. Use of Service\nThis app is designed to help calm babies. It is not a substitute for proper child care and supervision.\n\n2. Safety Notice\nNever let this app distract you from safe driving. Always keep your eyes on the road.\n\n3. Audio Safety\nThe app limits maximum volume to protect your baby's hearing. Do not attempt to bypass these safety measures.\n\n4. Subscriptions\nPremium features require a subscription. Payment will be charged to your Apple ID account. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. You can manage or cancel subscriptions in your App Store account settings.\n\n5. AI Processing\nAll cry detection is performed on-device using Apple's CoreML. No audio is transmitted externally. The app does not use any third-party AI service.\n\n6. Content\nAudio content is streamed from our CDN or generated on-device. We do not guarantee the effectiveness of any specific sound for calming your baby.\n\n7. Disclaimer\nThis app is provided \"as is\" without warranties. We are not responsible for any issues arising from the use of this app.\n\nContact:\nFor questions, please contact anton.abyzov@gmail.com\n\nFull terms: https://soothbee.com/terms" : {
 
     },
     "This helps us learn what works best for different situations" : {
@@ -10851,7 +10857,7 @@
     "Unlock all features and content" : {
 
     },
-    "Unlock with Premium" : {
+    "Unlock the hive" : {
 
     },
     "Up Next" : {
@@ -10864,9 +10870,6 @@
 
     },
     "Upgrade to Premium" : {
-
-    },
-    "Use smart templates or build from scratch" : {
 
     },
     "Version 1.0.0" : {
@@ -10912,6 +10915,9 @@
 
     },
     "Z" : {
+
+    },
+    "Zzz" : {
 
     }
   },

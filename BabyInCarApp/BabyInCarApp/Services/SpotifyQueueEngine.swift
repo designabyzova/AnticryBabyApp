@@ -299,8 +299,8 @@ class SpotifyQueueEngine: ObservableObject {
                 penalty += 0.3 * positionWeight
             }
 
-            // Same artist penalty (if not "Lulla" generated)
-            if queueTrack.artist == track.artist && track.artist != "Lulla" {
+            // Same artist penalty (if not "Soothbee" generated)
+            if queueTrack.artist == track.artist && track.artist != "Soothbee" {
                 penalty += 0.4 * positionWeight
             }
         }

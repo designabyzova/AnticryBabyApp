@@ -9,9 +9,9 @@
             <string>INPlayMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>شغّل التهويدات في Lulla</string>
-                <string>شغّل الموسيقى الكلاسيكية في Lulla</string>
-                <string>شغّل موسيقى هادئة في Lulla</string>
+                <string>شغّل التهويدات في Soothbee</string>
+                <string>شغّل الموسيقى الكلاسيكية في Soothbee</string>
+                <string>شغّل موسيقى هادئة في Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -19,8 +19,8 @@
             <string>INSearchForMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>ابحث عن موزارت في Lulla</string>
-                <string>ابحث عن التهويدات في Lulla</string>
+                <string>ابحث عن موزارت في Soothbee</string>
+                <string>ابحث عن التهويدات في Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -28,8 +28,8 @@
             <string>INAddMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>أضف إلى المفضلة في Lulla</string>
-                <string>احفظ هذه الأغنية في Lulla</string>
+                <string>أضف إلى المفضلة في Soothbee</string>
+                <string>احفظ هذه الأغنية في Soothbee</string>
             </array>
         </dict>
     </array>

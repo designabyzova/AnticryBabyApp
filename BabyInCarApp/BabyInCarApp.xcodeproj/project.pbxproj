@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0CD22C9F195137A79C769195 /* BeeEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863FACD5BB4CB477914543DE /* BeeEmptyState.swift */; };
 		10BE3ADAB2D96A4DD55A91B2 /* CryDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */; };
 		11CF4AEBB3E97B5EE66A92C3 /* CryDetectionTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15CBCE8BD4F240B7146FE15 /* CryDetectionTabView.swift */; };
 		16BBD5B4457F1A1906F12456 /* BatteryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25343EB4F3AEE389A91ED73 /* BatteryMonitor.swift */; };
@@ -28,6 +29,7 @@
 		66028A3E62C9A355D42EB679 /* MemoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */; };
 		67A5B8C811E3D95F8C080A22 /* ActionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */; };
 		6B8FA21D1F12E90150830CE6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC387F17B97E3D5EF4D1FB74 /* ContentView.swift */; };
+		6C07F2725E1584099EA62917 /* HoneyDropAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00CC5AF04D380A90DDCA6E17 /* HoneyDropAnimation.swift */; };
 		6FCB453609764516B5CF1F19 /* CryDetectionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */; };
 		717523F2C8DA1A555CB0D764 /* WatchStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D16476C6D6996AC8F6D777 /* WatchStorageManager.swift */; };
 		77FFCB5A1117B4F3120D7C08 /* VoiceInteractionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52FCCA3D23197293F81417CF /* VoiceInteractionService.swift */; };
@@ -93,8 +95,8 @@
 		A1000065 /* LibraryChatbotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000065 /* LibraryChatbotService.swift */; };
 		A1000066 /* ResearchKnowledgeBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000066 /* ResearchKnowledgeBase.swift */; };
 		A1000067 /* SmartCarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000067 /* SmartCarPlayController.swift */; };
-		A1000080 /* Resources/Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Resources/Audio */; };
-		A1000081 /* Resources/DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A2000081 /* Resources/DeepInfant_V2.mlmodel */; };
+		A1000080 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A2000080 /* Audio */; };
+		A1000081 /* DeepInfant_V2.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A2000081 /* DeepInfant_V2.mlmodel */; };
 		A1000090 /* AdaptiveLearningEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000090 /* AdaptiveLearningEngine.swift */; };
 		A1000091 /* FreemiumGatekeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000091 /* FreemiumGatekeeper.swift */; };
 		A1000092 /* PremiumBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000092 /* PremiumBadge.swift */; };
@@ -136,7 +138,7 @@
 		B1000007 /* FilterChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000007 /* FilterChipView.swift */; };
 		B1000008 /* FilterTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000008 /* FilterTag.swift */; };
 		B1000009 /* FilterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000009 /* FilterViewModel.swift */; };
-		B100000A /* LullaShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000A /* LullaShortcuts.swift */; };
+		B100000A /* SoothbeeShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000A /* SoothbeeShortcuts.swift */; };
 		B100000B /* SmartPlaylistBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000B /* SmartPlaylistBuilder.swift */; };
 		B100000C /* SmartSoothingQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000C /* SmartSoothingQueueView.swift */; };
 		B100000D /* ReleaseLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000D /* ReleaseLogger.swift */; };
@@ -155,6 +157,7 @@
 		EBBF0B6A4747FC6B6869CDB6 /* FavoritesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DFAB23B74432CEB2049442 /* FavoritesListView.swift */; };
 		ECFD668F1DF7447792D9E051 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FFFFCD23053379BDC833504 /* Foundation.framework */; };
 		EMBEDWATCH001 /* BabyInCarWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F03A5C527778016FA9A9CABC /* HoneycombPulseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E962FFF8773D5A93574C070A /* HoneycombPulseView.swift */; };
 		F07D48AD5DF6751AFA3F4A0D /* CryTypeStabilizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */; };
 		F4A130084F1014B6FC4F75EE /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */; };
 		FBCC82FA4B21322EF19E4159 /* VoiceInteractionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 719457390ECCFEC855DEA8A6 /* VoiceInteractionCoordinator.swift */; };
@@ -221,6 +224,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		00CC5AF04D380A90DDCA6E17 /* HoneyDropAnimation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoneyDropAnimation.swift; sourceTree = "<group>"; };
 		00E2D3EDDC61BD0F6E48781D /* FeedbackCollectionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeedbackCollectionService.swift; sourceTree = "<group>"; };
 		11E4EF70A2A971E65CD43CEC /* SmartCarPlayControllerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SmartCarPlayControllerTests.swift; sourceTree = "<group>"; };
 		122DB5BFC75F4C7ED8080B49 /* CryDetectionViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionViewModel.swift; sourceTree = "<group>"; };
@@ -261,6 +265,7 @@
 		81DFAB23B74432CEB2049442 /* FavoritesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FavoritesListView.swift; sourceTree = "<group>"; };
 		83DFDB70852817648D619225 /* DebugMemoryOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugMemoryOverlay.swift; sourceTree = "<group>"; };
 		84EA23088CE3782DD8DA1A81 /* BabyInCarWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BabyInCarWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		863FACD5BB4CB477914543DE /* BeeEmptyState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BeeEmptyState.swift; sourceTree = "<group>"; };
 		882CE90CC9A0F96675200F13 /* EffectivenessTrackingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EffectivenessTrackingTests.swift; sourceTree = "<group>"; };
 		8AFE5059ED2EE222E74ED061 /* MemoryMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemoryMonitor.swift; sourceTree = "<group>"; };
 		A04BABD7AC3F139A6035FD04 /* CryDetectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryDetectionView.swift; sourceTree = "<group>"; };
@@ -321,8 +326,8 @@
 		A2000067 /* SmartCarPlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartCarPlayController.swift; sourceTree = "<group>"; };
 		A2000070 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000071 /* BabyInCarApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BabyInCarApp.entitlements; sourceTree = "<group>"; };
-		A2000080 /* Resources/Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
-		A2000081 /* Resources/DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
+		A2000080 /* Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Audio; sourceTree = "<group>"; };
+		A2000081 /* DeepInfant_V2.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/DeepInfant_V2.mlmodel; sourceTree = "<group>"; };
 		A2000090 /* AdaptiveLearningEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveLearningEngine.swift; sourceTree = "<group>"; };
 		A2000091 /* FreemiumGatekeeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreemiumGatekeeper.swift; sourceTree = "<group>"; };
 		A2000092 /* PremiumBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumBadge.swift; sourceTree = "<group>"; };
@@ -375,7 +380,7 @@
 		B2000007 /* FilterChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChipView.swift; sourceTree = "<group>"; };
 		B2000008 /* FilterTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterTag.swift; sourceTree = "<group>"; };
 		B2000009 /* FilterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterViewModel.swift; sourceTree = "<group>"; };
-		B200000A /* LullaShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LullaShortcuts.swift; sourceTree = "<group>"; };
+		B200000A /* SoothbeeShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoothbeeShortcuts.swift; sourceTree = "<group>"; };
 		B200000B /* SmartPlaylistBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlaylistBuilder.swift; sourceTree = "<group>"; };
 		B200000C /* SmartSoothingQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSoothingQueueView.swift; sourceTree = "<group>"; };
 		B200000D /* ReleaseLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLogger.swift; sourceTree = "<group>"; };
@@ -398,6 +403,7 @@
 		DC4F8A335FC3F3B12E632E63 /* ComprehensiveMemoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComprehensiveMemoryTests.swift; sourceTree = "<group>"; };
 		DC7A5E95BA45C083D0ACF632 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		E64FF376C37E21B4FEFB36FC /* CryTypeStabilizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CryTypeStabilizer.swift; sourceTree = "<group>"; };
+		E962FFF8773D5A93574C070A /* HoneycombPulseView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HoneycombPulseView.swift; sourceTree = "<group>"; };
 		F1E195D9EBFD4E8F055D7E07 /* EmergencyResponseIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmergencyResponseIntegrationTests.swift; sourceTree = "<group>"; };
 		F67C77278ACFAF186E4AA8DD /* ActionCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActionCategory.swift; sourceTree = "<group>"; };
 		F7482D2F581AE2542CC9AFA6 /* LanguageFilteringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageFilteringTests.swift; sourceTree = "<group>"; };
@@ -409,14 +415,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		361F76432F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		361F76432F10907D00F9A131 /* Exceptions for "BabyInCarAppIntents" folder in "BabyInCarAppIntents" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 361F76222F10907D00F9A131 /* BabyInCarAppIntents */;
 		};
-		361F76452F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		361F76452F10907D00F9A131 /* Exceptions for "BabyInCarAppIntentsUI" folder in "BabyInCarAppIntentsUI" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -426,8 +432,30 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		361F76262F10907D00F9A131 /* BabyInCarAppIntents */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (361F76432F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BabyInCarAppIntents; sourceTree = "<group>"; };
-		361F76312F10907D00F9A131 /* BabyInCarAppIntentsUI */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (361F76452F10907D00F9A131 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = BabyInCarAppIntentsUI; sourceTree = "<group>"; };
+		361F76262F10907D00F9A131 /* BabyInCarAppIntents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				361F76432F10907D00F9A131 /* Exceptions for "BabyInCarAppIntents" folder in "BabyInCarAppIntents" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = BabyInCarAppIntents;
+			sourceTree = "<group>";
+		};
+		361F76312F10907D00F9A131 /* BabyInCarAppIntentsUI */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				361F76452F10907D00F9A131 /* Exceptions for "BabyInCarAppIntentsUI" folder in "BabyInCarAppIntentsUI" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = BabyInCarAppIntentsUI;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -668,7 +696,7 @@
 				B2000003 /* CryPredictionAccuracyTracker.swift */,
 				B2000004 /* CryStopAutoDetector.swift */,
 				B200000B /* SmartPlaylistBuilder.swift */,
-				B200000A /* LullaShortcuts.swift */,
+				B200000A /* SoothbeeShortcuts.swift */,
 				52FCCA3D23197293F81417CF /* VoiceInteractionService.swift */,
 				719457390ECCFEC855DEA8A6 /* VoiceInteractionCoordinator.swift */,
 				DA35E5A99F03E12510CE02A1 /* VoicePromptTemplates.swift */,
@@ -728,6 +756,9 @@
 				A2000100 /* LanguageBadge.swift */,
 				A2000101 /* CalmingScoreBadge.swift */,
 				A2000102 /* TempoBadge.swift */,
+				00CC5AF04D380A90DDCA6E17 /* HoneyDropAnimation.swift */,
+				E962FFF8773D5A93574C070A /* HoneycombPulseView.swift */,
+				863FACD5BB4CB477914543DE /* BeeEmptyState.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -789,8 +820,8 @@
 				A2000071 /* BabyInCarApp.entitlements */,
 				A2000313 /* AppIntentVocabulary.plist */,
 				B200000E /* PrivacyInfo.xcprivacy */,
-				A2000080 /* Resources/Audio */,
-				A2000081 /* Resources/DeepInfant_V2.mlmodel */,
+				A2000080 /* Audio */,
+				A2000081 /* DeepInfant_V2.mlmodel */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -1087,7 +1118,7 @@
 			files = (
 				A1000060 /* Assets.xcassets in Resources */,
 				A1000061 /* LaunchScreen.storyboard in Resources */,
-				A1000080 /* Resources/Audio in Resources */,
+				A1000080 /* Audio in Resources */,
 				A1000313 /* AppIntentVocabulary.plist in Resources */,
 				A1000109 /* Localizable.xcstrings in Resources */,
 				B100000E /* PrivacyInfo.xcprivacy in Resources */,
@@ -1126,7 +1157,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000081 /* Resources/DeepInfant_V2.mlmodel in Sources */,
+				A1000081 /* DeepInfant_V2.mlmodel in Sources */,
 				A1000001 /* BabyInCarApp.swift in Sources */,
 				A1000002 /* SceneDelegate.swift in Sources */,
 				A1000010 /* Baby.swift in Sources */,
@@ -1240,7 +1271,7 @@
 				B1000007 /* FilterChipView.swift in Sources */,
 				B1000008 /* FilterTag.swift in Sources */,
 				B1000009 /* FilterViewModel.swift in Sources */,
-				B100000A /* LullaShortcuts.swift in Sources */,
+				B100000A /* SoothbeeShortcuts.swift in Sources */,
 				B100000B /* SmartPlaylistBuilder.swift in Sources */,
 				B100000C /* SmartSoothingQueueView.swift in Sources */,
 				B100000D /* ReleaseLogger.swift in Sources */,
@@ -1248,6 +1279,9 @@
 				FBCC82FA4B21322EF19E4159 /* VoiceInteractionCoordinator.swift in Sources */,
 				80193AB0EA9DC2D687151EE8 /* VoicePromptTemplates.swift in Sources */,
 				4F5403765F424C4EEF737CB3 /* VoiceInteractionSettingsView.swift in Sources */,
+				6C07F2725E1584099EA62917 /* HoneyDropAnimation.swift in Sources */,
+				F03A5C527778016FA9A9CABC /* HoneycombPulseView.swift in Sources */,
+				0CD22C9F195137A79C769195 /* BeeEmptyState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1323,18 +1357,18 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				"CODE_SIGN_IDENTITY[sdk=watchsimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarWatchApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Lulla;
+				INFOPLIST_KEY_CFBundleDisplayName = Soothbee;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.babyincar.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1353,7 +1387,7 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarAppIntents/BabyInCarAppIntents.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntents/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BabyInCarAppIntents;
@@ -1364,7 +1398,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.BabyInCarAppIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1381,9 +1415,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = BabyInCarAppIntents/BabyInCarAppIntents.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntents/Info.plist;
@@ -1395,7 +1428,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.BabyInCarAppIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1414,7 +1447,7 @@
 			buildSettings = {
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
@@ -1426,7 +1459,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.BabyInCarAppIntentsUI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1443,7 +1476,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarAppIntentsUI/Info.plist;
@@ -1455,7 +1488,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.BabyInCarAppIntentsUI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1474,19 +1507,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BabyInCarWatchApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Lulla;
+				INFOPLIST_KEY_CFBundleDisplayName = Soothbee;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.babyincar.app;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1630,12 +1663,12 @@
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lulla: Baby Cry Soother";
+				INFOPLIST_KEY_CFBundleDisplayName = Soothbee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1646,7 +1679,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1665,12 +1698,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BabyInCarApp/BabyInCarApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = NMCB2JZ7QG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = BabyInCarApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lulla: Baby Cry Soother";
+				INFOPLIST_KEY_CFBundleDisplayName = Soothbee;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1681,7 +1714,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.babyincar.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

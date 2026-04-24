@@ -1,4 +1,4 @@
-Lulla is the most advanced baby soothing app powered by AI. Our unique cry detection technology automatically plays calming sounds when your baby starts crying, making car rides peaceful for the whole family.
+Soothbee is the AI that listens to your baby and plays the exact sound that calms them — automatically. It recognises your baby's cry in under a second and settles them hands-free. Fully on-device. Built for the school run, the night feed, and every long red-light in between.
 
 KEY FEATURES:
 
@@ -18,7 +18,7 @@ VOICE COMMANDS
 Hands-free control with on-device voice recognition
 
 "IT HELPED!" TRACKING
-Track what works for your baby to build a personalized soothing profile
+Track what works for your baby to build a personalized soothing profile — each tap fills your Hive Reserve.
 
 SOUND CATEGORIES:
 - Lullabies (Brahms, Twinkle Twinkle, Mozart)
@@ -27,12 +27,12 @@ SOUND CATEGORIES:
 - Children's Songs
 - Ambient & Modern Piano
 
-WHY PARENTS LOVE US:
+WHY PARENTS LOVE SOOTHBEE:
 - Hands-free operation while driving
 - Works offline once downloaded
 - Scientifically-backed soothing sounds
-- Beautiful, calming interface
-- Privacy-first - all AI processing on device, no data sent externally
+- Warm honey-and-hive interface designed to calm at a glance
+- Privacy-first — all AI processing on device, no data sent externally
 
 SUBSCRIPTION OPTIONS:
 - Premium Monthly ($6.99/month)
@@ -41,7 +41,7 @@ SUBSCRIPTION OPTIONS:
 
 Payment will be charged to your Apple ID account. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in App Store account settings.
 
-Privacy Policy: https://lulla-app.pages.dev/privacy
-Terms of Use (EULA): https://lulla-app.pages.dev/terms
+Privacy Policy: https://soothbee.com/privacy
+Terms of Use (EULA): https://soothbee.com/terms
 
-Download now and enjoy peaceful car rides with your little one!
+Download Soothbee now — AI that listens to your baby and plays what calms them, automatically.

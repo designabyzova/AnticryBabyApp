@@ -265,7 +265,7 @@ struct AudioTrack: Codable, Identifiable, Equatable, Hashable, Sendable {
     init(
         id: UUID = UUID(),
         title: String,
-        artist: String = "Lulla",
+        artist: String = "Soothbee",
         category: AudioCategory,
         language: Language? = nil,
         duration: TimeInterval,

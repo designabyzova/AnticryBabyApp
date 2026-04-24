@@ -1009,20 +1009,14 @@ struct UserPlaylistsSection: View {
             .padding(.horizontal, 20)
 
             if playlistManager.userPlaylists.isEmpty {
-                // Empty state with smart suggestions
+                // Empty state with bee mascot
                 VStack(spacing: 12) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 36))
-                        .foregroundColor(.appPrimary)
-
-                    Text("Create your first playlist")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.appText)
-
-                    Text("Use smart templates or build from scratch")
-                        .font(.system(size: 14))
-                        .foregroundColor(.appTextSecondary)
-                        .multilineTextAlignment(.center)
+                    BeeEmptyState(
+                        mood: .happy,
+                        title: "Build your first playlist",
+                        caption: "Collect a calm mix for bedtime, naps, or the car."
+                    )
+                    .frame(minHeight: 280)
 
                     Button {
                         showingCreatePlaylist = true

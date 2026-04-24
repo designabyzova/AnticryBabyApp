@@ -4,15 +4,15 @@
 <dict>
     <!-- App Information -->
     <key>CFBundleName</key>
-    <string>Lulla</string>
+    <string>Soothbee</string>
     <key>CFBundleDisplayName</key>
-    <string>Lulla: Baby Cry Soother</string>
+    <string>Soothbee</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
-    <string>10</string>
+    <string>13</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.0</string>
+    <string>1.2.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -88,13 +88,13 @@
 
     <!-- Privacy Usage Descriptions -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>Lulla uses the microphone to detect your baby's cry type and automatically play personalized soothing music.</string>
+    <string>Soothbee uses the microphone to detect your baby's cry type and automatically play personalized soothing music.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Lulla uses speech recognition for hands-free voice commands while driving, so you can control playback without touching your phone.</string>
+    <string>Soothbee uses speech recognition for hands-free voice commands while driving, so you can control playback without touching your phone.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Lulla can access your photos to set a profile picture for your baby.</string>
+    <string>Soothbee can access your photos to set a profile picture for your baby.</string>
     <key>NSCameraUsageDescription</key>
-    <string>Lulla can use your camera to take a profile picture for your baby.</string>
+    <string>Soothbee can use your camera to take a profile picture for your baby.</string>
 
     <!-- App Transport Security -->
     <key>NSAppTransportSecurity</key>
@@ -117,7 +117,7 @@
 
     <!-- Siri Integration -->
     <key>NSSiriUsageDescription</key>
-    <string>Lulla uses Siri so you can control playback hands-free by saying things like "Hey Siri, play lullabies in Lulla".</string>
+    <string>Soothbee uses Siri so you can control playback hands-free by saying things like "Hey Siri, play lullabies in Soothbee".</string>
 
     <!-- Siri Intents Supported -->
     <!-- NOTE: Pause/Resume/Skip are handled via MPRemoteCommandCenter (Now Playing controls) -->
@@ -133,11 +133,11 @@
     <array>
         <dict>
             <key>INAlternativeAppName</key>
-            <string>Lulla Baby</string>
+            <string>Soothbee</string>
         </dict>
         <dict>
             <key>INAlternativeAppName</key>
-            <string>Lulla Music</string>
+            <string>Soothbee Music</string>
         </dict>
         <dict>
             <key>INAlternativeAppName</key>

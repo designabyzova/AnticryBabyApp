@@ -1,9 +1,9 @@
 //
-//  LullaShortcuts.swift
+//  SoothbeeShortcuts.swift
 //  BabyInCarApp
 //
-//  iOS 16+ App Shortcuts for voice commands WITHOUT saying "in Lulla"
-//  Example: "Hey Siri, calm baby" instead of "Hey Siri, calm baby in Lulla"
+//  iOS 16+ App Shortcuts for voice commands WITHOUT saying "in Soothbee"
+//  Example: "Hey Siri, calm baby" instead of "Hey Siri, calm baby in Soothbee"
 //
 //  This provides a more natural voice experience for parents in emergency situations.
 //
@@ -12,7 +12,7 @@ import AppIntents
 
 /// App Shortcuts provider - registers custom phrases with Siri
 @available(iOS 16.0, *)
-struct LullaShortcuts: AppShortcutsProvider {
+struct SoothbeeShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         // Emergency calming shortcut - highest priority for parents
         AppShortcut(

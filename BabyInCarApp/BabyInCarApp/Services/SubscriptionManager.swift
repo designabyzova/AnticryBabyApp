@@ -370,10 +370,10 @@ struct SubscriptionView: View {
                             .multilineTextAlignment(.center)
 
                         HStack(spacing: 4) {
-                            Link("Privacy Policy", destination: URL(string: "https://lulla-app.pages.dev/privacy")!)
+                            Link("Privacy Policy", destination: URL(string: "https://soothbee.com/privacy")!)
                             Text("and")
                                 .foregroundColor(.appTextSecondary)
-                            Link("Terms of Use (EULA)", destination: URL(string: "https://lulla-app.pages.dev/terms")!)
+                            Link("Terms of Use (EULA)", destination: URL(string: "https://soothbee.com/terms")!)
                         }
                         .font(.system(size: 11))
                     }

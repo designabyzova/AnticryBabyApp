@@ -310,43 +310,21 @@ struct FavoritesView: View {
 
     // MARK: - Empty Views
     private var emptyFavoritesView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "heart")
-                .font(.system(size: 60))
-                .foregroundColor(.appTextSecondary.opacity(0.5))
-
-            Text("No favorites yet")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.appText)
-
-            Text("Tap the heart icon on any track\nto add it to your favorites")
-                .font(.system(size: 14))
-                .foregroundColor(.appTextSecondary)
-                .multilineTextAlignment(.center)
-
-            Spacer()
-        }
-        .padding(.top, 60)
+        BeeEmptyState(
+            mood: .sleeping,
+            title: "No favorites yet",
+            caption: "Tap the heart on a track to keep the ones your baby loves."
+        )
+        .frame(minHeight: 360)
     }
 
     private var emptyPlaylistsView: some View {
         VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "music.note.list")
-                .font(.system(size: 60))
-                .foregroundColor(.appTextSecondary.opacity(0.5))
-
-            Text("No playlists yet")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.appText)
-
-            Text("Create a playlist to organize\nyour favorite sounds")
-                .font(.system(size: 14))
-                .foregroundColor(.appTextSecondary)
-                .multilineTextAlignment(.center)
+            BeeEmptyState(
+                mood: .happy,
+                title: "Build your first playlist",
+                caption: "Collect a calm mix for bedtime, naps, or the car."
+            )
 
             Button {
                 showingCreatePlaylist = true
@@ -364,11 +342,9 @@ struct FavoritesView: View {
                         .fill(Color.appPrimary)
                 )
             }
-            .padding(.top, 8)
-
-            Spacer()
+            .padding(.bottom, 24)
         }
-        .padding(.top, 60)
+        .frame(minHeight: 360)
     }
 
     private var emptyRecentlyPlayedView: some View {

@@ -9,9 +9,9 @@
             <string>INPlayMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Pon canciones de cuna en Lulla</string>
-                <string>Pon música clásica en Lulla</string>
-                <string>Pon música relajante en Lulla</string>
+                <string>Pon canciones de cuna en Soothbee</string>
+                <string>Pon música clásica en Soothbee</string>
+                <string>Pon música relajante en Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -19,8 +19,8 @@
             <string>INSearchForMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Busca Mozart en Lulla</string>
-                <string>Busca canciones de cuna en Lulla</string>
+                <string>Busca Mozart en Soothbee</string>
+                <string>Busca canciones de cuna en Soothbee</string>
             </array>
         </dict>
         <dict>
@@ -28,8 +28,8 @@
             <string>INAddMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Añadir a favoritos en Lulla</string>
-                <string>Guardar esta canción en Lulla</string>
+                <string>Añadir a favoritos en Soothbee</string>
+                <string>Guardar esta canción en Soothbee</string>
             </array>
         </dict>
     </array>

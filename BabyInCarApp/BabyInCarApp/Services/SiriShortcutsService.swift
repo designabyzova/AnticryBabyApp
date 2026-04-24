@@ -22,27 +22,27 @@ class SiriShortcutsService: ObservableObject {
 
     /// Activity type identifiers for Siri Shortcuts
     enum ActivityType: String {
-        case playLullabies = "com.lulla.playLullabies"
-        case playClassical = "com.lulla.playClassical"
-        case playFairyTales = "com.lulla.playFairyTales"
-        case playNature = "com.lulla.playNature"
-        case emergencyMode = "com.lulla.emergencyMode"
-        case calmBaby = "com.lulla.calmBaby"
-        case cryAgain = "com.lulla.cryAgain"
-        case pausePlayback = "com.lulla.pausePlayback"
-        case resumePlayback = "com.lulla.resumePlayback"
+        case playLullabies = "com.soothbee.playLullabies"
+        case playClassical = "com.soothbee.playClassical"
+        case playFairyTales = "com.soothbee.playFairyTales"
+        case playNature = "com.soothbee.playNature"
+        case emergencyMode = "com.soothbee.emergencyMode"
+        case calmBaby = "com.soothbee.calmBaby"
+        case cryAgain = "com.soothbee.cryAgain"
+        case pausePlayback = "com.soothbee.pausePlayback"
+        case resumePlayback = "com.soothbee.resumePlayback"
 
         var title: String {
             switch self {
-            case .playLullabies: return "Play Lullabies in Lulla"
-            case .playClassical: return "Play Classical Music in Lulla"
-            case .playFairyTales: return "Play Fairy Tales in Lulla"
-            case .playNature: return "Play Nature Sounds in Lulla"
-            case .emergencyMode: return "Emergency Mode in Lulla"
+            case .playLullabies: return "Play Lullabies in Soothbee"
+            case .playClassical: return "Play Classical Music in Soothbee"
+            case .playFairyTales: return "Play Fairy Tales in Soothbee"
+            case .playNature: return "Play Nature Sounds in Soothbee"
+            case .emergencyMode: return "Emergency Mode in Soothbee"
             case .calmBaby: return "Calm Baby Now"
             case .cryAgain: return "Baby Crying Again"
-            case .pausePlayback: return "Pause Lulla"
-            case .resumePlayback: return "Resume Lulla"
+            case .pausePlayback: return "Pause Soothbee"
+            case .resumePlayback: return "Resume Soothbee"
             }
         }
 
@@ -165,7 +165,7 @@ class SiriShortcutsService: ObservableObject {
         // Add search attributes for Spotlight
         let attributes = CSSearchableItemAttributeSet(contentType: .content)
         attributes.title = type.title
-        attributes.contentDescription = "Control Lulla with Siri"
+        attributes.contentDescription = "Control Soothbee with Siri"
         activity.contentAttributeSet = attributes
 
         return activity
@@ -241,7 +241,7 @@ class SiriShortcutsService: ObservableObject {
 
         let playlist = Playlist(
             id: UUID(),
-            name: "Siri: Lulla Music",
+            name: "Siri: Soothbee Music",
             tracks: Array(tracks.prefix(20)),
             createdAt: Date()
         )

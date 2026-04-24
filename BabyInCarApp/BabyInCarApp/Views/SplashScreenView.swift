@@ -51,7 +51,7 @@ struct SplashScreenView: View {
 
                 // App name
                 VStack(spacing: DesignTokens.spacingXS) {
-                    Text("Lulla")
+                    Text("Soothbee")
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
@@ -215,15 +215,14 @@ struct SplashLogoView: View {
                 .shadow(color: Color.appPrimary.opacity(0.3), radius: 20, x: 0, y: 10)
                 .scaleEffect(breatheScale)
 
-            // Inner decorations circle
-            Circle()
-                .fill(Color.appWarmCream.opacity(0.9))
-                .frame(width: 110, height: 110)
+            // Soothbee mascot (actual App Store icon)
+            Image("BrandLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 118, height: 118)
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
                 .scaleEffect(breatheScale)
-
-            // Baby face illustration
-            SplashBabyFace(isAnimating: isAnimating)
-                .scaleEffect(breatheScale)
+                .shadow(color: Color.appPrimary.opacity(0.35), radius: 14, x: 0, y: 6)
 
             // Floating musical notes
             ForEach(0..<3, id: \.self) { index in

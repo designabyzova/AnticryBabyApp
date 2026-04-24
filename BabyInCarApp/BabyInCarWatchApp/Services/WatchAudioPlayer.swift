@@ -130,7 +130,7 @@ final class WatchAudioPlayer: NSObject, ObservableObject {
         currentTrack = WatchTrack(
             id: "standalone-\(soundType.rawValue)",
             title: soundType.rawValue,
-            artist: "Lulla Watch",
+            artist: "Soothbee Watch",
             duration: soundType.loopDuration,
             category: "Generated"
         )

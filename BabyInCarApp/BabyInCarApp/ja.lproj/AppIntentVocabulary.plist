@@ -9,9 +9,9 @@
             <string>INPlayMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Lullaで子守唄を再生</string>
-                <string>Lullaでクラシック音楽を再生</string>
-                <string>Lullaで癒しの音楽を再生</string>
+                <string>Soothbeeで子守唄を再生</string>
+                <string>Soothbeeでクラシック音楽を再生</string>
+                <string>Soothbeeで癒しの音楽を再生</string>
             </array>
         </dict>
         <dict>
@@ -19,8 +19,8 @@
             <string>INSearchForMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Lullaでモーツァルトを検索</string>
-                <string>Lullaで子守唄を検索</string>
+                <string>Soothbeeでモーツァルトを検索</string>
+                <string>Soothbeeで子守唄を検索</string>
             </array>
         </dict>
         <dict>
@@ -28,8 +28,8 @@
             <string>INAddMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>Lullaでお気に入りに追加</string>
-                <string>Lullaでこの曲を保存</string>
+                <string>Soothbeeでお気に入りに追加</string>
+                <string>Soothbeeでこの曲を保存</string>
             </array>
         </dict>
     </array>

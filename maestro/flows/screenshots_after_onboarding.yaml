@@ -1,0 +1,97 @@
+appId: com.babyincar.app
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: deny
+      microphone: allow
+
+- tapOn:
+    text: "Allow|Don't Allow"
+    optional: true
+
+# === Tap Continue repeatedly until we hit the baby name step ===
+- repeat:
+    times: 6
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: "^Continue$"
+          commands:
+            - tapOn:
+                text: "^Continue$"
+            - waitForAnimationToEnd:
+                timeout: 1500
+
+# === Baby name + dismiss keyboard ===
+- runFlow:
+    when:
+      visible:
+        text: "Tell us about your baby"
+    commands:
+      - tapOn:
+          text: "Enter baby.s name"
+      - inputText: "Yana"
+      # Tap the big title area to dismiss keyboard (safe above keyboard)
+      - tapOn:
+          text: "Tell us about your baby"
+      - waitForAnimationToEnd:
+          timeout: 1200
+      # Continue should now be visible
+      - tapOn:
+          text: "^Continue$"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# === Tap through any remaining onboarding screens ===
+- repeat:
+    times: 8
+    commands:
+      - runFlow:
+          when:
+            visible:
+              text: "^Continue$|^Get Started$|^Done$|^Finish$|^Skip$"
+          commands:
+            - tapOn:
+                text: "^Continue$|^Get Started$|^Done$|^Finish$|^Skip$"
+            - waitForAnimationToEnd:
+                timeout: 1500
+
+- tapOn:
+    text: "Allow|Don't Allow"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ===== Screenshot 1: Home =====
+- extendedWaitUntil:
+    visible:
+      text: "Categories|Cry Detection|Good Morning|Sweet Dreams|Home"
+    timeout: 15000
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/1_home_APP_IPHONE_67_0
+
+- tapOn:
+    text: "Library"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/2_library_APP_IPHONE_67_0
+
+- tapOn:
+    text: "Detect"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/3_cry_detection_APP_IPHONE_67_0
+
+- tapOn:
+    text: "Favorites"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/4_favorites_APP_IPHONE_67_0
+
+- tapOn:
+    text: "Profile"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/5_profile_APP_IPHONE_67_0

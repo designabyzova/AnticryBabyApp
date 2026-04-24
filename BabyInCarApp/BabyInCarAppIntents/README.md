@@ -2,13 +2,13 @@
 
 ## Overview
 
-This is the **Intents Extension** for the Lulla app. It enables Siri voice control by handling media intents and passing them to the main app.
+This is the **Intents Extension** for the Soothbee app. It enables Siri voice control by handling media intents and passing them to the main app.
 
 ## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  Siri: "Hey Siri, play lullabies in Lulla"          │
+│  Siri: "Hey Siri, play lullabies in Soothbee"          │
 └────────────────┬─────────────────────────────────────┘
                  ↓
 ┌──────────────────────────────────────────────────────┐
@@ -25,7 +25,7 @@ This is the **Intents Extension** for the Lulla app. It enables Siri voice contr
                  ↓
 ┌──────────────────────────────────────────────────────┐
 │  iOS Launches Main App                               │
-│  Passes NSUserActivity("com.lulla.playMedia")        │
+│  Passes NSUserActivity("com.soothbee.playMedia")        │
 └────────────────┬─────────────────────────────────────┘
                  ↓
 ┌──────────────────────────────────────────────────────┐
@@ -65,19 +65,19 @@ Extension capabilities:
 ## Supported Voice Commands
 
 ### Play Category
-- "Hey Siri, play lullabies in Lulla"
-- "Hey Siri, play classical music in Lulla"
-- "Hey Siri, play nature sounds in Lulla"
+- "Hey Siri, play lullabies in Soothbee"
+- "Hey Siri, play classical music in Soothbee"
+- "Hey Siri, play nature sounds in Soothbee"
 
 ### Emergency Mode
-- "Hey Siri, calm baby in Lulla"
-- "Hey Siri, baby crying in Lulla"
+- "Hey Siri, calm baby in Soothbee"
+- "Hey Siri, baby crying in Soothbee"
 
 ### Search
-- "Hey Siri, find Mozart in Lulla"
+- "Hey Siri, find Mozart in Soothbee"
 
 ### Favorites
-- "Hey Siri, add to favorites in Lulla"
+- "Hey Siri, add to favorites in Soothbee"
 
 ## Key Design Decisions
 
@@ -100,7 +100,7 @@ Extension capabilities:
 
 ## Data Flow Example
 
-### "Hey Siri, play lullabies in Lulla"
+### "Hey Siri, play lullabies in Soothbee"
 
 1. **Extension receives:**
    ```swift
@@ -116,7 +116,7 @@ Extension capabilities:
 
 3. **Extension creates activity:**
    ```swift
-   NSUserActivity(activityType: "com.lulla.playMedia")
+   NSUserActivity(activityType: "com.soothbee.playMedia")
    userActivity.userInfo = [
        "action": "playCategory",
        "category": "lullabies"
@@ -125,7 +125,7 @@ Extension capabilities:
 
 4. **Main app receives:**
    ```swift
-   .onContinueUserActivity("com.lulla.playMedia") { activity in
+   .onContinueUserActivity("com.soothbee.playMedia") { activity in
        handlePlayMediaActivity(activity)
    }
    ```
@@ -173,13 +173,13 @@ Look for these log prefixes:
 Use text input (voice doesn't work in simulator):
 ```
 Hardware → Keyboard → Toggle Software Keyboard
-Open Siri → Type: "play lullabies in Lulla"
+Open Siri → Type: "play lullabies in Soothbee"
 ```
 
 ### Device
 Best for realistic testing:
 ```
-Say: "Hey Siri, play lullabies in Lulla"
+Say: "Hey Siri, play lullabies in Soothbee"
 Check: Console logs in Xcode
 ```
 
@@ -187,7 +187,7 @@ Check: Console logs in Xcode
 Ultimate test environment:
 ```
 Connect to CarPlay
-Say: "Hey Siri, play classical music in Lulla"
+Say: "Hey Siri, play classical music in Soothbee"
 Verify: Music plays through car speakers
 ```
 

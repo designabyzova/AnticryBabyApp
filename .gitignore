@@ -1,3 +1,11 @@
+# Code-signing secrets (private keys, certificates)
+BabyInCarApp/signing/
+**/signing/*.key
+**/signing/*.p12
+**/signing/*.p8
+*.key
+!swiftpm.key
+
 # SpecWeave
 .specweave/cache/
 .specweave/increments/*/logs/

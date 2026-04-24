@@ -41,27 +41,27 @@ enum DesignTokens {
 }
 
 extension Color {
-    // MARK: - Primary Palette (Soft & Calming)
+    // MARK: - Primary Palette (Honeycomb Dusk - Soothbee brand)
 
-    /// Soft Lavender - Primary brand color, calming and trustworthy
-    static let appPrimary = Color(hex: "9B8DC7")              // Soft Lavender
+    /// Honey Gold - Primary brand color, warm and distinctive
+    static let appPrimary = Color(hex: "E8A838")              // Honey Gold
 
-    /// Deeper Lavender - For hover states and emphasis
-    static let appPrimaryDark = Color(hex: "7B6BA7")          // Deeper Lavender
+    /// Amber - For pressed states and emphasis
+    static let appPrimaryDark = Color(hex: "B8791E")          // Amber
 
-    /// Light Lavender - For subtle backgrounds
-    static let appPrimaryLight = Color(hex: "C4B8E0")         // Light Lavender
+    /// Light Honey - For subtle backgrounds
+    static let appPrimaryLight = Color(hex: "F5D985")         // Light Honey
 
-    /// Dreamy Blue - Secondary accent, peaceful sky feeling
-    static let appSecondary = Color(hex: "89CFF0")            // Dreamy Blue
+    /// Dusk Lavender - Secondary accent (retained from Lulla for calm/sleep continuity)
+    static let appSecondary = Color(hex: "9B8DC7")            // Dusk Lavender
 
     /// Rose Pink - Tertiary accent, warm and nurturing
     static let appTertiary = Color(hex: "F4B8C5")             // Rose Pink
 
     // MARK: - Background Colors
 
-    /// Main background - Warm cream for comfort
-    static let appBackground = Color(hex: "FDF9F3")           // Warm Cream
+    /// Main background - Hive cream (warmer than prior cream)
+    static let appBackground = Color(hex: "FDF6E8")           // Hive Cream
 
     /// Dark mode background - Deep slate, easy on eyes (reduced blue)
     static let appBackgroundDark = Color(hex: "1C1917")       // Deep Warm Black
@@ -151,8 +151,8 @@ extension Color {
     /// Nature Sounds - Fresh sage green
     static let natureColor = Color(hex: "8BC49E")             // Sage Green
 
-    /// Instrumental - Warm honey
-    static let instrumentalColor = Color(hex: "E5C07B")       // Honey Gold
+    /// Instrumental - Soft bronze (retinted to avoid clash with brand honey gold)
+    static let instrumentalColor = Color(hex: "C49A5E")       // Soft Bronze
 
     /// Children's Songs - Cheerful sky
     static let childrenSongsColor = Color(hex: "7DB9DE")      // Baby Blue
@@ -171,21 +171,29 @@ extension Color {
     /// Premium/gold accent
     static let premiumAccent = Color(hex: "D4AF37")           // Soft Gold
 
+    // MARK: - Soothbee Brand Tokens (Honeycomb Dusk)
+
+    /// Honey Deep - Bee stripes, ink accents, hex outlines
+    static let honeyDeep = Color(hex: "7A4E14")               // Deep Amber
+
+    /// Hive Charcoal - Bee body, dark ink on honey surfaces
+    static let hiveCharcoal = Color(hex: "2B2419")            // Warm Charcoal
+
     // MARK: - Gradients
 
-    /// Primary gradient - Lavender to blue (main brand)
+    /// Primary gradient - Honey gold to dusk lavender (Soothbee signature)
     static let primaryGradient = LinearGradient(
         colors: [appPrimary, appSecondary],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    /// Dreamy gradient - For onboarding and hero sections
+    /// Dreamy gradient - For onboarding and hero sections (hive cream → light honey → lavender)
     static let dreamyGradient = LinearGradient(
         colors: [
-            Color(hex: "FDF9F3"),  // Warm cream
-            Color(hex: "E8E0F0"),  // Light lavender
-            Color(hex: "D4E5F7")   // Soft blue
+            Color(hex: "FDF6E8"),  // Hive cream
+            Color(hex: "F5D985"),  // Light honey
+            Color(hex: "E8E0F0")   // Soft lavender
         ],
         startPoint: .top,
         endPoint: .bottom

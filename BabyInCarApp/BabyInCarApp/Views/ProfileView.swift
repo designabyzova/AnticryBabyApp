@@ -605,20 +605,18 @@ struct AboutView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // App icon
-                ZStack {
-                    Circle()
-                        .fill(Color.appPrimary.opacity(0.1))
-                        .frame(width: 100, height: 100)
-
-                    Image(systemName: "car.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(.appPrimary)
-                }
-                .padding(.top, 40)
+                // App icon — Soothbee mascot
+                Image("BrandLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 112, height: 112)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .shadow(color: Color.appPrimary.opacity(0.25), radius: 12, x: 0, y: 6)
+                    .padding(.top, 40)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 8) {
-                    Text("Lulla")
+                    Text("Soothbee")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
@@ -632,7 +630,7 @@ struct AboutView: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.appTextSecondary)
 
-                    Text("Version 1.0.0")
+                    Text("Version 1.2.0")
                         .font(.system(size: 14))
                         .foregroundColor(.appTextSecondary.opacity(0.7))
                 }
@@ -686,7 +684,7 @@ struct PrivacyPolicyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("""
-                Privacy Policy for Lulla
+                Privacy Policy for Soothbee
 
                 Last updated: March 2026
 
@@ -722,9 +720,9 @@ struct PrivacyPolicyView: View {
                 • Control: Manage all permissions in iOS Settings
 
                 Contact:
-                For any privacy concerns, please contact us at privacy@lulla.app
+                For any privacy concerns, please contact us at anton.abyzov@gmail.com
 
-                Full policy: https://lulla-app.pages.dev/privacy
+                Full policy: https://soothbee.com/privacy
                 """)
                 .font(.system(size: 14))
                 .foregroundColor(.appText)
@@ -743,7 +741,7 @@ struct TermsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("""
-                Terms of Use (EULA) for Lulla
+                Terms of Use (EULA) for Soothbee
 
                 Last updated: March 2026
 
@@ -771,9 +769,9 @@ struct TermsView: View {
                 This app is provided "as is" without warranties. We are not responsible for any issues arising from the use of this app.
 
                 Contact:
-                For questions, please contact support@lulla.app
+                For questions, please contact anton.abyzov@gmail.com
 
-                Full terms: https://lulla-app.pages.dev/terms
+                Full terms: https://soothbee.com/terms
                 """)
                 .font(.system(size: 14))
                 .foregroundColor(.appText)

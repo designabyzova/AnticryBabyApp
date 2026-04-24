@@ -388,12 +388,20 @@ struct SmartSoothingQueueView: View {
                 // It Helped! button
                 Button {
                     notificationFeedback.notificationOccurred(.success)
+                    // Soothbee honey-drop: update hive reserve + soft double-tap haptic
+                    HiveReserveStore.shared.addDrop()
+                    HapticManager.shared.impact(style: .light)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        HapticManager.shared.impact(style: .light)
+                    }
                     recordItHelped()
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "heart.fill")
+                        Image(systemName: "drop.fill")
                             .scaleEffect(animateHeart ? 1.2 : 1.0)
                         Text("It Helped!")
+                        HiveReserveIndicator()
+                            .padding(.leading, 4)
                     }
                     .font(.headline)
                     .foregroundColor(.white)
@@ -403,7 +411,7 @@ struct SmartSoothingQueueView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .fill(
                                 LinearGradient(
-                                    colors: [.green, Color(red: 0.2, green: 0.7, blue: 0.4)],
+                                    colors: [Color.appPrimary, Color.appPrimaryDark],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -447,11 +455,12 @@ struct SmartSoothingQueueView: View {
             }
 
             if upcoming.isEmpty {
-                Text("Queue will replenish automatically...")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.4))
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 20)
+                BeeEmptyState(
+                    mood: .listening,
+                    title: "Your hive is quiet",
+                    caption: "The bee is ready to listen when you're ready to play."
+                )
+                .frame(minHeight: 240)
             } else {
                 LazyVStack(spacing: 8) {
                     ForEach(Array(upcoming.prefix(6).enumerated()), id: \.element.id) { index, track in

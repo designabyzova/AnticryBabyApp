@@ -1,8 +1,9 @@
-What's New in Lulla 1.1.0
+Soothbee — now wherever you need us.
 
-- NEW: Tap the mini player to expand into a full-screen Now Playing view with detailed track info, progress scrubber, and playback controls
-- Quick Try suggestions and Up Next queue accessible from the expanded player
-- 270+ premium soothing sounds for your baby
-- Stability and performance improvements
+- The Soothbee mascot now greets you on the home screen, on the paywall, and on the splash, so you always know who's helping calm your baby
+- Refined positioning across the app: AI that listens to your baby and plays what calms them — automatically
+- Smoother gradient animations and shadow polish across the home and profile screens
+- Refreshed About screen reflects the full Soothbee brand
+- Stability and performance improvements across cry detection, playback, and Siri shortcuts
 
-We love hearing from you — leave a review!
+Tap, breathe, settle. We hope tonight is a quiet one.

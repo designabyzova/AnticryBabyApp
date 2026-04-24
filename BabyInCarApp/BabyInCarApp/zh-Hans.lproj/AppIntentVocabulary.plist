@@ -9,9 +9,9 @@
             <string>INPlayMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>用Lulla播放摇篮曲</string>
-                <string>用Lulla播放古典音乐</string>
-                <string>用Lulla播放舒缓音乐</string>
+                <string>用Soothbee播放摇篮曲</string>
+                <string>用Soothbee播放古典音乐</string>
+                <string>用Soothbee播放舒缓音乐</string>
             </array>
         </dict>
         <dict>
@@ -19,8 +19,8 @@
             <string>INSearchForMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>在Lulla中搜索莫扎特</string>
-                <string>在Lulla中搜索摇篮曲</string>
+                <string>在Soothbee中搜索莫扎特</string>
+                <string>在Soothbee中搜索摇篮曲</string>
             </array>
         </dict>
         <dict>
@@ -28,8 +28,8 @@
             <string>INAddMediaIntent</string>
             <key>IntentExamples</key>
             <array>
-                <string>在Lulla中添加到收藏</string>
-                <string>在Lulla中保存这首歌</string>
+                <string>在Soothbee中添加到收藏</string>
+                <string>在Soothbee中保存这首歌</string>
             </array>
         </dict>
     </array>

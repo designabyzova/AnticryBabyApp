@@ -6,7 +6,7 @@
 //  This extension runs independently from the main app and handles Siri intents.
 //
 //  Architecture:
-//    User → "Hey Siri, play lullabies in Lulla"
+//    User → "Hey Siri, play lullabies in Soothbee"
 //      ↓
 //    iOS invokes this extension
 //      ↓
@@ -15,12 +15,12 @@
 //    Main app handles playback (AudioEngine)
 //
 //  Supported Commands:
-//    - "Hey Siri, play lullabies in Lulla"
-//    - "Hey Siri, play classical music in Lulla"
-//    - "Hey Siri, play nature sounds in Lulla"
-//    - "Hey Siri, calm baby in Lulla"
-//    - "Hey Siri, find Mozart in Lulla"
-//    - "Hey Siri, add to favorites in Lulla"
+//    - "Hey Siri, play lullabies in Soothbee"
+//    - "Hey Siri, play classical music in Soothbee"
+//    - "Hey Siri, play nature sounds in Soothbee"
+//    - "Hey Siri, calm baby in Soothbee"
+//    - "Hey Siri, find Mozart in Soothbee"
+//    - "Hey Siri, add to favorites in Soothbee"
 //
 
 import Intents
@@ -55,7 +55,7 @@ class IntentHandler: INExtension {
 
 // MARK: - Play Media Intent Handler
 
-/// Handles "Hey Siri, play [content] in Lulla" commands
+/// Handles "Hey Siri, play [content] in Soothbee" commands
 class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
 
     // Emergency phrases that trigger calming playback
@@ -66,7 +66,7 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
         "inconsolable", "won't sleep", "help me", "calm down"
     ]
 
-    /// Main handler - executes when user says "play X in Lulla"
+    /// Main handler - executes when user says "play X in Soothbee"
     func handle(intent: INPlayMediaIntent, completion: @escaping (INPlayMediaIntentResponse) -> Void) {
         print("🎤 [Extension] Received INPlayMediaIntent")
 
@@ -121,7 +121,7 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
               let searchTerm = mediaSearch.mediaName else {
             let defaultItem = INMediaItem(
                 identifier: "default",
-                title: "Lulla Music",
+                title: "Soothbee Music",
                 type: .music,
                 artwork: nil
             )
@@ -176,7 +176,7 @@ class PlayMediaIntentHandler: NSObject, INPlayMediaIntentHandling {
 
 // MARK: - Search For Media Intent Handler
 
-/// Handles "Hey Siri, find [content] in Lulla" commands
+/// Handles "Hey Siri, find [content] in Soothbee" commands
 class SearchForMediaIntentHandler: NSObject, INSearchForMediaIntentHandling {
 
     func handle(intent: INSearchForMediaIntent, completion: @escaping (INSearchForMediaIntentResponse) -> Void) {
@@ -204,7 +204,7 @@ class SearchForMediaIntentHandler: NSObject, INSearchForMediaIntentHandling {
 
 // MARK: - Add Media Intent Handler
 
-/// Handles "Hey Siri, add to favorites in Lulla" commands
+/// Handles "Hey Siri, add to favorites in Soothbee" commands
 class AddMediaIntentHandler: NSObject, INAddMediaIntentHandling {
 
     func handle(intent: INAddMediaIntent, completion: @escaping (INAddMediaIntentResponse) -> Void) {

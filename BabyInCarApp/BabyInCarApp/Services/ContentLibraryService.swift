@@ -636,7 +636,7 @@ class ContentLibraryService: ObservableObject {
         for (generator, title) in soothingGenerators {
             tracks.append(AudioTrack(
                 title: title,
-                artist: "Lulla",
+                artist: "Soothbee",
                 category: generator.category,
                 duration: 3600, // 1 hour
                 ageRangeMin: generator.optimalAgeRange.lowerBound,
@@ -689,7 +689,7 @@ class ContentLibraryService: ObservableObject {
         for (generator, title) in gentleAmbient {
             tracks.append(AudioTrack(
                 title: title,
-                artist: "Lulla",
+                artist: "Soothbee",
                 category: generator.category,
                 duration: 3600,
                 ageRangeMin: generator.optimalAgeRange.lowerBound,
@@ -705,7 +705,7 @@ class ContentLibraryService: ObservableObject {
         if Bundle.main.url(forResource: "bensound_pianomoment", withExtension: "mp3", subdirectory: "Audio/default") != nil {
             tracks.append(AudioTrack(
                 title: "Piano Moment",
-                artist: "Lulla",
+                artist: "Soothbee",
                 category: .classicalMusic,
                 duration: 180,
                 ageRangeMin: 0,
