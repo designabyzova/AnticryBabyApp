@@ -2,8 +2,6 @@
   "id": "0007-ai-chatbot-carplay",
   "title": "AI Chatbot & Smart CarPlay",
   "status": "completed",
-  "createdAt": "2025-12-31T15:00:00.000Z",
-  "updatedAt": "2025-12-31T18:30:00.000Z",
   "completedAt": "2025-12-31T18:30:00.000Z",
   "feature": "FS-007",
   "priority": "high",
@@ -33,5 +31,11 @@
     "BabyInCarApp/BabyInCarApp/CarPlay/CarPlaySceneDelegate.swift"
   ],
   "summary": "AI-powered library chatbot for natural language discovery and Smart CarPlay mode that adapts music based on baby cries AND environmental sounds (car engine, road noise).",
-  "updated": "2025-12-31T18:30:00.000Z"
+  "updated": "2025-12-31T18:30:00.000Z",
+  "created": "2025-12-31T15:00:00.000Z",
+  "externalLinks": {},
+  "lastActivity": "2025-12-31T18:30:00.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

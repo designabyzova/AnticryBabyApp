@@ -26,5 +26,10 @@
     "maestroFlows": 5,
     "coverageTarget": 80
   },
-  "updated": "2025-12-31T00:00:00Z"
+  "updated": "2025-12-31T00:00:00Z",
+  "externalLinks": {},
+  "lastActivity": "2025-12-31T00:00:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

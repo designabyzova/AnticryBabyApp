@@ -12,12 +12,19 @@
     "detected_from": "project.pbxproj",
     "language": "swift",
     "framework": "swiftui",
-    "platform": ["ios", "watchos"]
+    "platform": [
+      "ios",
+      "watchos"
+    ]
   },
   "summary": {
     "tasksCompleted": 23,
     "tasksTotal": 23,
     "userStories": 6,
     "filesCreated": 12
-  }
+  },
+  "externalLinks": {},
+  "lastActivity": "2026-01-04T13:00:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 80
 }

@@ -1,5 +1,5 @@
 {
-  "id": "0031",
+  "id": "0031-deepinfant-proper-integration",
   "name": "deepinfant-proper-integration",
   "title": "DeepInfant V2 Proper Integration",
   "description": "Comprehensive integration of DeepInfant V2 model with correct audio preprocessing, CoreML for iOS, and Python backend with actual neural network inference",
@@ -15,5 +15,10 @@
     "architecture"
   ],
   "dependencies": [],
-  "estimatedEffort": "large"
+  "estimatedEffort": "large",
+  "externalLinks": {},
+  "lastActivity": "2026-02-02T06:33:04.293Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

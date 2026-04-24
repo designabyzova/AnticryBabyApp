@@ -3,7 +3,12 @@
   "title": "Auto-Duck External Audio on Cry Detection",
   "status": "completed",
   "priority": "P1",
-  "createdAt": "2026-01-04T10:00:00Z",
-  "updatedAt": "2026-01-04T10:50:00Z",
-  "project": "BabyInCarApp"
+  "project": "BabyInCarApp",
+  "created": "2026-01-04T10:00:00Z",
+  "updated": "2026-01-04T10:50:00Z",
+  "externalLinks": {},
+  "lastActivity": "2026-01-04T10:50:00Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

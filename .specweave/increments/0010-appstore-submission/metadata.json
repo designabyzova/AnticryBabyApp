@@ -13,5 +13,9 @@
     "metadata"
   ],
   "updated": "2026-01-01T07:53:24.000Z",
-  "updatedAt": "2026-01-02T11:41:28.491247Z"
+  "externalLinks": {},
+  "lastActivity": "2026-01-01T07:53:24.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

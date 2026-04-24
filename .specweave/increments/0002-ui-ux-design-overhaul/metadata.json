@@ -13,5 +13,10 @@
     "graphics",
     "branding"
   ],
-  "updated": "2025-12-31T07:54:47.000Z"
+  "updated": "2025-12-31T07:54:47.000Z",
+  "externalLinks": {},
+  "lastActivity": "2025-12-31T07:54:47.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

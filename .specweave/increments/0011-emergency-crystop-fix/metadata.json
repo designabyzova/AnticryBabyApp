@@ -2,7 +2,12 @@
   "id": "0011-emergency-crystop-fix",
   "title": "Emergency Cry-Stop Intelligence Fix",
   "status": "completed",
-  "createdAt": "2026-01-01T12:00:00Z",
-  "updatedAt": "2026-01-02T16:34:22Z",
-  "updated": "2026-01-01T21:11:25.000Z"
+  "updated": "2026-01-01T21:11:25.000Z",
+  "created": "2026-01-01T12:00:00Z",
+  "externalLinks": {},
+  "priority": "medium",
+  "lastActivity": "2026-01-01T21:11:25.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

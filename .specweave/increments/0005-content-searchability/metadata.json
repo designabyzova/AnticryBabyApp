@@ -12,5 +12,10 @@
     "ux",
     "api"
   ],
-  "updated": "2025-12-31T16:54:35.000Z"
+  "updated": "2025-12-31T16:54:35.000Z",
+  "externalLinks": {},
+  "lastActivity": "2025-12-31T16:54:35.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

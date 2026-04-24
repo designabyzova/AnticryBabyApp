@@ -12,5 +12,10 @@
     "baby-music",
     "nature-sounds"
   ],
-  "updated": "2026-01-02T00:09:16.000Z"
+  "updated": "2026-01-02T00:09:16.000Z",
+  "externalLinks": {},
+  "lastActivity": "2026-01-02T00:09:16.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }

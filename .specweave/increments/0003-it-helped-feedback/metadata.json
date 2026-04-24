@@ -12,5 +12,10 @@
     "analytics",
     "effectiveness"
   ],
-  "updated": "2025-12-31T10:10:04.000Z"
+  "updated": "2025-12-31T10:10:04.000Z",
+  "externalLinks": {},
+  "lastActivity": "2025-12-31T10:10:04.000Z",
+  "testMode": "test-after",
+  "coverageTarget": 80,
+  "type": "feature"
 }
