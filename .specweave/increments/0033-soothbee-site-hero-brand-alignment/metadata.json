@@ -1,0 +1,15 @@
+{
+  "id": "0033-soothbee-site-hero-brand-alignment",
+  "status": "completed",
+  "type": "feature",
+  "priority": "P1",
+  "created": "2026-04-21T06:57:24.200Z",
+  "lastActivity": "2026-04-24T05:56:05.883Z",
+  "testMode": "test-after",
+  "coverageTarget": 70,
+  "feature_id": null,
+  "epic_id": null,
+  "externalLinks": {},
+  "readyForReviewAt": "2026-04-24T05:56:05.874Z",
+  "approvedAt": "2026-04-24T05:56:05.883Z"
+}

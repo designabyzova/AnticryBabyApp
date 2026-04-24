@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Soothbee · Pitch Deck · Easychamp Inc</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<style>
+  :root {
+    --honey: #E8A838;
+    --honey-dark: #B8791E;
+    --honey-light: #F5D985;
+    --lavender: #9B8DC7;
+    --lavender-dark: #6E5FA0;
+    --cream: #FDF6E8;
+    --cream-deep: #F8ECCD;
+    --honey-deep: #7A4E14;
+    --charcoal: #2B2419;
+    --hex-line: rgba(122, 78, 20, 0.18);
+  }
+
+  html, body { background: var(--cream); }
+
+  .reveal {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    color: var(--honey-deep);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .reveal .slides { text-align: left; }
+
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+    color: var(--charcoal);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-transform: none;
+    margin: 0 0 0.5em;
+  }
+
+  .reveal h1 { font-size: 3.2em; line-height: 1.05; }
+  .reveal h2 { font-size: 2.1em; line-height: 1.12; }
+  .reveal h3 { font-size: 1.35em; line-height: 1.2; color: var(--honey-dark); }
+  .reveal p { font-size: 1.02em; line-height: 1.5; }
+
+  .reveal a { color: var(--honey-dark); text-decoration: none; border-bottom: 1px solid var(--honey); }
+
+  .reveal ul { list-style: none; padding-left: 0; }
+  .reveal ul li {
+    position: relative;
+    padding-left: 1.5em;
+    margin-bottom: 0.55em;
+    line-height: 1.5;
+  }
+  .reveal ul li::before {
+    content: "⬢";
+    position: absolute;
+    left: 0;
+    top: 0.05em;
+    color: var(--honey);
+    font-size: 0.9em;
+  }
+
+  .reveal section {
+    padding: 3vh 5.5vw 5vh;
+    box-sizing: border-box;
+    height: 100%;
+  }
+
+  .reveal .slide-number {
+    color: var(--honey-deep);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Eyebrow label */
+  .eyebrow {
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--honey-dark);
+    margin-bottom: 1.2em;
+    display: block;
+  }
+
+  /* ========= TITLE SLIDE ========= */
+  .title-slide {
+    text-align: center !important;
+    position: relative;
+    overflow: hidden;
+    padding: 0 !important;
+    background: var(--cream);
+  }
+  .title-bg {
+    position: absolute; inset: 0;
+    background: url("images/hero.png") center/cover no-repeat;
+    z-index: 0;
+  }
+  .title-bg::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(253,246,232,0.55) 0%, rgba(253,246,232,0.15) 35%, rgba(253,246,232,0.85) 100%);
+  }
+  .title-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 5vh 6vw 4vh;
+    text-align: center;
+  }
+  .title-slide h1 {
+    font-size: 5.4em;
+    margin-bottom: 0.15em;
+    color: var(--honey-deep);
+    text-shadow: 0 2px 18px rgba(253, 246, 232, 0.85);
+    letter-spacing: -0.04em;
+  }
+  .title-slide .tagline {
+    font-size: 1.7em;
+    color: var(--charcoal);
+    font-weight: 500;
+    margin-bottom: 0.6em;
+    font-style: italic;
+    text-shadow: 0 2px 12px rgba(253, 246, 232, 0.95);
+  }
+  .title-slide .subtitle {
+    font-size: 1.05em;
+    color: var(--honey-deep);
+    margin-bottom: 1.8em;
+    max-width: 32ch;
+    margin-left: auto; margin-right: auto;
+    line-height: 1.45;
+    font-weight: 500;
+  }
+  .title-slide .meta {
+    font-size: 0.82em;
+    color: var(--honey-dark);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .title-slide .meta strong { color: var(--charcoal); }
+
+  /* ========= IMAGE-LED SLIDES ========= */
+  .image-slide {
+    padding: 0 !important;
+    position: relative;
+    overflow: hidden;
+    background: var(--cream);
+  }
+  .image-slide .img-bg {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .image-slide .img-bg::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(253,246,232,0.0) 0%, rgba(253,246,232,0.35) 50%, rgba(253,246,232,0.92) 100%);
+  }
+  .image-slide .img-content {
+    position: relative; z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 5vh 6vw 4vh;
+  }
+  .image-slide .img-content h2 {
+    max-width: 18ch;
+    text-shadow: 0 2px 16px rgba(253,246,232,0.9);
+  }
+  .image-slide .img-content p {
+    max-width: 56ch;
+    text-shadow: 0 1px 8px rgba(253,246,232,0.9);
+    color: var(--charcoal);
+  }
+
+  /* ========= SPLIT (image + content) ========= */
+  .split {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 2.2em;
+    align-items: center;
+    margin-top: 1em;
+  }
+  .split.text-left { grid-template-columns: 1fr 1.05fr; }
+  .split img.illus {
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px -18px rgba(122, 78, 20, 0.35);
+    border: 2px solid rgba(232, 168, 56, 0.18);
+  }
+
+  /* Stats and metrics */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2em;
+    margin-top: 1.4em;
+  }
+  .stat {
+    background: rgba(232, 168, 56, 0.08);
+    border-left: 4px solid var(--honey);
+    border-radius: 8px;
+    padding: 1.15em 1.3em;
+  }
+  .stat .num {
+    font-size: 2.2em;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1;
+    margin-bottom: 0.2em;
+    letter-spacing: -0.03em;
+  }
+  .stat .label {
+    font-size: 0.82em;
+    color: var(--honey-deep);
+    line-height: 1.35;
+  }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2em;
+    align-items: start;
+  }
+  .two-col.weighted { grid-template-columns: 1.3fr 1fr; }
+
+  /* Problem quote style */
+  .quote-block {
+    border-left: 4px solid var(--honey);
+    padding: 1em 1.3em;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(6px);
+    font-style: italic;
+    color: var(--charcoal);
+    font-size: 1.05em;
+    border-radius: 0 12px 12px 0;
+    margin: 1em 0;
+    box-shadow: 0 6px 20px -10px rgba(122, 78, 20, 0.25);
+  }
+
+  /* Big number callout */
+  .big-callout {
+    font-size: 4em;
+    font-weight: 700;
+    color: var(--honey-dark);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0.2em 0;
+  }
+  .big-callout-label {
+    font-size: 1.1em;
+    color: var(--charcoal);
+    font-weight: 500;
+  }
+
+  /* Feature cards */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.95em;
+    margin-top: 1.2em;
+  }
+  .feature-card {
+    padding: 1.15em;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid rgba(184, 121, 30, 0.15);
+    box-shadow: 0 4px 14px rgba(184, 121, 30, 0.08);
+  }
+  .feature-card .icon {
+    font-size: 1.6em;
+    margin-bottom: 0.3em;
+    display: block;
+  }
+  .feature-card h4 {
+    font-size: 1em;
+    color: var(--charcoal);
+    margin: 0 0 0.3em;
+  }
+  .feature-card p {
+    font-size: 0.82em;
+    color: var(--honey-deep);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  /* Table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+    margin-top: 1em;
+  }
+  .compare-table th, .compare-table td {
+    padding: 0.7em 0.9em;
+    text-align: left;
+    border-bottom: 1px solid rgba(184, 121, 30, 0.15);
+  }
+  .compare-table th {
+    background: rgba(232, 168, 56, 0.1);
+    color: var(--charcoal);
+    font-weight: 700;
+    font-size: 0.8em;
+    letter-spacing: 0.03em;
+  }
+  .compare-table .us { background: rgba(232, 168, 56, 0.13); font-weight: 600; }
+  .compare-table .check { color: var(--honey-dark); font-weight: 700; }
+  .compare-table .cross { color: #c0392b; }
+
+  /* Phone mockup */
+  .phone-row {
+    display: flex;
+    gap: 1.6em;
+    justify-content: center;
+    margin-top: 1em;
+    align-items: flex-end;
+  }
+  .phone {
+    width: 175px;
+    height: 350px;
+    background: linear-gradient(160deg, var(--cream), white);
+    border-radius: 28px;
+    border: 8px solid var(--charcoal);
+    position: relative;
+    box-shadow: 0 14px 36px rgba(43, 36, 25, 0.22);
+    padding: 1.2em 0.8em;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 20px;
+    background: var(--charcoal);
+    border-radius: 0 0 12px 12px;
+  }
+  .phone .state {
+    font-size: 0.62em;
+    color: var(--honey-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+    margin-top: 1.5em;
+  }
+  .phone .hex-pulse {
+    margin: 1.2em 0 0.8em;
+    font-size: 2.6em;
+    color: var(--honey);
+    line-height: 1;
+  }
+  .phone .hex-pulse.active { color: var(--honey-dark); }
+  .phone .hex-pulse.playing { color: var(--lavender); }
+  .phone .mood {
+    font-size: 0.95em;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 0.4em;
+  }
+  .phone .track {
+    font-size: 0.72em;
+    color: var(--honey-deep);
+    font-style: italic;
+  }
+  .phone .arrow-next {
+    position: absolute;
+    right: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.6em;
+    color: var(--honey);
+  }
+
+  /* Use of funds */
+  .funds-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9em 2em;
+    margin-top: 1em;
+  }
+  .fund-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6em;
+    font-size: 0.95em;
+  }
+  .fund-pct {
+    font-weight: 700;
+    color: var(--honey-dark);
+    font-size: 1.2em;
+    min-width: 50px;
+  }
+
+  /* Ask slide */
+  .ask-slide { text-align: center; }
+  .ask-slide .big-num {
+    font-size: 6.5em;
+    font-weight: 800;
+    color: var(--honey-dark);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin: 0.3em 0 0.2em;
+    background: linear-gradient(135deg, var(--honey-dark), var(--honey));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .ask-slide .ask-label {
+    font-size: 1.4em;
+    color: var(--charcoal);
+    font-weight: 500;
+  }
+
+  /* Vision slide */
+  .vision-slide {
+    text-align: center !important;
+    padding: 0 !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .vision-slide .img-bg {
+    position: absolute; inset: 0;
+    background: url("images/vision.png") center/cover no-repeat;
+  }
+  .vision-slide .img-bg::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(253,246,232,0.45) 0%, rgba(253,246,232,0.25) 40%, rgba(253,246,232,0.95) 100%);
+  }
+  .vision-slide .vision-content {
+    position: relative; z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 5vh 8vw 4vh;
+    text-align: center;
+  }
+  .vision-slide h2 {
+    font-size: 2.8em;
+    max-width: 22ch;
+    margin: 0 auto 0.5em;
+    line-height: 1.1;
+    text-shadow: 0 2px 16px rgba(253,246,232,0.9);
+  }
+  .vision-slide .sig {
+    margin-top: 1.5em;
+    font-size: 1em;
+    color: var(--honey-dark);
+    font-style: italic;
+  }
+
+  /* Brand footer on every slide */
+  .footer-brand {
+    position: absolute;
+    bottom: 1.6vh;
+    right: 5vw;
+    font-size: 0.62em;
+    color: rgba(122, 78, 20, 0.55);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .footer-brand strong { color: rgba(43, 36, 25, 0.7); }
+
+  /* Highlighted inline emphasis */
+  .reveal strong em, .reveal em strong { color: var(--honey-dark); font-style: normal; }
+
+  /* SmartTitle pill (top-left badge on most slides) */
+  .pill {
+    display: inline-block;
+    background: rgba(232, 168, 56, 0.16);
+    color: var(--honey-deep);
+    padding: 0.25em 0.7em;
+    border-radius: 100px;
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-left: 0.5em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+
+  /* Section intro (numbered) */
+  .slide-num {
+    font-size: 0.85em;
+    color: var(--honey);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ========== 1. TITLE ========== -->
+    <section class="title-slide">
+      <div class="title-bg"></div>
+      <div class="title-content">
+        <h1>Soothbee</h1>
+        <div class="tagline">The hum that calms your baby.</div>
+        <div class="subtitle">AI that listens to your baby and plays what calms them — in under a second, on-device, hands-free.</div>
+        <div class="meta"><strong>Easychamp Inc</strong> · Anton Abyzov, Founder &amp; CEO · 2026</div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 2. PROBLEM ========== -->
+    <section>
+      <span class="eyebrow">01 · The Problem</span>
+      <h2>New parents are drowning in cries — and have no idea why.</h2>
+      <div class="split text-left" style="margin-top: 1.2em;">
+        <div>
+          <ul>
+            <li><strong>~700 hours of sleep</strong> lost in a baby's first year. Cognitive function craters; relationships fray.</li>
+            <li><strong>"Why is my baby crying?"</strong> — among the most-Googled questions parents ever type at 3 a.m.</li>
+            <li><strong>70% of new parents</strong> have pulled over while driving because the baby wouldn't stop. That is a real safety incident, not an inconvenience.</li>
+            <li>Pediatricians don't answer at 3 a.m. Baby monitors only <em>watch</em>. Nothing actually <em>acts</em>.</li>
+          </ul>
+          <div class="quote-block" style="margin-top: 1.4em;">
+            "I sat in a parking lot for 40 minutes scrolling Spotify trying to find anything that would stop him crying."
+            <div style="font-style:normal; font-size:0.78em; color:var(--honey-dark); margin-top:0.6em;">— Soothbee beta tester, dad of an 8-month-old</div>
+          </div>
+        </div>
+        <div>
+          <img src="images/problem.png" alt="Tired parent at 3am with the bee comforting them" class="illus" />
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 3. SOLUTION ========== -->
+    <section>
+      <span class="eyebrow">02 · The Solution</span>
+      <h2>Soothbee listens, understands, and soothes — automatically.</h2>
+      <div class="split" style="margin-top: 0.8em;">
+        <div>
+          <img src="images/solution.png" alt="Bee listens, thinks, sings — three-panel illustration" class="illus" />
+        </div>
+        <div>
+          <ul>
+            <li><strong>Listens.</strong> On-device AI wakes the moment it hears a cry.</li>
+            <li><strong>Understands.</strong> Classifies hungry · tired · uncomfortable · in pain — in <em><strong>under 1 second</strong></em>.</li>
+            <li><strong>Soothes.</strong> Auto-plays the track proven to calm <em>your</em> baby from a 270-track curated library.</li>
+            <li><strong>Learns.</strong> Every "It Helped!" tap tunes a personal soothing profile that gets better every week.</li>
+          </ul>
+          <p style="margin-top: 1.2em; font-size: 0.92em; color: var(--honey-dark); font-weight: 600;">
+            One tap. Hands-free. CarPlay-native. Apple Watch. Siri. Fully offline.
+          </p>
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 4. DEMO ========== -->
+    <section>
+      <span class="eyebrow">03 · How It Feels</span>
+      <h2>From cry to calm in one second.</h2>
+      <div class="phone-row">
+        <div class="phone">
+          <div class="state">Listening</div>
+          <div class="hex-pulse">⬡</div>
+          <div class="mood">All quiet</div>
+          <div class="track">passive · zero battery drain</div>
+          <div class="arrow-next">→</div>
+        </div>
+        <div class="phone">
+          <div class="state" style="color:#c0392b;">Cry detected</div>
+          <div class="hex-pulse active">⬢</div>
+          <div class="mood">Tired</div>
+          <div class="track">confidence 94% · 0.7s</div>
+          <div class="arrow-next">→</div>
+        </div>
+        <div class="phone">
+          <div class="state" style="color:var(--lavender-dark);">Soothing</div>
+          <div class="hex-pulse playing">🎵</div>
+          <div class="mood">Brahms Lullaby</div>
+          <div class="track">✨ what calmed her last time</div>
+        </div>
+      </div>
+      <p style="text-align:center; margin-top: 2.2em; font-size: 0.95em; color: var(--honey-deep);">
+        Live on the App Store: <strong>Soothbee · Calm Baby Anywhere</strong> (v1.2.0) — search "Soothbee".
+      </p>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 5. WHY NOW ========== -->
+    <section class="image-slide">
+      <div class="img-bg" style="background-image: url('images/why-now.png');"></div>
+      <div class="img-content">
+        <span class="eyebrow">04 · Why Now</span>
+        <h2 style="font-size: 2.4em;">Three shifts just unlocked this category.</h2>
+        <div class="feature-grid" style="margin-top: 1.2em; max-width: 1100px;">
+          <div class="feature-card">
+            <span class="icon">🧠</span>
+            <h4>On-device AI is real.</h4>
+            <p>CoreML Int8 quantization put a 5MB cry classifier on every iPhone. No cloud, no latency, no privacy risk.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">🍎</span>
+            <h4>Apple Intelligence normalized it.</h4>
+            <p>Parents now expect AI to live on their phone. Education cost just dropped to zero.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">👶</span>
+            <h4>Gen-Z parents arrived.</h4>
+            <p>The largest parenting cohort in history starts having babies in 2025–2030 — digital-native, subscription-native, AI-native.</p>
+          </div>
+        </div>
+        <p style="margin-top: 1.2em; font-size: 0.95em; color: var(--charcoal); font-weight: 600; text-shadow: 0 1px 8px rgba(253,246,232,0.9);">
+          Two years ago, this app was impossible. Two years from now, it's obvious. We are <em>18 months ahead</em>.
+        </p>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 6. MARKET ========== -->
+    <section>
+      <span class="eyebrow">05 · Market</span>
+      <h2>A $1B+ wedge inside an $88B category.</h2>
+      <div class="split" style="margin-top: 0.8em;">
+        <div>
+          <img src="images/market.png" alt="Globe surrounded by sleeping babies and bee swirls" class="illus" />
+        </div>
+        <div>
+          <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 0.9em;">
+            <div class="stat">
+              <div class="num">$88B</div>
+              <div class="label">TAM — global baby-care, 5.4% CAGR</div>
+            </div>
+            <div class="stat">
+              <div class="num">$6.4B</div>
+              <div class="label">SAM — parenting apps &amp; digital baby-tech by 2028</div>
+            </div>
+            <div class="stat">
+              <div class="num">~40M</div>
+              <div class="label">SOM — iOS parents with 0–24 mo children</div>
+            </div>
+            <div class="stat">
+              <div class="num">140M</div>
+              <div class="label">Babies born every year. New customers, on schedule.</div>
+            </div>
+          </div>
+          <p style="margin-top: 1.2em; font-size: 0.92em; color: var(--honey-dark); font-weight: 600;">
+            At <strong>$40 ARPU</strong> and just <strong>1% capture</strong> of the iOS SOM → <strong>$16M ARR</strong>. At 5% → <strong>$80M ARR</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 7. PRODUCT ========== -->
+    <section>
+      <span class="eyebrow">06 · Product</span>
+      <h2>Already shipped. Already in every parent's pocket.</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="icon">🎧</span>
+          <h4>&lt;1s cry detection</h4>
+          <p>DeepInfant V2 CoreML model classifies 9 cry types → 5 parent-meaningful moods.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🎵</span>
+          <h4>270 curated tracks</h4>
+          <p>Lullabies · Classical · Fairytales (EN + RU) · Ambient · Children's songs — every track vetted for baby-safety.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🚗</span>
+          <h4>CarPlay + Siri + Watch</h4>
+          <p>Hands-free by design. The only cry-detection app native to the CarPlay ecosystem.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🧬</span>
+          <h4>Adaptive learning</h4>
+          <p>"It Helped!" tracker builds a per-baby soothing profile that compounds every week.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🔒</span>
+          <h4>100% on-device</h4>
+          <p>No audio leaves the phone, ever. HIPAA-adjacent posture out of the box.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">📴</span>
+          <h4>Offline by default</h4>
+          <p>Full library downloads locally. Works in airplane mode, basements, road trips.</p>
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 8. CARPLAY MOMENT ========== -->
+    <section class="image-slide">
+      <div class="img-bg" style="background-image: url('images/carplay.png');"></div>
+      <div class="img-content">
+        <span class="eyebrow">07 · The CarPlay Moment</span>
+        <h2 style="font-size: 2.6em; max-width: 22ch;">Where every other parenting app fails — we shine.</h2>
+        <p style="font-size: 1.1em; max-width: 60ch; font-weight: 500;">
+          A baby crying in the back seat is the highest-stakes parenting moment of the week.
+          Soothbee is the <em><strong>only</strong></em> app that detects, classifies, and soothes
+          without the parent ever taking a hand off the wheel. CarPlay-native. Siri-controlled.
+          Apple Watch in three taps.
+        </p>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 9. TECHNOLOGY / MOAT ========== -->
+    <section>
+      <span class="eyebrow">08 · Technology &amp; Moat</span>
+      <h2>The only consumer app with &lt;1s cry classification on-device.</h2>
+      <div class="two-col weighted" style="margin-top: 1em;">
+        <div>
+          <ul>
+            <li><strong>DeepInfant V2</strong> — custom 3-stage pipeline classifier (VGGish preprocessing → Int8-quantized CNN → GLM head). 5.1 MB. Apple Create ML trained on a proprietary cry corpus.</li>
+            <li><strong>Apple Sound Analysis</strong> — we ride Apple's newest on-device audio framework. Zero infra, zero GPU bill, automatic OS-level optimization.</li>
+            <li><strong>270-track curated corpus</strong> — proprietary safety-scored audio library. A forbidden-content list keeps harsh, scary, and stimulating sounds <em>out</em> (rain, vacuum, white noise — all banned by pediatric audio research).</li>
+            <li><strong>Per-baby adaptive model</strong> — compounding personalization moat. Week 1 it's generic. Week 12 it's <em>yours</em>.</li>
+            <li><strong>Apple ecosystem integration</strong> — CarPlay + Siri + Watch + Shortcuts. 6–12 months to replicate, before the soothing model even exists.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="stat" style="margin-bottom: 0.7em;">
+            <div class="num">&lt;1s</div>
+            <div class="label">Cry classification latency, end-to-end, on-device</div>
+          </div>
+          <div class="stat" style="margin-bottom: 0.7em;">
+            <div class="num">5.1MB</div>
+            <div class="label">Quantized CoreML model — ships with the app</div>
+          </div>
+          <div class="stat">
+            <div class="num">9 → 5</div>
+            <div class="label">DeepInfant classes mapped to parent-meaningful moods</div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 10. TRACTION ========== -->
+    <section>
+      <span class="eyebrow">09 · Traction</span>
+      <h2>Shipped solo. Shipped fast. Shipped on a real pipeline.</h2>
+      <div class="split text-left" style="margin-top: 0.8em;">
+        <div>
+          <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 0.9em;">
+            <div class="stat">
+              <div class="num">v1.2</div>
+              <div class="label">Live on the App Store · build 13 · April 2026</div>
+            </div>
+            <div class="stat">
+              <div class="num">33</div>
+              <div class="label">Production increments shipped end-to-end</div>
+            </div>
+            <div class="stat">
+              <div class="num">270</div>
+              <div class="label">Curated tracks across 7 baby-safe categories</div>
+            </div>
+            <div class="stat">
+              <div class="num">1</div>
+              <div class="label">Founder · zero outside capital · full iOS + ML + backend</div>
+            </div>
+          </div>
+          <p style="margin-top: 1.2em; font-size: 0.92em; color: var(--honey-dark); font-weight: 600;">
+            33 shipped increments tell you we <em>close loops</em>. Spec → plan → test → ship → measure. With YC capital we 10× this cadence.
+          </p>
+        </div>
+        <div>
+          <img src="images/traction.png" alt="Bee proudly holding a honey jar with a rising bar chart inside" class="illus" />
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 11. BUSINESS MODEL ========== -->
+    <section>
+      <span class="eyebrow">10 · Business Model</span>
+      <h2>Freemium, three-tier, high-margin by design.</h2>
+      <div class="stat-grid" style="margin-top: 1em;">
+        <div class="stat">
+          <div class="num">$6.99<span style="font-size: 0.45em; color: var(--honey-dark);"> / mo</span></div>
+          <div class="label">Monthly — low-friction trial entry</div>
+        </div>
+        <div class="stat">
+          <div class="num">$49.99<span style="font-size: 0.45em; color: var(--honey-dark);"> / yr</span></div>
+          <div class="label">Yearly — 40% savings, our sweet spot</div>
+        </div>
+        <div class="stat">
+          <div class="num">$149.99<span style="font-size: 0.45em; color: var(--honey-dark);"> once</span></div>
+          <div class="label">Lifetime — upfront cash &amp; commitment</div>
+        </div>
+      </div>
+      <ul style="margin-top: 1.2em;">
+        <li><strong>Free tier:</strong> full detection + 10 starter tracks — earns trust, doesn't cover a full bedtime.</li>
+        <li><strong>Blended ARPU target:</strong> $40/year once the mix stabilizes.</li>
+        <li><strong>Gross margin:</strong> 70%+ after Apple's 15% small-business fee.</li>
+        <li><strong>Unit economics:</strong> on-device inference = zero marginal compute cost. The app gets <em>cheaper</em> at scale.</li>
+      </ul>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 12. COMPETITION ========== -->
+    <section>
+      <span class="eyebrow">11 · Competition</span>
+      <h2>Nobody else <em>detects</em> AND <em>soothes</em>. In your pocket. Hands-free.</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Hardware monitors<br><span style="font-weight:400; opacity:0.7;">Nanit · Owlet · Cradlewise</span></th>
+            <th>Parenting apps<br><span style="font-weight:400; opacity:0.7;">Huckleberry · Hatch · Baby Tracker</span></th>
+            <th class="us">Soothbee</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Cry detection</strong></td>
+            <td class="check">✓ (cloud, 3–5s)</td>
+            <td class="cross">✗</td>
+            <td class="us check">✓ on-device, &lt;1s</td>
+          </tr>
+          <tr>
+            <td><strong>Auto-soothe</strong></td>
+            <td class="cross">✗ (alerts only)</td>
+            <td>Manual tap</td>
+            <td class="us check">✓ Automatic</td>
+          </tr>
+          <tr>
+            <td><strong>CarPlay / driving</strong></td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="us check">✓ Native</td>
+          </tr>
+          <tr>
+            <td><strong>Privacy</strong></td>
+            <td>Cloud upload</td>
+            <td>Cloud accounts</td>
+            <td class="us check">100% on-device</td>
+          </tr>
+          <tr>
+            <td><strong>Entry price</strong></td>
+            <td>$250–400 hardware + sub</td>
+            <td>$12 / mo</td>
+            <td class="us check">$6.99/mo · free tier</td>
+          </tr>
+          <tr>
+            <td><strong>Time-to-value</strong></td>
+            <td>Days (setup + pairing)</td>
+            <td>Minutes (manual tap)</td>
+            <td class="us check">Seconds (automatic)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top: 1em; font-size: 0.92em; color: var(--honey-dark); font-weight: 600;">
+        The category has <em>monitors</em> and <em>trackers</em>. Nobody is the <em>responder</em>. We are.
+      </p>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 13. GTM ========== -->
+    <section>
+      <span class="eyebrow">12 · Go-To-Market</span>
+      <h2>Four unfair distribution channels.</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="icon">🔍</span>
+          <h4>ASO on desperation</h4>
+          <p>"stop baby crying" → ~600k US searches/month. We already index for it. CAC = $0.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🎥</span>
+          <h4>Parenting creators</h4>
+          <p>TikTok/IG mom creators convert at 2–4% on "show me the screen" demos. Soothbee is uniquely <em>demoable</em> in 15 seconds.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🏥</span>
+          <h4>Hospital &amp; pediatrician pilots</h4>
+          <p>Discharge-packet placement. One hospital partnership = 8,000 new-parent impressions/mo at near-zero CAC.</p>
+        </div>
+        <div class="feature-card">
+          <span class="icon">🚘</span>
+          <h4>CarPlay "Family" discovery</h4>
+          <p>Apple's curated CarPlay collections — top-of-funnel real estate no competitor is even filing for.</p>
+        </div>
+      </div>
+      <p style="margin-top: 1em; font-size: 0.88em; color: var(--honey-dark); font-weight: 600;">
+        Babies age out in 18 months. Churn is a feature: every cohort refers the next.
+      </p>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 14. FINANCIALS ========== -->
+    <section>
+      <span class="eyebrow">13 · Projections</span>
+      <h2>The path to $20M ARR.</h2>
+      <table class="compare-table" style="margin-top: 1.2em;">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Year 1 (2026)</th>
+            <th>Year 2 (2027)</th>
+            <th class="us">Year 3 (2028)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Paying subscribers</strong></td>
+            <td>50,000</td>
+            <td>200,000</td>
+            <td class="us check">500,000</td>
+          </tr>
+          <tr>
+            <td><strong>Blended ARPU</strong></td>
+            <td>$36</td>
+            <td>$40</td>
+            <td class="us check">$42</td>
+          </tr>
+          <tr>
+            <td><strong>ARR</strong></td>
+            <td>$1.8M</td>
+            <td>$8.0M</td>
+            <td class="us check">$21.0M</td>
+          </tr>
+          <tr>
+            <td><strong>Gross margin</strong></td>
+            <td>72%</td>
+            <td>75%</td>
+            <td class="us check">78%</td>
+          </tr>
+          <tr>
+            <td><strong>Share of SOM</strong></td>
+            <td>0.1%</td>
+            <td>0.5%</td>
+            <td class="us check">1.2%</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top: 1em; font-size: 0.85em; color: var(--honey-dark); font-weight: 600;">
+        Conservative. Assumes iOS-only, English-first, no hardware line. Android, Spanish/Mandarin, and enterprise hospital SaaS are upside.
+      </p>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 15. TEAM ========== -->
+    <section>
+      <span class="eyebrow">14 · Team</span>
+      <h2>Built by a founder who ships.</h2>
+      <div class="two-col" style="margin-top: 1.2em;">
+        <div>
+          <h3 style="margin-bottom: 0.3em;">Anton Abyzov</h3>
+          <p style="font-size: 0.95em; color: var(--honey-dark); font-weight: 600; margin-bottom: 0.8em;">
+            Founder &amp; CEO · Easychamp Inc · iOS + ML + Product
+          </p>
+          <ul>
+            <li>10+ years shipping iOS at scale.</li>
+            <li>Built Soothbee solo: 33 production increments, on-device ML pipeline, CarPlay integration, Apple Watch app, subscription infrastructure, and Cloudflare Workers backend.</li>
+            <li>Parent. This is not an exit play — it's an obsession.</li>
+          </ul>
+          <p style="margin-top: 1em; font-size: 0.9em; color: var(--honey-deep);">
+            <strong>Easychamp Inc</strong> · the parent company behind Soothbee and a portfolio of consumer-AI products focused on calm, confident parenting.
+          </p>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 0.3em;">Post-funding hires (first 6 mo)</h3>
+          <ul>
+            <li><strong>Senior iOS engineer</strong> — platform parity, Android port.</li>
+            <li><strong>ML research lead</strong> — next-gen cry model, sleep-state prediction.</li>
+            <li><strong>Growth lead</strong> — paid UA, creator partnerships, ASO.</li>
+            <li><strong>Clinical advisor</strong> (fractional) — pediatric validation study.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 16. THE ASK ========== -->
+    <section class="ask-slide">
+      <span class="eyebrow">15 · The Ask</span>
+      <h2>Back the category-defining baby AI.</h2>
+      <div class="big-num">$500K</div>
+      <div class="ask-label">SAFE · 18-month runway to Series A milestones</div>
+      <h3 style="margin-top: 2em; text-align: center;">How we deploy it</h3>
+      <div class="funds-row" style="max-width: 720px; margin: 1em auto 0;">
+        <div class="fund-item"><span class="fund-pct">45%</span><span><strong>Engineering</strong> — 2 hires · Android · clinical integrations</span></div>
+        <div class="fund-item"><span class="fund-pct">30%</span><span><strong>Paid UA</strong> — TikTok · Meta · ASO in top-5 EN markets</span></div>
+        <div class="fund-item"><span class="fund-pct">15%</span><span><strong>Clinical validation</strong> — 1 hospital pilot · IRB study</span></div>
+        <div class="fund-item"><span class="fund-pct">10%</span><span><strong>Operations</strong> — legal, COPPA, GDPR-K compliance</span></div>
+      </div>
+      <p style="margin-top: 2em; font-size: 0.9em; color: var(--honey-dark); font-weight: 600;">
+        Milestones at month 18: <strong>50K paid subs · $1.8M ARR · clinical citation · Android live</strong>.
+      </p>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+    <!-- ========== 17. VISION ========== -->
+    <section class="vision-slide">
+      <div class="img-bg"></div>
+      <div class="vision-content">
+        <span class="eyebrow">16 · Vision</span>
+        <h2>From calming one cry → being every parent's AI pediatrician.</h2>
+        <p style="max-width: 60ch; margin: 1em auto; font-size: 1.05em; color: var(--charcoal); text-shadow: 0 1px 8px rgba(253,246,232,0.95); font-weight: 500;">
+          Cry is just the first signal. Sleep cycles, feeding patterns, developmental milestones, early illness detection — the same on-device AI that understands crying will understand the whole first year. And the next. And the next.
+        </p>
+        <div class="sig">soothbee.com · <strong>the hum that calms your baby.</strong></div>
+        <p style="margin-top: 2.2em; font-size: 0.9em; color: var(--honey-dark); font-weight: 600;">
+          Anton Abyzov · <a href="mailto:anton.abyzov@gmail.com">anton.abyzov@gmail.com</a> · Easychamp Inc
+        </p>
+      </div>
+      <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    transitionSpeed: 'fast',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1280,
+    height: 800,
+    margin: 0.04,
+    minScale: 0.3,
+    maxScale: 1.6
+  });
+</script>
+</body>
+</html>

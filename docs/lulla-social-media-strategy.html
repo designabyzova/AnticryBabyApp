@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lulla — Social Media Strategy Playbook</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 2.5cm;
+    @bottom-center {
+      content: "Lulla Social Media Strategy — Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #9CA3AF;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, 'Helvetica Neue', 'Segoe UI', sans-serif;
+    font-size: 10pt;
+    line-height: 1.55;
+    color: #1C1917;
+    background: #fff;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 6cm;
+  }
+  .cover-brand {
+    font-size: 14pt;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #9B8DC7;
+    margin-bottom: 1cm;
+  }
+  .cover h1 {
+    font-size: 32pt;
+    font-weight: 700;
+    color: #1C1917;
+    line-height: 1.15;
+    margin-bottom: 0.6cm;
+  }
+  .cover .subtitle {
+    font-size: 13pt;
+    color: #6B7280;
+    margin-bottom: 2cm;
+  }
+  .cover-meta {
+    font-size: 9pt;
+    color: #9CA3AF;
+    line-height: 1.8;
+  }
+  .cover-line {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #9B8DC7, #89CFF0);
+    margin: 1cm auto;
+    border: none;
+  }
+
+  /* ── Table of Contents ── */
+  .toc {
+    page-break-after: always;
+  }
+  .toc h2 {
+    font-size: 18pt;
+    color: #9B8DC7;
+    margin-bottom: 0.8cm;
+    border: none;
+    padding: 0;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+    padding: 0;
+  }
+  .toc ol li {
+    counter-increment: toc-counter;
+    padding: 8px 0;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 11pt;
+  }
+  .toc ol li::before {
+    content: counter(toc-counter, decimal-leading-zero) ".";
+    color: #9B8DC7;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+  .toc ol li span {
+    float: right;
+    color: #9CA3AF;
+    font-size: 9pt;
+  }
+
+  /* ── Section Headers ── */
+  h2 {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #1C1917;
+    margin-top: 1.2cm;
+    margin-bottom: 0.5cm;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #9B8DC7;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.7cm;
+    margin-bottom: 0.3cm;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.5cm;
+    margin-bottom: 0.2cm;
+  }
+
+  p {
+    margin-bottom: 8px;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #F5F3FF;
+    color: #4C1D95;
+    font-weight: 600;
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 2px solid #9B8DC7;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #F3F4F6;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background: #FAFAFA;
+  }
+
+  /* ── Callout Boxes ── */
+  .callout {
+    background: #F5F3FF;
+    border-left: 4px solid #9B8DC7;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+    page-break-inside: avoid;
+  }
+  .callout-title {
+    font-weight: 700;
+    color: #4C1D95;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .callout p { margin-bottom: 4px; }
+
+  .callout-blue {
+    background: #EFF6FF;
+    border-left-color: #89CFF0;
+  }
+  .callout-blue .callout-title { color: #1E40AF; }
+
+  .callout-pink {
+    background: #FDF2F8;
+    border-left-color: #F4B8C5;
+  }
+  .callout-pink .callout-title { color: #9D174D; }
+
+  .callout-green {
+    background: #F0FDF4;
+    border-left-color: #86EFAC;
+  }
+  .callout-green .callout-title { color: #166534; }
+
+  /* ── Lists ── */
+  ul, ol {
+    margin: 6px 0 10px 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+
+  /* ── Code / Monospace ── */
+  code {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 8.5pt;
+    background: #F3F4F6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #4C1D95;
+  }
+  pre {
+    background: #1C1917;
+    color: #E5E7EB;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 8.5pt;
+    line-height: 1.5;
+    margin: 10px 0 14px 0;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* ── Checklist ── */
+  .checklist {
+    list-style: none;
+    margin-left: 0;
+    padding: 0;
+  }
+  .checklist li {
+    padding: 5px 0 5px 26px;
+    position: relative;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    color: #9B8DC7;
+    font-size: 12pt;
+  }
+
+  /* ── Flow Diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .flow-step {
+    background: #F5F3FF;
+    border: 1.5px solid #9B8DC7;
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #4C1D95;
+    min-width: 80px;
+  }
+  .flow-arrow {
+    color: #9B8DC7;
+    font-size: 16pt;
+    padding: 0 4px;
+  }
+
+  /* ── Stat Cards ── */
+  .stats {
+    display: flex;
+    gap: 12px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .stat-card {
+    flex: 1;
+    background: #F5F3FF;
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #9B8DC7;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 8pt;
+    color: #6B7280;
+    margin-top: 4px;
+  }
+
+  /* ── Section Break ── */
+  .section-break {
+    page-break-before: always;
+  }
+
+  /* ── Strong ── */
+  strong { color: #1C1917; }
+
+  /* ── Horizontal Rule ── */
+  hr {
+    border: none;
+    border-top: 1px solid #E5E7EB;
+    margin: 16px 0;
+  }
+
+  .tag {
+    display: inline-block;
+    background: #F5F3FF;
+    color: #4C1D95;
+    font-size: 7.5pt;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  .highlight {
+    background: linear-gradient(120deg, #F5F3FF 0%, #EFF6FF 100%);
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  .two-col {
+    display: flex;
+    gap: 16px;
+  }
+  .two-col > div {
+    flex: 1;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════ -->
+<!-- COVER PAGE                              -->
+<!-- ════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-brand">LULLA</div>
+  <h1>Social Media<br>Strategy Playbook</h1>
+  <hr class="cover-line">
+  <p class="subtitle">A research-backed guide to building Lulla's social media presence<br>from zero to category leader in the baby tech space.</p>
+  <div class="cover-meta">
+    <p>Prepared for Anton Abyzov</p>
+    <p>April 2026</p>
+    <p>Version 1.0</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS                       -->
+<!-- ════════════════════════════════════════ -->
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li>Executive Summary</li>
+    <li>Competitive Landscape</li>
+    <li>Target Audience &amp; Psychology</li>
+    <li>Platform Strategy &amp; Priority</li>
+    <li>Brand Identity &amp; Voice</li>
+    <li>Content Pillars &amp; Topic Clusters</li>
+    <li>Psychological Persuasion Framework</li>
+    <li>Signature Series: "Can You Guess the Cry?"</li>
+    <li>Hook Library (40+ Hooks)</li>
+    <li>Content Calendar — First 30 Days</li>
+    <li>Content Repurposing Engine</li>
+    <li>Influencer Outreach Playbook</li>
+    <li>Measurement &amp; KPIs</li>
+    <li>Quick-Start Checklist</li>
+  </ol>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 01. EXECUTIVE SUMMARY                   -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>01. Executive Summary</h2>
+
+<p><strong>Lulla</strong> is an AI-powered iOS app that detects <em>why</em> a baby is crying (7 types: hungry, tired, pain, discomfort, lonely, scared, burping) in under 1 second using fully on-device AI, then automatically plays the right soothing sound from 270+ tracks.</p>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-number">&lt;1s</div>
+    <div class="stat-label">Detection Speed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">7</div>
+    <div class="stat-label">Cry Types</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">270+</div>
+    <div class="stat-label">Soothing Tracks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">100%</div>
+    <div class="stat-label">On-Device Privacy</div>
+  </div>
+</div>
+
+<div class="callout">
+  <div class="callout-title">The Opportunity</div>
+  <p>The baby cry detection niche is <strong>wide open on social media</strong>. Direct competitor Nanni AI has 500K users but only 3K Instagram followers. Lulla can own this category entirely with a focused content strategy.</p>
+</div>
+
+<h3>Key Features</h3>
+<ul>
+  <li><strong>Instant AI Cry Detection</strong> — 7 cry types classified in under 1 second</li>
+  <li><strong>CarPlay Integration</strong> — Full hands-free operation while driving</li>
+  <li><strong>Learning System</strong> — Tracks which sounds work via "It Helped!" feedback</li>
+  <li><strong>270+ Soothing Tracks</strong> — Classical (117), fairy tales (171), lullabies (51), ambient, children's songs</li>
+  <li><strong>Complete Privacy</strong> — 100% on-device, no audio recorded or transmitted</li>
+  <li><strong>Night Mode</strong> — Ultra-low blue light for nighttime feedings</li>
+  <li><strong>Offline Capable</strong> — Cry detection works without internet</li>
+</ul>
+
+<h3>Pricing</h3>
+<table>
+  <tr><th>Plan</th><th>Price</th><th>Notes</th></tr>
+  <tr><td>Free</td><td>$0</td><td>Basic features, no credit card</td></tr>
+  <tr><td>Monthly</td><td>$6.99/mo</td><td>Full access</td></tr>
+  <tr><td>Annual</td><td>$49.99/yr</td><td>~40% savings</td></tr>
+  <tr><td>Lifetime</td><td>$149.99</td><td>One-time purchase</td></tr>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 02. COMPETITIVE LANDSCAPE               -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>02. Competitive Landscape</h2>
+
+<p>Research across 7 major baby/parenting apps reveals clear patterns in what works on social media — and where the massive gaps are.</p>
+
+<table>
+  <tr><th>App</th><th>Instagram Followers</th><th>Strategy</th><th>Lesson for Lulla</th></tr>
+  <tr><td><strong>Kinedu</strong></td><td>1.37M (3 accounts)</td><td>Multi-language, activity demos</td><td>Launch Russian account — you have 85 RU fairy tales</td></tr>
+  <tr><td><strong>BabySparks</strong></td><td>359K</td><td>Authority broadcasting</td><td>Expert positioning works at scale</td></tr>
+  <tr><td><strong>Wonder Weeks</strong></td><td>217K</td><td>Science-based education</td><td>Science content builds loyal followers</td></tr>
+  <tr><td><strong>Huckleberry</strong></td><td>129K</td><td>Influencer partnerships</td><td>Micro-influencer UGC is the proven playbook</td></tr>
+  <tr><td><strong>Nara Baby</strong></td><td>44K</td><td>TikTok product demos</td><td>"Life hack" format maps to cry detection</td></tr>
+  <tr><td><strong>Nanni AI</strong> (direct)</td><td>3K</td><td>Minimal social</td><td><strong>Category is wide open</strong></td></tr>
+  <tr><td><strong>Sound Sleeper</strong></td><td>273</td><td>None</td><td>Warning: don't ignore social</td></tr>
+</table>
+
+<div class="callout callout-green">
+  <div class="callout-title">Key Insight</div>
+  <p><strong>Kinedu's multi-language strategy</strong> drove 1.37M combined followers (main 572K + Brazil 450K + Spanish 349K). Lulla already has Russian fairy tale content — a Russian-language account is a ready-made growth lever.</p>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 03. TARGET AUDIENCE & PSYCHOLOGY         -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>03. Target Audience &amp; Psychology</h2>
+
+<h3>Primary Audience</h3>
+<p><strong>Exhausted new parents, age 25-40</strong>, primarily first-time parents experiencing anxiety about understanding their baby. They are sleep-deprived, emotionally vulnerable, and desperately seeking reassurance and practical help.</p>
+
+<h3>Compelling Statistics for Content</h3>
+<table>
+  <tr><th>Statistic</th><th>Source</th><th>Content Angle</th></tr>
+  <tr><td>Newborns cry <strong>1-4 hours/day</strong>, peaking at 6 weeks</td><td>Child Development 2022</td><td>"Your baby isn't broken" reassurance</td></tr>
+  <tr><td>Parents lose <strong>700 hours of sleep</strong> in Year 1</td><td>The Bump</td><td>"What if AI could give some back?"</td></tr>
+  <tr><td><strong>1 in 5 mothers</strong> experience postpartum depression</td><td>CDC</td><td>Position as mental health support tool</td></tr>
+  <tr><td>#1 trigger for shaken baby syndrome: <strong>inconsolable crying</strong></td><td>CDC</td><td>Lulla as a safety tool (use carefully)</td></tr>
+  <tr><td>Dads with 4+ hrs/day are <strong>equally accurate</strong> at reading cries</td><td>Nature Communications</td><td>Challenge gender norms — massive engagement</td></tr>
+  <tr><td><strong>90% accuracy</strong> for AI cry detection</td><td>UCLA / ChatterBaby</td><td>Scientific credibility for Lulla's approach</td></tr>
+  <tr><td>"Cortisol brain damage" from crying is a <strong>myth</strong></td><td>ChildrensMD</td><td>Myth-busting content (drives comments)</td></tr>
+  <tr><td>ALL babies experience <strong>PURPLE Crying</strong> period</td><td>Seattle Children's</td><td>Normalizing + educating content series</td></tr>
+  <tr><td><strong>55% of parents</strong> report healthcare dissatisfaction with crying support</td><td>Child Care 2022</td><td>"You're not getting enough support"</td></tr>
+</table>
+
+<h3>Emotional Decision Journey</h3>
+<p>Parents don't buy apps rationally. Every piece of content should follow this emotional sequence:</p>
+
+<div class="flow">
+  <div class="flow-step">PAIN<br><span style="font-weight:400;font-size:7pt">Activate the<br>problem</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">VALIDATION<br><span style="font-weight:400;font-size:7pt">Remove<br>guilt</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">HOPE<br><span style="font-weight:400;font-size:7pt">Open<br>possibility</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">PROOF<br><span style="font-weight:400;font-size:7pt">Authority +<br>specificity</span></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">ACTION<br><span style="font-weight:400;font-size:7pt">Zero-friction<br>CTA</span></div>
+</div>
+
+<div class="highlight">
+  <strong>Example script for a 15-second Reel:</strong><br>
+  <em>"It's 3AM. Your baby won't stop crying."</em> (Pain) →
+  <em>"You're not failing. ALL babies cry 2-4 hours a day."</em> (Validation) →
+  <em>"What if you didn't have to guess?"</em> (Hope) →
+  <em>"Lulla detects 7 cry types in under 1 second."</em> (Proof) →
+  <em>"Free on the App Store."</em> (Action)
+</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 04. PLATFORM STRATEGY                   -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>04. Platform Strategy &amp; Priority</h2>
+
+<table>
+  <tr><th>#</th><th>Platform</th><th>Why</th><th>Frequency</th><th>Best Times</th></tr>
+  <tr><td><strong>1</strong></td><td>TikTok</td><td>Best new-creator discovery. 3.73% avg engagement. Parenting content thrives.</td><td>4x/week</td><td>Tue 4PM, Wed 2-5PM, Sun 8PM</td></tr>
+  <tr><td><strong>2</strong></td><td>Instagram</td><td>Brand authority hub. DM shares = #1 signal in 2026.</td><td>3 Reels + 2 carousels + daily Stories</td><td>Tue-Thu 9-11AM</td></tr>
+  <tr><td><strong>3</strong></td><td>YouTube</td><td>Longest shelf life. 5.91% engagement. Search discovery.</td><td>3 Shorts + 1 mid-form/week</td><td>Any (long tail)</td></tr>
+  <tr><td><strong>4</strong></td><td>Pinterest</td><td>Evergreen search engine. First Parenting Trends Report in 2026.</td><td>7-10 pins/week</td><td>Anytime</td></tr>
+  <tr><td><strong>5</strong></td><td>X/Twitter</td><td>"Small account boost" in 2026. Builder/tech community.</td><td>1-2 tweets/day</td><td>Weekdays</td></tr>
+</table>
+
+<h3>Handle Strategy</h3>
+<p>Use <code>@lullaapp</code> on every platform. Consistency beats cleverness. Fallbacks if taken: <code>@lulla.baby</code>, <code>@getlulla</code>.</p>
+
+<h3>Optimal Video Lengths (2026)</h3>
+<table>
+  <tr><th>Platform</th><th>Sweet Spot</th><th>Max for Discovery</th><th>Key Rule</th></tr>
+  <tr><td>TikTok</td><td>15-30 seconds</td><td>60 seconds</td><td>70% completion rate needed for viral</td></tr>
+  <tr><td>Instagram Reels</td><td>15-30 seconds</td><td>90 seconds</td><td>Over 90s = hidden from non-followers</td></tr>
+  <tr><td>YouTube Shorts</td><td>60-90 seconds</td><td>3 minutes</td><td>Can go viral months after posting</td></tr>
+</table>
+
+<h3>2026 Algorithm Updates That Affect Strategy</h3>
+<ul>
+  <li><strong>Instagram</strong>: Shares &gt; Saves &gt; Comments &gt; Likes. DM sends carry highest weight. 3-5 hashtags max.</li>
+  <li><strong>TikTok</strong>: Follower-first testing (shows to followers before non-followers). Keywords outrank hashtags. Triple-indexed: caption + audio + on-screen text.</li>
+  <li><strong>YouTube</strong>: Shorts expanded to 3 min. Combined search + recommendation discovery.</li>
+  <li><strong>X/Twitter</strong>: Grok-powered algorithm. Link suppression for non-Premium accounts.</li>
+</ul>
+
+<div class="callout callout-pink">
+  <div class="callout-title">Cross-Posting Warning</div>
+  <p><strong>Never upload the same video file to multiple platforms.</strong> Duplicate detection in 2026 is sophisticated — TikTok, Instagram, and YouTube all suppress reused files. Re-edit natively for each platform with different lengths, captions, and text overlays.</p>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 05. BRAND IDENTITY                      -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>05. Brand Identity &amp; Voice</h2>
+
+<h3>Brand Personality</h3>
+<p>If Lulla were a person, she'd be your best friend who's also a pediatric nurse — warm, knowledgeable, never judgmental, and always answers the phone at 3AM.</p>
+
+<h3>Voice Guidelines</h3>
+<table>
+  <tr><th>Attribute</th><th>Do</th><th>Don't</th></tr>
+  <tr><td><strong>Tone</strong></td><td>Warm, reassuring, sleep-deprived solidarity</td><td>Clinical, cold, judgmental</td></tr>
+  <tr><td><strong>Language</strong></td><td>"We've been there" / "You're doing amazing"</td><td>"Your baby needs..." / "You should..."</td></tr>
+  <tr><td><strong>Expertise</strong></td><td>Cite research casually, not academically</td><td>Overload with medical jargon</td></tr>
+  <tr><td><strong>Humor</strong></td><td>Gentle, relatable parent humor</td><td>Sarcastic or dismissive of struggles</td></tr>
+  <tr><td><strong>Visuals</strong></td><td>Soft purples, warm lighting, real moments</td><td>Stock photos, harsh colors, clinical settings</td></tr>
+</table>
+
+<h3>Visual Brand Colors</h3>
+<div style="display:flex;gap:10px;margin:10px 0;">
+  <div style="background:#9B8DC7;color:white;padding:10px 16px;border-radius:6px;font-size:8pt;text-align:center;flex:1"><strong>Primary</strong><br>#9B8DC7</div>
+  <div style="background:#89CFF0;color:#1C1917;padding:10px 16px;border-radius:6px;font-size:8pt;text-align:center;flex:1"><strong>Secondary</strong><br>#89CFF0</div>
+  <div style="background:#F4B8C5;color:#1C1917;padding:10px 16px;border-radius:6px;font-size:8pt;text-align:center;flex:1"><strong>CTA</strong><br>#F4B8C5</div>
+  <div style="background:#FDF9F3;color:#1C1917;padding:10px 16px;border-radius:6px;font-size:8pt;text-align:center;flex:1;border:1px solid #E5E7EB"><strong>Background</strong><br>#FDF9F3</div>
+  <div style="background:#1C1917;color:white;padding:10px 16px;border-radius:6px;font-size:8pt;text-align:center;flex:1"><strong>Dark</strong><br>#1C1917</div>
+</div>
+
+<h3>Profile Bios</h3>
+
+<h4>Instagram</h4>
+<pre><code>Lulla — AI Baby Soother
+Your baby cries. AI listens. Calm begins.
+○ Detects 7 cry types in &lt;1 second
+○ 270+ soothing sounds
+○ 100% private, on-device AI
+↓ Free on App Store</code></pre>
+
+<h4>TikTok</h4>
+<pre><code>AI that knows WHY your baby cries
+7 cry types · &lt;1 sec · works offline
+Free on App Store ↓</code></pre>
+
+<h4>YouTube</h4>
+<pre><code>Lulla — AI Baby Cry Science
+Detects why your baby is crying. Plays the right sound.
+270+ tracks. 100% on-device AI. Zero data collected.
+New weekly: cry science, sleep tips, real parent stories.</code></pre>
+
+<h4>X / Twitter</h4>
+<pre><code>AI that knows why your baby cries.
+7 types · &lt;1 sec · on-device · privacy-first · Free on iOS.</code></pre>
+
+<h4>Pinterest</h4>
+<pre><code>AI-powered baby soothing. Detects 7 cry types,
+plays the perfect sound automatically.
+Science-backed tips for exhausted parents.</code></pre>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 06. CONTENT PILLARS                     -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>06. Content Pillars &amp; Topic Clusters</h2>
+
+<table>
+  <tr><th>Pillar</th><th>%</th><th>Funnel Stage</th><th>Psychology Lever</th><th>Formats</th></tr>
+  <tr><td><strong>The Science of Crying</strong></td><td>30%</td><td>Awareness</td><td>Authority Bias + Guilt Reduction</td><td>Reels, carousels, YouTube</td></tr>
+  <tr><td><strong>Real Parent Moments</strong></td><td>25%</td><td>Awareness</td><td>Social Proof + Mere Exposure</td><td>UGC, POV, storytime</td></tr>
+  <tr><td><strong>AI in Action</strong></td><td>20%</td><td>Consideration</td><td>Proof + Present Bias</td><td>Screen recordings, demos</td></tr>
+  <tr><td><strong>Sleep &amp; Wellness</strong></td><td>15%</td><td>Awareness</td><td>Reciprocity (free value)</td><td>Tips, routines, experts</td></tr>
+  <tr><td><strong>Product Milestones</strong></td><td>10%</td><td>Decision</td><td>Bandwagon + Scarcity</td><td>Updates, launches</td></tr>
+</table>
+
+<h3>Topic Cluster Map</h3>
+
+<h4>Pillar 1: The Science of Crying</h4>
+<ul>
+  <li><strong>7 Cry Types Explained</strong> (hub article / video)
+    <ul>
+      <li>Hunger cry vs. tired cry — the differences</li>
+      <li>Pain cry — when to call the doctor</li>
+      <li>Discomfort cry — temperature, diaper, position</li>
+      <li>Lonely/scared cry — attachment theory</li>
+      <li>Burping cry — the one parents miss</li>
+    </ul>
+  </li>
+  <li><strong>PURPLE Crying Period</strong>
+    <ul>
+      <li>Why ALL babies cry 2-4 hours/day</li>
+      <li>The 6-week peak — what to expect</li>
+      <li>When crying is NOT normal — warning signs</li>
+    </ul>
+  </li>
+  <li><strong>Brain Science</strong>
+    <ul>
+      <li>Responsive parenting rewires infant brains</li>
+      <li>The cortisol myth debunked</li>
+      <li>The fourth trimester explained</li>
+    </ul>
+  </li>
+</ul>
+
+<h4>Pillar 2: Real Parent Moments</h4>
+<ul>
+  <li>"3AM Chronicles" — recurring series</li>
+  <li>First-time parent confessions</li>
+  <li>"Dad discovers the app" (CarPlay moment)</li>
+  <li>"Things I wish I knew" — weekly series</li>
+  <li>Before/after car rides</li>
+</ul>
+
+<h4>Pillar 3: AI in Action</h4>
+<ul>
+  <li><strong>"Can You Guess the Cry?"</strong> — weekly signature series</li>
+  <li>Speed test: AI vs. parent</li>
+  <li>How the AI learns YOUR baby</li>
+  <li>CarPlay hands-free demonstration</li>
+  <li>Honest app comparison reviews</li>
+</ul>
+
+<h4>Pillar 4: Sleep &amp; Wellness</h4>
+<ul>
+  <li>Classical music &amp; the Mozart Effect</li>
+  <li>Why white noise scares some babies</li>
+  <li>Building a bedtime routine</li>
+  <li>Soothing sounds ranked by effectiveness</li>
+</ul>
+
+<h4>Pillar 5: Product Updates</h4>
+<ul>
+  <li>User milestone celebrations</li>
+  <li>Feature announcements (Apple Watch, Android)</li>
+  <li>Founder journey / builder story threads</li>
+</ul>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 07. PSYCHOLOGY FRAMEWORK                -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>07. Psychological Persuasion Framework</h2>
+
+<p>Every piece of content should leverage at least one of these cognitive biases — ethically.</p>
+
+<table>
+  <tr><th>Bias</th><th>How to Apply</th><th>Content Example</th></tr>
+  <tr><td><strong>Loss Aversion</strong></td><td>Parents fear missing distress signals. Losses feel 2x stronger than gains.</td><td>"Every minute you spend guessing is a minute your baby is still crying."</td></tr>
+  <tr><td><strong>Authority Bias</strong></td><td>UCLA validated AI cry detection at 90%. Cite research, use pediatrician collabs.</td><td>"UCLA proved AI can decode baby cries with 90% accuracy."</td></tr>
+  <tr><td><strong>Endowment Effect</strong></td><td>Free tier lets parents "own" the product. Once used, they won't give it up.</td><td>"Try Lulla free. After one night, you'll wonder how you parented without it."</td></tr>
+  <tr><td><strong>Social Proof</strong></td><td>Show other parents using it. UGC outperforms polished ads.</td><td>"Join thousands of parents who stopped guessing."</td></tr>
+  <tr><td><strong>Mere Exposure</strong></td><td>7 touchpoints to convert. Consistent presence builds preference.</td><td>Post 3-5x/week, same visual language, same purple palette.</td></tr>
+  <tr><td><strong>Present Bias</strong></td><td>Parents want relief NOW. Emphasize instant results.</td><td>"Works in under 1 second. Not tomorrow. Right now, at 3AM."</td></tr>
+  <tr><td><strong>Framing Effect</strong></td><td>Same fact, different frame. Positive for trust, negative for urgency.</td><td>Trust: "90% accuracy." Urgency: "Don't be in the 55% of parents who feel unsupported."</td></tr>
+</table>
+
+<h3>Trust-Building for AI + Vulnerable Parents</h3>
+<p>Parents trusting AI with their baby is a high psychological barrier. Overcome it with:</p>
+
+<table>
+  <tr><th>Trust Layer</th><th>Tactic</th><th>Implementation</th></tr>
+  <tr><td><strong>Transparency</strong></td><td>Pratfall Effect — admit limitations honestly</td><td>"Lulla isn't perfect. No AI is. But it's right 90% of the time."</td></tr>
+  <tr><td><strong>Privacy</strong></td><td>Zero-data positioning</td><td>"100% on-device. We literally can't hear your baby."</td></tr>
+  <tr><td><strong>Control</strong></td><td>Parents stay in charge</td><td>"Lulla suggests. You decide. It's a tool, not a replacement."</td></tr>
+  <tr><td><strong>Science</strong></td><td>Authority + peer review</td><td>Partner with pediatricians. Cite UCLA, Nature Communications.</td></tr>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 08. SIGNATURE SERIES                    -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>08. Signature Series: "Can You Guess the Cry?"</h2>
+
+<p>This is your <strong>North Star content</strong> — the one format that compounds across every platform.</p>
+
+<h3>Format (30 seconds)</h3>
+<pre><code>0-3s:   HOOK — "Can you tell the difference between a
+         hungry cry and a tired cry?"
+3-8s:   PLAY — Baby crying audio (hunger cry)
+8-12s:  POLL — "What type? A) Hungry  B) Tired  C) Pain  D) Lonely"
+         Caption: "Comment your guess before I reveal!"
+12-18s: REVEAL — Show Lulla detecting: "HUNGER — 94% confidence"
+18-25s: EXPLAIN — "Hunger cries have a rhythmic 'neh' pattern..."
+25-30s: CTA — "Lulla detects all 7. Free on App Store."</code></pre>
+
+<h3>Why Every Psychological Lever Fires</h3>
+<table>
+  <tr><th>Bias</th><th>How It Fires</th></tr>
+  <tr><td><strong>Zeigarnik Effect</strong></td><td>Open loop — viewers MUST see the answer</td></tr>
+  <tr><td><strong>IKEA Effect</strong></td><td>They invested effort guessing — now they're committed</td></tr>
+  <tr><td><strong>Authority Bias</strong></td><td>AI's answer positions Lulla as the expert</td></tr>
+  <tr><td><strong>Social Proof</strong></td><td>Comments fill with other parents guessing</td></tr>
+  <tr><td><strong>Commitment &amp; Consistency</strong></td><td>After engaging once, they'll return for next episode</td></tr>
+  <tr><td><strong>Mere Exposure</strong></td><td>Weekly series = repeated brand exposure</td></tr>
+</table>
+
+<div class="callout callout-blue">
+  <div class="callout-title">Algorithm Impact</div>
+  <p>This format maximizes every 2026 ranking signal: <strong>comments</strong> (guesses), <strong>completion rate</strong> (must watch to see answer), <strong>DM shares</strong> (parents send to partners — "can you guess?"), and <strong>saves</strong> (educational reference).</p>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 09. HOOK LIBRARY                        -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>09. Hook Library</h2>
+
+<p>The first 3 seconds determine 80% of a video's success. Viewers take 2 seconds to decide to stay or scroll.</p>
+
+<h3>Loss Aversion Hooks</h3>
+<ul>
+  <li>"Every parent makes this mistake with crying babies. Are you?"</li>
+  <li>"Your baby is telling you exactly what they need. You're just not hearing it... yet."</li>
+  <li>"The 8 seconds between your baby crying and you responding? That's where trust is built."</li>
+</ul>
+
+<h3>Authority Hooks</h3>
+<ul>
+  <li>"UCLA proved AI can decode baby cries. Here's what they found."</li>
+  <li>"I asked a pediatrician to test our AI. Her reaction:"</li>
+  <li>"The science behind why your baby cries at 3AM but not 3PM"</li>
+</ul>
+
+<h3>Social Proof Hooks</h3>
+<ul>
+  <li>"My husband didn't believe an app could do this. Then he tried it in the car."</li>
+  <li>"I showed this to my pediatrician. She downloaded it immediately."</li>
+  <li>"Thousands of parents stopped guessing. Here's what changed."</li>
+</ul>
+
+<h3>Curiosity Gap Hooks (Zeigarnik Effect)</h3>
+<ul>
+  <li>"There are 7 types of baby cries. Most parents can only identify 2."</li>
+  <li>"The #1 reason babies cry at 6 weeks will surprise you."</li>
+  <li>"I discovered why my baby wouldn't stop crying. It wasn't what I thought."</li>
+</ul>
+
+<h3>Guilt-Reduction Hooks (unique to Lulla)</h3>
+<ul>
+  <li>"You're not a bad parent. You're a tired one. There's a difference."</li>
+  <li>"Your baby isn't broken. They're communicating. Here's the translation."</li>
+  <li>"Stop googling 'why won't my baby stop crying.' Read this instead."</li>
+</ul>
+
+<h3>Controversy / Hot Take Hooks</h3>
+<ul>
+  <li>"White noise is actually scary for some babies. Here's why."</li>
+  <li>"The cortisol myth debunked: what REALLY happens when your baby cries"</li>
+  <li>"Dads are just as good as moms at reading baby cries. Science proves it."</li>
+  <li>"Maternal instinct is a myth. Here's what the research says."</li>
+</ul>
+
+<h3>Transformation Hooks</h3>
+<ul>
+  <li>"Day 1 vs. Day 30 — the app learned my baby's patterns"</li>
+  <li>"Before Lulla vs. After Lulla — same baby, same car ride"</li>
+  <li>"I used to dread car rides with my baby. Now watch this."</li>
+</ul>
+
+<h3>Interactive Hooks</h3>
+<ul>
+  <li>"Can YOU tell the difference? Hunger cry vs. tired cry."</li>
+  <li>"Quiz: What cry type is this? Comment before I reveal."</li>
+  <li>"What's YOUR baby's witching hour? Comment below."</li>
+</ul>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 10. CONTENT CALENDAR                    -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>10. Content Calendar — First 30 Days</h2>
+
+<h3>Week 0: Setup (Before Posting)</h3>
+<ul>
+  <li>Register <code>@lullaapp</code> on all 6 platforms</li>
+  <li>Complete all profiles with bios from Section 05</li>
+  <li>Instagram: Begin 21-day warm-up (browse, follow 2-3 parenting accounts/day, comment)</li>
+  <li>Prepare 12 pieces of content in advance</li>
+  <li>Set up Buffer (free) + Metricool (free) for scheduling and analytics</li>
+</ul>
+
+<h3>Week 1: TikTok + YouTube Launch</h3>
+<table>
+  <tr><th>Day</th><th>TikTok</th><th>YouTube</th><th>Pinterest</th><th>X/Twitter</th></tr>
+  <tr><td><strong>Mon</strong></td><td>"7 cry types — guess!" (30s)</td><td>Same as Short (re-edited)</td><td>3 infographic pins</td><td>Builder thread</td></tr>
+  <tr><td><strong>Wed</strong></td><td>"POV: 3AM" (15s)</td><td>—</td><td>2 pins</td><td>Stat tweet</td></tr>
+  <tr><td><strong>Fri</strong></td><td>"Dad discovers CarPlay" (30s)</td><td>Short: "AI detects cry"</td><td>2 pins</td><td>Insight tweet</td></tr>
+  <tr><td><strong>Sun</strong></td><td>"Things I wish I knew" (45s)</td><td>—</td><td>—</td><td>—</td></tr>
+</table>
+
+<h3>Week 2: Add Instagram</h3>
+<table>
+  <tr><th>Day</th><th>TikTok</th><th>Instagram</th><th>YouTube</th><th>Pinterest</th></tr>
+  <tr><td><strong>Mon</strong></td><td>"Cortisol myth" (45s)</td><td>First Reel: "7 cry types"</td><td>Short</td><td>3 pins</td></tr>
+  <tr><td><strong>Tue</strong></td><td>—</td><td>Carousel: "PURPLE Crying"</td><td>—</td><td>2 pins</td></tr>
+  <tr><td><strong>Wed</strong></td><td>"Guess the cry" #2</td><td>Reel: "3AM POV"</td><td>Short</td><td>—</td></tr>
+  <tr><td><strong>Thu</strong></td><td>—</td><td>Carousel: "Sleep tips"</td><td>Mid-form: "Why babies cry" (8 min)</td><td>2 pins</td></tr>
+  <tr><td><strong>Fri</strong></td><td>"White noise is scary"</td><td>Stories: Poll</td><td>Short</td><td>—</td></tr>
+</table>
+
+<h3>Week 3-4: Full Cadence</h3>
+<p>All platforms at target frequency. Send first 10 influencer outreach messages. Analyze Weeks 1-2 performance and double down on top-performing content.</p>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 11. REPURPOSING ENGINE                  -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>11. Content Repurposing Engine</h2>
+
+<h3>One Hero Piece → 12 Assets</h3>
+<p><strong>Hero</strong>: "The Complete Guide to Baby Cry Types" (YouTube, 10 min)</p>
+
+<table>
+  <tr><th>#</th><th>Asset</th><th>Platform</th><th>Format</th></tr>
+  <tr><td>1</td><td>Full video</td><td>YouTube</td><td>10-min long-form</td></tr>
+  <tr><td>2</td><td>"Hunger cry" clip</td><td>YouTube Short</td><td>60s</td></tr>
+  <tr><td>3</td><td>"Pain cry" clip</td><td>YouTube Short</td><td>60s</td></tr>
+  <tr><td>4</td><td>"Tired cry" clip</td><td>TikTok</td><td>30s (re-edited)</td></tr>
+  <tr><td>5</td><td>"Can you guess?" clip</td><td>TikTok</td><td>30s (re-edited)</td></tr>
+  <tr><td>6</td><td>"7 types" carousel</td><td>Instagram</td><td>10-slide carousel</td></tr>
+  <tr><td>7</td><td>"Most common cry" Reel</td><td>Instagram</td><td>15s Reel</td></tr>
+  <tr><td>8</td><td>Expert quote cards</td><td>Instagram Stories</td><td>5 story frames</td></tr>
+  <tr><td>9</td><td>Infographic: cry chart</td><td>Pinterest</td><td>2:3 ratio pin</td></tr>
+  <tr><td>10</td><td>"Quick guide" infographic</td><td>Pinterest</td><td>2:3 ratio pin</td></tr>
+  <tr><td>11</td><td>Stats thread</td><td>X/Twitter</td><td>5-tweet thread</td></tr>
+  <tr><td>12</td><td>Key insight tweet</td><td>X/Twitter</td><td>Single tweet</td></tr>
+</table>
+
+<h3>TikTok SEO: Triple Indexing</h3>
+<p>For every TikTok video, optimize three channels simultaneously:</p>
+<ol>
+  <li><strong>Caption</strong>: Put "baby cry" / "cry detection" in first 150 characters</li>
+  <li><strong>Audio</strong>: SAY the keyword out loud in the video</li>
+  <li><strong>On-screen text</strong>: Display the keyword as text overlay</li>
+</ol>
+<p>TikTok indexes all three. Most creators only optimize one.</p>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 12. INFLUENCER OUTREACH                 -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>12. Influencer Outreach Playbook</h2>
+
+<h3>Tier Strategy</h3>
+<table>
+  <tr><th>Tier</th><th>Followers</th><th># to Target</th><th>Cost</th><th>Expected Outcome</th></tr>
+  <tr><td><strong>Nano</strong></td><td>1K-10K</td><td>15-20</td><td>Free (gift Lifetime)</td><td>Authentic UGC, 5.7% engagement</td></tr>
+  <tr><td><strong>Micro</strong></td><td>10K-50K</td><td>5-8</td><td>$0-200 + Lifetime</td><td>Best ROI, highest trust</td></tr>
+  <tr><td><strong>Mid</strong></td><td>50K-100K</td><td>2-3</td><td>$500-1500 + Lifetime</td><td>Reach + credibility boost</td></tr>
+</table>
+
+<h3>DM Outreach Template</h3>
+<pre><code>Hi [name]!
+
+I've been following your content about [specific post topic] —
+your take on [specific detail] really resonated with me as a parent.
+
+I built Lulla, an AI app that detects WHY babies are crying
+(hungry, tired, pain — 7 types total) and plays the right soothing
+sound automatically. It works in under 1 second.
+
+I'd love to gift you lifetime premium access — no strings,
+no script. If it helps your family, we'd love for you to share
+your honest experience.
+
+Either way, I think you'd genuinely find it useful.
+
+— Anton</code></pre>
+
+<h3>Why Each Line Works</h3>
+<table>
+  <tr><th>Line</th><th>Psychology</th></tr>
+  <tr><td>"I've been following your content about..."</td><td><strong>Liking Bias</strong> — shows genuine engagement</td></tr>
+  <tr><td>"[specific detail]"</td><td><strong>Specificity</strong> — proves not mass-DMing</td></tr>
+  <tr><td>"7 types... under 1 second"</td><td><strong>Authority</strong> — clear, confident product</td></tr>
+  <tr><td>"Gift you lifetime premium"</td><td><strong>Reciprocity</strong> — give first ($149.99 value)</td></tr>
+  <tr><td>"No strings, no script"</td><td><strong>Reactance Reduction</strong> — removes pressure</td></tr>
+  <tr><td>"As a parent"</td><td><strong>Unity Principle</strong> — shared identity</td></tr>
+</table>
+
+<div class="callout">
+  <div class="callout-title">Key Statistic</div>
+  <p><strong>89% of parents</strong> trust recommendations from other parents over traditional advertising. UGC in ads drives <strong>5x higher click-through rates</strong>. Micro-influencers deliver <strong>61% higher ROI</strong> than macro-influencers.</p>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 13. MEASUREMENT                         -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>13. Measurement &amp; KPIs</h2>
+
+<h3>North Star Metric</h3>
+<p><strong>App downloads from social</strong> (tracked via UTM links in bio)</p>
+
+<h3>Growth Targets</h3>
+<table>
+  <tr><th>Metric</th><th>Month 1</th><th>Month 3</th><th>Month 6</th></tr>
+  <tr><td>TikTok followers</td><td>500</td><td>5,000</td><td>25,000</td></tr>
+  <tr><td>Instagram followers</td><td>200</td><td>2,000</td><td>10,000</td></tr>
+  <tr><td>YouTube subscribers</td><td>100</td><td>1,000</td><td>5,000</td></tr>
+  <tr><td>Weekly downloads from social</td><td>50</td><td>200</td><td>1,000</td></tr>
+  <tr><td>TikTok engagement rate</td><td>3%+</td><td>5%+</td><td>5%+</td></tr>
+  <tr><td>Instagram engagement rate</td><td>2%+</td><td>3%+</td><td>3%+</td></tr>
+  <tr><td>"Guess the Cry" avg. comments</td><td>20</td><td>100</td><td>500</td></tr>
+</table>
+
+<h3>Troubleshooting Guide</h3>
+<table>
+  <tr><th>If This Is Low</th><th>Do This</th></tr>
+  <tr><td>Views / reach</td><td>Test new hooks (first 3 seconds). Try shorter videos. Post at different times.</td></tr>
+  <tr><td>Engagement rate</td><td>Add more questions/polls. Increase reply velocity. More relatable content.</td></tr>
+  <tr><td>Saves</td><td>More educational/utility content. Carousels with actionable tips.</td></tr>
+  <tr><td>Shares / DM sends</td><td>More "tag your partner" content. More relatable "that's SO us" moments.</td></tr>
+  <tr><td>App downloads</td><td>Stronger CTAs. More product demos. Better link-in-bio setup.</td></tr>
+  <tr><td>Follower growth</td><td>More consistent posting. More niche hashtags. More collab content.</td></tr>
+</table>
+
+<h3>Recommended Tools</h3>
+<table>
+  <tr><th>Purpose</th><th>Tool</th><th>Cost</th></tr>
+  <tr><td>Scheduling</td><td>Buffer</td><td>Free</td></tr>
+  <tr><td>Analytics</td><td>Metricool</td><td>Free</td></tr>
+  <tr><td>Video editing</td><td>CapCut</td><td>Free</td></tr>
+  <tr><td>Repurposing</td><td>Repurpose.io</td><td>$25/mo (when ready)</td></tr>
+  <tr><td>Link in bio</td><td>Linktree</td><td>Free</td></tr>
+</table>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 14. QUICK-START CHECKLIST               -->
+<!-- ════════════════════════════════════════ -->
+<div class="section-break">
+<h2>14. Quick-Start Checklist</h2>
+
+<p>Do these <strong>this week</strong>:</p>
+
+<ul class="checklist">
+  <li>Register <code>@lullaapp</code> on Instagram, TikTok, YouTube, X, Pinterest</li>
+  <li>Set up all profiles with optimized bios from Section 05</li>
+  <li>Start Instagram 21-day warm-up (browse, follow, comment — no posting)</li>
+  <li>Record 3 screen captures of Lulla detecting different cry types</li>
+  <li>Film first "Can You Guess the Cry?" episode</li>
+  <li>Create "7 Cry Types" carousel for Instagram</li>
+  <li>Post first TikTok (no warm-up needed on TikTok)</li>
+  <li>Set up Buffer (free) for scheduling</li>
+  <li>Set up Metricool (free) for analytics</li>
+  <li>Create Linktree with App Store link + social profiles</li>
+  <li>Add social links to lulla-app.pages.dev footer (currently missing)</li>
+  <li>Identify 10 micro-influencer targets</li>
+  <li>Draft and send first 5 outreach DMs</li>
+</ul>
+
+<hr style="margin-top:1.5cm">
+
+<div style="text-align:center;color:#9CA3AF;font-size:8pt;margin-top:1cm;">
+  <p>Prepared with research from 40+ sources including Sprout Social, Buffer, Sensor Tower, UCLA,<br>
+  Nature Communications, CDC, Child Development Journal, and platform-specific algorithm documentation.</p>
+  <p style="margin-top:6px;color:#9B8DC7;font-weight:600;">Lulla — Your baby cries. AI listens. Calm begins.</p>
+</div>
+</div>
+
+</body>
+</html>
