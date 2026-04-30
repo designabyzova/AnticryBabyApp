@@ -421,15 +421,15 @@ struct MiniPlayerView: View {
 
     private var miniPlayerContent: some View {
         HStack(spacing: 12) {
-            // Artwork + track info area — tappable to expand full player
+            // Tappable region — artwork, title, and the visual gap up to the buttons.
+            // Spacer is INSIDE the tap area so the whole pill (minus buttons) expands the player.
             HStack(spacing: 12) {
                 artworkWithProgressRing
                 trackInfo
+                Spacer(minLength: 8)
             }
             .contentShape(Rectangle())
             .onTapGesture { onExpand?() }
-
-            Spacer(minLength: 8)
 
             // Playback Controls — keep their own tap targets
             playbackControls
