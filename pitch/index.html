@@ -510,6 +510,79 @@
     font-weight: 700;
     letter-spacing: 0.1em;
   }
+
+  /* ========= TEAM SLIDE ========= */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.6em 1.4em;
+    margin-top: 1.2em;
+  }
+  .team-card {
+    text-align: center;
+    padding: 0.4em 0.2em;
+  }
+  .avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 3px solid var(--honey);
+    background: linear-gradient(135deg, var(--honey-light) 0%, var(--lavender) 100%);
+    margin: 0 auto 0.6em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: -apple-system, "SF Pro Display", "Inter", sans-serif;
+    font-weight: 700;
+    font-size: 2em;
+    letter-spacing: -0.04em;
+    box-shadow: 0 6px 18px -6px rgba(122, 78, 20, 0.4);
+    text-shadow: 0 2px 6px rgba(122, 78, 20, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar.founder {
+    border-color: var(--honey-dark);
+    background: linear-gradient(135deg, var(--honey) 0%, var(--honey-dark) 100%);
+  }
+  .avatar.lavender {
+    background: linear-gradient(135deg, var(--lavender) 0%, var(--lavender-dark) 100%);
+    border-color: var(--lavender-dark);
+  }
+  .avatar.deep {
+    background: linear-gradient(135deg, var(--honey-deep) 0%, #4f3110 100%);
+    border-color: var(--honey-deep);
+  }
+  .team-card .name {
+    font-size: 1em;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1.15;
+    margin: 0 0 0.15em;
+  }
+  .team-card .title {
+    font-size: 0.78em;
+    font-weight: 700;
+    color: var(--lavender-dark);
+    letter-spacing: 0.02em;
+    margin: 0 0 0.4em;
+    line-height: 1.2;
+  }
+  .team-card .bio {
+    font-size: 0.7em;
+    color: var(--honey-deep);
+    line-height: 1.35;
+    margin: 0;
+  }
+  .team-tagline {
+    text-align: center;
+    margin-top: 1.4em;
+    font-size: 0.88em;
+    color: var(--honey-dark);
+    font-weight: 600;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
@@ -762,7 +835,7 @@
     <!-- ========== 10. TRACTION ========== -->
     <section>
       <span class="eyebrow">09 · Traction</span>
-      <h2>Shipped solo. Shipped fast. Shipped on a real pipeline.</h2>
+      <h2>Shipped lean. Shipped fast. Shipped on a real pipeline.</h2>
       <div class="split text-left" style="margin-top: 0.8em;">
         <div>
           <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 0.9em;">
@@ -779,8 +852,8 @@
               <div class="label">Curated tracks across 7 baby-safe categories</div>
             </div>
             <div class="stat">
-              <div class="num">1</div>
-              <div class="label">Founder · zero outside capital · full iOS + ML + backend</div>
+              <div class="num">0</div>
+              <div class="label">Outside capital raised · full iOS + ML + backend built in-house</div>
             </div>
           </div>
           <p style="margin-top: 1.2em; font-size: 0.92em; color: var(--honey-dark); font-weight: 600;">
@@ -966,32 +1039,70 @@
     <!-- ========== 15. TEAM ========== -->
     <section>
       <span class="eyebrow">14 · Team</span>
-      <h2>Built by a founder who ships.</h2>
-      <div class="two-col" style="margin-top: 1.2em;">
-        <div>
-          <h3 style="margin-bottom: 0.3em;">Anton Abyzov</h3>
-          <p style="font-size: 0.95em; color: var(--honey-dark); font-weight: 600; margin-bottom: 0.8em;">
-            Founder &amp; CEO · Easychamp Inc · iOS + ML + Product
-          </p>
-          <ul>
-            <li>10+ years shipping iOS at scale.</li>
-            <li>Built Soothbee solo: 33 production increments, on-device ML pipeline, CarPlay integration, Apple Watch app, subscription infrastructure, and Cloudflare Workers backend.</li>
-            <li>Parent. This is not an exit play — it's an obsession.</li>
-          </ul>
-          <p style="margin-top: 1em; font-size: 0.9em; color: var(--honey-deep);">
-            <strong>Easychamp Inc</strong> · the parent company behind Soothbee and a portfolio of consumer-AI products focused on calm, confident parenting.
-          </p>
+      <h2>The Easychamp Inc team behind Soothbee.</h2>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="avatar founder">AA</div>
+          <p class="name">Anton Abyzov</p>
+          <p class="title">Co-Founder &amp; CEO · CTO</p>
+          <p class="bio">10+ yrs iOS at scale. Led the on-device ML pipeline, CarPlay, Apple Watch, and Workers backend for Soothbee.</p>
         </div>
-        <div>
-          <h3 style="margin-bottom: 0.3em;">Post-funding hires (first 6 mo)</h3>
-          <ul>
-            <li><strong>Senior iOS engineer</strong> — platform parity, Android port.</li>
-            <li><strong>ML research lead</strong> — next-gen cry model, sleep-state prediction.</li>
-            <li><strong>Growth lead</strong> — paid UA, creator partnerships, ASO.</li>
-            <li><strong>Clinical advisor</strong> (fractional) — pediatric validation study.</li>
-          </ul>
+
+        <div class="team-card">
+          <div class="avatar lavender">EA</div>
+          <p class="name">Elena Abyzova</p>
+          <p class="title">Co-Founder · COO &amp; Head of Engineering</p>
+          <p class="bio">Runs marketing, sales, hosting &amp; infra, project management, and leads the developer department. Full-stack developer herself.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar">MF</div>
+          <p class="name">Maxim Filipovich</p>
+          <p class="title">Principal Backend Engineer</p>
+          <p class="bio">Cloudflare Workers + R2 streaming for the 270-track library. Data analytics &amp; subscription pipeline.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar lavender">DP</div>
+          <p class="name">Dmitry Pozniak</p>
+          <p class="title">Lead Product Designer</p>
+          <p class="bio">Honeycomb design system. Paywall, onboarding, and parent-friendly UX with eSports/UI heritage.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar">AW</div>
+          <p class="name">Alexey Washjurine</p>
+          <p class="title">Principal Front-end Engineer</p>
+          <p class="bio">Sports-tech web platform veteran. Hackathon winner. Owns soothbee.com &amp; web onboarding flow.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar deep">DD</div>
+          <p class="name">Dmitry Duka</p>
+          <p class="title">Head of DevOps</p>
+          <p class="bio">Cloud infrastructure across Cloudflare + AWS. Zero-downtime CI/CD &amp; release pipeline.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar lavender">TA</div>
+          <p class="name">Tatiana Abyzova</p>
+          <p class="title">QA Lead</p>
+          <p class="bio">iOS quality &amp; accessibility. Regression coverage across CarPlay, Watch, Siri, and offline modes.</p>
+        </div>
+
+        <div class="team-card">
+          <div class="avatar">KP</div>
+          <p class="name">Kirill Puzanov</p>
+          <p class="title">Full-stack Engineer</p>
+          <p class="bio">Internal dashboards, content tooling, and the analytics surface behind the "It Helped!" loop.</p>
         </div>
       </div>
+
+      <p class="team-tagline">
+        Built inside <strong>Easychamp Inc</strong> — a 9-person Delaware C-corp shipping consumer products since 2020. Soothbee is our second act.
+      </p>
+
       <div class="footer-brand"><strong>Soothbee</strong> · by Easychamp Inc</div>
     </section>
 

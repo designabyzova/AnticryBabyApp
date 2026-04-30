@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function(){
+  try{
+    var path = location.pathname;
+    var isRu = path.indexOf('/ru/') === 0 || path === '/ru';
+    var saved = localStorage.getItem('soothbee-lang');
+    if(saved === 'en' && isRu){
+      var enPath = path.replace(/^\/ru\/?/,'/') || '/';
+      location.replace(enPath);
+      return;
+    }
+  }catch(e){}
+})();
+</script>
+<title>Условия использования — Soothbee</title>
+<meta name="description" content="Условия использования Soothbee и лицензионное соглашение с конечным пользователем.">
+<link rel="canonical" href="https://soothbee.com/ru/terms">
+<link rel="alternate" hreflang="en" href="https://soothbee.com/terms">
+<link rel="alternate" hreflang="ru" href="https://soothbee.com/ru/terms">
+<link rel="alternate" hreflang="x-default" href="https://soothbee.com/terms">
+<link rel="icon" type="image/png" sizes="64x64" href="/assets/img/soothbee-mascot-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/soothbee-mascot-180.png">
+<meta name="theme-color" content="#FDF6E8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,500;1,9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#E8A838;--primary-dark:#B8791E;--primary-light:#F5D985;
+  --bg:#FDF6E8;--card:#FFFFFF;--charcoal:#2B2419;--ink:#1A140B;
+  --honey-deep:#7A4E14;--text:#2B2419;--text-2:#6B5A3F;--text-3:#9C8A6B;--text-light:#FDF6E8;
+  --white:#fff;
+  --font-display:'Fraunces',ui-serif,Georgia,serif;
+  --font-body:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r-l:18px;--r-full:9999px;
+}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font-body);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.7;letter-spacing:-.01em}
+a{color:var(--primary-dark);text-decoration:none}
+a:hover{color:var(--charcoal);text-decoration:underline;text-underline-offset:3px}
+body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.48 0 0 0 0 0.36 0 0 0 0 0.14 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.25;mix-blend-mode:overlay}
+.nav{position:sticky;top:0;z-index:100;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(253,246,232,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(122,78,20,.08)}
+.nav-logo{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--charcoal);letter-spacing:-.02em}
+.logo-mark{width:36px;height:36px;flex-shrink:0;border-radius:22%;object-fit:cover;box-shadow:0 4px 14px rgba(232,168,56,.35),0 1px 2px rgba(43,36,25,.2)}
+.nav-back{font-size:.86rem;font-weight:500;color:var(--text-2);transition:color .2s}
+.nav-back:hover{color:var(--charcoal);text-decoration:none}
+.nav-right{display:inline-flex;align-items:center;gap:14px}
+.lang-switch{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-full);background:rgba(43,36,25,.06);border:1px solid rgba(122,78,20,.14)}
+.lang-opt{padding:6px 11px;border-radius:var(--r-full);font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--text-2);transition:background .2s,color .2s;line-height:1;display:inline-block;text-decoration:none}
+.lang-opt:hover{color:var(--charcoal);text-decoration:none}
+.lang-opt[aria-current="page"]{background:var(--charcoal);color:var(--text-light)}
+.footer-lang{display:flex;gap:14px;align-items:center;justify-content:center;margin-top:14px;font-size:.82rem}
+.footer-lang a{color:rgba(253,246,232,.55);transition:color .2s}
+.footer-lang a:hover{color:var(--primary);text-decoration:none}
+.footer-lang a[aria-current="page"]{color:var(--text-light);font-weight:600}
+.footer-lang span{color:rgba(253,246,232,.3)}
+.wrap{max-width:780px;margin:0 auto;padding:72px 24px 80px}
+.eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--primary-dark);font-weight:700;margin-bottom:18px}
+.eyebrow::before{content:"";display:inline-block;width:24px;height:1px;background:var(--primary-dark);margin-right:12px;vertical-align:middle;margin-bottom:3px}
+h1{font-family:var(--font-display);font-size:clamp(2.4rem,5vw,3.6rem);font-weight:400;color:var(--charcoal);letter-spacing:-.04em;line-height:1;margin-bottom:12px;font-variation-settings:"SOFT" 60,"opsz" 144}
+h1 em{font-style:italic;color:var(--primary-dark);font-variation-settings:"SOFT" 100,"opsz" 144,"WONK" 1}
+.date{color:var(--text-3);font-size:.85rem;margin-bottom:32px;letter-spacing:.02em}
+.summary{background:rgba(110,191,139,.12);border:1px solid rgba(110,191,139,.28);border-radius:var(--r-l);padding:22px 24px;margin-bottom:40px;font-size:.95rem;line-height:1.6;color:var(--text)}
+.summary strong{color:var(--charcoal);font-weight:700}
+h2{font-family:var(--font-display);font-size:1.5rem;font-weight:600;color:var(--charcoal);margin:48px 0 14px;letter-spacing:-.025em;line-height:1.2}
+p,ul{margin-bottom:16px;font-size:.96rem;color:var(--text-2);line-height:1.7}
+ul{padding-left:22px}
+li{margin-bottom:8px}
+li strong{color:var(--charcoal);font-weight:600}
+footer{background:var(--ink);padding:60px 24px 34px;text-align:center;color:rgba(253,246,232,.5)}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:26px;margin-bottom:18px}
+.footer-links a{color:rgba(253,246,232,.78);font-size:.88rem;transition:color .2s}
+.footer-links a:hover{color:var(--primary);text-decoration:none}
+.footer-copy{font-size:.78rem;color:rgba(253,246,232,.35)}
+.footer-love{font-family:var(--font-display);font-style:italic;font-size:.88rem;color:rgba(253,246,232,.45);margin-top:6px;font-variation-settings:"SOFT" 100,"opsz" 144}
+@media (prefers-reduced-motion: reduce){body::after{display:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="sb-mark" viewBox="0 0 24 24">
+    <polygon points="12,1.5 21,6.5 21,17.5 12,22.5 3,17.5 3,6.5" fill="var(--primary)" stroke="var(--honey-deep)" stroke-width="1.5" stroke-linejoin="round"/>
+    <ellipse cx="12" cy="13.2" rx="4.2" ry="2.8" fill="var(--ink)"/>
+    <rect x="8.4" y="11.6" width="7.2" height="1.1" fill="var(--primary-light)"/>
+    <rect x="8.4" y="13.5" width="7.2" height="1.1" fill="var(--primary-light)"/>
+    <ellipse cx="14.3" cy="11.1" rx="2.4" ry="1.5" fill="#fff" opacity=".78"/>
+  </symbol>
+</defs>
+</svg>
+<nav class="nav">
+  <a href="/ru/" class="nav-logo" aria-label="Главная Soothbee">
+    <img class="logo-mark" src="/assets/img/soothbee-mascot-64.png" alt="Soothbee" width="36" height="36">
+    <span>Soothbee</span>
+  </a>
+  <div class="nav-right">
+    <div class="lang-switch" role="group" aria-label="Язык">
+      <a href="/terms" class="lang-opt" hreflang="en" data-lang-set="en">EN</a>
+      <a href="/ru/terms" class="lang-opt" aria-current="page" hreflang="ru" data-lang-set="ru">RU</a>
+    </div>
+    <a href="/ru/" class="nav-back">&larr; На главную</a>
+  </div>
+</nav>
+<main class="wrap">
+  <span class="eyebrow">Правовое</span>
+  <h1>Условия <em>использования</em>.</h1>
+  <p class="date">Последнее обновление: 2 марта 2026 г.</p>
+  <div class="summary"><strong>Если коротко:</strong> Soothbee — приложение для успокоения малышей. Вся работа ИИ идёт на вашем устройстве. Подписки оформляются через Apple. Пользуйтесь с умом — особенно за рулём.</div>
+
+  <h2>1. Принятие условий</h2>
+  <p>Скачивая, устанавливая или используя Soothbee («Приложение»), вы принимаете эти Условия использования. Если вы с ними не согласны, не пользуйтесь Приложением.</p>
+  <h2>2. Описание сервиса</h2>
+  <p>Soothbee — это приложение для успокоения малышей, которое предоставляет:</p>
+  <ul>
+    <li>Распознавание плача на базе ИИ (обработка идёт полностью на вашем устройстве)</li>
+    <li>Библиотеку успокаивающих звуков, колыбельных, классической музыки и сказок</li>
+    <li>Интеграцию с CarPlay для использования без рук за рулём</li>
+    <li>Персонализированные рекомендации на основе того, что помогает именно вам</li>
+  </ul>
+  <h2>3. ИИ и обработка данных</h2>
+  <p>Приложение использует фреймворки Apple CoreML и Sound Analysis для распознавания плача. Вся обработка ИИ происходит исключительно на вашем устройстве:</p>
+  <ul>
+    <li>Аудио нигде не записывается, не хранится и не передаётся на внешние серверы</li>
+    <li>Сторонние сервисы ИИ не используются</li>
+    <li>Приложение не отправляет персональные данные в ИИ-сервисы для обработки</li>
+    <li>Модели распознавания плача поставляются в составе Приложения и выполняются локально</li>
+  </ul>
+  <h2>4. Подписки и оплата</h2>
+  <p>Приложение предлагает следующие варианты подписки:</p>
+  <ul>
+    <li><strong>Premium Monthly:</strong> автообновляемая подписка с ежемесячной оплатой (6,99 $ в месяц)</li>
+    <li><strong>Premium Yearly:</strong> автообновляемая подписка с годовой оплатой (49,99 $ в год — выгода 40%)</li>
+    <li><strong>Premium Lifetime:</strong> разовая покупка без повторных списаний (149,99 $)</li>
+  </ul>
+  <p>Оплата списывается с вашего Apple ID при подтверждении покупки. Подписки автоматически продлеваются, если не отменить их хотя бы за 24 часа до окончания текущего периода. Управлять подпиской и отменять её можно в настройках вашей учётной записи App Store.</p>
+  <h2>5. Оговорка о безопасности</h2>
+  <p><strong>Важно:</strong> Soothbee не заменяет должный уход за ребёнком и родительское внимание.</p>
+  <ul>
+    <li>Никогда не позволяйте приложению отвлекать вас от безопасного вождения.</li>
+    <li>За рулём всегда держите глаза на дороге.</li>
+    <li>Приложение — вспомогательный инструмент, а не замена внимательной заботе.</li>
+    <li>Не полагайтесь только на распознавание плача для наблюдения за малышом.</li>
+  </ul>
+  <h2>6. Безопасность звука</h2>
+  <p>В Приложении есть функции защиты громкости, которые берегут слух малыша. Не пытайтесь обойти их. Всегда используйте громкость, безопасную для младенцев.</p>
+  <h2>7. Контент</h2>
+  <p>Аудиоконтент либо генерируется встроенным в Приложение аудиодвижком, либо транслируется через нашу сеть доставки (Cloudflare R2). Весь контент отбирается с учётом безопасности и пригодности для малышей.</p>
+  <h2>8. Интеллектуальная собственность</h2>
+  <p>Весь контент, функциональность и возможности Приложения принадлежат разработчику и защищены авторским правом и другими законами об интеллектуальной собственности.</p>
+  <h2>9. Ограничение ответственности</h2>
+  <p>Приложение предоставляется «как есть», без каких-либо гарантий, явных или подразумеваемых. Мы не несём ответственности за возможные проблемы, возникшие в связи с использованием Приложения.</p>
+  <h2>10. Изменения условий</h2>
+  <p>Мы оставляем за собой право в любой момент менять эти условия. Продолжение использования Приложения после изменений означает согласие с новой редакцией.</p>
+  <h2>11. Применимое право</h2>
+  <p>Эти условия регулируются и толкуются в соответствии с применимым законодательством.</p>
+  <h2>12. Связаться с нами</h2>
+  <p>По вопросам об этих Условиях использования пишите на <a href="mailto:anton.abyzov@gmail.com">anton.abyzov@gmail.com</a>.</p>
+</main>
+<footer>
+  <div class="footer-links">
+    <a href="/ru/">Главная</a>
+    <a href="/ru/privacy">Приватность</a>
+    <a href="/ru/terms">Условия</a>
+    <a href="/ru/support">Поддержка</a>
+  </div>
+  <p class="footer-love">Тот самый гул, что успокаивает малыша.</p>
+  <p class="footer-copy">© 2026 Soothbee · Создано EasyChamp Inc. Все права защищены.</p>
+  <div class="footer-lang">
+    <a href="/terms" hreflang="en" data-lang-set="en">English</a>
+    <span aria-hidden="true">·</span>
+    <a href="/ru/terms" aria-current="page" hreflang="ru" data-lang-set="ru">Русский</a>
+  </div>
+</footer>
+<script>
+document.querySelectorAll('[data-lang-set]').forEach(function(a){
+  a.addEventListener('click', function(){
+    try{ localStorage.setItem('soothbee-lang', a.getAttribute('data-lang-set')); }catch(e){}
+  });
+});
+</script>
+</body>
+</html>

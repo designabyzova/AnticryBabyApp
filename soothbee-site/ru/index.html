@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+(function(){
+  try{
+    var path = location.pathname;
+    var isRu = path.indexOf('/ru/') === 0 || path === '/ru';
+    var saved = localStorage.getItem('soothbee-lang');
+    if(saved === 'en' && isRu){
+      var enPath = path.replace(/^\/ru\/?/,'/') || '/';
+      location.replace(enPath);
+      return;
+    }
+  }catch(e){}
+})();
+</script>
+<title>Soothbee — Малыш плачет. ИИ слушает. Наступает покой.</title>
+<meta name="description" content="Soothbee распознаёт, почему плачет ваш малыш, и включает подходящий успокаивающий звук — автоматически. Без рук. 100% на устройстве. Более 270 треков. Бесплатно в App Store.">
+<meta name="keywords" content="ИИ для малыша, распознавание плача, сон ребёнка, soothbee, колыбельная, успокаивающие звуки, новорождённый, младенец, автокресло, carplay, музыка для малыша, классика, без рук">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://soothbee.com/ru/">
+<meta property="og:title" content="Soothbee — Малыш плачет. ИИ слушает. Наступает покой.">
+<meta property="og:description" content="Soothbee распознаёт, почему плачет ваш малыш, и включает подходящий успокаивающий звук — автоматически. ИИ на устройстве. Более 270 треков.">
+<meta property="og:image" content="https://soothbee.com/assets/img/hero.jpg">
+<meta property="og:site_name" content="Soothbee">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Soothbee — Малыш плачет. ИИ слушает. Наступает покой.">
+<meta name="twitter:description" content="Soothbee распознаёт, почему плачет ваш малыш, и включает подходящий успокаивающий звук — автоматически.">
+<meta name="twitter:image" content="https://soothbee.com/assets/img/hero.jpg">
+<link rel="canonical" href="https://soothbee.com/ru/">
+<link rel="alternate" hreflang="en" href="https://soothbee.com/">
+<link rel="alternate" hreflang="ru" href="https://soothbee.com/ru/">
+<link rel="alternate" hreflang="x-default" href="https://soothbee.com/">
+<link rel="icon" type="image/png" sizes="64x64" href="/assets/img/soothbee-mascot-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/soothbee-mascot-180.png">
+<meta name="theme-color" content="#FDF6E8">
+<meta name="apple-itunes-app" content="app-id=6756977992">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"MobileApplication","name":"Soothbee","operatingSystem":"iOS","applicationCategory":"HealthApplication","description":"Малыш плачет. ИИ слушает. Наступает покой. Soothbee распознаёт, почему плачет ваш малыш, и включает подходящий успокаивающий звук — автоматически. ИИ на устройстве, более 270 треков, CarPlay.","inLanguage":"ru","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","ratingCount":"237"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","inLanguage":"ru","mainEntity":[{"@type":"Question","name":"Как Soothbee понимает, почему плачет малыш?","acceptedAnswer":{"@type":"Answer","text":"Мы используем фреймворк Apple Sound Analysis на устройстве вместе с нашей моделью DeepInfant. Она распознаёт семь типов плача — голод, усталость, дискомфорт, боль, одиночество, испуг, колики — меньше чем за секунду. Всё происходит на вашем iPhone. Ни одна запись не уходит на сервер."}},{"@type":"Question","name":"Попадает ли хоть что-то о малыше на сервер?","acceptedAnswer":{"@type":"Answer","text":"Нет. Микрофон, ИИ, решение и звук — всё живёт на вашем телефоне. У нас нет ни учётных записей, ни аналитики, ни способа заглянуть к вам домой. Даже если телефон оффлайн, Soothbee продолжает работать."}},{"@type":"Question","name":"Сильно ли расходуется батарея?","acceptedAnswer":{"@type":"Answer","text":"Режим прослушивания тратит примерно столько же, сколько подкаст-приложение в фоне — около 4–6% в час на современном iPhone. Остановить его можно одним касанием в любой момент."}},{"@type":"Question","name":"CarPlay действительно работает без рук?","acceptedAnswer":{"@type":"Answer","text":"Да — Soothbee распознаёт плач и включает успокаивающий трек прямо на динамиках машины, и вам ничего не нужно нажимать. Скажите «Hey Soothbee, тише» — и громкость снизится. Мы делали это для дороги в сад."}},{"@type":"Question","name":"Можно ли управлять через Siri?","acceptedAnswer":{"@type":"Answer","text":"Да. «Hey Siri, включи что-то поспокойнее в Soothbee» и похожие команды поддерживаются. Также есть готовые Shortcuts для типичных сценариев — например, «ночное кормление»."}},{"@type":"Question","name":"Это действительно бесплатно? А что такое Premium?","acceptedAnswer":{"@type":"Answer","text":"Распознавание плача, CarPlay и стартовая библиотека — бесплатно, всегда. Premium (6,99 $ в месяц, 49,99 $ в год или 149,99 $ — разово) открывает полную библиотеку на 270+ треков, офлайн-загрузки, все языки и расширенный ИИ. Отменить можно в любой момент — возвраты обрабатывает Apple."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Soothbee","url":"https://soothbee.com/","logo":"https://soothbee.com/assets/img/soothbee-mascot-180.png","sameAs":["https://apps.apple.com/app/id6756977992"]}</script>
+<link rel="preload" as="image" href="/assets/img/hero.jpg" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/img/soothbee-mascot.png">
+<script defer data-domain="soothbee.com" src="https://plausible.io/js/script.js"></script>
+<link rel="preconnect" href="https://developer.apple.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,600;1,9..144,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#E8A838;
+  --primary-dark:#B8791E;
+  --primary-light:#F5D985;
+  --secondary:#9B8DC7;
+  --tertiary:#F4B8C5;
+  --peach:#F5C89A;
+  --peach-light:#FBE5D0;
+  --peach-dark:#E5A878;
+  --bg:#FDF6E8;
+  --bg-warm:#F8EBCC;
+  --card:#FFFFFF;
+  --surface:#FEFEFE;
+  --honey-deep:#7A4E14;
+  --charcoal:#2B2419;
+  --ink:#1A140B;
+  --text:#2B2419;
+  --text-2:#6B5A3F;
+  --text-3:#9C8A6B;
+  --text-light:#FDF6E8;
+  --success:#6EBF8B;
+  --white:#fff;
+  --font-display:'Fraunces',ui-serif,Georgia,Cambria,serif;
+  --font-body:'Instrument Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --max-w:1240px;
+  --r-s:8px;--r-m:12px;--r-l:18px;--r-xl:28px;--r-2xl:40px;--r-full:9999px;
+  --shadow-soft:0 2px 20px rgba(122,78,20,.06);
+  --shadow-lift:0 30px 60px -10px rgba(122,78,20,.22);
+  --shadow-xl:0 50px 100px -20px rgba(122,78,20,.35);
+  --hive-tile:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='64' viewBox='0 0 56 64'%3E%3Cg fill='none' stroke='%237A4E14' stroke-opacity='0.4' stroke-width='1'%3E%3Cpolygon points='28,2 52,16 52,44 28,58 4,44 4,16'/%3E%3Cpolygon points='0,34 4,36 4,60 0,62'/%3E%3Cpolygon points='56,34 52,36 52,60 56,62'/%3E%3C/g%3E%3C/svg%3E");
+  --hive-tile-light:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='64' viewBox='0 0 56 64'%3E%3Cg fill='none' stroke='%23FDF6E8' stroke-opacity='0.25' stroke-width='1'%3E%3Cpolygon points='28,2 52,16 52,44 28,58 4,44 4,16'/%3E%3Cpolygon points='0,34 4,36 4,60 0,62'/%3E%3Cpolygon points='56,34 52,36 52,60 56,62'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-body);color:var(--text);background:var(--bg);
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.6;letter-spacing:-.01em;
+}
+img{max-width:100%;display:block;height:auto}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+
+h1,h2,h3,h4,.display{font-family:var(--font-display);font-feature-settings:"ss01","ss02","ss03";letter-spacing:-.025em}
+
+body::after{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.48 0 0 0 0 0.36 0 0 0 0 0.14 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.35;mix-blend-mode:overlay;
+}
+
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.reveal.v{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+.d4{transition-delay:.32s}.d5{transition-delay:.4s}.d6{transition-delay:.48s}
+
+@keyframes float{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-10px) rotate(.5deg)}}
+@keyframes driftBee{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(10px,-12px) rotate(8deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes pulseRing{0%{transform:scale(.8);opacity:.55}70%{opacity:0}100%{transform:scale(1.9);opacity:0}}
+@keyframes beeWing{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+@keyframes wave{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes slowRotate{to{transform:rotate(360deg)}}
+@keyframes marqueeLeft{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes heroParallaxFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-8px,0)}}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;transition:background .4s ease,backdrop-filter .4s ease,border-color .4s ease,padding .3s ease;background:transparent;border-bottom:1px solid transparent}
+.nav.scrolled{background:rgba(253,246,232,.78);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom-color:rgba(122,78,20,.08);padding:12px 24px}
+.nav-logo{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:1.5rem;font-weight:700;color:var(--text-light);letter-spacing:-.02em;transition:color .4s ease}
+.nav.scrolled .nav-logo{color:var(--charcoal)}
+.logo-mark{width:50px;height:50px;flex-shrink:0;border-radius:22%;object-fit:cover;padding:3px;background:linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 28%,var(--primary-light) 55%,var(--secondary) 100%);box-shadow:0 6px 20px rgba(232,168,56,.45),0 0 26px rgba(245,200,154,.3),0 1px 2px rgba(43,36,25,.25)}
+.nav.scrolled .logo-mark{width:42px;height:42px;box-shadow:0 4px 14px rgba(232,168,56,.35),0 1px 2px rgba(43,36,25,.2)}
+.nav-links{display:none;gap:32px;align-items:center}
+.nav-links a{font-size:.88rem;font-weight:500;color:rgba(253,246,232,.82);transition:color .25s;position:relative}
+.nav.scrolled .nav-links a{color:var(--text-2)}
+.nav-links a:hover{color:var(--text-light)}
+.nav.scrolled .nav-links a:hover{color:var(--charcoal)}
+.nav-cta{padding:11px 22px;border-radius:var(--r-full);background:linear-gradient(135deg,var(--peach-light) 0%,var(--primary-light) 28%,var(--primary) 62%,var(--primary-dark) 100%);color:var(--ink);font-size:.9rem;font-weight:700;letter-spacing:-.01em;box-shadow:0 8px 22px rgba(26,17,8,.35),0 0 0 1px rgba(122,78,20,.35),0 0 24px rgba(245,200,154,.15),inset 0 1px 0 rgba(255,255,255,.4);transition:transform .25s,box-shadow .25s,background-position .35s;background-size:180% 180%;background-position:0% 50%}
+.nav-cta:hover{transform:translateY(-2px);background-position:100% 50%;box-shadow:0 14px 32px rgba(26,17,8,.45),0 0 0 1px rgba(122,78,20,.5),0 0 32px rgba(245,200,154,.22),inset 0 1px 0 rgba(255,255,255,.45)}
+
+.lang-switch{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-full);background:rgba(253,246,232,.12);border:1px solid rgba(253,246,232,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);margin-right:10px;transition:background .4s ease,border-color .4s ease}
+.lang-opt{padding:6px 11px;border-radius:var(--r-full);font-size:.72rem;font-weight:700;letter-spacing:.06em;color:rgba(253,246,232,.78);transition:background .2s,color .2s;line-height:1;display:inline-block}
+.lang-opt:hover{color:var(--text-light)}
+.lang-opt[aria-current="page"]{background:rgba(253,246,232,.95);color:var(--charcoal)}
+.nav.scrolled .lang-switch{background:rgba(43,36,25,.06);border-color:rgba(122,78,20,.14)}
+.nav.scrolled .lang-opt{color:var(--text-2)}
+.nav.scrolled .lang-opt:hover{color:var(--charcoal)}
+.nav.scrolled .lang-opt[aria-current="page"]{background:var(--charcoal);color:var(--text-light)}
+.footer-lang{display:flex;gap:14px;align-items:center;justify-content:center;margin-top:14px;font-size:.82rem}
+.footer-lang a{color:rgba(253,246,232,.55);transition:color .2s}
+.footer-lang a:hover{color:var(--primary)}
+.footer-lang a[aria-current="page"]{color:var(--text-light);font-weight:600}
+.footer-lang span{color:rgba(253,246,232,.3)}
+
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;color:var(--text-light);padding:120px 24px 80px}
+.hero-bg{position:absolute;inset:-4% -4%;z-index:-2;background:linear-gradient(160deg,#1a1108 0%,#2a1c0e 50%,#40280e 100%),#1a1108;will-change:transform}
+.hero-bg img{width:100%;height:100%;object-fit:cover;filter:brightness(.82) contrast(1.04) saturate(1.08)}
+.hero-overlay{position:absolute;inset:0;z-index:-1;background:radial-gradient(38% 42% at 18% 22%,rgba(245,200,154,.24),transparent 68%),radial-gradient(52% 45% at 30% 50%,rgba(232,168,56,.22),transparent 62%),radial-gradient(42% 60% at 85% 82%,rgba(155,141,199,.26),transparent 70%),linear-gradient(100deg,rgba(38,28,58,.58) 0%,rgba(30,20,35,.26) 42%,rgba(26,17,8,.06) 75%),linear-gradient(180deg,rgba(38,28,58,.2) 0%,rgba(26,17,8,.46) 55%,rgba(18,12,22,.92) 100%)}
+.hero-overlay::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 90% at 50% 42%,transparent 38%,rgba(10,6,18,.55) 100%)}
+.hero-inner{max-width:var(--max-w);width:100%;margin:0 auto;position:relative;z-index:1;display:grid;grid-template-columns:1fr;gap:48px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border-radius:var(--r-full);background:rgba(26,17,8,.55);border:1px solid rgba(245,200,154,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--peach);margin-bottom:28px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.hero-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success)}
+.hero-title{font-family:var(--font-display);font-weight:400;font-size:clamp(2.4rem,7.2vw,5.8rem);line-height:1.02;color:var(--text-light);margin-bottom:28px;letter-spacing:-.04em;font-variation-settings:"SOFT" 80,"opsz" 144,"WONK" 1;text-shadow:0 2px 20px rgba(0,0,0,.35)}
+.hero-title em{font-style:italic;font-weight:400;background:linear-gradient(110deg,var(--primary-light) 0%,var(--primary) 55%,var(--primary-dark) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--primary);font-variation-settings:"SOFT" 100,"opsz" 144,"WONK" 1;display:inline-block;text-shadow:0 2px 24px rgba(232,168,56,.18)}
+.hero-sub{font-size:clamp(1.05rem,1.7vw,1.22rem);color:rgba(253,246,232,.78);line-height:1.55;margin-bottom:40px;max-width:30em;font-weight:400}
+.hero-ctas{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-bottom:36px}
+.btn-appstore{display:inline-block;transition:transform .25s,filter .25s;filter:drop-shadow(0 8px 20px rgba(0,0,0,.3))}
+.btn-appstore:hover{transform:translateY(-2px) scale(1.02);filter:drop-shadow(0 14px 30px rgba(0,0,0,.4))}
+.btn-appstore img{height:54px;display:block}
+.btn-secondary{display:inline-flex;align-items:center;gap:10px;color:var(--text-light);font-weight:500;font-size:.95rem;padding:14px 4px;position:relative;letter-spacing:-.01em;transition:color .2s}
+.btn-secondary::after{content:"";position:absolute;left:4px;right:34px;bottom:8px;height:1px;background:rgba(253,246,232,.5);transform-origin:left;transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.btn-secondary:hover::after{transform:scaleX(.92)}
+.btn-secondary .play{width:22px;height:22px;border-radius:50%;border:1px solid rgba(253,246,232,.55);display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;transition:background .25s,border-color .25s}
+.btn-secondary:hover .play{background:var(--primary);border-color:var(--primary);color:var(--ink)}
+.hero-trust-row{display:flex;flex-wrap:wrap;gap:22px;font-size:.82rem;color:rgba(253,246,232,.62);font-weight:500}
+.hero-trust-row span{display:inline-flex;align-items:center;gap:8px}
+.hero-trust-row svg{flex-shrink:0;opacity:.95;filter:drop-shadow(0 0 6px rgba(0,0,0,.35))}
+.hero-trust-row span:nth-child(1) svg{color:var(--secondary)}
+.hero-trust-row span:nth-child(2) svg{color:var(--peach)}
+.hero-trust-row span:nth-child(3) svg{color:var(--primary-light)}
+.hero-title .line-a{display:inline-block;color:var(--text-light);opacity:.92}
+.hero-title .line-b{background:linear-gradient(110deg,var(--primary-light) 0%,var(--primary) 55%,var(--primary-dark) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--primary);letter-spacing:-.04em}
+.hero-title .line-c{display:inline-block;color:var(--text-light);font-weight:500}
+.hero-badge{position:absolute;bottom:120px;right:28px;z-index:2;display:none;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:999px;background:rgba(10,6,18,.72);border:1px solid transparent;background-image:linear-gradient(rgba(10,6,18,.82),rgba(10,6,18,.82)),linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 30%,var(--primary-light) 55%,var(--secondary) 100%);background-origin:border-box;background-clip:padding-box,border-box;backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);color:var(--text-light);font-size:.82rem;line-height:1.2;text-decoration:none;box-shadow:0 14px 40px rgba(0,0,0,.45),0 0 28px rgba(155,141,199,.22);transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s;animation:heroBadgeFloat 6s ease-in-out infinite}
+.hero-badge:hover{transform:translateY(-3px);box-shadow:0 22px 55px rgba(0,0,0,.55),0 0 36px rgba(244,184,197,.28)}
+.hero-badge img{width:60px;height:60px;flex-shrink:0;border-radius:18px;padding:3px;background:linear-gradient(135deg,var(--peach-light) 0%,var(--peach) 30%,var(--primary-light) 55%,var(--secondary) 100%);box-shadow:0 6px 18px rgba(232,168,56,.4),0 0 20px rgba(245,200,154,.28)}
+.hero-badge strong{font-weight:600;color:var(--primary-light);letter-spacing:-.005em}
+@keyframes heroBadgeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);z-index:2;color:rgba(253,246,232,.5);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:10px}
+.scroll-hint .line{width:1px;height:36px;background:linear-gradient(to bottom,transparent 0%,var(--peach) 40%,var(--primary-light) 65%,var(--secondary) 100%);animation:heroParallaxFloat 2.4s ease-in-out infinite}
+.hero-flare{position:absolute;width:520px;height:520px;z-index:-1;background:radial-gradient(closest-side,rgba(245,217,133,.35),transparent 70%);pointer-events:none;filter:blur(20px);top:-8%;right:-12%;animation:heroParallaxFloat 8s ease-in-out infinite}
+
+section{position:relative}
+.sec{padding:120px 24px;position:relative}
+.sec-inner{max-width:var(--max-w);margin:0 auto;position:relative}
+.eyebrow{display:inline-block;font-family:var(--font-body);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--primary-dark);font-weight:700;margin-bottom:20px}
+.eyebrow::before{content:"";display:inline-block;width:24px;height:1px;background:var(--primary-dark);margin-right:12px;vertical-align:middle;margin-bottom:3px}
+.sec-title{font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,5vw,4rem);line-height:1.02;color:var(--charcoal);letter-spacing:-.04em;max-width:24ch;margin-bottom:20px;font-variation-settings:"SOFT" 60,"opsz" 144}
+.sec-title em{font-style:italic;color:var(--primary-dark);font-weight:400;font-variation-settings:"SOFT" 100,"opsz" 144,"WONK" 1}
+.sec-lead{font-size:1.12rem;color:var(--text-2);line-height:1.55;max-width:56ch;margin-bottom:0}
+.sec-head{margin-bottom:72px;max-width:820px}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head.center .sec-title,.sec-head.center .sec-lead{margin-left:auto;margin-right:auto}
+
+.problem{background:linear-gradient(180deg,#1A140B 0%,#25180C 100%);color:var(--text-light);padding:140px 24px;overflow:hidden}
+.problem::before{content:"";position:absolute;inset:0;background-image:var(--hive-tile-light);background-size:56px 64px;opacity:.35;pointer-events:none;mask-image:radial-gradient(60% 50% at 50% 50%,black,transparent 75%);-webkit-mask-image:radial-gradient(60% 50% at 50% 50%,black,transparent 75%)}
+.problem-inner{position:relative;max-width:980px;margin:0 auto;text-align:center}
+.problem-time{font-family:var(--font-display);font-style:italic;font-weight:400;font-size:clamp(3rem,10vw,8rem);line-height:1;color:var(--primary);opacity:.88;letter-spacing:-.03em;margin-bottom:24px;font-variation-settings:"SOFT" 100,"opsz" 144}
+.problem-body{font-family:var(--font-display);font-weight:400;font-size:clamp(1.6rem,3.6vw,2.8rem);line-height:1.2;color:var(--text-light);letter-spacing:-.025em;max-width:28ch;margin:0 auto;font-variation-settings:"SOFT" 40,"opsz" 144}
+.problem-body em{font-style:italic;color:var(--primary-light)}
+.problem-body .fade{color:rgba(253,246,232,.45)}
+
+.how{padding:140px 24px 120px;background:var(--bg)}
+.how-steps{display:grid;grid-template-columns:1fr;gap:40px;max-width:var(--max-w);margin:0 auto}
+.how-step{position:relative;padding:48px 32px 44px;background:var(--surface);border-radius:var(--r-2xl);border:1px solid rgba(122,78,20,.07);transition:transform .5s cubic-bezier(.2,.7,.2,1),box-shadow .5s,border-color .3s;overflow:hidden}
+.how-step::before{content:"";position:absolute;inset:0;z-index:0;opacity:.06;background-image:var(--hive-tile);background-size:56px 64px;pointer-events:none;mask-image:radial-gradient(closest-side at 85% 15%,black,transparent 65%);-webkit-mask-image:radial-gradient(closest-side at 85% 15%,black,transparent 65%)}
+.how-step:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift);border-color:rgba(232,168,56,.3)}
+.how-step-num{font-family:var(--font-display);font-style:italic;font-weight:500;font-size:4.4rem;line-height:1;color:var(--primary);letter-spacing:-.04em;margin-bottom:32px;font-variation-settings:"SOFT" 100,"opsz" 144;position:relative}
+.how-step-icon{position:absolute;top:40px;right:32px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:linear-gradient(135deg,rgba(232,168,56,.18),rgba(245,217,133,.3));color:var(--honey-deep);z-index:1}
+.how-step-icon svg{width:28px;height:28px;stroke-width:1.6}
+.how-step-title{font-family:var(--font-display);font-weight:700;font-size:1.6rem;color:var(--charcoal);margin-bottom:14px;letter-spacing:-.025em;position:relative}
+.how-step-desc{font-size:1.02rem;color:var(--text-2);line-height:1.6;max-width:32ch;position:relative}
+
+.hive-sec{background:linear-gradient(180deg,var(--bg) 0%,#FBF0D9 60%,var(--bg) 100%);padding:140px 24px}
+.hive-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;max-width:1100px;margin:0 auto}
+.hex{position:relative;padding:44px 28px 40px;background:var(--card);border:1px solid rgba(122,78,20,.08);border-radius:var(--r-xl);transition:transform .4s cubic-bezier(.2,.7,.2,1),box-shadow .4s,border-color .3s;overflow:hidden;isolation:isolate}
+.hex::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;background:radial-gradient(closest-side at 50% 0%,rgba(232,168,56,.28),transparent 75%);transition:opacity .4s}
+.hex::after{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);transform:scaleX(0);transform-origin:center;transition:transform .5s ease}
+.hex:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift);border-color:rgba(232,168,56,.38)}
+.hex:hover::before{opacity:1}
+.hex:hover::after{transform:scaleX(1)}
+.hex-icon{width:56px;height:56px;display:flex;align-items:center;justify-content:center;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);margin-bottom:28px;color:var(--ink)}
+.hex-icon svg{width:24px;height:24px;stroke-width:1.6}
+.hex-icon.a{background:linear-gradient(135deg,var(--primary),var(--primary-light))}
+.hex-icon.b{background:linear-gradient(135deg,#C5B4E8,#E3D9F3)}
+.hex-icon.c{background:linear-gradient(135deg,#F8D3DC,#FCEBEF)}
+.hex-icon.d{background:linear-gradient(135deg,#B6DEC4,#D8EDDE)}
+.hex-icon.e{background:linear-gradient(135deg,#1a140b,#2B2419);color:var(--primary-light)}
+.hex-icon.f{background:linear-gradient(135deg,var(--primary-light),var(--bg))}
+.hex-title{font-family:var(--font-display);font-weight:700;font-size:1.25rem;color:var(--charcoal);letter-spacing:-.02em;margin-bottom:10px}
+.hex-desc{font-size:.96rem;color:var(--text-2);line-height:1.55}
+
+.showcase{background:linear-gradient(180deg,#FBF0D9 0%,var(--bg) 100%);padding:160px 24px 120px;overflow:hidden}
+.showcase-inner{max-width:var(--max-w);margin:0 auto;display:grid;grid-template-columns:1fr;gap:60px;align-items:center}
+.showcase-copy .sec-title{max-width:22ch}
+.showcase-list{margin-top:32px;display:flex;flex-direction:column;gap:22px}
+.showcase-item{display:flex;gap:18px;align-items:flex-start;padding:22px 24px;border-radius:var(--r-l);background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border:1px solid rgba(122,78,20,.06)}
+.showcase-item-dot{width:10px;height:10px;border-radius:50%;margin-top:8px;flex-shrink:0;background:var(--primary);box-shadow:0 0 0 4px rgba(232,168,56,.18)}
+.showcase-item-t{font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--charcoal);letter-spacing:-.015em;margin-bottom:4px}
+.showcase-item-d{font-size:.92rem;color:var(--text-2);line-height:1.55}
+.phone-stage{position:relative;display:flex;justify-content:center;align-items:center;min-height:620px;perspective:1200px}
+.phone-rings{position:absolute;top:50%;left:50%;width:280px;height:280px;transform:translate(-50%,-50%);pointer-events:none}
+.phone-rings span{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(232,168,56,.45);animation:pulseRing 3s ease-out infinite}
+.phone-rings span:nth-child(2){animation-delay:1s}
+.phone-rings span:nth-child(3){animation-delay:2s}
+.phone{position:relative;width:272px;height:560px;background:linear-gradient(160deg,#2A1E10,#120B06);border-radius:48px;padding:10px;box-shadow:0 50px 100px -20px rgba(122,78,20,.5),0 0 0 1px rgba(245,217,133,.1) inset,inset 0 1px 0 rgba(255,255,255,.08);animation:float 6s ease-in-out infinite;z-index:2}
+.phone-scr{width:100%;height:100%;border-radius:38px;overflow:hidden;background:radial-gradient(70% 50% at 50% -10%,rgba(232,168,56,.28),transparent 60%),linear-gradient(180deg,#2a1f14 0%,#14100A 100%);display:flex;flex-direction:column;align-items:center;padding:48px 16px 18px;gap:10px;position:relative}
+.phone-scr::before{content:"";position:absolute;inset:0;background-image:var(--hive-tile-light);background-size:36px 42px;opacity:.28;mix-blend-mode:screen}
+.phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:108px;height:26px;background:#0b0804;border-radius:0 0 16px 16px;z-index:2}
+.phone-label{position:relative;color:var(--primary-light);font-family:var(--font-display);font-weight:600;font-size:.72rem;letter-spacing:.32em;text-transform:uppercase}
+.phone-state{position:relative;color:rgba(253,246,232,.6);font-size:.66rem;letter-spacing:.06em;margin-top:2px}
+.waveform{display:flex;gap:3px;align-items:center;height:52px;margin:6px 0;position:relative}
+.waveform i{width:3px;border-radius:2px;background:var(--primary);display:block}
+.waveform i:nth-child(1){height:12px;animation:wave 1s ease-in-out infinite 0s}
+.waveform i:nth-child(2){height:24px;animation:wave 1s ease-in-out infinite .1s}
+.waveform i:nth-child(3){height:38px;animation:wave 1s ease-in-out infinite .2s}
+.waveform i:nth-child(4){height:28px;animation:wave 1s ease-in-out infinite .3s}
+.waveform i:nth-child(5){height:42px;animation:wave 1s ease-in-out infinite .15s}
+.waveform i:nth-child(6){height:20px;animation:wave 1s ease-in-out infinite .25s}
+.waveform i:nth-child(7){height:32px;animation:wave 1s ease-in-out infinite .35s}
+.waveform i:nth-child(8){height:16px;animation:wave 1s ease-in-out infinite .05s}
+.waveform i:nth-child(9){height:28px;animation:wave 1s ease-in-out infinite .2s}
+.waveform i:nth-child(10){height:22px;animation:wave 1s ease-in-out infinite .4s}
+.phone-chip{position:relative;background:rgba(110,191,139,.18);color:#A8E4BE;font-size:.66rem;font-weight:700;padding:5px 12px;border-radius:var(--r-full);border:1px solid rgba(110,191,139,.3);letter-spacing:.05em}
+.phone-now{position:relative;margin-top:auto;width:100%;background:rgba(245,217,133,.08);border:1px solid rgba(245,217,133,.15);border-radius:var(--r-m);padding:12px;display:flex;align-items:center;gap:12px}
+.phone-art{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center}
+.phone-art svg{width:22px;height:22px;color:var(--ink)}
+.phone-trk{font-size:.66rem;color:var(--white);font-weight:600;line-height:1.35}
+.phone-trk small{color:rgba(253,246,232,.5);font-weight:400;font-size:.62rem}
+.phone-badge{position:absolute;z-index:3;background:var(--card);color:var(--charcoal);padding:12px 16px;border-radius:var(--r-m);font-family:var(--font-display);font-weight:600;font-size:.85rem;box-shadow:var(--shadow-lift);letter-spacing:-.015em;display:flex;align-items:center;gap:10px}
+.phone-badge.top-right{top:5%;right:-8%}
+.phone-badge.bottom-left{bottom:10%;left:-18%}
+.phone-img{position:relative;z-index:2;width:272px;height:auto;display:block;filter:drop-shadow(0 50px 100px rgba(122,78,20,.45)) drop-shadow(0 0 1px rgba(245,217,133,.2));animation:float 6s ease-in-out infinite}
+.phone-badge .tag{color:var(--primary-dark);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.phone-badge .d{font-size:.72rem;color:var(--text-2);font-weight:400;font-family:var(--font-body);margin-top:2px}
+
+.proof{padding:140px 24px;background:var(--card)}
+.proof-row{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:60px}
+.proof-rating{display:flex;align-items:center;gap:14px;padding:14px 22px;background:var(--bg);border-radius:var(--r-full);border:1px solid rgba(232,168,56,.2)}
+.proof-rating-stars{display:inline-flex;color:var(--primary);font-size:1.1rem;letter-spacing:2px}
+.proof-rating strong{font-family:var(--font-display);font-weight:700;color:var(--charcoal);font-size:1.1rem;letter-spacing:-.01em}
+.proof-rating span{color:var(--text-2);font-size:.85rem}
+.proof-stats{display:flex;gap:30px;flex-wrap:wrap;color:var(--text-2)}
+.proof-stats strong{font-family:var(--font-display);font-weight:700;color:var(--charcoal);font-size:1.5rem;letter-spacing:-.02em;display:block}
+.proof-stats span{font-size:.8rem;letter-spacing:.04em}
+.quotes{display:grid;grid-template-columns:1fr;gap:22px;margin-top:0}
+.quote{background:var(--bg);padding:36px 32px;border-radius:var(--r-xl);border:1px solid rgba(122,78,20,.06);position:relative}
+.quote::before{content:"«";position:absolute;top:-22px;left:24px;font-family:var(--font-display);font-style:italic;font-size:6rem;color:var(--primary);line-height:1;font-weight:400}
+.quote-text{font-family:var(--font-display);font-weight:400;font-size:1.1rem;line-height:1.55;color:var(--charcoal);letter-spacing:-.01em;margin-bottom:24px;font-variation-settings:"SOFT" 60,"opsz" 144}
+.quote-author{display:flex;align-items:center;gap:12px}
+.quote-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;color:var(--white);font-size:.92rem;letter-spacing:-.01em;box-shadow:inset 0 -3px 8px rgba(0,0,0,.1)}
+.quote-avatar.a1{background:linear-gradient(135deg,var(--primary),var(--primary-dark))}
+.quote-avatar.a2{background:linear-gradient(135deg,var(--secondary),#7868A8)}
+.quote-avatar.a3{background:linear-gradient(135deg,var(--tertiary),#DA8092)}
+.quote-name{font-weight:600;color:var(--charcoal);font-size:.92rem}
+.quote-role{font-size:.78rem;color:var(--text-2)}
+.trust-badges{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-top:80px;padding-top:48px;border-top:1px solid rgba(122,78,20,.08)}
+.trust-badge{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;background:var(--bg);border-radius:var(--r-full);border:1px solid rgba(122,78,20,.08);font-size:.82rem;color:var(--text-2);font-weight:500}
+.trust-badge svg{color:var(--primary-dark);flex-shrink:0}
+
+.pricing-tease{padding:120px 24px;background:linear-gradient(180deg,var(--card) 0%,var(--bg) 100%);text-align:center}
+.pricing-tease-inner{max-width:720px;margin:0 auto}
+.pricing-tease .sec-title{margin-left:auto;margin-right:auto}
+.pricing-tease-cta{display:inline-flex;align-items:center;gap:10px;margin-top:28px;padding:14px 28px;border-radius:var(--r-full);background:var(--charcoal);color:var(--text-light);font-weight:600;font-size:.95rem;transition:transform .25s,background .25s}
+.pricing-tease-cta:hover{transform:translateY(-2px);background:var(--ink)}
+
+.faq-sec{padding:140px 24px;background:var(--bg)}
+.faq-list{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:4px}
+details.faq{background:var(--card);border-radius:var(--r-l);border:1px solid rgba(122,78,20,.08);overflow:hidden;transition:border-color .25s,box-shadow .25s}
+details.faq[open]{border-color:rgba(232,168,56,.38);box-shadow:var(--shadow-soft)}
+details.faq:hover{border-color:rgba(232,168,56,.28)}
+details.faq summary{list-style:none;cursor:pointer;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;gap:20px;font-family:var(--font-display);font-weight:600;font-size:1.08rem;color:var(--charcoal);letter-spacing:-.015em}
+details.faq summary::-webkit-details-marker{display:none}
+.faq-marker{width:32px;height:32px;flex-shrink:0;position:relative;background:linear-gradient(135deg,var(--primary),var(--primary-light));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;color:var(--ink);transition:transform .3s ease}
+.faq-marker::before,.faq-marker::after{content:"";position:absolute;background:var(--ink);border-radius:1px}
+.faq-marker::before{width:12px;height:1.6px}
+.faq-marker::after{width:1.6px;height:12px;transition:transform .25s}
+details.faq[open] .faq-marker{transform:rotate(180deg)}
+details.faq[open] .faq-marker::after{transform:scaleY(0)}
+.faq-body{padding:0 28px 26px;font-size:.95rem;color:var(--text-2);line-height:1.65}
+
+.final{position:relative;padding:160px 24px;overflow:hidden;background:radial-gradient(900px 500px at 20% 20%,rgba(245,217,133,.55),transparent 60%),radial-gradient(700px 400px at 85% 80%,rgba(232,168,56,.8),transparent 65%),linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:var(--ink);text-align:center}
+.final::before{content:"";position:absolute;inset:0;opacity:.25;pointer-events:none;background-image:var(--hive-tile);background-size:64px 74px}
+.final-inner{position:relative;max-width:820px;margin:0 auto}
+.final-title{font-family:var(--font-display);font-weight:400;font-size:clamp(2.8rem,7vw,5.2rem);line-height:1;color:var(--ink);letter-spacing:-.045em;margin-bottom:28px;font-variation-settings:"SOFT" 80,"opsz" 144}
+.final-title em{font-style:italic;color:var(--honey-deep);font-weight:400;font-variation-settings:"SOFT" 100,"opsz" 144,"WONK" 1}
+.final-sub{font-size:1.18rem;color:rgba(26,20,11,.72);line-height:1.5;margin-bottom:44px;max-width:40ch;margin-left:auto;margin-right:auto}
+.final .btn-appstore{filter:drop-shadow(0 12px 30px rgba(26,20,11,.3))}
+.final-tagline{margin-top:56px;font-family:var(--font-display);font-style:italic;font-size:1.15rem;color:var(--ink);letter-spacing:-.01em;font-variation-settings:"SOFT" 100,"opsz" 144}
+
+footer{background:var(--ink);color:rgba(253,246,232,.62);padding:80px 24px 40px}
+.footer-inner{max-width:var(--max-w);margin:0 auto;display:grid;grid-template-columns:1fr;gap:48px}
+.footer-brand{max-width:360px}
+.footer-brand .nav-logo{color:var(--text-light);margin-bottom:16px}
+.footer-brand p{font-family:var(--font-display);font-style:italic;font-size:1rem;color:rgba(253,246,232,.55);line-height:1.5;letter-spacing:-.01em}
+.footer-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.footer-col h4{font-family:var(--font-body);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:rgba(253,246,232,.5);margin-bottom:18px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col a{color:rgba(253,246,232,.78);font-size:.9rem;transition:color .2s}
+.footer-col a:hover{color:var(--primary)}
+.footer-bottom{max-width:var(--max-w);margin:60px auto 0;padding-top:32px;border-top:1px solid rgba(253,246,232,.08);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;font-size:.78rem;color:rgba(253,246,232,.35)}
+.footer-bottom em{font-family:var(--font-display);font-style:italic;color:rgba(253,246,232,.48)}
+
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.newsletter{padding:120px 24px;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-warm) 100%);position:relative;overflow:hidden}
+.newsletter::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 0%,rgba(232,168,56,.16),transparent 70%);pointer-events:none}
+.newsletter-inner{position:relative;z-index:1;max-width:var(--max-w);margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px;align-items:center}
+.newsletter-copy .eyebrow{display:inline-block;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--primary-dark);margin-bottom:12px}
+.newsletter-copy h2{font-family:var(--font-display);font-weight:500;font-size:clamp(1.9rem,3.6vw,3rem);line-height:1.05;letter-spacing:-.025em;color:var(--text);margin-bottom:14px}
+.newsletter-copy p{color:var(--text-2);font-size:1.02rem;line-height:1.55;max-width:42em}
+.newsletter-form{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.newsletter-form input[type=email]{flex:1 1 240px;min-width:240px;padding:18px 20px;border:1px solid rgba(122,78,20,.18);border-radius:14px;background:#fff;color:var(--text);font-size:1rem;font-family:inherit;transition:border-color .2s,box-shadow .2s}
+.newsletter-form input[type=email]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(232,168,56,.18)}
+.newsletter-form button{display:inline-flex;align-items:center;gap:8px;padding:18px 26px;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,var(--primary-light) 0%,var(--primary) 60%,var(--primary-dark) 100%);color:var(--ink);font-weight:600;font-size:1rem;font-family:inherit;box-shadow:0 8px 24px rgba(232,168,56,.32);transition:transform .2s,box-shadow .2s,filter .2s}
+.newsletter-form button:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(232,168,56,.42)}
+.newsletter-form button:active{transform:translateY(0);filter:brightness(.96)}
+
+@media (min-width:640px){.hive-grid{gap:22px}.quotes{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:768px){.nav{padding:22px 40px}.nav.scrolled{padding:14px 40px}.nav-links{display:inline-flex}.sec{padding:140px 40px}.hero{padding:140px 40px 100px}.problem{padding:160px 40px}.how{padding:160px 40px}.hive-sec{padding:160px 40px}.showcase{padding:180px 40px 140px}.proof{padding:160px 40px}.faq-sec{padding:160px 40px}.newsletter{padding:140px 40px}.newsletter-inner{grid-template-columns:1.2fr 1fr;gap:64px}.final{padding:180px 40px}footer{padding:100px 40px 50px}.how-steps{grid-template-columns:repeat(3,1fr);gap:24px}.hive-grid{grid-template-columns:repeat(3,1fr);gap:22px}.showcase-inner{grid-template-columns:1fr 1fr;gap:80px}.quotes{grid-template-columns:repeat(3,1fr)}.footer-inner{grid-template-columns:1.2fr 2fr}.footer-bottom{justify-content:space-between}}
+@media (min-width:1024px){.hero-title{font-size:clamp(3.4rem,6.2vw,6.4rem)}.sec-title{font-size:clamp(2.6rem,4.4vw,4.4rem)}.phone{width:300px;height:615px}.phone-img{width:300px}.how-step{padding:56px 36px 48px}.how-step-num{font-size:5rem}.hex{padding:56px 34px 48px}.hero-badge{display:inline-flex}}
+@media (min-width:1280px){.hero-badge{bottom:140px;right:56px;padding:12px 22px 12px 12px}.hero-badge img{width:72px;height:72px}.hero-badge{font-size:.9rem}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}.phone-rings span{animation:pulseRing 3s ease-out infinite!important}body::after{display:none}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="sb-mark" viewBox="0 0 24 24">
+    <polygon points="12,1.5 21,6.5 21,17.5 12,22.5 3,17.5 3,6.5" fill="var(--primary)" stroke="var(--honey-deep)" stroke-width="1.5" stroke-linejoin="round"/>
+    <ellipse cx="12" cy="13.2" rx="4.2" ry="2.8" fill="var(--ink)"/>
+    <rect x="8.4" y="11.6" width="7.2" height="1.1" fill="var(--primary-light)"/>
+    <rect x="8.4" y="13.5" width="7.2" height="1.1" fill="var(--primary-light)"/>
+    <ellipse cx="14.3" cy="11.1" rx="2.4" ry="1.5" fill="#fff" opacity=".78"/>
+  </symbol>
+  <symbol id="i-ear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M7 12a5 5 0 0 1 10 0v5a3 3 0 0 1-3 3"/><path d="M11 12a1 1 0 0 1 2 0v3"/></g></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M9 5a3 3 0 0 1 3-1 3 3 0 0 1 3 1 2.5 2.5 0 0 1 2 4 3 3 0 0 1-1 5 2.5 2.5 0 0 1-4 2 2.5 2.5 0 0 1-4-2 3 3 0 0 1-1-5 2.5 2.5 0 0 1 2-4Z"/><path d="M12 9v7"/><path d="M9 12h6"/></g></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></g></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M5 17V11l2-5h10l2 5v6"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/><path d="M6 11h12"/></g></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M20 14.5A8 8 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></g></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></g></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M12 20s-7-4.5-7-11a4 4 0 0 1 7-2.5A4 4 0 0 1 19 9c0 6.5-7 11-7 11Z"/></g></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><g fill="currentColor"><path d="M7 5v14l12-7Z"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m5 12 5 5L20 7"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M12 3 4 6v6c0 5 4 8 8 9 4-1 8-4 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></g></symbol>
+  <symbol id="i-apple" viewBox="0 0 24 24"><g fill="currentColor"><path d="M17 12.5c0-2.6 2.2-3.8 2.3-3.9-1.2-1.8-3.2-2-3.9-2-1.7-.2-3.2 1-4 1-.8 0-2.1-1-3.4-1-1.8 0-3.5 1-4.4 2.7-1.9 3.3-.5 8.1 1.4 10.8.9 1.3 2 2.7 3.4 2.7 1.4-.1 1.9-.9 3.5-.9 1.6 0 2.1.9 3.5.9 1.4 0 2.4-1.3 3.3-2.6 1-1.5 1.5-2.9 1.5-3-.1-.1-2.8-1.1-2.8-4.1ZM14.4 4.6c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.5-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.4Z"/></g></symbol>
+</defs>
+</svg>
+
+<nav class="nav" id="nav">
+  <a href="#top" class="nav-logo">
+    <img class="logo-mark" src="/assets/img/soothbee-mascot-64.png" alt="Soothbee" width="50" height="50">
+    <span>Soothbee</span>
+  </a>
+  <div class="nav-links">
+    <a href="#how">Как это работает</a>
+    <a href="#hive">Возможности</a>
+    <a href="#proof">Родители</a>
+    <a href="#faq">Вопросы</a>
+  </div>
+  <div class="lang-switch" role="group" aria-label="Язык">
+    <a href="/" class="lang-opt" hreflang="en" data-lang-set="en">EN</a>
+    <a href="/ru/" class="lang-opt" aria-current="page" hreflang="ru" data-lang-set="ru">RU</a>
+  </div>
+  <a href="https://apps.apple.com/app/id6756977992" class="nav-cta">Скачать Soothbee</a>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-bg" id="heroBg">
+    <img src="/assets/img/hero.jpg" alt="Спокойный малыш спит в автокресле в час золотого заката" fetchpriority="high">
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-flare" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow"><span class="dot"></span><span>ИИ распознаёт плач · iPhone · CarPlay · Apple Watch</span></div>
+      <h1 class="hero-title">
+        <span class="line-a">Малыш плачет.</span><br>
+        <em class="line-b">ИИ слушает.</em><br>
+        <span class="line-c">Наступает покой.</span>
+      </h1>
+      <p class="hero-sub">Soothbee распознаёт, почему плачет ваш малыш, и включает подходящий успокаивающий звук — автоматически. 100% на устройстве. Без рук. Более 270 треков.</p>
+      <div class="hero-ctas">
+        <a href="https://apps.apple.com/app/id6756977992" class="btn-appstore" aria-label="Скачать Soothbee в App Store">
+          <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Скачать в App Store" width="162" height="54" decoding="async">
+        </a>
+        <a href="#how" class="btn-secondary">
+          <span class="play"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7Z"/></svg></span>
+          <span>Посмотреть, как это работает</span>
+        </a>
+      </div>
+      <div class="hero-trust-row">
+        <span><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-shield"/></svg> 100% на устройстве · никаких данных</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-bolt"/></svg> Реагирует меньше чем за секунду</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24"><use href="#i-check"/></svg> Бесплатно для старта · без карты</span>
+      </div>
+    </div>
+  </div>
+
+  <a href="#how" class="hero-badge" aria-label="Знакомьтесь с Soothbee">
+    <img src="/assets/img/soothbee-mascot.png" alt="Маскот Soothbee" width="88" height="88" loading="eager">
+    <span><strong>Знакомьтесь — Soothbee</strong><br>Ваш спокойный ИИ-помощник для родителей. Днём и ночью.</span>
+  </a>
+
+  <div class="scroll-hint" aria-hidden="true">
+    <span>Листайте</span>
+    <span class="line"></span>
+  </div>
+</header>
+
+<section class="problem" id="problem">
+  <div class="problem-inner">
+    <div class="problem-time reveal">02:04</div>
+    <p class="problem-body reveal d1">
+      Вы попробовали всё. <em>Soothbee</em> <span class="fade">знает, что будет дальше.</span>
+    </p>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="sec-inner">
+    <div class="sec-head center">
+      <span class="eyebrow reveal">Как это работает</span>
+      <h2 class="sec-title reveal d1">Три тихих шага к <em>покою</em>.</h2>
+      <p class="sec-lead reveal d2">Никакой настройки. Никакой подписки для первого раза. Нажмите один раз — дальше Soothbee сам.</p>
+    </div>
+
+    <div class="how-steps">
+      <div class="how-step reveal d1">
+        <div class="how-step-icon"><svg aria-hidden="true"><use href="#i-ear"/></svg></div>
+        <div class="how-step-num">01</div>
+        <h3 class="how-step-title">Малыш плачет.</h3>
+        <p class="how-step-desc">Откройте Soothbee один раз. ИИ на устройстве ловит плач через микрофон iPhone в ту же секунду.</p>
+      </div>
+      <div class="how-step reveal d2">
+        <div class="how-step-icon"><svg aria-hidden="true"><use href="#i-brain"/></svg></div>
+        <div class="how-step-num">02</div>
+        <h3 class="how-step-title">ИИ слушает.</h3>
+        <p class="how-step-desc">Меньше чем за секунду Soothbee распознаёт причину — голод, усталость, дискомфорт, боль — чтобы включить подходящий ответ.</p>
+      </div>
+      <div class="how-step reveal d3">
+        <div class="how-step-icon"><svg aria-hidden="true"><use href="#i-note"/></svg></div>
+        <div class="how-step-num">03</div>
+        <h3 class="how-step-title">Наступает покой.</h3>
+        <p class="how-step-desc">Нужный звук — колыбельная, классическая пьеса, тихий гул — начинает играть автоматически: в машине, в AirPods или на колонке.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hive-sec" id="hive">
+  <div class="sec-inner">
+    <div class="sec-head">
+      <span class="eyebrow reveal">Улей</span>
+      <h2 class="sec-title reveal d1">Шесть вещей, о которых<br>родители <em>рассказывают</em><br>чаще всего.</h2>
+      <p class="sec-lead reveal d2">Мы делали Soothbee для поездок в два часа ночи, для капризных вечеров и для ночей, которым будто нет конца. Каждая деталь здесь заслужила своё место.</p>
+    </div>
+
+    <div class="hive-grid">
+      <div class="hex reveal d1">
+        <div class="hex-icon a"><svg aria-hidden="true"><use href="#i-car"/></svg></div>
+        <h3 class="hex-title">CarPlay с первого дня.</h3>
+        <p class="hex-desc">Малыш заплакал на заднем сиденье? Soothbee отвечает прямо на приборной панели. Вы не отрываете рук от руля.</p>
+      </div>
+      <div class="hex reveal d2">
+        <div class="hex-icon b"><svg aria-hidden="true"><use href="#i-heart"/></svg></div>
+        <h3 class="hex-title">Учится у вашего малыша.</h3>
+        <p class="hex-desc">Нажмите «это помогло» один раз — и Soothbee запомнит. Библиотека тихо подстраивается под вашего ребёнка, а не под чужого.</p>
+      </div>
+      <div class="hex reveal d3">
+        <div class="hex-icon c"><svg aria-hidden="true"><use href="#i-note"/></svg></div>
+        <h3 class="hex-title">Более 270 звуков, которые хочется оставить.</h3>
+        <p class="hex-desc">Моцарт, Брамс и Шопен. Сказки на десяти языках. Колыбельные, которые пели наши бабушки. Никаких реактивных двигателей и пылесосов.</p>
+      </div>
+      <div class="hex reveal d4">
+        <div class="hex-icon d"><svg aria-hidden="true"><use href="#i-lock"/></svg></div>
+        <h3 class="hex-title">Абсолютная приватность.</h3>
+        <p class="hex-desc">Микрофон не покидает ваш iPhone. Никакого облака, ни учётной записи, ни аналитики, ни скрытой торговли данными. Никогда.</p>
+      </div>
+      <div class="hex reveal d5">
+        <div class="hex-icon e"><svg aria-hidden="true"><use href="#i-moon"/></svg></div>
+        <h3 class="hex-title">Сделано для кормления в три ночи.</h3>
+        <p class="hex-desc">Ночной режим, собранный по опыту настоящих кормлений. Тёплый приглушённый свет, тихие элементы управления. Ничто не разбудит ни малыша, ни вас — без повода.</p>
+      </div>
+      <div class="hex reveal d6">
+        <div class="hex-icon f"><svg aria-hidden="true"><use href="#i-bolt"/></svg></div>
+        <h3 class="hex-title">Меньше секунды.</h3>
+        <p class="hex-desc">От первого всхлипа до первой ноты — меньше секунды. Потому что ещё тридцати у вас просто нет.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="showcase" id="showcase">
+  <div class="showcase-inner">
+    <div class="showcase-copy">
+      <span class="eyebrow reveal">Приложение</span>
+      <h2 class="sec-title reveal d1">Сделано для <em>самого тяжёлого</em> часа в сутках.</h2>
+      <p class="sec-lead reveal d2">Каждая кнопка — большая. Каждая подпись — спокойная. Каждая анимация — мягкая. Собрано вместе с родителями, у которых нет ни одной лишней секунды — и для них же.</p>
+      <div class="showcase-list">
+        <div class="showcase-item reveal d3">
+          <span class="showcase-item-dot"></span>
+          <div>
+            <div class="showcase-item-t">Соты настроений.</div>
+            <div class="showcase-item-d">Выбирайте настроение, а не трек. Soothbee сам соберёт нежный микс под то, что малышу нужно прямо сейчас.</div>
+          </div>
+        </div>
+        <div class="showcase-item reveal d4">
+          <span class="showcase-item-dot"></span>
+          <div>
+            <div class="showcase-item-t">Голос, который слушает вас.</div>
+            <div class="showcase-item-d">«Hey Soothbee, включи что-то поспокойнее». Телефон в руках не нужен — просто тихая команда.</div>
+          </div>
+        </div>
+        <div class="showcase-item reveal d5">
+          <span class="showcase-item-dot"></span>
+          <div>
+            <div class="showcase-item-t">Всегда работает офлайн.</div>
+            <div class="showcase-item-d">Скачайте любимое малыша один раз. Распознавание плача и воспроизведение работают в дороге, в детской — где угодно.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-stage reveal d3">
+      <div class="phone-rings" aria-hidden="true"><span></span><span></span><span></span></div>
+      <img class="phone-img" src="/assets/img/iphone-mockup.png" alt="Soothbee — главный экран приложения: режим прослушивания и сетка категорий успокаивающего контента">
+      <div class="phone-badge top-right">
+        <svg width="18" height="18" viewBox="0 0 24 24" style="color:var(--primary-dark)"><use href="#i-bolt"/></svg>
+        <div><div class="tag">0,6 с</div><div class="d">Плач → звук</div></div>
+      </div>
+      <div class="phone-badge bottom-left">
+        <svg width="18" height="18" viewBox="0 0 24 24" style="color:var(--primary-dark)"><use href="#i-shield"/></svg>
+        <div><div class="tag">На устройстве</div><div class="d">Ничего не уходит</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="proof" id="proof">
+  <div class="sec-inner">
+    <div class="sec-head">
+      <span class="eyebrow reveal">Родители</span>
+      <h2 class="sec-title reveal d1">Нам доверяют<br>десятки тысяч<br><em>уставших родителей</em>.</h2>
+    </div>
+
+    <div class="proof-row reveal">
+      <div class="proof-rating">
+        <span class="proof-rating-stars">★ ★ ★ ★ ★</span>
+        <div>
+          <strong>4,9 в App Store</strong>
+          <span>на основе 237 отзывов — и новые приходят</span>
+        </div>
+      </div>
+      <div class="proof-stats">
+        <div><strong>10 000+</strong><span>загрузок за месяц</span></div>
+        <div><strong>7</strong><span>типов плача распознаёт</span></div>
+        <div><strong>270+</strong><span>бережно отобранных звуков</span></div>
+      </div>
+    </div>
+
+    <div class="quotes">
+      <figure class="quote reveal d1">
+        <blockquote class="quote-text">Первую ночь, когда она уснула, а я не встала с кровати, я плакала. Тихо — чтобы Soothbee не принял меня за малыша.</blockquote>
+        <figcaption class="quote-author">
+          <div class="quote-avatar a1">МР</div>
+          <div>
+            <div class="quote-name">Майя Р.</div>
+            <div class="quote-role">Мама 4-месячной малышки</div>
+          </div>
+        </figcaption>
+      </figure>
+
+      <figure class="quote reveal d2">
+        <blockquote class="quote-text">CarPlay — вот что нас спасло. Раньше на двадцатиминутной поездке мы три раза съезжали на обочину. Теперь просто доезжаем.</blockquote>
+        <figcaption class="quote-author">
+          <div class="quote-avatar a2">ДК</div>
+          <div>
+            <div class="quote-name">Даниил К.</div>
+            <div class="quote-role">Папа, отвозит в сад</div>
+          </div>
+        </figcaption>
+      </figure>
+
+      <figure class="quote reveal d3">
+        <blockquote class="quote-text">Ничто не следит за мной. Ничто не записывает его. Это важно было ещё до того, как я нажала «играть». А Брамс — прекрасен.</blockquote>
+        <figcaption class="quote-author">
+          <div class="quote-avatar a3">СЛ</div>
+          <div>
+            <div class="quote-name">Софья Л.</div>
+            <div class="quote-role">Родитель впервые</div>
+          </div>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="trust-badges reveal">
+      <div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-shield"/></svg> 100% приватность на устройстве</div>
+      <div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-lock"/></svg> Ноль собранных данных</div>
+      <div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24"><use href="#i-apple"/></svg> Одобрено и представлено в App Store</div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing-tease">
+  <div class="pricing-tease-inner">
+    <span class="eyebrow reveal">Цены</span>
+    <h2 class="sec-title reveal d1">Бесплатно для старта.<br><em>Premium</em> открывает улей.</h2>
+    <p class="sec-lead reveal d2" style="margin-left:auto;margin-right:auto">Распознавание плача, подборка колыбельных и режим без рук — бесплатно, всегда. Premium открывает полную библиотеку на 270 треков, офлайн-загрузки и все языки. Отмена — одним касанием.</p>
+    <a href="https://apps.apple.com/app/id6756977992" class="pricing-tease-cta reveal d3">Посмотреть тарифы в приложении <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+  </div>
+</section>
+
+<section class="faq-sec" id="faq">
+  <div class="sec-inner">
+    <div class="sec-head center">
+      <span class="eyebrow reveal">Ответы</span>
+      <h2 class="sec-title reveal d1">Что родители <em>спрашивают</em><br>в первую очередь.</h2>
+    </div>
+    <div class="faq-list">
+      <details class="faq reveal d1">
+        <summary>Как Soothbee понимает, почему плачет малыш? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Мы используем фреймворк Apple Sound Analysis на устройстве вместе с нашей моделью DeepInfant. Она распознаёт семь типов плача — голод, усталость, дискомфорт, боль, одиночество, испуг, колики — меньше чем за секунду. Всё происходит на вашем iPhone. Ни одна запись не уходит на сервер.</div>
+      </details>
+      <details class="faq reveal d2">
+        <summary>Попадает ли хоть что-то о малыше на сервер? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Нет. Микрофон, ИИ, решение и звук — всё живёт на вашем телефоне. У нас нет ни учётных записей, ни аналитики, ни способа заглянуть к вам домой. Даже если телефон оффлайн, Soothbee продолжает работать.</div>
+      </details>
+      <details class="faq reveal d3">
+        <summary>Сильно ли расходуется батарея? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Режим прослушивания тратит примерно столько же, сколько подкаст-приложение в фоне — около 4–6% в час на современном iPhone. Остановить его можно одним касанием в любой момент.</div>
+      </details>
+      <details class="faq reveal d4">
+        <summary>CarPlay действительно работает без рук? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Да — Soothbee распознаёт плач и включает успокаивающий трек прямо на динамиках машины, и вам ничего не нужно нажимать. Скажите «Hey Soothbee, тише» — и громкость снизится. Мы делали это для дороги в сад.</div>
+      </details>
+      <details class="faq reveal d5">
+        <summary>Можно ли управлять через Siri? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Да. «Hey Siri, включи что-то поспокойнее в Soothbee» и похожие команды поддерживаются. Также есть готовые Shortcuts для типичных сценариев — например, «ночное кормление».</div>
+      </details>
+      <details class="faq reveal d6">
+        <summary>Это действительно бесплатно? А что такое Premium? <span class="faq-marker"></span></summary>
+        <div class="faq-body">Распознавание плача, CarPlay и стартовая библиотека — бесплатно, всегда. Premium (6,99 $ в месяц, 49,99 $ в год или 149,99 $ — разово) открывает полную библиотеку на 270+ треков, офлайн-загрузки, все языки и расширенный ИИ. Отменить можно в любой момент — возвраты обрабатывает Apple.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="newsletter" id="updates">
+  <div class="newsletter-inner">
+    <div class="newsletter-copy reveal">
+      <span class="eyebrow">Письмо родителям</span>
+      <h2>Тихие ночи — раз в месяц в почте.</h2>
+      <p>Наука о сне малышей, заметки о новых версиях Soothbee и честные советы от инженеров, которые сами не высыпаются. Никакого спама — отписаться можно в любой момент.</p>
+    </div>
+    <form class="newsletter-form reveal d1" action="https://formspree.io/f/xbjnqbok" method="post" novalidate>
+      <label for="nl-email" class="visually-hidden">Ваша почта</label>
+      <input id="nl-email" type="email" name="email" placeholder="вы@семья.ru" autocomplete="email" required>
+      <input type="hidden" name="_subject" value="Soothbee newsletter signup (RU)">
+      <button type="submit">
+        <span>Подписаться</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
+<section class="final" id="download">
+  <div class="final-inner">
+    <h2 class="final-title reveal">ИИ слушает.<br><em>Наступает покой.</em></h2>
+    <p class="final-sub reveal d1">Бесплатная загрузка. Без аккаунта. Без банковской карты. Premium — когда будете готовы.</p>
+    <a href="https://apps.apple.com/app/id6756977992" class="btn-appstore reveal d2" aria-label="Скачать Soothbee в App Store">
+      <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Скачать в App Store" width="162" height="54" loading="lazy" decoding="async">
+    </a>
+    <p class="final-tagline reveal d3">ИИ, который слушает вашего малыша и сам включает то, что его успокаивает.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">
+        <img class="logo-mark" src="/assets/img/soothbee-mascot-64.png" alt="Soothbee" width="50" height="50">
+        <span>Soothbee</span>
+      </div>
+      <p>ИИ, который слушает вашего малыша и сам включает то, что его успокаивает.</p>
+    </div>
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h4>Продукт</h4>
+        <ul>
+          <li><a href="#how">Как это работает</a></li>
+          <li><a href="#hive">Возможности</a></li>
+          <li><a href="#proof">Родители</a></li>
+          <li><a href="https://apps.apple.com/app/id6756977992">Скачать</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Компания</h4>
+        <ul>
+          <li><a href="/ru/support">Поддержка</a></li>
+          <li><a href="mailto:anton.abyzov@gmail.com">Связаться</a></li>
+          <li><a href="#faq">Вопросы</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Правовое</h4>
+        <ul>
+          <li><a href="/ru/privacy">Приватность</a></li>
+          <li><a href="/ru/terms">Условия</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Soothbee · Создано EasyChamp Inc.</span>
+    <em>Сделано с любовью для невыспавшихся родителей.</em>
+  </div>
+  <div class="footer-lang">
+    <a href="/" hreflang="en" data-lang-set="en">English</a>
+    <span aria-hidden="true">·</span>
+    <a href="/ru/" aria-current="page" hreflang="ru" data-lang-set="ru">Русский</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav = document.getElementById('nav');
+  function onScroll(){
+    var y = window.scrollY || window.pageYOffset;
+    if(y > 40) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  var heroBg = document.getElementById('heroBg');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(heroBg && !prefersReduced){
+    var ticking = false;
+    function updateParallax(){
+      var y = window.scrollY || window.pageYOffset;
+      heroBg.style.transform = 'translate3d(0,' + (y * 0.28) + 'px,0) scale(1.06)';
+      ticking = false;
+    }
+    window.addEventListener('scroll', function(){
+      if(!ticking){ window.requestAnimationFrame(updateParallax); ticking = true; }
+    }, {passive:true});
+    updateParallax();
+  }
+
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('v');
+          io.unobserve(e.target);
+        }
+      });
+    }, {threshold:0.15, rootMargin:'0px 0px -60px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('v'); });
+  }
+
+  document.querySelectorAll('[data-lang-set]').forEach(function(a){
+    a.addEventListener('click', function(){
+      try{ localStorage.setItem('soothbee-lang', a.getAttribute('data-lang-set')); }catch(e){}
+    });
+  });
+})();
+</script>
+</body>
+</html>

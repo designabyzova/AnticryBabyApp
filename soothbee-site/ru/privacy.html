@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,27 +9,20 @@
     var path = location.pathname;
     var isRu = path.indexOf('/ru/') === 0 || path === '/ru';
     var saved = localStorage.getItem('soothbee-lang');
-    if(!saved && !isRu){
-      var nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-      if(nav.indexOf('ru') === 0){
-        localStorage.setItem('soothbee-lang','ru');
-        location.replace('/ru' + (path === '/' ? '/' : path));
-        return;
-      }
-    }
-    if(saved === 'ru' && !isRu){
-      location.replace('/ru' + (path === '/' ? '/' : path));
+    if(saved === 'en' && isRu){
+      var enPath = path.replace(/^\/ru\/?/,'/') || '/';
+      location.replace(enPath);
       return;
     }
   }catch(e){}
 })();
 </script>
-<title>Terms of Use — Soothbee</title>
-<meta name="description" content="Soothbee terms of use and end user license agreement.">
-<link rel="canonical" href="https://soothbee.com/terms">
-<link rel="alternate" hreflang="en" href="https://soothbee.com/terms">
-<link rel="alternate" hreflang="ru" href="https://soothbee.com/ru/terms">
-<link rel="alternate" hreflang="x-default" href="https://soothbee.com/terms">
+<title>Политика конфиденциальности — Soothbee</title>
+<meta name="description" content="Политика конфиденциальности Soothbee. Мы не собираем ни единого байта личных данных. Вся работа ИИ — на вашем устройстве.">
+<link rel="canonical" href="https://soothbee.com/ru/privacy">
+<link rel="alternate" hreflang="en" href="https://soothbee.com/privacy">
+<link rel="alternate" hreflang="ru" href="https://soothbee.com/ru/privacy">
+<link rel="alternate" hreflang="x-default" href="https://soothbee.com/privacy">
 <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/soothbee-mascot-64.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/soothbee-mascot-180.png">
 <meta name="theme-color" content="#FDF6E8">
@@ -42,7 +35,7 @@
   --primary:#E8A838;--primary-dark:#B8791E;--primary-light:#F5D985;
   --bg:#FDF6E8;--card:#FFFFFF;--charcoal:#2B2419;--ink:#1A140B;
   --honey-deep:#7A4E14;--text:#2B2419;--text-2:#6B5A3F;--text-3:#9C8A6B;--text-light:#FDF6E8;
-  --white:#fff;
+  --success:#6EBF8B;--white:#fff;
   --font-display:'Fraunces',ui-serif,Georgia,serif;
   --font-body:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --r-l:18px;--r-full:9999px;
@@ -102,86 +95,76 @@ footer{background:var(--ink);padding:60px 24px 34px;text-align:center;color:rgba
 </defs>
 </svg>
 <nav class="nav">
-  <a href="/" class="nav-logo" aria-label="Soothbee home">
+  <a href="/ru/" class="nav-logo" aria-label="Главная Soothbee">
     <img class="logo-mark" src="/assets/img/soothbee-mascot-64.png" alt="Soothbee" width="36" height="36">
     <span>Soothbee</span>
   </a>
   <div class="nav-right">
-    <div class="lang-switch" role="group" aria-label="Language">
-      <a href="/terms" class="lang-opt" aria-current="page" hreflang="en" data-lang-set="en">EN</a>
-      <a href="/ru/terms" class="lang-opt" hreflang="ru" data-lang-set="ru">RU</a>
+    <div class="lang-switch" role="group" aria-label="Язык">
+      <a href="/privacy" class="lang-opt" hreflang="en" data-lang-set="en">EN</a>
+      <a href="/ru/privacy" class="lang-opt" aria-current="page" hreflang="ru" data-lang-set="ru">RU</a>
     </div>
-    <a href="/" class="nav-back">&larr; Back to home</a>
+    <a href="/ru/" class="nav-back">&larr; На главную</a>
   </div>
 </nav>
 <main class="wrap">
-  <span class="eyebrow">Legal</span>
-  <h1>Terms of <em>use</em>.</h1>
-  <p class="date">Last updated: March 2, 2026</p>
-  <div class="summary"><strong>In short:</strong> Soothbee is a baby-soothing app. All AI processing happens on your device. Subscriptions are managed through Apple. Use responsibly — especially while driving.</div>
-
-  <h2>1. Acceptance of terms</h2>
-  <p>By downloading, installing, or using Soothbee ("the App"), you agree to be bound by these Terms of Use. If you do not agree to these terms, do not use the App.</p>
-  <h2>2. Description of service</h2>
-  <p>Soothbee is a baby-soothing application that provides:</p>
+  <span class="eyebrow">Правовое</span>
+  <h1>Приватность — <em>без лишних слов</em>.</h1>
+  <p class="date">Последнее обновление: 5 января 2026 г.</p>
+  <div class="summary"><strong>Если коротко:</strong> Soothbee не собирает, не хранит и никуда не передаёт персональные данные. Вся работа с аудио и ИИ происходит исключительно на вашем устройстве.</div>
+  <h2>Обзор</h2>
+  <p>Soothbee («Приложение») создано с приватностью в основе. Мы убеждены, что ваши данные принадлежат вам — особенно когда речь о вашей семье.</p>
+  <h2>Сбор данных</h2>
+  <p><strong>Мы не собираем персональные данные.</strong> Конкретно:</p>
   <ul>
-    <li>AI-powered cry detection (processed entirely on your device)</li>
-    <li>A library of soothing sounds, lullabies, classical music, and fairy tales</li>
-    <li>CarPlay integration for hands-free use while driving</li>
-    <li>Personalised recommendations based on effectiveness tracking</li>
+    <li><strong>Аудио:</strong> распознавание плача и голосовые команды обрабатываются на устройстве средствами Apple on-device ML. Аудио нигде не записывается, не хранится и никуда не передаётся.</li>
+    <li><strong>Данные об использовании:</strong> мы не отслеживаем, как вы пользуетесь приложением.</li>
+    <li><strong>Аналитика:</strong> мы не используем сторонние аналитические сервисы.</li>
+    <li><strong>Реклама:</strong> мы не показываем рекламу и не делимся данными с рекламодателями.</li>
   </ul>
-  <h2>3. AI and data processing</h2>
-  <p>The App uses Apple's CoreML framework and Sound Analysis framework for cry detection. All AI processing occurs entirely on your device:</p>
+  <h2>Обработка на устройстве</h2>
+  <p>Приложение использует фреймворк Apple CoreML для запуска моделей ИИ прямо на вашем iPhone или iPad. Это означает:</p>
   <ul>
-    <li>No audio data is ever recorded, stored, or transmitted to any external server</li>
-    <li>No third-party AI service is used</li>
-    <li>The App does not send personal data to AI services for processing</li>
-    <li>Cry detection models are bundled within the App and run locally</li>
+    <li>Распознавание плача происходит локально на устройстве.</li>
+    <li>Голосовые команды обрабатываются на устройстве.</li>
+    <li>Для основных функций не нужен интернет.</li>
+    <li>Аудиоданные никогда не покидают устройство.</li>
   </ul>
-  <h2>4. Subscriptions and payments</h2>
-  <p>The App offers the following subscription options:</p>
+  <h2>Потоковое аудио</h2>
+  <p>Приложение транслирует успокаивающие аудиозаписи с наших серверов. При трансляции:</p>
   <ul>
-    <li><strong>Premium Monthly:</strong> auto-renewable subscription billed monthly ($6.99/month)</li>
-    <li><strong>Premium Yearly:</strong> auto-renewable subscription billed annually ($49.99/year — save 40%)</li>
-    <li><strong>Premium Lifetime:</strong> one-time non-consumable purchase ($149.99)</li>
+    <li>Мы не отслеживаем, какие треки вы слушаете.</li>
+    <li>Мы не связываем воспроизведение с какой-либо личностью.</li>
+    <li>Скачанный контент хранится локально на вашем устройстве.</li>
   </ul>
-  <p>Payment will be charged to your Apple ID account at confirmation of purchase. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period. You can manage and cancel your subscriptions in your App Store account settings.</p>
-  <h2>5. Safety disclaimer</h2>
-  <p><strong>Important:</strong> Soothbee is not a substitute for proper child care and parental supervision.</p>
+  <h2>Сторонние сервисы</h2>
+  <p>Приложение использует:</p>
   <ul>
-    <li>Never let this app distract you from safe driving</li>
-    <li>Always keep your eyes on the road when operating a vehicle</li>
-    <li>The app is a supplementary tool, not a replacement for attentive care</li>
-    <li>Do not rely solely on cry detection for monitoring your baby</li>
+    <li><strong>Cloudflare R2:</strong> для доставки аудио (CDN). Cloudflare может собирать обезличенные метрики производительности.</li>
+    <li><strong>Apple StoreKit:</strong> для встроенных покупок, полностью обрабатываемых Apple.</li>
   </ul>
-  <h2>6. Audio safety</h2>
-  <p>The App includes volume safety features to protect your baby's hearing. Do not attempt to bypass these safety measures. Always use audio at a safe volume level appropriate for infants.</p>
-  <h2>7. Content</h2>
-  <p>Audio content is either generated by the App's on-device audio engine or streamed from our content delivery network (Cloudflare R2). All content is curated for baby safety and suitability.</p>
-  <h2>8. Intellectual property</h2>
-  <p>All content, features, and functionality of the App are owned by the developer and are protected by copyright and other intellectual property laws.</p>
-  <h2>9. Limitation of liability</h2>
-  <p>The App is provided "as is" without warranties of any kind, either express or implied. We are not responsible for any issues arising from the use of this App.</p>
-  <h2>10. Changes to terms</h2>
-  <p>We reserve the right to modify these terms at any time. Continued use of the App after changes constitutes acceptance of the new terms.</p>
-  <h2>11. Governing law</h2>
-  <p>These terms shall be governed by and construed in accordance with applicable laws.</p>
-  <h2>12. Contact</h2>
-  <p>For questions about these Terms of Use, email <a href="mailto:anton.abyzov@gmail.com">anton.abyzov@gmail.com</a>.</p>
+  <h2>Приватность детей</h2>
+  <p>Приложение предназначено для родителей и опекунов. Мы осознанно не собираем какую-либо информацию от детей.</p>
+  <h2>Безопасность данных</h2>
+  <p>Поскольку мы не собираем персональные данные, защищать нечего. Локальные данные (настройки, избранное) хранятся в защищённом хранилище вашего устройства.</p>
+  <h2>Изменения в политике</h2>
+  <p>Мы можем время от времени обновлять эту политику конфиденциальности. О любых изменениях мы сообщим, опубликовав новую редакцию на этой странице.</p>
+  <h2>Связаться с нами</h2>
+  <p>Если у вас возникли вопросы по этой политике, напишите нам на <a href="mailto:anton.abyzov@gmail.com">anton.abyzov@gmail.com</a>.</p>
 </main>
 <footer>
   <div class="footer-links">
-    <a href="/">Home</a>
-    <a href="/privacy">Privacy</a>
-    <a href="/terms">Terms</a>
-    <a href="/support">Support</a>
+    <a href="/ru/">Главная</a>
+    <a href="/ru/privacy">Приватность</a>
+    <a href="/ru/terms">Условия</a>
+    <a href="/ru/support">Поддержка</a>
   </div>
-  <p class="footer-love">The hum that calms your baby.</p>
-  <p class="footer-copy">© 2026 Soothbee · Created by EasyChamp Inc. All rights reserved.</p>
+  <p class="footer-love">Тот самый гул, что успокаивает малыша.</p>
+  <p class="footer-copy">© 2026 Soothbee · Создано EasyChamp Inc. Все права защищены.</p>
   <div class="footer-lang">
-    <a href="/terms" aria-current="page" hreflang="en" data-lang-set="en">English</a>
+    <a href="/privacy" hreflang="en" data-lang-set="en">English</a>
     <span aria-hidden="true">·</span>
-    <a href="/ru/terms" hreflang="ru" data-lang-set="ru">Русский</a>
+    <a href="/ru/privacy" aria-current="page" hreflang="ru" data-lang-set="ru">Русский</a>
   </div>
 </footer>
 <script>

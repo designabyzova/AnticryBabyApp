@@ -3,9 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function(){
+  try{
+    var path = location.pathname;
+    var isRu = path.indexOf('/ru/') === 0 || path === '/ru';
+    var saved = localStorage.getItem('soothbee-lang');
+    if(!saved && !isRu){
+      var nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+      if(nav.indexOf('ru') === 0){
+        localStorage.setItem('soothbee-lang','ru');
+        location.replace('/ru' + (path === '/' ? '/' : path));
+        return;
+      }
+    }
+    if(saved === 'ru' && !isRu){
+      location.replace('/ru' + (path === '/' ? '/' : path));
+      return;
+    }
+  }catch(e){}
+})();
+</script>
 <title>Privacy Policy — Soothbee</title>
 <meta name="description" content="Soothbee privacy policy. We collect zero personal data. All AI processing happens on your device.">
 <link rel="canonical" href="https://soothbee.com/privacy">
+<link rel="alternate" hreflang="en" href="https://soothbee.com/privacy">
+<link rel="alternate" hreflang="ru" href="https://soothbee.com/ru/privacy">
+<link rel="alternate" hreflang="x-default" href="https://soothbee.com/privacy">
 <link rel="icon" type="image/png" sizes="64x64" href="/assets/img/soothbee-mascot-64.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/soothbee-mascot-180.png">
 <meta name="theme-color" content="#FDF6E8">
@@ -33,6 +57,16 @@ body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .logo-mark{width:36px;height:36px;flex-shrink:0;border-radius:22%;object-fit:cover;box-shadow:0 4px 14px rgba(232,168,56,.35),0 1px 2px rgba(43,36,25,.2)}
 .nav-back{font-size:.86rem;font-weight:500;color:var(--text-2);transition:color .2s}
 .nav-back:hover{color:var(--charcoal);text-decoration:none}
+.nav-right{display:inline-flex;align-items:center;gap:14px}
+.lang-switch{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-full);background:rgba(43,36,25,.06);border:1px solid rgba(122,78,20,.14)}
+.lang-opt{padding:6px 11px;border-radius:var(--r-full);font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--text-2);transition:background .2s,color .2s;line-height:1;display:inline-block;text-decoration:none}
+.lang-opt:hover{color:var(--charcoal);text-decoration:none}
+.lang-opt[aria-current="page"]{background:var(--charcoal);color:var(--text-light)}
+.footer-lang{display:flex;gap:14px;align-items:center;justify-content:center;margin-top:14px;font-size:.82rem}
+.footer-lang a{color:rgba(253,246,232,.55);transition:color .2s}
+.footer-lang a:hover{color:var(--primary);text-decoration:none}
+.footer-lang a[aria-current="page"]{color:var(--text-light);font-weight:600}
+.footer-lang span{color:rgba(253,246,232,.3)}
 .wrap{max-width:780px;margin:0 auto;padding:72px 24px 80px}
 .eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--primary-dark);font-weight:700;margin-bottom:18px}
 .eyebrow::before{content:"";display:inline-block;width:24px;height:1px;background:var(--primary-dark);margin-right:12px;vertical-align:middle;margin-bottom:3px}
@@ -72,7 +106,13 @@ footer{background:var(--ink);padding:60px 24px 34px;text-align:center;color:rgba
     <img class="logo-mark" src="/assets/img/soothbee-mascot-64.png" alt="Soothbee" width="36" height="36">
     <span>Soothbee</span>
   </a>
-  <a href="/" class="nav-back">&larr; Back to home</a>
+  <div class="nav-right">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <a href="/privacy" class="lang-opt" aria-current="page" hreflang="en" data-lang-set="en">EN</a>
+      <a href="/ru/privacy" class="lang-opt" hreflang="ru" data-lang-set="ru">RU</a>
+    </div>
+    <a href="/" class="nav-back">&larr; Back to home</a>
+  </div>
 </nav>
 <main class="wrap">
   <span class="eyebrow">Legal</span>
@@ -127,7 +167,19 @@ footer{background:var(--ink);padding:60px 24px 34px;text-align:center;color:rgba
     <a href="/support">Support</a>
   </div>
   <p class="footer-love">The hum that calms your baby.</p>
-  <p class="footer-copy">© 2026 Soothbee by Anton Abyzov. All rights reserved.</p>
+  <p class="footer-copy">© 2026 Soothbee · Created by EasyChamp Inc. All rights reserved.</p>
+  <div class="footer-lang">
+    <a href="/privacy" aria-current="page" hreflang="en" data-lang-set="en">English</a>
+    <span aria-hidden="true">·</span>
+    <a href="/ru/privacy" hreflang="ru" data-lang-set="ru">Русский</a>
+  </div>
 </footer>
+<script>
+document.querySelectorAll('[data-lang-set]').forEach(function(a){
+  a.addEventListener('click', function(){
+    try{ localStorage.setItem('soothbee-lang', a.getAttribute('data-lang-set')); }catch(e){}
+  });
+});
+</script>
 </body>
 </html>
