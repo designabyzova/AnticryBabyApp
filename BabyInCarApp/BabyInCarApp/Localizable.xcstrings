@@ -59,6 +59,16 @@
         }
       }
     },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
     },
@@ -10873,6 +10883,9 @@
 
     },
     "Version 1.0.0" : {
+
+    },
+    "Version 1.2.0" : {
 
     },
     "Voice & Hands-Free" : {

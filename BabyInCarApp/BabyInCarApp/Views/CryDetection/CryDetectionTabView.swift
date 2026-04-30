@@ -16,7 +16,7 @@ struct CryDetectionTabView: View {
 
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background gradient — Soothbee dusk (cream → lavender).
             LinearGradient(
                 colors: [
                     Color(hex: "E8F4FD"),
@@ -25,6 +25,14 @@ struct CryDetectionTabView: View {
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            // Subtle hive pattern — reinforces Soothbee brand in negative space.
+            HoneycombBackdrop(
+                tile: 52,
+                strokeColor: Color.appPrimary.opacity(0.08),
+                lineWidth: 1
             )
             .ignoresSafeArea()
 
@@ -101,11 +109,18 @@ struct CryDetectionTabView: View {
                 .multilineTextAlignment(.center)
         }
         .padding()
+        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(.white)
                 .shadow(color: viewModel.statusColor.opacity(0.2), radius: 20, y: 10)
         )
+        // Tiny Soothbee mascot peeks from the card — hovers gently while listening.
+        .overlay(alignment: .topTrailing) {
+            BrandBeeMini(size: 48, rotation: -10)
+                .offset(x: 6, y: -18)
+                .opacity(viewModel.isListening ? 1.0 : 0.85)
+        }
     }
 
     // MARK: - Waveform Section

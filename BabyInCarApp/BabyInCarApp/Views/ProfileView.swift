@@ -74,8 +74,15 @@ struct ProfileView: View {
     // MARK: - Baby Profile Card
     private var babyProfileCard: some View {
         VStack(spacing: 16) {
-            // Baby avatar
+            // Baby avatar with a gentle honeycomb halo + tiny Soothbee mascot.
             ZStack {
+                // Honeycomb halo — clipped to a circle so it feels purposeful.
+                HoneycombPattern(cellSize: 18)
+                    .stroke(Color.appPrimary.opacity(0.18), lineWidth: 1)
+                    .frame(width: 124, height: 124)
+                    .clipShape(Circle())
+                    .allowsHitTesting(false)
+
                 Circle()
                     .fill(Color.appPrimary.opacity(0.15))
                     .frame(width: 100, height: 100)
@@ -90,6 +97,10 @@ struct ProfileView: View {
                         .font(.system(size: 50))
                         .foregroundColor(.appPrimary)
                 }
+
+                // Soothbee mascot perched on the corner of the avatar.
+                BrandBeeMini(size: 38, rotation: 12)
+                    .offset(x: 46, y: -42)
             }
 
             VStack(spacing: 4) {
@@ -126,10 +137,26 @@ struct ProfileView: View {
             }
         }
         .padding(24)
+        .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8)
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.05), radius: 8)
+
+                // Whisper-faint honeycomb wash in the top-right corner.
+                HoneycombPattern(cellSize: 32)
+                    .stroke(Color.appPrimary.opacity(0.06), lineWidth: 1)
+                    .mask(
+                        LinearGradient(
+                            colors: [Color.black.opacity(0.9), Color.clear],
+                            startPoint: .topTrailing,
+                            endPoint: .bottomLeading
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .allowsHitTesting(false)
+            }
         )
         .padding(.horizontal, 20)
         .padding(.top, 12)
