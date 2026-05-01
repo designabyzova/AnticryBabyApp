@@ -1,65 +1,48 @@
 appId: com.babyincar.app
 ---
 # App Store Screenshot Generation Flow
+# Captures: Home, Library, Detect (cry detection), Favorites, Profile
 
-# Launch app fresh
 - launchApp:
     clearState: false
 
-# Wait for app to fully load
 - extendedWaitUntil:
-    visible: "Good"
-    timeout: 10000
+    visible: "Categories"
+    timeout: 15000
 
 - waitForAnimationToEnd
 
-# Screenshot 1: Home Screen - Shows Emergency Cry-Stop and Categories
+# Screenshot 1: Home — Soothbee greeting, AI Cry Detection card, Categories grid
 - takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/1_home_APP_IPHONE_67_0
 
-# Navigate to Library tab
 - tapOn:
-    id: "Library"
-
+    text: "Library"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Screenshot 2: Library View - Shows content categories
+# Screenshot 2: Library — content categories
 - takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/2_library_APP_IPHONE_67_0
 
-# Navigate to Favorites tab
 - tapOn:
-    id: "Favorites"
-
+    text: "Detect"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Screenshot 3: Favorites View
-- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/3_favorites_APP_IPHONE_67_0
+# Screenshot 3: Cry Detection — honeycomb pulse + new halos
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/3_cry_detection_APP_IPHONE_67_0
 
-# Navigate to Profile tab
 - tapOn:
-    id: "Profile"
-
+    text: "Favorites"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Screenshot 4: Profile View - Shows subscription and settings
-- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/4_profile_APP_IPHONE_67_0
+# Screenshot 4: Favorites — logo-first empty state with bee mascot
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/4_favorites_APP_IPHONE_67_0
 
-# Go back to Home
 - tapOn:
-    id: "Home"
-
+    text: "Profile"
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Tap on a category to show player/content
-- tapOn:
-    text: "Classical"
-    optional: true
-
-- waitForAnimationToEnd:
-    timeout: 3000
-
-# Screenshot 5: Category/Player View
-- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/5_player_APP_IPHONE_67_0
+# Screenshot 5: Profile — subscription, settings
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/5_profile_APP_IPHONE_67_0

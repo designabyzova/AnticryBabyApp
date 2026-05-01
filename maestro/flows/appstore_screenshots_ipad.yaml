@@ -1,0 +1,43 @@
+appId: com.babyincar.app
+---
+# App Store Screenshot Generation Flow - iPad Pro 13"
+# Captures: Home, Library, Detect, Favorites, Profile
+
+- launchApp:
+    clearState: false
+
+- extendedWaitUntil:
+    visible: "Categories"
+    timeout: 15000
+
+- waitForAnimationToEnd
+
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/APP_IPAD_13_01_home
+
+- tapOn:
+    text: "Library"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/APP_IPAD_13_02_library
+
+- tapOn:
+    text: "Detect"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/APP_IPAD_13_03_cry_detection
+
+- tapOn:
+    text: "Favorites"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/APP_IPAD_13_04_favorites
+
+- tapOn:
+    text: "Profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: /Users/aabyzovext/Projects/AI bussines ideas/AnticryBabyApp/BabyInCarApp/fastlane/screenshots/en-US/APP_IPAD_13_05_profile

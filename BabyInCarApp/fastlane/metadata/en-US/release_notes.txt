@@ -1,9 +1,9 @@
-Soothbee — now wherever you need us.
+A quieter hive, a warmer welcome.
 
-- The Soothbee mascot now greets you on the home screen, on the paywall, and on the splash, so you always know who's helping calm your baby
-- Refined positioning across the app: AI that listens to your baby and plays what calms them — automatically
-- Smoother gradient animations and shadow polish across the home and profile screens
-- Refreshed About screen reflects the full Soothbee brand
-- Stability and performance improvements across cry detection, playback, and Siri shortcuts
+- New honeycomb halos around cry-detection feedback so confidence reads at a glance
+- Logo-first empty states: your bee greets you in Favorites, Playlists, and the queue
+- Bigger tap target on the mini player so a tired hand can pause one-handed
+- Hello Russia: Siri now responds to "Soothbee" in Russian
+- Polish across animations, gradients, and small touches throughout the app
 
 Tap, breathe, settle. We hope tonight is a quiet one.
