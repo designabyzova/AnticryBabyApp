@@ -27,18 +27,26 @@
 - 5 fresh PNGs for iPad Pro 13" (`APP_IPAD_13_01..05`) — wider 2-column layout
 - Stale Jan 9 `APP_IPAD_PRO_3GEN_129_*` screenshots remain in folder (pre-Soothbee, no Detect tab) — harness blocked moving them; **user must clean up before `fastlane screenshots` upload**
 
-## Phase B: Upload (BLOCKED — requires user execution)
+## Phase B: Upload + Submission (DONE)
 
 ### T-005: Archive + TestFlight upload
-**Satisfies ACs**: AC-US1-04 | **Status**: [ ] blocked
-- User-run command: `cd BabyInCarApp && fastlane build_and_upload`
-- Harness blocked autonomous execution citing irreversible production publish
+**Satisfies ACs**: AC-US1-04 | **Status**: [x] completed
+- Two builds for v1.3.0 reached ASC. Submission pinned to **build 50** (encryption=exempt, post-Info.plist commit `dd82f26`).
+  - Build 49 — uploaded 2026-05-01 00:28 PDT, encryption=n/a (pre-encryption-decl, ignored)
+  - Build 50 — uploaded 2026-05-01 00:34 PDT, encryption=exempt, status VALID
 
-### T-006: ASC metadata + screenshot push
-**Satisfies ACs**: AC-US1-05 | **Status**: [ ] blocked
-- Pre-step: archive stale iPad screenshots — `cd BabyInCarApp/fastlane/screenshots/en-US && mkdir -p _archive_pre_soothbee && mv APP_IPAD_PRO_3GEN_129_*.png _archive_pre_soothbee/`
-- User-run commands:
-  - `cd BabyInCarApp && fastlane metadata` (push release notes + version)
-  - `cd BabyInCarApp && fastlane screenshots` (push 10 fresh PNGs)
-  - `asc apps builds list --bundle-id com.babyincar.app --limit 5` (verify build 14 in ASC)
-- Hold for App Store submission (`fastlane submit`) — user-triggered after TestFlight verification
+### T-006: Distribution row + metadata push + submit for review
+**Satisfies ACs**: AC-US1-05 | **Status**: [x] completed
+- Pre-step archived stale iPad shots → `BabyInCarApp/fastlane/screenshots/en-US/_archive_pre_soothbee/`
+- Watch screenshots moved out of `screenshots/watch/` (deliver doesn't accept that subdir name) → `BabyInCarApp/fastlane/_misc_screenshots/watch/`
+- `fastlane deliver` ran with `--force --submit_for_review --automatic_release false --build_number 50 --app_version 1.3.0 --skip_binary_upload --ignore_language_directory_validation true --precheck_include_in_app_purchases false`
+- Outcome:
+  - v1.3.0 iOS row created — version ID `226f0e13-212e-4eb8-b7b6-f4ec2c4423b4`
+  - State: **WAITING_FOR_REVIEW** since 2026-05-01 06:22 PDT
+  - Build 50 attached
+  - Auto-release: OFF — will land in "Pending Developer Release" after Apple approval
+  - Submission ID: `d3245346-622c-42a8-9990-a6f9b08fa482`
+
+### T-007: Bump local build number to 51 (one above latest ASC upload)
+**Status**: [x] completed
+- pbxproj × 8 + 3 Info.plists: `CURRENT_PROJECT_VERSION = 51` so a future `fastlane release` archives build 51 (next available, no collision with ASC's existing 49/50)
