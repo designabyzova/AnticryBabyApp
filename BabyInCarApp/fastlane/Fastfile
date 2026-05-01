@@ -694,6 +694,10 @@ platform :ios do
 
   desc "Archive Release + upload to TestFlight (uses version/build already set in project)"
   lane :release do
+    # xcpretty crashes on non-ASCII in build output unless locale is UTF-8.
+    ENV["LANG"] = "en_US.UTF-8" if ENV["LANG"].to_s.empty? || !ENV["LANG"].include?("UTF-8")
+    ENV["LC_ALL"] = "en_US.UTF-8" if ENV["LC_ALL"].to_s.empty? || !ENV["LC_ALL"].include?("UTF-8")
+
     api_key = app_store_connect_api_key(
       key_id: "JZ2ML9M66A",
       issuer_id: "a9be87c1-47d8-40f2-897d-75df80a540fb",

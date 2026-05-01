@@ -1,47 +1,37 @@
-Soothbee is the AI that listens to your baby and plays the exact sound that calms them — automatically. It recognises your baby's cry in under a second and settles them hands-free. Fully on-device. Built for the school run, the night feed, and every long red-light in between.
+Soothbee is the AI that listens to your baby and plays the exact sound that calms them — automatically. It recognises your baby's cry in under a second and settles them hands-free. Cry detection runs entirely on your device. Built for the school run, the night feed, and every long red-light in between.
 
 KEY FEATURES:
 
 SMART CRY DETECTION
-AI-powered system detects baby cries and automatically responds with soothing sounds
+On-device AI recognises your baby's cry and instantly plays a soothing sound that fits the moment. Honeycomb halos give you confidence at a glance.
 
-BABY MOOD INTELLIGENCE
-Learns your baby's unique preferences over time for personalized recommendations
+PERSONALISED OVER TIME
+The "It Helped!" button teaches Soothbee what works for your baby. Each tap fills your Hive Reserve and refines what plays next.
 
-PREMIUM SOUND LIBRARY
-Lullabies, classical music, fairy tales, ambient sounds, and more - over 270 tracks
+GENTLE SOUND LIBRARY (270+ TRACKS)
+Lullabies, classical music, fairy tales (English & Russian), ambient piano, and gentle children's songs — curated for calm, never harsh. No jarring noise machines.
 
-CARPLAY INTEGRATION
-Full CarPlay support for safe, distraction-free driving
+CARPLAY READY
+Full CarPlay integration so you can keep both hands on the wheel during the school run, the night drive, every long red light.
 
-VOICE COMMANDS
-Hands-free control with on-device voice recognition
+HANDS-FREE VOICE COMMANDS
+On-device voice recognition. Say "play lullabies in Soothbee" and go.
 
-"IT HELPED!" TRACKING
-Track what works for your baby to build a personalized soothing profile — each tap fills your Hive Reserve.
+WHY PARENTS LOVE SOOTHBEE
+- Cry detection runs entirely on your device — your baby's voice never leaves your phone
+- Works offline once tracks are downloaded
+- Carefully chosen tracks — gentle music, lullabies, and stories, never loud or jarring
+- Warm honey-and-hive design built to calm at a glance
+- Now available in 10 languages including Russian
 
-SOUND CATEGORIES:
-- Lullabies (Brahms, Twinkle Twinkle, Mozart)
-- Classical (117 tracks - Chopin, Debussy, Bach, Beethoven)
-- Fairy Tales (English and Russian stories)
-- Children's Songs
-- Ambient & Modern Piano
+SUBSCRIPTION OPTIONS
+- Premium Monthly: $6.99/month
+- Premium Yearly: $49.99/year (save 40%)
+- Lifetime: $149.99 one-time
 
-WHY PARENTS LOVE SOOTHBEE:
-- Hands-free operation while driving
-- Works offline once downloaded
-- Scientifically-backed soothing sounds
-- Warm honey-and-hive interface designed to calm at a glance
-- Privacy-first — all AI processing on device, no data sent externally
-
-SUBSCRIPTION OPTIONS:
-- Premium Monthly ($6.99/month)
-- Premium Yearly ($49.99/year - save 40%)
-- Lifetime ($149.99 one-time)
-
-Payment will be charged to your Apple ID account. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in App Store account settings.
+Payment will be charged to your Apple ID account at confirmation of purchase. Subscriptions automatically renew at the listed price unless auto-renew is turned off at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage your subscriptions and turn off auto-renewal at any time in your App Store account settings. The Lifetime tier is a one-time purchase with no recurring charges.
 
 Privacy Policy: https://soothbee.com/privacy
 Terms of Use (EULA): https://soothbee.com/terms
 
-Download Soothbee now — AI that listens to your baby and plays what calms them, automatically.
+Soothbee — the hum that calms your baby.

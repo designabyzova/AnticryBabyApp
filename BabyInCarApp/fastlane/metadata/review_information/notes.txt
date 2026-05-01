@@ -1,0 +1,30 @@
+Hi Apple Reviewer — thanks for reviewing Soothbee 1.3.0.
+
+Soothbee is a baby cry detection and soothing app for parents. To test the headline cry-detection feature:
+
+1. Open the app and complete the brief baby profile setup (any name + DOB works).
+2. Tap the 'Detect' tab in the bottom bar.
+3. Tap 'Start' on the cry detection card.
+4. Play any baby-crying sound near the device microphone (a short YouTube clip works fine). Soothbee should detect within ~2 seconds and begin playing a soothing track automatically.
+
+WHAT'S NEW IN 1.3.0
+- Polished honeycomb halos around cry-detection feedback so confidence reads at a glance
+- Logo-first empty states with the bee mascot in Favorites, Playlists, and the queue
+- Bigger tap target on the mini player for one-handed pause/resume
+- Russian Siri vocabulary — Russian-locale users can say "Привет, Siri, включи колыбельные в Soothbee"
+
+ACCESS
+No login is required to test all features. The Premium subscription unlocks the full content library; basic playback and cry detection work without Premium.
+
+PRIVACY
+All cry-detection AI runs entirely on-device using Apple's Sound Analysis framework. Audio content (lullabies, fairy tales) streams from our CDN. No personal data or audio recordings leave the device for AI inference.
+
+CARPLAY
+The app supports CarPlay. To test, connect to a CarPlay-enabled simulator or vehicle.
+
+LINKS
+- Privacy Policy: https://soothbee.com/privacy
+- Terms of Use (EULA): https://soothbee.com/terms
+- Support: https://soothbee.com/support
+
+Thank you for your time!

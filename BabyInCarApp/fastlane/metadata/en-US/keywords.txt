@@ -1,1 +1,1 @@
-AI baby,cry detection,baby sleep,lullaby,soothing,newborn,car seat,carplay,white noise,colic
+cry detection,baby sleep,lullaby,carplay,newborn,fussy baby,nighttime,car ride,colic,infant

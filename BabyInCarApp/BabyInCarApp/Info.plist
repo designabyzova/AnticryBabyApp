@@ -18,6 +18,10 @@
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
 
+    <!-- Export Compliance: app uses only standard exempt encryption (HTTPS/TLS) -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+
     <!-- iOS Configuration -->
     <key>LSRequiresIPhoneOS</key>
     <true/>

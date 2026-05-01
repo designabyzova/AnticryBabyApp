@@ -95,6 +95,14 @@ Upload IPA to TestFlight
 
 Build and upload to TestFlight locally
 
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
+```
+
+Archive Release + upload to TestFlight (uses version/build already set in project)
+
 ### ios check_ready
 
 ```sh
