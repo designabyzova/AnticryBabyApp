@@ -692,6 +692,39 @@ platform :ios do
     UI.success("✅ Build uploaded to TestFlight!")
   end
 
+  desc "Archive Release + upload to TestFlight (uses version/build already set in project)"
+  lane :release do
+    api_key = app_store_connect_api_key(
+      key_id: "JZ2ML9M66A",
+      issuer_id: "a9be87c1-47d8-40f2-897d-75df80a540fb",
+      key_filepath: "./fastlane/keys/AuthKey_JZ2ML9M66A.p8"
+    )
+
+    # NOTE: No increment_build_number — version/build already committed in source.
+    build_app(
+      scheme: "BabyInCarApp",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "BabyInCarApp.ipa",
+      clean: true,
+      export_options: {
+        signingStyle: "automatic",
+        uploadSymbols: true,
+        teamID: "NMCB2JZ7QG"
+      }
+    )
+
+    pilot(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,
+      notify_external_testers: false
+    )
+
+    UI.success("✅ 1.3.0 (build 14) uploaded to TestFlight!")
+  end
+
   desc "Check app submission readiness"
   lane :check_ready do
     api_key = app_store_connect_api_key(
