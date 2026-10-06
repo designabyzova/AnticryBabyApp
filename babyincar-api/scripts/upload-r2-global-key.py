@@ -41,9 +41,11 @@ if os.path.exists(ENV_FILE):
                 elif key == 'CLOUDFLARE_EMAIL':
                     API_EMAIL = value
 
-# Fallback to direct values
+# Fall back to the environment; never hard-code the key
 if not API_KEY:
-    API_KEY = "82eaa870afd3c83c7303c4e446bdd985c697f"
+    API_KEY = os.environ.get("CLOUDFLARE_API_KEY", "")
+if not API_EMAIL:
+    API_EMAIL = os.environ.get("CLOUDFLARE_EMAIL", "")
 
 # Public R2 URL (once public access is enabled)
 PUBLIC_URL = f"https://pub-{ACCOUNT_ID}.r2.dev"
