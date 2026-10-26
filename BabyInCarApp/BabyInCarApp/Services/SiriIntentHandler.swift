@@ -216,7 +216,7 @@ class SiriIntentHandler: NSObject,
 
     /// Resolve media destination for add intent
     nonisolated func resolveMediaDestination(for intent: INAddMediaIntent) async -> INAddMediaMediaDestinationResolutionResult {
-        // Always add to favorites
+        // Always add to favorites 
         return .success(with: INMediaDestination.library)
     }
 
